@@ -30,6 +30,7 @@ FIELDS = (
     "discoveryMethods",
     "lastDiscovery",
     "lastSeen",
+    "responseMs",
 )
 TABLE_COLUMNS = (
     ("IP", "IP"),
@@ -54,11 +55,13 @@ TABLE_HARD_MIN_WIDTHS = {
     "GROUP": 5, "description": 8, "manufacturer": 8,
     "deviceId": 8, "protocols": 7, "discovery": 8,
     "discoveryMethods": 8, "lastDiscovery": 8, "lastSeen": 12,
+    "responseMs": 7,
 }
 SHRINK_PRIORITY = (
     "description", "manufacturer", "NAME", "ALIAS", "GROUP",
     "lastSeen", "lastDiscovery", "discoveryMethods", "discovery",
     "protocols", "deviceId", "IP", "MAC",
+    "responseMs",
 )
 MANUFACTURER_COLUMN = ("manufacturer", "manufacturer")
 EXTRA_COLUMNS = (
@@ -68,6 +71,7 @@ EXTRA_COLUMNS = (
     ("detected-by", "discoveryMethods"),
     ("last-discovery", "lastDiscovery"),
     ("last-seen", "lastSeen"),
+    ("ms", "responseMs"),
 )
 AVAILABLE_COLUMNS = {
     label.casefold(): key
@@ -88,6 +92,7 @@ FIELD_COLORS = {
     "discoveryMethods": Fore.LIGHTCYAN_EX,
     "lastDiscovery": Fore.LIGHTCYAN_EX,
     "lastSeen": Fore.LIGHTBLACK_EX,
+    "responseMs": Fore.LIGHTCYAN_EX,
 }
 DARK_FIELD_COLORS = {
     "IP": Fore.BLUE,
@@ -104,6 +109,7 @@ DARK_FIELD_COLORS = {
     "discoveryMethods": Fore.CYAN,
     "lastDiscovery": Fore.CYAN,
     "lastSeen": Fore.LIGHTBLACK_EX,
+    "responseMs": Fore.CYAN,
 }
 # Se conserva por compatibilidad con código externo que pudiera importarlo,
 # aunque las filas inactivas ya no se tachan.
@@ -205,6 +211,8 @@ def render_records(
 
     def display_value(row: Mapping[str, object], key: str) -> str:
         value = row.get(key, "")
+        if key == "responseMs":
+            return "-" if value in (None, "") else f"{float(value):.1f}"
         if key in ("GROUP", "protocols", "discoveryMethods") and isinstance(value, list):
             return ",".join(str(item) for item in value) or "-"
         if key == "cnf":

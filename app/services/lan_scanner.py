@@ -7,6 +7,7 @@ import re
 import socket
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import perf_counter
 
 from app.models import Device
 from app.services.manufacturer import detect_manufacturer
@@ -83,11 +84,20 @@ class LanScanner:
         self.max_hosts = max_hosts
         self.discovery_methods: dict[str, set[str]] = {}
         self.confirmed_devices: set[str] = set()
+        self.response_times_ms: dict[str, dict[str, float]] = {}
 
-    def _parallel(self, function, values, phase: str, progress=None):
+    @staticmethod
+    def _timed(function, *args):
+        started = perf_counter()
+        result = function(*args)
+        return result, (perf_counter() - started) * 1000
+
+    def _parallel(
+        self, function, values, phase: str, progress=None, found_key=None
+    ):
         values = list(values)
         if progress:
-            progress.start(phase, len(values))
+            progress.phase(phase)
         results = [None] * len(values)
         with ThreadPoolExecutor(max_workers=self.workers) as executor:
             futures = {
@@ -95,12 +105,72 @@ class LanScanner:
                 for index, value in enumerate(values)
             }
             for future in as_completed(futures):
-                results[futures[future]] = future.result()
+                index = futures[future]
+                result = future.result()
+                results[index] = result
+                if progress and found_key:
+                    keys = found_key(values[index], result)
+                    if isinstance(keys, tuple):
+                        progress.found(*keys)
+                    elif keys:
+                        progress.found(keys)
                 if progress:
                     progress.advance()
-        if progress:
-            progress.finish()
         return results
+
+    def _parallel_discovery(
+        self,
+        hosts: list[str],
+        use_icmp: bool,
+        use_arp: bool,
+        progress=None,
+    ) -> tuple[set[str], dict[str, str]]:
+        """Ejecuta la primera ronda ICMP y ARP en un solo pool acotado."""
+        if progress:
+            progress.phase("Descubrimiento ICMP + ARP")
+
+        alive: set[str] = set()
+        arp_macs: dict[str, str] = {}
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            futures = {}
+            # Los trabajos se intercalan por host: ARP puede avanzar mientras
+            # el ping del mismo host espera, compartiendo el mismo limite.
+            for ip in hosts:
+                if use_icmp:
+                    futures[
+                        executor.submit(self._timed, self._ping, ip)
+                    ] = ("icmp", ip)
+                if use_arp:
+                    futures[
+                        executor.submit(
+                            self._timed, active_arp_mac, ip, self.timeout
+                        )
+                    ] = ("arp", ip)
+
+            for future in as_completed(futures):
+                method, ip = futures[future]
+                result, elapsed_ms = future.result()
+                found = bool(result)
+                if method == "icmp" and found:
+                    alive.add(ip)
+                elif method == "arp" and found:
+                    arp_macs[ip] = result
+                if found:
+                    self.response_times_ms.setdefault(ip, {})[method] = elapsed_ms
+                if progress and found:
+                    if method == "arp":
+                        progress.found(ip, result)
+                    else:
+                        progress.found(ip)
+                if progress:
+                    progress.advance()
+        return alive, arp_macs
+
+    def response_time_for(self, device: Device) -> float | None:
+        timings = self.response_times_ms.get(device.ip, {})
+        # ICMP representa mejor la latencia. ARP queda como alternativa para
+        # equipos que bloquean ping pero responden en la red local.
+        return timings.get("icmp", timings.get("arp"))
 
     def _mark_discovery(
         self, ip: str, mac: str, method: str, confirmed: bool = True
@@ -140,6 +210,8 @@ class LanScanner:
         attempts: int = 1,
         extra_methods: tuple[str, ...] = (),
         progress=None,
+        registered_total: int = 0,
+        registered_identities: dict[str, str] | None = None,
     ) -> list[Device]:
         discovery = discovery.casefold()
         if discovery not in DISCOVERY_MODES:
@@ -149,6 +221,7 @@ class LanScanner:
             )
         self.discovery_methods = {}
         self.confirmed_devices = set()
+        self.response_times_ms = {}
         hosts = list(self.network.hosts())
         if len(hosts) > self.max_hosts:
             raise ValueError(
@@ -156,35 +229,43 @@ class LanScanner:
             )
 
         host_strings = [str(host) for host in hosts]
-        active_ips: set[str] = set()
-        active_arp: dict[str, str] = {}
-        if discovery in ("icmp", "hybrid"):
-            # El ping también llena ARP, pero algunos equipos bloquean ICMP.
-            alive = [False] * len(host_strings)
-            for attempt in range(max(1, attempts)):
+        progress_total = (
+            (len(host_strings) * max(1, attempts) if discovery in ("icmp", "hybrid") else 0)
+            + (len(host_strings) if discovery in ("arp", "hybrid") else 0)
+            + len(extra_methods)
+            + (len(host_strings) if resolve_names else 0)
+        )
+        if progress:
+            progress.begin(
+                progress_total,
+                found_total=registered_total,
+                known_identities=registered_identities,
+            )
+        use_icmp = discovery in ("icmp", "hybrid")
+        use_arp = discovery in ("arp", "hybrid")
+        active_ips, active_arp = self._parallel_discovery(
+            host_strings, use_icmp, use_arp, progress
+        )
+        # Las rondas posteriores siguen siendo reintentos reales, pero la
+        # primera ronda ICMP y ARP ya no tiene que esperar una fase completa.
+        if use_icmp:
+            for attempt in range(1, max(1, attempts)):
                 current = self._parallel(
-                    self._ping,
+                    lambda ip: self._timed(self._ping, ip),
                     host_strings,
                     f"ICMP {attempt + 1}/{max(1, attempts)}",
                     progress,
+                    found_key=lambda ip, outcome: ip if outcome[0] else "",
                 )
-                alive = [previous or bool(now) for previous, now in zip(alive, current)]
-            active_ips = {
-                ip for ip, responded in zip(host_strings, alive) if responded
-            }
-        if discovery in ("arp", "hybrid"):
-            # SendARP/arping genera una solicitud nueva y evita falsos positivos
-            # procedentes únicamente de entradas antiguas de la caché.
-            arp_macs = self._parallel(
-                lambda ip: active_arp_mac(ip, self.timeout),
-                host_strings,
-                "ARP activo",
-                progress,
-            )
-            active_arp = {
-                ip: mac for ip, mac in zip(host_strings, arp_macs) if mac
-            }
+                for ip, (responded, elapsed_ms) in zip(host_strings, current):
+                    if responded:
+                        active_ips.add(ip)
+                        self.response_times_ms.setdefault(ip, {})[
+                            "icmp"
+                        ] = elapsed_ms
 
+        if progress and extra_methods:
+            progress.phase("Servicios LAN")
         extra_findings = multicast_discover(
             extra_methods, max(0.3, self.timeout * max(1, attempts))
         ) if extra_methods else {}
@@ -192,13 +273,17 @@ class LanScanner:
             ip for ip in extra_findings
             if ipaddress.IPv4Address(ip) in self.network
         }
+        if progress and extra_methods:
+            for ip in extra_ips:
+                progress.found(ip)
+            progress.advance(len(extra_methods))
         missing_extra = [ip for ip in extra_ips if ip not in active_arp]
         if missing_extra:
             extra_macs = self._parallel(
                 lambda ip: active_arp_mac(ip, self.timeout),
                 missing_extra,
                 "ARP servicios",
-                progress,
+                None,
             )
             active_arp.update(
                 {ip: mac for ip, mac in zip(missing_extra, extra_macs) if mac}
@@ -319,8 +404,12 @@ class LanScanner:
                 self.workers = original_workers
             for record, name in zip(records, names):
                 record["defaultName"] = name
+            if progress and len(records) < len(host_strings):
+                progress.advance(len(host_strings) - len(records))
         for record in records:
             record["manufacturer"] = detect_manufacturer(record.mac)
+        if progress:
+            progress.complete()
         return records
 
     @staticmethod

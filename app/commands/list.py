@@ -237,6 +237,16 @@ def run_list(args: argparse.Namespace) -> int:
     discovery = args.discovery or (
         profile.discovery if args.profile else args.configured_discovery
     )
+    database = DeviceDatabase(args.database)
+    registered_devices = database.load()
+    registered_total = len(registered_devices)
+    registered_identities = {}
+    for index, device in enumerate(registered_devices):
+        identity = str(index)
+        if device.ip:
+            registered_identities[device.ip] = identity
+        if device.mac:
+            registered_identities[device.mac] = identity
     scanner = LanScanner(
         network=network,
         workers=effective_workers,
@@ -244,15 +254,20 @@ def run_list(args: argparse.Namespace) -> int:
         max_hosts=args.max_hosts,
     )
     progress = ScanProgress(args.progress)
-    records = scanner.scan(
-        include_unknown=args.include_unknown,
-        resolve_names=args.resolve_names or profile.resolve_names,
-        discovery=discovery,
-        include_arp_cache=args.include_arp_cache,
-        attempts=profile.attempts,
-        extra_methods=profile.extra_methods,
-        progress=progress,
-    )
+    try:
+        records = scanner.scan(
+            include_unknown=args.include_unknown,
+            resolve_names=args.resolve_names or profile.resolve_names,
+            discovery=discovery,
+            include_arp_cache=args.include_arp_cache,
+            attempts=profile.attempts,
+            extra_methods=profile.extra_methods,
+            progress=progress,
+            registered_total=registered_total,
+            registered_identities=registered_identities,
+        )
+    finally:
+        progress.clear()
     seen_at = datetime.now().astimezone().isoformat(timespec="seconds")
     for record in records:
         methods = scanner.discovery_for(record).split("+")
@@ -265,7 +280,6 @@ def run_list(args: argparse.Namespace) -> int:
             record.last_discovery = "+".join(confirmed_methods)
             record.last_seen = seen_at
 
-    database = DeviceDatabase(args.database)
     devices = database.upsert(records)
     GroupDatabase(args.groups, database).ensure_basic(devices)
     # ensure_basic puede reescribir la base; se vuelve a cargar su resultado.
@@ -277,6 +291,9 @@ def run_list(args: argparse.Namespace) -> int:
     columns = list(
         ("ip", "alias", "description") if args.basic else args.display_columns
     )
+    if args.format == "table" and not args.basic and "ms" not in columns:
+        ip_index = columns.index("ip") + 1 if "ip" in columns else 0
+        columns.insert(ip_index, "ms")
     if args.show_discovery and "discovery" not in columns:
         columns.append("discovery")
     if args.show_detection:
@@ -287,6 +304,9 @@ def run_list(args: argparse.Namespace) -> int:
     for device in visible_devices:
         row = device.to_dict()
         row["discovery"] = scanner.discovery_for(device)
+        # Dato efimero de esta ejecucion: nunca se copia al modelo Device ni
+        # llega al archivo de base de datos.
+        row["responseMs"] = scanner.response_time_for(device)
         display_rows.append(row)
 
     write_records(

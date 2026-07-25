@@ -32,17 +32,43 @@ class ExtensionTests(unittest.TestCase):
     def test_progress_is_machine_silent_and_tty_visible(self):
         silent = io.StringIO()
         progress = ScanProgress(True, silent)
-        progress.start("ARP", 2)
+        progress.begin(2, "ARP", found_total=26)
         progress.advance()
-        progress.finish()
+        progress.found("192.168.1.1")
+        progress.complete()
         self.assertEqual(silent.getvalue(), "")
 
         tty = _Tty()
         progress = ScanProgress(True, tty)
-        progress.start("ARP", 2)
+        progress.begin(2, "ARP", found_total=26)
         progress.advance()
-        progress.finish()
-        self.assertIn("100.0%", tty.getvalue())
+        progress.found("192.168.1.1")
+        progress.phase("DNS")
+        progress.advance()
+        progress.complete()
+        rendered = tty.getvalue()
+        self.assertIn("50.0%", rendered)
+        self.assertIn("100.0%", rendered)
+        self.assertIn("Search:", rendered)
+        self.assertIn("[founds: 1/26]", rendered)
+        self.assertNotIn("DNS", rendered)
+        self.assertTrue(rendered.endswith("\r"))
+
+    def test_progress_counts_only_unique_registered_devices(self):
+        tty = _Tty()
+        progress = ScanProgress(True, tty)
+        progress.begin(
+            2,
+            found_total=2,
+            known_identities={
+                "192.168.1.17": "room",
+                "90:11:95:A0:5B:32": "room",
+            },
+        )
+        progress.found("192.168.1.17")
+        progress.found("192.168.1.17", "90:11:95:A0:5B:32")
+        progress.found("192.168.1.99")
+        self.assertIn("[founds: 1/2]", tty.getvalue())
 
     def test_expressive_queries_are_combined_without_eval(self):
         device = Device(

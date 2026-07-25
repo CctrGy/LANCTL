@@ -1,6 +1,7 @@
 import ipaddress
 import json
 import tempfile
+import threading
 import unittest
 from datetime import date
 from pathlib import Path
@@ -585,6 +586,46 @@ class NetworkTests(unittest.TestCase):
         target = next(record for record in records if record.ip == "192.168.1.44")
         self.assertEqual(target.mac, target_mac)
         self.assertEqual(scanner.discovery_for(target), "ARP")
+
+    def test_first_icmp_and_arp_probes_share_the_bounded_pool(self):
+        scanner = LanScanner(
+            ipaddress.IPv4Network("192.168.1.0/30"),
+            workers=2,
+            timeout=0.1,
+            max_hosts=4,
+        )
+        rendezvous = threading.Barrier(2)
+
+        def ping(_ip):
+            rendezvous.wait(timeout=1)
+            return True
+
+        def arp(_ip, _timeout):
+            rendezvous.wait(timeout=1)
+            return "DE:AD:BE:EF:FE:ED"
+
+        with (
+            patch.object(scanner, "_ping", side_effect=ping),
+            patch("app.services.lan_scanner.active_arp_mac", side_effect=arp),
+        ):
+            alive, macs = scanner._parallel_discovery(
+                ["192.168.1.1"], use_icmp=True, use_arp=True
+            )
+
+        self.assertEqual(alive, {"192.168.1.1"})
+        self.assertEqual(macs, {"192.168.1.1": "DE:AD:BE:EF:FE:ED"})
+        device = Device(ip="192.168.1.1", mac="DE:AD:BE:EF:FE:ED")
+        self.assertIsNotNone(scanner.response_time_for(device))
+        self.assertNotIn("responseMs", device.to_dict())
+
+    def test_runtime_response_ms_can_be_rendered_without_device_storage(self):
+        rendered = render_records(
+            [{"IP": "192.168.1.1", "responseMs": 12.345}],
+            "table",
+            columns=["ip", "ms"],
+        )
+        self.assertIn("ms", rendered.splitlines()[0])
+        self.assertIn("12.3", rendered)
 
     def test_discovery_mode_is_validated(self):
         scanner = LanScanner(

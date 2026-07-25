@@ -4,7 +4,7 @@ LANCTL es una herramienta de línea de comandos para descubrir, inventariar y
 administrar dispositivos de una red local. El repositorio también incluye el
 firmware experimental `ESP32_V1` para monitorización y control de racks.
 
-> Estado: `0.3.0-alpha.1` — prototipo en desarrollo.
+> Estado: `0.3.0-alpha.2` — prototipo en desarrollo.
 
 ## Funciones principales
 
