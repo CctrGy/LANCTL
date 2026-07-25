@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Packaging and build artifacts
+build/
+dist/
+*.egg-info/
+*.spec.bak
+
+# Local application data, credentials and logs
+data/als/
+*.log
+*.credentials
+
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.vscode/
+
+# Editors and operating systems
+.idea/
+*.swp
+Thumbs.db
+Desktop.ini
+.DS_Store
