@@ -6,6 +6,8 @@ import json
 import ipaddress
 import os
 import sys
+import html
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -25,6 +27,9 @@ FIELDS = (
     "manufacturer",
     "defaultName",
     "discovery",
+    "discoveryMethods",
+    "lastDiscovery",
+    "lastSeen",
 )
 TABLE_COLUMNS = (
     ("IP", "IP"),
@@ -48,16 +53,21 @@ TABLE_HARD_MIN_WIDTHS = {
     "IP": 13, "cnf": 3, "ALIAS": 5, "MAC": 17, "NAME": 5,
     "GROUP": 5, "description": 8, "manufacturer": 8,
     "deviceId": 8, "protocols": 7, "discovery": 8,
+    "discoveryMethods": 8, "lastDiscovery": 8, "lastSeen": 12,
 }
 SHRINK_PRIORITY = (
     "description", "manufacturer", "NAME", "ALIAS", "GROUP",
-    "discovery", "protocols", "deviceId", "IP", "MAC",
+    "lastSeen", "lastDiscovery", "discoveryMethods", "discovery",
+    "protocols", "deviceId", "IP", "MAC",
 )
 MANUFACTURER_COLUMN = ("manufacturer", "manufacturer")
 EXTRA_COLUMNS = (
     ("device-id", "deviceId"),
     ("protocols", "protocols"),
     ("discovery", "discovery"),
+    ("detected-by", "discoveryMethods"),
+    ("last-discovery", "lastDiscovery"),
+    ("last-seen", "lastSeen"),
 )
 AVAILABLE_COLUMNS = {
     label.casefold(): key
@@ -75,6 +85,9 @@ FIELD_COLORS = {
     "deviceId": Fore.LIGHTWHITE_EX,
     "protocols": Fore.LIGHTCYAN_EX,
     "discovery": Fore.LIGHTCYAN_EX,
+    "discoveryMethods": Fore.LIGHTCYAN_EX,
+    "lastDiscovery": Fore.LIGHTCYAN_EX,
+    "lastSeen": Fore.LIGHTBLACK_EX,
 }
 DARK_FIELD_COLORS = {
     "IP": Fore.BLUE,
@@ -88,6 +101,9 @@ DARK_FIELD_COLORS = {
     "deviceId": Fore.LIGHTBLACK_EX,
     "protocols": Fore.CYAN,
     "discovery": Fore.CYAN,
+    "discoveryMethods": Fore.CYAN,
+    "lastDiscovery": Fore.CYAN,
+    "lastSeen": Fore.LIGHTBLACK_EX,
 }
 # Se conserva por compatibilidad con código externo que pudiera importarlo,
 # aunque las filas inactivas ya no se tachan.
@@ -137,6 +153,12 @@ def render_records(
         else None
     )
 
+    def export_value(row: Mapping[str, object], key: str) -> str:
+        value = row.get(key, "")
+        if isinstance(value, list):
+            return ",".join(str(item) for item in value)
+        return str(value)
+
     if output_format == "json":
         output_rows = (
             [{field: row.get(field, "") for field in selected_fields} for row in rows]
@@ -157,9 +179,33 @@ def render_records(
         writer.writerows(rows)
         return buffer.getvalue()
 
+    if output_format in ("html", "xml"):
+        export_fields = selected_fields or list(FIELDS)
+        if output_format == "html":
+            header_cells = "".join(f"<th>{html.escape(field)}</th>" for field in export_fields)
+            body_rows = "".join(
+                "<tr>" + "".join(
+                    f"<td>{html.escape(export_value(row, field))}</td>"
+                    for field in export_fields
+                ) + "</tr>"
+                for row in rows
+            )
+            return (
+                "<!doctype html>\n<html><head><meta charset=\"utf-8\">"
+                "<title>LANCTL</title></head><body><table><thead><tr>"
+                f"{header_cells}</tr></thead><tbody>{body_rows}</tbody></table></body></html>\n"
+            )
+        root = ET.Element("lanctl")
+        for row in rows:
+            item = ET.SubElement(root, "element")
+            for field in export_fields:
+                ET.SubElement(item, field).text = export_value(row, field)
+        ET.indent(root, space="  ")
+        return ET.tostring(root, encoding="unicode", xml_declaration=True) + "\n"
+
     def display_value(row: Mapping[str, object], key: str) -> str:
         value = row.get(key, "")
-        if key in ("GROUP", "protocols") and isinstance(value, list):
+        if key in ("GROUP", "protocols", "discoveryMethods") and isinstance(value, list):
             return ",".join(str(item) for item in value) or "-"
         if key == "cnf":
             if isinstance(value, bool):

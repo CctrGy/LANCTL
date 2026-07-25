@@ -10,6 +10,7 @@ from app.core.output import write_records
 
 
 FIELDS = ("cnf", "name", "description", "alias", "group", "protocol")
+DELETE_ACTIONS = ("delete", "del", "remove")
 
 
 def register_element_command(commands: argparse._SubParsersAction) -> None:
@@ -22,7 +23,7 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument(
         "action",
         nargs="?",
-        choices=("edit", *FIELDS),
+        choices=("edit", *FIELDS, *DELETE_ACTIONS),
         help="Campo o acción que se quiere editar.",
     )
     command.add_argument("values", nargs="*", help="Nuevo valor.")
@@ -40,6 +41,11 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
     )
     command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
     command.add_argument("--groups", default=config["groups"], help="Archivo JSON de grupos.")
+    command.add_argument(
+        "--yes",
+        action="store_true",
+        help="Elimina sin solicitar confirmación.",
+    )
     command.set_defaults(handler=run_element)
 
 
@@ -70,7 +76,30 @@ def run_element(args: argparse.Namespace) -> int:
         write_records(
             [device],
             output_format="table",
-            include_manufacturer=True,
+            columns=(
+                "ip", "cnf", "alias", "mac", "name", "group",
+                "description", "manufacturer", "detected-by",
+                "last-discovery", "last-seen",
+            ),
+        )
+        return 0
+
+    if args.action in DELETE_ACTIONS:
+        if args.values:
+            raise ValueError("delete no acepta valores adicionales")
+        device = database.resolve(args.selector)
+        label = device.alias or device.name or device.ip
+        if not args.yes:
+            answer = input(
+                f"Eliminar completamente {label} ({device.mac})? [s/N]: "
+            )
+            if answer.strip().casefold() not in ("s", "si", "sí", "y", "yes"):
+                ok("CANCELADO", "No se ha eliminado ningún elemento.")
+                return 1
+        deleted = GroupDatabase(args.groups, database).delete_device(args.selector)
+        ok(
+            "ELIMINADO",
+            f"{deleted.mac} | retirado de la base y de todos los grupos",
         )
         return 0
 

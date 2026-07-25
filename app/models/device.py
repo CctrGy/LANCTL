@@ -74,6 +74,9 @@ class Device(MutableMapping[str, Any]):
     protocols: list[str] = field(default_factory=list)
     credentials: dict[str, str] = field(default_factory=dict)
     protocol_options: dict[str, dict[str, Any]] = field(default_factory=dict)
+    discovery_methods: list[str] = field(default_factory=list)
+    last_discovery: str = ""
+    last_seen: str = ""
 
     JSON_FIELDS = {
         "IP": "ip",
@@ -92,6 +95,9 @@ class Device(MutableMapping[str, Any]):
         "protocols": "protocols",
         "credentials": "credentials",
         "protocolOptions": "protocol_options",
+        "discoveryMethods": "discovery_methods",
+        "lastDiscovery": "last_discovery",
+        "lastSeen": "last_seen",
     }
 
     @classmethod
@@ -137,6 +143,13 @@ class Device(MutableMapping[str, Any]):
                 for protocol, options in value.get("protocolOptions", {}).items()
                 if isinstance(options, Mapping)
             },
+            discovery_methods=[
+                str(method).strip().upper()
+                for method in value.get("discoveryMethods", [])
+                if str(method).strip()
+            ],
+            last_discovery=str(value.get("lastDiscovery", "")),
+            last_seen=str(value.get("lastSeen", "")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -164,6 +177,9 @@ class Device(MutableMapping[str, Any]):
             normalize_protocol(protocol): dict(options)
             for protocol, options in self.protocol_options.items()
         }
+        self.discovery_methods = list(dict.fromkeys(
+            method.strip().upper() for method in self.discovery_methods if method.strip()
+        ))
 
     def __getitem__(self, key: str) -> Any:
         try:

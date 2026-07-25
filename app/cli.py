@@ -23,22 +23,27 @@ from app.commands.search import register_search_command
 from app.commands.scan import register_scan_command
 from app.commands.switch import register_switch_command
 from app.commands.list import register_list_command
-from app.commands.modes import register_virtual_mode
+from app.commands.ping import register_ping_command
+from app.commands.open import register_open_command
+from app.commands.modes import register_virtual_mode, run_global_cli
 from app.core.console import error as print_error
 from app.core.parser import LANCTLArgumentParser
 from app.core.logger import write_log
+from app.core.log_cleanup import run_automatic_log_cleanup
 
 
 LEGACY_VIRTUAL_COMMANDS = {
     "list", "settings", "call", "search", "scan", "cnf", "credential",
     "credentials", "auth", "gateway", "downloadsettings", "download-settings",
     "protocol", "ssh", "terminal", "cli", "switch", "group", "element",
-    "name", "alias",
+    "name", "alias", "ping", "open", "connect",
 }
 
 
 def register_virtual_commands(commands: argparse._SubParsersAction) -> None:
     register_list_command(commands)
+    register_ping_command(commands)
+    register_open_command(commands)
     register_settings_command(commands)
     register_call_command(commands)
     register_search_command(commands)
@@ -69,8 +74,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Muestra la versión y termina.",
     )
 
+    parser.add_argument(
+        "--gui",
+        action="store_true",
+        help="Abre la CLI interactiva persistente de LANCTL.",
+    )
     commands = parser.add_subparsers(dest="command", metavar="ÁMBITO/COMANDO")
-    commands.required = True
     register_virtual_mode(commands, register_virtual_commands)
     return parser
 
@@ -79,11 +88,17 @@ def main(argv: list[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     if arguments and arguments[0].casefold() in LEGACY_VIRTUAL_COMMANDS:
         arguments.insert(0, "virtual")
+    run_automatic_log_cleanup()
     write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
     parser = build_parser()
     args = parser.parse_args(arguments)
 
     try:
+        if args.gui:
+            return run_global_cli()
+        if not args.command:
+            parser.print_help()
+            return 0
         return args.handler(args)
     except KeyboardInterrupt:
         print_error("Operación cancelada.")

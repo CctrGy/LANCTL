@@ -12,6 +12,7 @@ from app.core.config import (
 )
 from app.core.console import ok
 from app.core.output import normalize_columns
+from app.services.scan_profiles import SCAN_PROFILES
 
 
 def register_settings_command(commands: argparse._SubParsersAction) -> None:
@@ -54,6 +55,36 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         choices=("icmp", "arp", "hybrid"),
         help="Método predeterminado utilizado por list.",
     )
+    command.add_argument(
+        "--scan-profile",
+        choices=tuple(SCAN_PROFILES),
+        help="Perfil predeterminado de list: fast, normal o accurate.",
+    )
+    command.add_argument("--progress", choices=("on", "off"), help="Activa o desactiva el progreso interactivo.")
+    command.add_argument(
+        "--service-identification",
+        choices=("on", "off"),
+        help="Activa o desactiva el reconocimiento de servicios en scan.",
+    )
+    command.add_argument("--workers", type=int, help="Concurrencia predeterminada de los escaneos.")
+    command.add_argument("--timeout", type=float, help="Timeout predeterminado por operación de red.")
+    command.add_argument("--max-hosts", type=int, help="Máximo de hosts autorizado por escaneo.")
+    command.add_argument("--database", metavar="ARCHIVO", help="Ruta del inventario de elementos.")
+    command.add_argument("--groups", metavar="ARCHIVO", help="Ruta de la base de grupos.")
+    command.add_argument("--log", metavar="DIRECTORIO", help="Directorio de registros.")
+    command.add_argument(
+        "-log-cleanup",
+        "--log-cleanup",
+        choices=("on", "off"),
+        help="Activa o desactiva la limpieza automática de logs antiguos.",
+    )
+    command.add_argument(
+        "-log-retention-days",
+        "--log-retention-days",
+        type=int,
+        metavar="DÍAS",
+        help="Días durante los que se conservan los archivos de log.",
+    )
     command.set_defaults(handler=run_settings)
 
 
@@ -65,6 +96,17 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.dhcp_range is None
         and args.credentials is None
         and args.discovery is None
+        and args.scan_profile is None
+        and args.progress is None
+        and args.service_identification is None
+        and args.workers is None
+        and args.timeout is None
+        and args.max_hosts is None
+        and args.database is None
+        and args.groups is None
+        and args.log is None
+        and args.log_cleanup is None
+        and args.log_retention_days is None
     ):
         print(json.dumps(config, indent=2, ensure_ascii=False))
         print(f"\nArchivo: {CONFIG_PATH.resolve()}")
@@ -96,6 +138,51 @@ def run_settings(args: argparse.Namespace) -> int:
     if args.discovery is not None:
         config["discovery"] = args.discovery
         changes.append(f"Descubrimiento: {args.discovery}")
+    if args.scan_profile is not None:
+        config["scanProfile"] = args.scan_profile
+        changes.append(f"Perfil de escaneo: {args.scan_profile}")
+    if args.progress is not None:
+        config["progress"] = args.progress == "on"
+        changes.append(f"Progreso: {args.progress}")
+    if args.service_identification is not None:
+        config["serviceIdentification"] = args.service_identification == "on"
+        changes.append(f"Identificación de servicios: {args.service_identification}")
+    if args.workers is not None:
+        if args.workers < 1:
+            raise ValueError("workers debe ser mayor que cero")
+        config["workers"] = args.workers
+        changes.append(f"Workers: {args.workers}")
+    if args.timeout is not None:
+        if args.timeout <= 0:
+            raise ValueError("timeout debe ser mayor que cero")
+        config["timeout"] = args.timeout
+        changes.append(f"Timeout: {args.timeout}")
+    if args.max_hosts is not None:
+        if args.max_hosts < 1:
+            raise ValueError("max-hosts debe ser mayor que cero")
+        config["maxHosts"] = args.max_hosts
+        changes.append(f"Máximo de hosts: {args.max_hosts}")
+    for argument, key, label in (
+        (args.database, "database", "Base de elementos"),
+        (args.groups, "groups", "Base de grupos"),
+        (args.log, "log", "Directorio de logs"),
+    ):
+        if argument is not None:
+            value = argument.strip()
+            if not value:
+                raise ValueError(f"{label} no puede quedar vacío")
+            config[key] = value
+            changes.append(f"{label}: {value}")
+
+    if args.log_cleanup is not None:
+        config["logCleanupEnabled"] = args.log_cleanup == "on"
+        state = "activada" if config["logCleanupEnabled"] else "desactivada"
+        changes.append(f"Limpieza automática de logs: {state}")
+    if args.log_retention_days is not None:
+        if args.log_retention_days < 1:
+            raise ValueError("la retención de logs debe ser de al menos 1 día")
+        config["logRetentionDays"] = args.log_retention_days
+        changes.append(f"Retención de logs: {args.log_retention_days} días")
 
     path = save_config(config)
     ok("CONFIGURADO", "\n".join((*changes, f"Archivo: {path}")))

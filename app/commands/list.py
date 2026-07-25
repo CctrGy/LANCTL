@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import ipaddress
+from datetime import datetime
 
 from app.core.config import load_config
 from app.core.console import ok
@@ -10,6 +11,9 @@ from app.core.group_database import GroupDatabase
 from app.core.output import write_records
 from app.services.lan_scanner import LanScanner, local_ipv4, resolve_network
 from app.services.lan_scanner import DISCOVERY_MODES
+from app.services.scan_profiles import SCAN_PROFILES, apply_profile
+from app.core.progress import ScanProgress
+from app.core.query import matches_query
 
 
 def register_list_command(commands: argparse._SubParsersAction) -> None:
@@ -32,11 +36,15 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument(
         "-f",
         "--format",
-        choices=("table", "json", "csv"),
+        choices=("table", "json", "csv", "html", "xml"),
         default="table",
         help="Formato de salida (por defecto: table).",
     )
     command.add_argument("-o", "--output", help="Guarda la salida en un archivo.")
+    command.add_argument(
+        "--where",
+        help='Consulta combinable, por ejemplo: "active and group=IOT and vendor~Amazon".',
+    )
     command.add_argument(
         "-w",
         "--workers",
@@ -70,11 +78,24 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument(
         "--discovery",
         choices=DISCOVERY_MODES,
-        default=config["discovery"],
+        default=None,
         help=(
             "Método: icmp, arp activo o hybrid (por defecto según settings)."
         ),
     )
+    profiles = command.add_mutually_exclusive_group()
+    profiles.add_argument(
+        "--profile",
+        choices=tuple(SCAN_PROFILES),
+        default=None,
+        help="Perfil completo de escaneo: fast, normal o accurate.",
+    )
+    profiles.add_argument("--fast", dest="profile", action="store_const", const="fast", help="Escaneo ARP rápido.")
+    profiles.add_argument("--normal", dest="profile", action="store_const", const="normal", help="Escaneo híbrido equilibrado.")
+    profiles.add_argument("--accurate", dest="profile", action="store_const", const="accurate", help="Escaneo profundo con varios métodos.")
+    progress_options = command.add_mutually_exclusive_group()
+    progress_options.add_argument("--progress", dest="progress", action="store_true", help="Muestra el progreso interactivo.")
+    progress_options.add_argument("--no-progress", dest="progress", action="store_false", help="Oculta el progreso.")
     command.add_argument(
         "--show-discovery",
         action="store_true",
@@ -87,6 +108,11 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
             "Importa vecinos ARP en caché como CACHE no verificada; "
             "no cuentan como activos."
         ),
+    )
+    command.add_argument(
+        "--show-detection",
+        action="store_true",
+        help="Añade los métodos históricos y la fecha de última detección.",
     )
     connection = command.add_mutually_exclusive_group()
     connection.add_argument(
@@ -135,6 +161,9 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
         handler=run_list,
         display_columns=config["listColumns"],
         dhcp_range=config["dhcpRange"],
+        progress=bool(config.get("progress", True)),
+        configured_profile=config.get("scanProfile", "normal"),
+        configured_discovery=config.get("discovery", "hybrid"),
     )
 
 
@@ -177,6 +206,8 @@ def filter_rows(devices, activity, args):
             continue
         if args.dhcp_only and not ip_in_range(device.ip, args.dhcp_range):
             continue
+        if not matches_query(device, active, getattr(args, "where", None)):
+            continue
         selected.append((device, active))
     return selected
 
@@ -199,18 +230,40 @@ def run_list(args: argparse.Namespace) -> int:
                 f"Usa --network {suggested} o no indiques --network."
             )
 
+    profile_name = args.profile or args.configured_profile
+    profile, effective_timeout, effective_workers = apply_profile(
+        profile_name, args.timeout, args.workers
+    )
+    discovery = args.discovery or (
+        profile.discovery if args.profile else args.configured_discovery
+    )
     scanner = LanScanner(
         network=network,
-        workers=args.workers,
-        timeout=args.timeout,
+        workers=effective_workers,
+        timeout=effective_timeout,
         max_hosts=args.max_hosts,
     )
+    progress = ScanProgress(args.progress)
     records = scanner.scan(
         include_unknown=args.include_unknown,
-        resolve_names=args.resolve_names,
-        discovery=args.discovery,
+        resolve_names=args.resolve_names or profile.resolve_names,
+        discovery=discovery,
         include_arp_cache=args.include_arp_cache,
+        attempts=profile.attempts,
+        extra_methods=profile.extra_methods,
+        progress=progress,
     )
+    seen_at = datetime.now().astimezone().isoformat(timespec="seconds")
+    for record in records:
+        methods = scanner.discovery_for(record).split("+")
+        # CACHE es información histórica, no una confirmación de presencia.
+        confirmed_methods = [
+            method for method in methods if method not in ("-", "CACHE", "BASIC")
+        ]
+        if scanner.is_confirmed(record) and confirmed_methods:
+            record.discovery_methods = confirmed_methods
+            record.last_discovery = "+".join(confirmed_methods)
+            record.last_seen = seen_at
 
     database = DeviceDatabase(args.database)
     devices = database.upsert(records)
@@ -226,6 +279,10 @@ def run_list(args: argparse.Namespace) -> int:
     )
     if args.show_discovery and "discovery" not in columns:
         columns.append("discovery")
+    if args.show_detection:
+        for column in ("detected-by", "last-seen"):
+            if column not in columns:
+                columns.append(column)
     display_rows = []
     for device in visible_devices:
         row = device.to_dict()
@@ -255,7 +312,7 @@ def run_list(args: argparse.Namespace) -> int:
         f"Mostrados: {len(visible_devices)} | Activos: {active_count} | "
         f"No detectados: {len(visible_devices) - active_count} | "
         f"Total registrados: {len(devices)}\n"
-        f"Descubrimiento: {args.discovery} | ICMP: {icmp_count} | "
+        f"Perfil: {profile.name} | Descubrimiento: {discovery} | ICMP: {icmp_count} | "
         f"ARP: {arp_count} | Cache no verificada: {cache_count}",
     )
     return 0

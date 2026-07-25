@@ -41,6 +41,12 @@ def register_scan_command(commands: argparse._SubParsersAction) -> None:
         "--banners", action="store_true",
         help="Lee banners pasivos; no envía sondas específicas de protocolo.",
     )
+    command.add_argument(
+        "--identify",
+        action="store_true",
+        default=bool(config.get("serviceIdentification", True)),
+        help="Reconoce servicios y deduce el tipo de dispositivo con evidencias.",
+    )
     command.add_argument("--json", action="store_true", help="Salida JSON.")
     command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
     command.set_defaults(handler=run_scan)
@@ -63,9 +69,15 @@ def run_scan(args: argparse.Namespace) -> int:
     if args.all_ports and args.ports != "common":
         raise ValueError("usa --all-ports o --ports, pero no ambos")
     ports = list(range(1, 65536)) if args.all_ports else parse_ports(args.ports)
-    scanner = ElementScanner(timeout=args.timeout, workers=args.workers)
-    result = scanner.scan(device.ip, ports, banners=args.banners)
     manufacturer = device.manufacturer or detect_manufacturer(device.mac)
+    scanner = ElementScanner(timeout=args.timeout, workers=args.workers)
+    result = scanner.scan(
+        device.ip,
+        ports,
+        banners=args.banners,
+        identify=args.identify,
+        manufacturer=manufacturer,
+    )
     identity_match = (
         None if not result.observed_mac or not device.mac
         else result.observed_mac.casefold() == device.mac.casefold()
@@ -100,18 +112,26 @@ def run_scan(args: argparse.Namespace) -> int:
     print(f"  Hostname      : {_shown(result.hostname or device.default_name)}")
     print(f"  Grupos        : {_shown(', '.join(device.groups))}")
     print(f"  Latencia / TTL: {_shown(result.latency_ms)} ms / {_shown(result.ttl)}")
+    if args.identify:
+        identification = result.identification
+        print(f"  Tipo probable  : {_shown(identification.device_type)}")
+        print(f"  Confianza      : {_shown(identification.confidence)}")
+        print(f"  Evidencias     : {_shown('; '.join(identification.evidence))}")
 
     print(f"\n{_color('PUERTOS TCP ABIERTOS', Fore.CYAN)}")
     if result.open_ports:
         available = terminal_columns()
-        banner_width = max(6, *(len(port.banner) for port in result.open_ports))
+        banner_width = max(6, *(len(port.product or port.banner) for port in result.open_ports))
         if available:
-            banner_width = max(6, min(banner_width, available - 29))
-        print(f"  {'port':<5}  {'service':<16}  {'banner':<{banner_width}}")
-        print(f"  {'-' * 5}  {'-' * 16}  {'-' * banner_width}")
+            banner_width = max(6, min(banner_width, available - 43))
+        print(f"  {'port':<5}  {'service':<16}  {'confidence':<10}  {'product/banner':<{banner_width}}")
+        print(f"  {'-' * 5}  {'-' * 16}  {'-' * 10}  {'-' * banner_width}")
         for port in result.open_ports:
-            banner = fit_text(port.banner or "-", banner_width)
-            print(f"  {_color(str(port.port).ljust(5), Fore.LIGHTGREEN_EX)}  {fit_text(port.service, 16):<16}  {banner}")
+            banner = fit_text(port.product or port.banner or "-", banner_width)
+            print(
+                f"  {_color(str(port.port).ljust(5), Fore.LIGHTGREEN_EX)}  "
+                f"{fit_text(port.service, 16):<16}  {port.confidence:<10}  {banner}"
+            )
     else:
         print("  Ninguno detectado en el conjunto examinado.")
     summary = (

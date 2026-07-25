@@ -11,6 +11,8 @@ DEFAULTS = {
     "database": "data/als/devices.json",
     "groups": "data/als/groups.json",
     "log": "data/als/log",
+    "logCleanupEnabled": False,
+    "logRetentionDays": 90,
     "credentials": "data/als/.credentials",
     "range": None,
     "dhcpRange": None,
@@ -20,6 +22,9 @@ DEFAULTS = {
     "timeout": 0.8,
     "maxHosts": 4096,
     "discovery": "hybrid",
+    "scanProfile": "normal",
+    "progress": True,
+    "serviceIdentification": True,
     "listColumns": [
         "ip", "cnf", "alias", "mac", "name", "group", "description"
     ],

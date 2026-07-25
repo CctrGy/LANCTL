@@ -2,6 +2,7 @@ import ipaddress
 import json
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -19,6 +20,7 @@ from app.core.credentials import CredentialStore
 from app.core.differences import compare_scan
 from app.core.group_database import GroupDatabase
 from app.core.logger import write_log
+from app.core.log_cleanup import cleanup_old_logs
 from app.core.tr064 import Tr064Client
 from app.models import Device, normalize_cnf, normalize_mac
 from app.core.output import STRIKETHROUGH, normalize_columns, render_records
@@ -625,6 +627,40 @@ class NetworkTests(unittest.TestCase):
 
 
 class DatabaseTests(unittest.TestCase):
+    def test_detection_history_accumulates_and_updates_last_seen(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = DeviceDatabase(str(Path(directory) / "devices.json"))
+            database.upsert([
+                {
+                    "IP": "192.168.1.44", "MAC": "DE:AD:BE:EF:FE:ED",
+                    "discoveryMethods": ["ARP"], "lastDiscovery": "ARP",
+                    "lastSeen": "2026-07-25T20:00:00+02:00",
+                }
+            ])
+            updated = database.record_detection(
+                "DE:AD:BE:EF:FE:ED", ["PING"],
+                seen_at="2026-07-25T21:00:00+02:00",
+            )
+            self.assertEqual(updated.discovery_methods, ["ARP", "PING"])
+            self.assertEqual(updated.last_discovery, "PING")
+            self.assertEqual(updated.last_seen, "2026-07-25T21:00:00+02:00")
+
+    def test_rescan_without_detection_metadata_preserves_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = DeviceDatabase(str(Path(directory) / "devices.json"))
+            database.upsert([
+                {
+                    "IP": "192.168.1.44", "MAC": "DE:AD:BE:EF:FE:ED",
+                    "discoveryMethods": ["ARP"], "lastDiscovery": "ARP",
+                    "lastSeen": "2026-07-25T20:00:00+02:00",
+                }
+            ])
+            device = database.upsert([
+                {"IP": "192.168.1.44", "MAC": "DE:AD:BE:EF:FE:ED"}
+            ])[0]
+            self.assertEqual(device.discovery_methods, ["ARP"])
+            self.assertEqual(device.last_discovery, "ARP")
+
     def test_search_finds_alias_name_ip_and_mac(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
@@ -995,6 +1031,32 @@ class LoggerTests(unittest.TestCase):
             )
 
 
+    def test_cleanup_removes_only_recognized_logs_older_than_retention(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old_log = root / "01-01-2026.log"
+            boundary_log = root / "10-01-2026.log"
+            current_log = root / "20-01-2026.log"
+            unknown_log = root / "aplicacion.log"
+            for path in (old_log, boundary_log, current_log, unknown_log):
+                path.write_text("test\n", encoding="utf-8")
+
+            deleted = cleanup_old_logs(
+                root, 10, today=date(2026, 1, 20)
+            )
+
+            self.assertEqual(deleted, (old_log.resolve(),))
+            self.assertFalse(old_log.exists())
+            self.assertTrue(boundary_log.exists())
+            self.assertTrue(current_log.exists())
+            self.assertTrue(unknown_log.exists())
+
+    def test_cleanup_rejects_invalid_retention(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(ValueError):
+                cleanup_old_logs(directory, 0)
+
+
 class GroupTests(unittest.TestCase):
     def test_group_output_supports_colorama(self):
         self.assertIn(Fore.CYAN, _paint("GROUP", Fore.CYAN, True))
@@ -1011,6 +1073,37 @@ class GroupTests(unittest.TestCase):
             group, device = groups.add("CAMERAS", "192.168.1.20")
             self.assertIn(device.mac, group.members)
             self.assertIn("CAMERAS", device.groups)
+
+    def test_delete_device_removes_inventory_and_every_group_reference(self):
+        with tempfile.TemporaryDirectory() as directory:
+            devices = DeviceDatabase(str(Path(directory) / "devices.json"))
+            devices.upsert(
+                [{"IP": "192.168.1.18", "MAC": "10:20:30:40:50:60"}]
+            )
+            groups = GroupDatabase(str(Path(directory) / "groups.json"), devices)
+            groups.create("IOT")
+            groups.add("IOT", "10:20:30:40:50:60")
+
+            deleted = groups.delete_device("192.168.1.18")
+
+            self.assertEqual(deleted.mac, "10:20:30:40:50:60")
+            self.assertEqual(devices.load(), [])
+            self.assertNotIn("10:20:30:40:50:60", groups.load()[1].members)
+
+    def test_reserved_devices_cannot_be_deleted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            devices = DeviceDatabase(str(Path(directory) / "devices.json"))
+            devices.upsert(
+                [{
+                    "IP": "192.168.1.1",
+                    "MAC": "10:20:30:40:50:60",
+                    "ALIAS": "GATEWAY",
+                    "defaultAlias": "GATEWAY",
+                }]
+            )
+            groups = GroupDatabase(str(Path(directory) / "groups.json"), devices)
+            with self.assertRaises(ValueError):
+                groups.delete_device("GATEWAY")
 
     def test_group_description_limit(self):
         with tempfile.TemporaryDirectory() as directory:

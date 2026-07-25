@@ -155,3 +155,22 @@ class GroupDatabase:
         self.devices.save_devices(devices)
         self._write(groups)
         return group, target
+
+    def delete_device(self, selector: str) -> Device:
+        """Elimina un elemento y todas sus referencias de grupo por MAC."""
+        devices = self.devices.load()
+        target = self.devices.resolve(selector)
+        if target.default_alias in ("GATEWAY", "BRODCAST"):
+            raise ValueError(f"el elemento reservado {target.default_alias} no se puede eliminar")
+
+        remaining = [device for device in devices if device.mac != target.mac]
+        if len(remaining) == len(devices):
+            raise ValueError(f"no existe ningún dispositivo para: {selector}")
+
+        groups = self.load()
+        for group in groups:
+            group.members = [mac for mac in group.members if mac != target.mac]
+
+        self.devices.save_devices(remaining)
+        self._write(groups)
+        return target

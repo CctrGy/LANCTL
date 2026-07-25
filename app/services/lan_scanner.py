@@ -6,10 +6,11 @@ import platform
 import re
 import socket
 import subprocess
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from app.models import Device
 from app.services.manufacturer import detect_manufacturer
+from app.services.network_discovery import multicast_discover
 
 
 Network = ipaddress.IPv4Network
@@ -83,6 +84,24 @@ class LanScanner:
         self.discovery_methods: dict[str, set[str]] = {}
         self.confirmed_devices: set[str] = set()
 
+    def _parallel(self, function, values, phase: str, progress=None):
+        values = list(values)
+        if progress:
+            progress.start(phase, len(values))
+        results = [None] * len(values)
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            futures = {
+                executor.submit(function, value): index
+                for index, value in enumerate(values)
+            }
+            for future in as_completed(futures):
+                results[futures[future]] = future.result()
+                if progress:
+                    progress.advance()
+        if progress:
+            progress.finish()
+        return results
+
     def _mark_discovery(
         self, ip: str, mac: str, method: str, confirmed: bool = True
     ) -> None:
@@ -100,7 +119,7 @@ class LanScanner:
             methods.update(
                 self.discovery_methods.get(f"mac:{device.mac.upper()}", set())
             )
-        order = ("ICMP", "ARP", "LOCAL", "BASIC", "CACHE")
+        order = ("ICMP", "ARP", "MDNS", "SSDP", "WSD", "LOCAL", "BASIC", "CACHE")
         return "+".join(method for method in order if method in methods) or "-"
 
     def is_confirmed(self, device: Device) -> bool:
@@ -118,6 +137,9 @@ class LanScanner:
         resolve_names: bool = True,
         discovery: str = "icmp",
         include_arp_cache: bool = False,
+        attempts: int = 1,
+        extra_methods: tuple[str, ...] = (),
+        progress=None,
     ) -> list[Device]:
         discovery = discovery.casefold()
         if discovery not in DISCOVERY_MODES:
@@ -138,24 +160,49 @@ class LanScanner:
         active_arp: dict[str, str] = {}
         if discovery in ("icmp", "hybrid"):
             # El ping también llena ARP, pero algunos equipos bloquean ICMP.
-            with ThreadPoolExecutor(max_workers=self.workers) as executor:
-                alive = list(executor.map(self._ping, host_strings))
+            alive = [False] * len(host_strings)
+            for attempt in range(max(1, attempts)):
+                current = self._parallel(
+                    self._ping,
+                    host_strings,
+                    f"ICMP {attempt + 1}/{max(1, attempts)}",
+                    progress,
+                )
+                alive = [previous or bool(now) for previous, now in zip(alive, current)]
             active_ips = {
                 ip for ip, responded in zip(host_strings, alive) if responded
             }
         if discovery in ("arp", "hybrid"):
             # SendARP/arping genera una solicitud nueva y evita falsos positivos
             # procedentes únicamente de entradas antiguas de la caché.
-            with ThreadPoolExecutor(max_workers=self.workers) as executor:
-                arp_macs = list(
-                    executor.map(
-                        lambda ip: active_arp_mac(ip, self.timeout),
-                        host_strings,
-                    )
-                )
+            arp_macs = self._parallel(
+                lambda ip: active_arp_mac(ip, self.timeout),
+                host_strings,
+                "ARP activo",
+                progress,
+            )
             active_arp = {
                 ip: mac for ip, mac in zip(host_strings, arp_macs) if mac
             }
+
+        extra_findings = multicast_discover(
+            extra_methods, max(0.3, self.timeout * max(1, attempts))
+        ) if extra_methods else {}
+        extra_ips = {
+            ip for ip in extra_findings
+            if ipaddress.IPv4Address(ip) in self.network
+        }
+        missing_extra = [ip for ip in extra_ips if ip not in active_arp]
+        if missing_extra:
+            extra_macs = self._parallel(
+                lambda ip: active_arp_mac(ip, self.timeout),
+                missing_extra,
+                "ARP servicios",
+                progress,
+            )
+            active_arp.update(
+                {ip: mac for ip, mac in zip(missing_extra, extra_macs) if mac}
+            )
 
         arp_entries = self._read_arp_table()
         live_macs = {
@@ -182,7 +229,7 @@ class LanScanner:
             if include_arp_cache
             else set()
         )
-        discovered = active_ips | set(active_arp) | cached_ips
+        discovered = active_ips | set(active_arp) | cached_ips | extra_ips
 
         records = [
             self._make_record(ip, active_arp.get(ip, arp_entries.get(ip, "")))
@@ -194,6 +241,8 @@ class LanScanner:
                 self._mark_discovery(record.ip, record.mac, "ICMP")
             if record.ip in active_arp:
                 self._mark_discovery(record.ip, record.mac, "ARP")
+            for method in extra_findings.get(record.ip, set()):
+                self._mark_discovery(record.ip, record.mac, method)
             if (
                 include_arp_cache
                 and record.ip in cached_ips
@@ -257,13 +306,19 @@ class LanScanner:
         # La resolución inversa normal puede bloquear varios segundos por IP.
         # Estas consultas son concurrentes y cada proceso tiene un timeout.
         if resolve_names:
-            with ThreadPoolExecutor(max_workers=min(self.workers, 32)) as executor:
-                names = executor.map(
+            original_workers = self.workers
+            self.workers = min(self.workers, 32)
+            try:
+                names = self._parallel(
                     self._resolve_name,
                     (record["IP"] for record in records),
+                    "Nombres DNS",
+                    progress,
                 )
-                for record, name in zip(records, names):
-                    record["defaultName"] = name
+            finally:
+                self.workers = original_workers
+            for record, name in zip(records, names):
+                record["defaultName"] = name
         for record in records:
             record["manufacturer"] = detect_manufacturer(record.mac)
         return records

@@ -44,10 +44,29 @@ lanctl --help
 lanctl virtual --help
 lanctl virtual list
 lanctl virtual list --discovery hybrid --show-discovery
+lanctl virtual list --show-detection
+lanctl list --fast --active
+lanctl list --normal
+lanctl list --accurate --progress
+lanctl list --where "active and group=IOT and vendor~Amazon"
+lanctl list --format html --output inventario.html
 lanctl virtual search NAS
+lanctl scan CAM1 --identify
+lanctl open NAS https
+lanctl connect VD1 rdp
+lanctl virtual element 3C:E4:41:01:08:5E delete
+lanctl ping ESP
+lanctl ping ESP --arp
+lanctl ping ESP --method ping
 lanctl virtual scan NAS
 lanctl virtual terminal NAS
+lanctl --gui
 ```
+
+`ping` realiza una comprobación puntual sin modificar el inventario. El modo
+`auto` combina ICMP y ARP activo, por lo que puede detectar equipos de la LAN
+que bloquean respuestas de ping. Dentro de `lanctl --gui`, `select ELEMENTO`
+permite omitir el selector en las siguientes comprobaciones.
 
 También se puede ejecutar directamente desde el código fuente:
 
@@ -58,11 +77,66 @@ run.cmd virtual list
 
 Todos los comandos aceptan `-h`, `--help` o `/?`.
 
+## Perfiles, identificación y consultas
+
+`list` dispone de tres perfiles. `--fast` prioriza ARP y velocidad;
+`--normal` combina ICMP, ARP, mDNS y SSDP; `--accurate` añade reintentos,
+resolución de nombres y WS-Discovery. El progreso solo se dibuja en una
+terminal interactiva, por lo que JSON, archivos y scripts permanecen limpios.
+
+`scan --identify` no presupone que un puerto determine el protocolo: utiliza
+banners y sondas inocuas para aportar servicio, producto, confianza y
+evidencia. La clasificación del tipo de equipo es una deducción explícita, no
+una afirmación sin respaldo.
+
+Las consultas `--where` admiten términos unidos con `and`, los estados
+`active`/`inactive` y los operadores `=`, `!=` y `~`. Los campos disponibles
+son `ip`, `mac`, `alias`, `name`, `cnf`, `group`, `vendor`, `protocol` y
+`description`. No se evalúa código dentro de la expresión.
+
+Las tablas se pueden almacenar como `table`, `json`, `csv`, `html` o `xml`.
+El comando común `open` (alias `connect`) prepara clientes SSH, Telnet, HTTP,
+HTTPS, FTP, RDP, RTSP y SMB; `--dry-run` permite revisar el destino sin abrirlo.
+
+Opciones persistentes relevantes:
+
+```powershell
+lanctl settings --scan-profile accurate
+lanctl settings --progress on
+lanctl settings --service-identification on
+lanctl settings --workers 64 --timeout 0.8 --max-hosts 4096
+```
+
+Para eliminar por completo una MAC huérfana del inventario y de todos sus
+grupos:
+
+```powershell
+lanctl element 3C:E4:41:01:08:5E delete
+lanctl element 3C:E4:41:01:08:5E delete --yes
+```
+
+Sin `--yes` se solicita confirmación. `GATEWAY` y `BRODCAST` están protegidos.
+Si el equipo continúa presente en la LAN, el próximo `list` volverá a
+descubrirlo como un elemento nuevo con `CNF=X`.
+
 ## Configuración y datos locales
 
 LANCTL crea sus archivos de trabajo en `data/als/`. Este directorio puede
 contener inventario, registros y credenciales vinculadas al usuario de Windows,
 por lo que está excluido del repositorio.
+
+La limpieza interna de registros está desactivada inicialmente. Puede activarse
+y configurarse con:
+
+```powershell
+run settings -log-cleanup on
+run settings -log-retention-days 90
+run settings -log-cleanup off
+```
+
+Al arrancar, LANCTL elimina únicamente archivos `dd-mm-yyyy.log` más antiguos
+que el periodo configurado. Nunca elimina el registro del día actual ni otros
+archivos que encuentre en el directorio de logs.
 
 ## Pruebas
 

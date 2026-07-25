@@ -1,6 +1,11 @@
 import unittest
 
-from app.services.element_scanner import parse_ports, scan_tcp_ports
+from app.services.element_scanner import (
+    identify_device,
+    identify_tcp_service,
+    parse_ports,
+    scan_tcp_ports,
+)
 
 
 class _FakeSocket:
@@ -13,6 +18,9 @@ class _FakeSocket:
 
     def recv(self, _size):
         return self.banner
+
+    def sendall(self, _value):
+        pass
 
     def close(self):
         self.closed = True
@@ -50,6 +58,36 @@ class ElementScannerTests(unittest.TestCase):
         self.assertEqual(findings[0].service, "ssh")
         self.assertEqual(findings[0].banner, "SSH-2.0-Test_Device")
         self.assertTrue(sockets[0].closed)
+
+    def test_rtsp_is_identified_by_response_instead_of_port_number(self):
+        sock = _FakeSocket(b"RTSP/1.0 200 OK\r\nServer: CameraOS\r\n\r\n")
+        finding = identify_tcp_service(
+            "192.168.1.18", 443, 0.1,
+            connector=lambda _address, timeout: sock,
+        )
+        self.assertEqual(finding.service, "rtsp")
+        self.assertEqual(finding.product, "CameraOS")
+        self.assertEqual(finding.confidence, "high")
+
+    def test_http_is_identified_from_status_line_and_server_header(self):
+        finding = identify_tcp_service(
+            "192.168.1.20", 8080, 0.1,
+            connector=lambda _address, timeout: _FakeSocket(
+                b"HTTP/1.1 400 Bad Request\r\nServer: nginx\r\n\r\n"
+            ),
+        )
+        self.assertEqual(finding.service, "http")
+        self.assertEqual(finding.product, "nginx")
+
+    def test_device_identification_reports_evidence_and_confidence(self):
+        finding = identify_tcp_service(
+            "192.168.1.18", 443, 0.1,
+            connector=lambda _address, timeout: _FakeSocket(b"RTSP/1.0 200 OK\r\n"),
+        )
+        identified = identify_device([finding], "Hunan Fn-Link")
+        self.assertEqual(identified.device_type, "camera")
+        self.assertEqual(identified.confidence, "high")
+        self.assertTrue(identified.evidence)
 
 
 if __name__ == "__main__":

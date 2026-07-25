@@ -35,6 +35,16 @@ class OpenPort:
     port: int
     service: str
     banner: str = ""
+    product: str = ""
+    confidence: str = "low"
+    evidence: str = "port mapping"
+
+
+@dataclass(frozen=True)
+class DeviceIdentification:
+    device_type: str = "unknown"
+    confidence: str = "low"
+    evidence: tuple[str, ...] = ()
 
 
 @dataclass
@@ -47,6 +57,7 @@ class ElementScanResult:
     observed_mac: str
     scanned_ports: int
     open_ports: list[OpenPort] = field(default_factory=list)
+    identification: DeviceIdentification = field(default_factory=DeviceIdentification)
     duration: float = 0.0
 
 
@@ -92,12 +103,98 @@ def _sanitize_banner(value: bytes) -> str:
     return " ".join(text.split())[:120]
 
 
+def _server_product(text: str) -> str:
+    match = re.search(r"(?:^|\r?\n)Server:\s*([^\r\n]+)", text, re.I)
+    return match.group(1).strip()[:80] if match else ""
+
+
+def identify_tcp_service(
+    host: str,
+    port: int,
+    timeout: float,
+    connector: Callable = socket.create_connection,
+) -> OpenPort:
+    """Reconoce protocolos con sondas de lectura inocuas y evidencia explícita."""
+    mapped = _service(port)
+    banner = b""
+    response = b""
+    connection = connector((host, port), timeout=timeout)
+    try:
+        connection.settimeout(timeout)
+        try:
+            banner = connection.recv(512)
+        except (OSError, socket.timeout):
+            pass
+
+        text = _sanitize_banner(banner)
+        upper = text.upper()
+        if upper.startswith("SSH-"):
+            return OpenPort(port, "ssh", text, text, "high", "SSH identification banner")
+        if upper.startswith("220"):
+            protocol = "smtp" if port in (25, 465, 587) else "ftp"
+            return OpenPort(port, protocol, text, text[4:].strip(), "high", "220 greeting")
+
+        probe_ports = {80, 81, 443, 554, 5000, 8000, 8080, 8081, 8443}
+        if port in probe_ports:
+            request = b"OPTIONS * RTSP/1.0\r\nCSeq: 1\r\nUser-Agent: LANCTL\r\n\r\n"
+            try:
+                connection.sendall(request)
+                response = connection.recv(1024)
+            except (OSError, socket.timeout):
+                pass
+            probe_text = response.decode("utf-8", errors="replace")
+            compact = " ".join(probe_text.split())[:120]
+            if probe_text.upper().startswith("RTSP/"):
+                return OpenPort(
+                    port, "rtsp", compact, _server_product(probe_text), "high",
+                    "RTSP status line",
+                )
+            if probe_text.upper().startswith("HTTP/"):
+                service = "https" if port in (443, 8443) else "http"
+                return OpenPort(
+                    port, service, compact, _server_product(probe_text), "high",
+                    "HTTP status line",
+                )
+
+        if upper.startswith("HTTP/"):
+            return OpenPort(port, "http", text, _server_product(text), "high", "HTTP status line")
+        if text:
+            return OpenPort(port, mapped, text, "", "medium", "passive banner")
+        return OpenPort(port, mapped, "", "", "low", f"TCP/{port} port mapping")
+    finally:
+        connection.close()
+
+
+def identify_device(open_ports: list[OpenPort], manufacturer: str = "", hostname: str = "") -> DeviceIdentification:
+    services = {item.service for item in open_ports}
+    evidence: list[str] = []
+    if "rtsp" in services or "onvif" in services:
+        evidence.append("servicio de vídeo RTSP/ONVIF")
+        if "telnet" in services:
+            evidence.append("consola Telnet embebida")
+        return DeviceIdentification("camera", "high", tuple(evidence))
+    if "ipp" in services or "printer-raw" in services or "printer" in services:
+        return DeviceIdentification("printer", "high", ("servicio de impresión",))
+    if "rdp" in services or "smb" in services:
+        evidence.append("servicio RDP/SMB")
+        return DeviceIdentification("computer", "medium", tuple(evidence))
+    if "mqtt" in services or "mqtts" in services:
+        return DeviceIdentification("iot", "medium", ("servicio MQTT",))
+    if any(item in services for item in ("ssh", "http", "https")):
+        evidence.append("servicios de administración")
+        if manufacturer:
+            evidence.append(f"fabricante: {manufacturer}")
+        return DeviceIdentification("network-device", "low", tuple(evidence))
+    return DeviceIdentification("unknown", "low", tuple(filter(None, (hostname, manufacturer))))
+
+
 def scan_tcp_ports(
     host: str,
     ports: list[int],
     timeout: float,
     workers: int,
     banners: bool = False,
+    identify: bool = False,
     connector: Callable = socket.create_connection,
 ) -> list[OpenPort]:
     def inspect(port: int) -> OpenPort | None:
@@ -110,6 +207,11 @@ def scan_tcp_ports(
                     try:
                         banner = _sanitize_banner(connection.recv(256))
                     except (OSError, socket.timeout):
+                        pass
+                if identify:
+                    try:
+                        return identify_tcp_service(host, port, timeout, connector)
+                    except OSError:
                         pass
                 return OpenPort(port, _service(port), banner)
             finally:
@@ -182,18 +284,29 @@ class ElementScanner:
         self.timeout = timeout
         self.workers = workers
 
-    def scan(self, host: str, ports: list[int], banners: bool = False) -> ElementScanResult:
+    def scan(
+        self,
+        host: str,
+        ports: list[int],
+        banners: bool = False,
+        identify: bool = False,
+        manufacturer: str = "",
+    ) -> ElementScanResult:
         started = monotonic()
         reachable, latency, ttl = ping_details(host, self.timeout)
-        open_ports = scan_tcp_ports(host, ports, self.timeout, self.workers, banners)
+        open_ports = scan_tcp_ports(
+            host, ports, self.timeout, self.workers, banners, identify
+        )
+        hostname = reverse_hostname(host, self.timeout)
         return ElementScanResult(
             ip=host,
             reachable=reachable or bool(open_ports),
             latency_ms=latency,
             ttl=ttl,
-            hostname=reverse_hostname(host, self.timeout),
+            hostname=hostname,
             observed_mac=observed_arp_mac(host),
             scanned_ports=len(ports),
             open_ports=open_ports,
+            identification=identify_device(open_ports, manufacturer, hostname),
             duration=monotonic() - started,
         )

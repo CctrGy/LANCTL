@@ -108,3 +108,10 @@ Para volver al firmware normal:
 ```powershell
 pio run -e esp32-s3-devkitc-1 --target upload
 ```
+
+El firmware normal es el entorno predeterminado. Por tanto, desde
+`ESP32_V1` también puede compilarse y cargarse con:
+
+```powershell
+pio run --target upload
+```

@@ -4,6 +4,7 @@ import json
 import ipaddress
 from pathlib import Path
 from typing import Iterable, Mapping
+from datetime import datetime
 
 from app.models import Device, normalize_cnf, normalize_mac
 from app.core.paths import application_path
@@ -87,6 +88,9 @@ class DeviceDatabase:
                     "protocols": list(record.get("protocols", [])),
                     "credentials": dict(record.get("credentials", {})),
                     "protocolOptions": dict(record.get("protocolOptions", {})),
+                    "discoveryMethods": list(record.get("discoveryMethods", [])),
+                    "lastDiscovery": str(record.get("lastDiscovery", "")),
+                    "lastSeen": str(record.get("lastSeen", "")),
                 }
             )
             if previous:
@@ -115,6 +119,13 @@ class DeviceDatabase:
                     protocol: dict(options)
                     for protocol, options in previous.protocol_options.items()
                 }
+                incoming.discovery_methods = list(dict.fromkeys([
+                    *previous.discovery_methods, *incoming.discovery_methods
+                ]))
+                if not incoming.last_discovery:
+                    incoming.last_discovery = previous.last_discovery
+                if not incoming.last_seen:
+                    incoming.last_seen = previous.last_seen
                 if previous["aliasDeleted"]:
                     incoming["ALIAS"] = ""
                 elif previous["ALIAS"] and previous["ALIAS"] != previous["defaultAlias"]:
@@ -135,6 +146,24 @@ class DeviceDatabase:
                 return 1, 0
 
         return sorted(devices, key=address_key)
+
+    def record_detection(
+        self, selector: str, methods: Iterable[str], seen_at: str | None = None
+    ) -> Device:
+        """Añade evidencia de descubrimiento sin alterar identidad ni etiquetas."""
+        devices, device = self._find(selector)
+        normalized = list(dict.fromkeys(
+            str(method).strip().upper() for method in methods if str(method).strip()
+        ))
+        if not normalized:
+            return device.copy()
+        device.discovery_methods = list(dict.fromkeys([
+            *device.discovery_methods, *normalized
+        ]))
+        device.last_discovery = "+".join(normalized)
+        device.last_seen = seen_at or datetime.now().astimezone().isoformat(timespec="seconds")
+        self._write(devices)
+        return device.copy()
 
     def _write(self, devices: list[Device]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
