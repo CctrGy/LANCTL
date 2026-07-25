@@ -33,6 +33,19 @@ from app.terminals.tr064 import parse_call
 
 
 class OutputTests(unittest.TestCase):
+    def test_response_ms_is_aligned_on_decimal_point(self):
+        rendered = render_records(
+            [
+                {"IP": "192.168.1.1", "responseMs": 2.3},
+                {"IP": "192.168.1.2", "responseMs": 12.3},
+                {"IP": "192.168.1.3", "responseMs": 123.4},
+            ],
+            "table",
+            columns=["ip", "ms"],
+        )
+        values = rendered.splitlines()[2:]
+        self.assertEqual(len({line.index(".") for line in values}), 1)
+
     def test_table_shrinks_to_terminal_width(self):
         rendered = render_records(
             [Device(

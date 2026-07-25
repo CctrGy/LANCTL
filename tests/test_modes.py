@@ -4,16 +4,34 @@ from unittest.mock import patch
 
 from app.cli import build_parser
 from app.commands.modes import (
-    CliSelection, _interactive_loop, _selected_command, run_global_cli,
+    CliSelection, _clear_screen, _interactive_loop, _selected_command, run_global_cli,
     run_virtual_mode,
 )
 
 
 class LanctlModeTests(unittest.TestCase):
+    def test_clear_screen_uses_ansi_without_spawning_a_shell(self):
+        import io
+        stream = io.StringIO()
+        _clear_screen(stream)
+        self.assertEqual(stream.getvalue(), "\x1b[2J\x1b[H")
+
     def test_gui_flag_is_registered_without_a_scope(self):
         args = build_parser().parse_args(["--gui"])
         self.assertTrue(args.gui)
         self.assertIsNone(args.command)
+
+    def test_cli_flag_is_registered_without_a_scope(self):
+        args = build_parser().parse_args(["--cli"])
+        self.assertTrue(args.cli)
+        self.assertIsNone(args.command)
+
+    def test_cli_flag_opens_the_global_interactive_terminal(self):
+        with patch("app.cli.run_global_cli", return_value=0) as interactive:
+            from app.cli import main
+
+            self.assertEqual(main(["--cli"]), 0)
+        interactive.assert_called_once_with()
 
     def test_selected_element_is_injected_into_contextual_commands(self):
         database = SimpleNamespace(
@@ -48,6 +66,26 @@ class LanctlModeTests(unittest.TestCase):
         self.assertEqual(
             dispatched,
             [["virtual", "scan", "AA:BB:CC:DD:EE:FF", "--ports", "22"]],
+        )
+
+    def test_info_displays_the_selected_element(self):
+        device = SimpleNamespace(
+            device_id="device:sw", mac="AA:BB:CC:DD:EE:FF",
+            ip="192.168.1.10", alias="SW", name="Switch",
+        )
+        values = iter(["select SW", "info", "exit"])
+        dispatched = []
+        with (
+            patch("app.commands.modes.load_config", return_value={"database": "db.json"}),
+            patch("app.commands.modes.DeviceDatabase") as database_type,
+            patch("app.cli.main", side_effect=lambda argv: dispatched.append(argv) or 0),
+            patch("app.commands.modes.ok"),
+        ):
+            database_type.return_value.resolve.return_value = device
+            run_global_cli(input_fn=lambda _prompt: next(values))
+        self.assertEqual(
+            dispatched,
+            [["virtual", "element", "AA:BB:CC:DD:EE:FF"]],
         )
 
     def test_virtual_commands_are_nested(self):

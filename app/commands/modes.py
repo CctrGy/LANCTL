@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import shlex
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -11,6 +12,7 @@ from app.core.parser import colorize_help
 from app.core.config import load_config
 from app.core.console import error as print_error, ok
 from app.core.database import DeviceDatabase
+from app.core.layout import fit_text, terminal_columns
 
 
 VIRTUAL_HELP = """CLI virtual de LANCTL
@@ -31,8 +33,11 @@ GLOBAL_HELP = """CLI interactiva de LANCTL
 
 Comandos de contexto:
   select ELEMENTO       Selecciona un elemento por IP, MAC, alias o nombre.
-  selected              Muestra el elemento seleccionado actualmente.
+  info | selected       Muestra la información del elemento seleccionado.
   deselect              Limpia la selección actual.
+  clear | cls           Limpia la pantalla y conserva el contexto.
+  history               Muestra los comandos escritos durante la sesión.
+  version               Muestra la versión de LANCTL.
   help [COMANDO]        Muestra ayuda general o la ayuda de un comando.
   exit                  Cierra la CLI.
 
@@ -56,6 +61,12 @@ class CliSelection:
     label: str = ""
 
 
+def _clear_screen(stream=None) -> None:
+    stream = stream or sys.stdout
+    stream.write("\x1b[2J\x1b[H")
+    stream.flush()
+
+
 def _selected_command(parts: list[str], selection: CliSelection, database: DeviceDatabase) -> list[str]:
     """Inyecta la selección solamente si el comando no trae otro elemento válido."""
     if not selection.selector or not parts or parts[0].casefold() not in CONTEXTUAL_COMMANDS:
@@ -74,6 +85,7 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
 
     database = DeviceDatabase(load_config()["database"])
     selection = CliSelection()
+    history: list[str] = []
     print(f"{Style.BRIGHT}{Fore.CYAN}LANCTL CLI{Style.RESET_ALL}")
     print("Escribe 'help' para ver los comandos y 'exit' para salir.")
     while True:
@@ -94,13 +106,27 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             print_error(str(error))
             continue
         command = parts[0].casefold()
+        history.append(raw)
         if command in ("exit", "quit", "salir"):
             return 0
-        if command in ("help", "?"):
+        if command in ("help", "?", "commands"):
             if len(parts) == 1:
                 print(colorize_help(GLOBAL_HELP), end="")
             else:
                 main(["virtual", parts[1], "/?"])
+            continue
+        if command in ("clear", "cls"):
+            _clear_screen()
+            continue
+        if command == "history":
+            width = terminal_columns() or 120
+            for number, entry in enumerate(history, 1):
+                prefix = f"{number:>3}  "
+                print(prefix + fit_text(entry, max(1, width - len(prefix))))
+            continue
+        if command == "version":
+            from app import __version__
+            print(f"LANCTL {__version__}")
             continue
         if command == "select":
             if len(parts) != 2:
@@ -124,7 +150,7 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             selection.label = device.alias or device.name or device.ip or device.mac
             ok("SELECCIONADO", f"{selection.label} | {device.ip or '-'} | {device.mac or '-'}")
             continue
-        if command == "selected":
+        if command in ("info", "selected"):
             if not selection.selector:
                 print_error("no hay ningún elemento seleccionado")
             else:
@@ -168,6 +194,9 @@ def _interactive_loop(
         command = parts[0].casefold()
         if command in ("exit", "quit", "salir"):
             return 0
+        if command in ("clear", "cls"):
+            _clear_screen()
+            continue
         if command in ("help", "?"):
             print(colorize_help(help_text), end="")
             continue

@@ -8,6 +8,7 @@ import sys
 from colorama import Fore, Style
 
 from app.core.console import error as print_error
+from app.core.layout import terminal_columns
 
 
 def _color_enabled(stream) -> bool:
@@ -21,18 +22,25 @@ def colorize_help(text: str, stream=None) -> str:
         return text
 
     colored: list[str] = []
+    rule_width = max(20, min(terminal_columns(stream) or 80, 100))
     for line in text.splitlines():
         stripped = line.strip()
         if line.startswith("Uso:"):
             line = f"{Style.BRIGHT}{Fore.CYAN}{line}{Style.RESET_ALL}"
+            colored.append(line)
+            colored.append(
+                f"{Style.DIM}{Fore.CYAN}{'─' * rule_width}{Style.RESET_ALL}"
+            )
+            continue
         elif stripped.endswith(":") and not line.startswith(" "):
             line = f"{Style.BRIGHT}{Fore.YELLOW}{line}{Style.RESET_ALL}"
         else:
             match = re.match(r"^(\s{2,})(\S+(?:,\s+\S+)*)(\s{2,}.*)$", line)
             if match:
                 line = (
-                    f"{match.group(1)}{Fore.CYAN}{match.group(2)}"
-                    f"{Style.RESET_ALL}{match.group(3)}"
+                    f"{match.group(1)}{Style.BRIGHT}{Fore.CYAN}{match.group(2)}"
+                    f"{Style.RESET_ALL}{Fore.LIGHTWHITE_EX}{match.group(3)}"
+                    f"{Style.RESET_ALL}"
                 )
         colored.append(line)
     return "\n".join(colored) + ("\n" if text.endswith("\n") else "")
@@ -42,11 +50,12 @@ class LANCTLHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Formato estable para toda la ayuda, incluidas descripciones multilínea."""
 
     def __init__(self, prog: str):
+        width = terminal_columns(sys.stdout) or 100
         super().__init__(
             prog,
             indent_increment=2,
-            max_help_position=30,
-            width=88,
+            max_help_position=min(30, max(18, width // 3)),
+            width=max(30, width - 2),
         )
 
 

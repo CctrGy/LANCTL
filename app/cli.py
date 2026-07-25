@@ -26,7 +26,7 @@ from app.commands.list import register_list_command
 from app.commands.ping import register_ping_command
 from app.commands.open import register_open_command
 from app.commands.modes import register_virtual_mode, run_global_cli
-from app.core.console import error as print_error
+from app.core.console import error as print_error, pending
 from app.core.parser import LANCTLArgumentParser
 from app.core.logger import write_log
 from app.core.log_cleanup import run_automatic_log_cleanup
@@ -77,7 +77,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--gui",
         action="store_true",
-        help="Abre la CLI interactiva persistente de LANCTL.",
+        help="Abre la interfaz gráfica de LANCTL (reservado para una versión futura).",
+    )
+    parser.add_argument(
+        "--cli",
+        action="store_true",
+        help="Abre la terminal interactiva persistente de LANCTL.",
     )
     commands = parser.add_subparsers(dest="command", metavar="ÁMBITO/COMANDO")
     register_virtual_mode(commands, register_virtual_commands)
@@ -94,10 +99,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(arguments)
 
     try:
-        if args.gui:
+        if args.cli:
             return run_global_cli()
         if not args.command:
-            parser.print_help()
+            pending(
+                "La interfaz gráfica todavía no está disponible. "
+                "Usa 'lanctl --cli' para abrir la terminal interactiva."
+            )
             return 0
         return args.handler(args)
     except KeyboardInterrupt:

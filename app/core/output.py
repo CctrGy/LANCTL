@@ -248,7 +248,13 @@ def render_records(
 
     def padded_value(row: Mapping[str, object], field: str) -> str:
         value = fit_text(display_value(row, field), widths[field])
-        return value.center(widths[field]) if field == "cnf" else value.ljust(widths[field])
+        if field == "cnf":
+            return value.center(widths[field])
+        if field == "responseMs":
+            # Todos los valores tienen un decimal: al justificar a la derecha
+            # el punto decimal queda en la misma posición vertical.
+            return value.rjust(widths[field])
+        return value.ljust(widths[field])
 
     range_indexes: set[int] = set()
     if section_ip_range:
