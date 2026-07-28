@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-
 #include "RackConfig.h"
 #include "TemperatureService.h"
 
@@ -13,13 +12,13 @@ class ThermalController {
   bool fan2() const { return fan2_; }
   bool failsafe() const { return failsafe_; }
   float controlTemperature() const { return controlTemperature_; }
+  bool setAutomatic(uint8_t fan, bool automatic);
+  bool setManualValue(uint8_t fan, bool on);
   String describe() const;
-
  private:
-  bool fan1_ = false;
-  bool fan2_ = false;
-  bool failsafe_ = true;
+  bool fan1_ = false, fan2_ = false, failsafe_ = true;
+  bool fan1Auto_ = true, fan2Auto_ = true;
+  bool fan1Manual_ = false, fan2Manual_ = false;
   float controlTemperature_ = NAN;
-  void writeRelay(uint8_t pin, bool on);
+  void writeRelay(uint32_t pin, bool on);
 };
-

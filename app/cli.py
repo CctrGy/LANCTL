@@ -84,6 +84,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Abre la terminal interactiva persistente de LANCTL.",
     )
+    parser.add_argument(
+        "-tui",
+        "--tui",
+        action="store_true",
+        help="Abre la interfaz avanzada de terminal a pantalla completa.",
+    )
     commands = parser.add_subparsers(dest="command", metavar="ÁMBITO/COMANDO")
     register_virtual_mode(commands, register_virtual_commands)
     return parser
@@ -99,6 +105,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(arguments)
 
     try:
+        if args.tui:
+            from app.tui import run_tui
+            return run_tui()
         if args.cli:
             return run_global_cli()
         if not args.command:

@@ -19,7 +19,7 @@ def register_credential_command(commands: argparse._SubParsersAction) -> None:
         help="Asocia credenciales cifradas a un elemento y protocolo.",
     )
     command.add_argument("selector", help="IP, MAC o alias del elemento.")
-    command.add_argument("action", choices=("set", "list", "delete"), help="Operación sobre la credencial.")
+    command.add_argument("action", nargs="?", choices=("set", "list", "delete"), help="Operación sobre la credencial.")
     command.add_argument("protocol", nargs="?", help="Protocolo, por ejemplo tr-064.")
     command.add_argument("-user", "--username", dest="username", help="Nombre de usuario remoto.")
     command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
@@ -29,6 +29,23 @@ def register_credential_command(commands: argparse._SubParsersAction) -> None:
 
 def run_credential(args: argparse.Namespace) -> int:
     database = DeviceDatabase(args.database)
+    if args.selector.casefold() == "list" and args.action is None:
+        store = CredentialStore(args.store)
+        rows = []
+        for device in database.load():
+            for protocol, reference in device.credentials.items():
+                credential = store.get(reference)
+                rows.append({
+                    "element": device.alias or device.name or device.ip or device.mac,
+                    "ip": device.ip,
+                    "protocol": protocol,
+                    "credentialId": reference,
+                    "username": credential["username"],
+                })
+        print(json.dumps(rows, indent=2, ensure_ascii=False))
+        return 0
+    if args.action is None:
+        raise ValueError("indica una operación: set, list o delete")
     device = database.resolve(args.selector)
     store = CredentialStore(args.store)
 

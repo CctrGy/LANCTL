@@ -290,8 +290,8 @@ class DeviceDatabase:
 
         devices, device = self._find(selector)
         if field == "description":
-            if len(value) > 32:
-                raise ValueError("la descripción no puede superar 32 caracteres")
+            if len(value) > 42:
+                raise ValueError("la descripción no puede superar 42 caracteres")
             device.description = value or "-"
         elif field == "cnf":
             device.cnf = normalize_cnf(value)
@@ -308,8 +308,8 @@ class DeviceDatabase:
         description: str = "-",
     ) -> Device:
         normalized_mac = normalize_mac(mac)
-        if len(description) > 32:
-            raise ValueError("la descripción no puede superar 32 caracteres")
+        if len(description) > 42:
+            raise ValueError("la descripción no puede superar 42 caracteres")
         if alias.upper() in ("GATEWAY", "BRODCAST"):
             raise ValueError(f"el alias {alias.upper()} está reservado")
 

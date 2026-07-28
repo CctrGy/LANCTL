@@ -37,7 +37,7 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument(
         "-description",
         dest="new_description",
-        help="Descripción inicial opcional (máximo 32 caracteres).",
+        help="Descripción inicial opcional (máximo 42 caracteres).",
     )
     command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
     command.add_argument("--groups", default=config["groups"], help="Archivo JSON de grupos.")

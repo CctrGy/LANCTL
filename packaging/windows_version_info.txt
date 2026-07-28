@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(0, 3, 0, 2),
-    prodvers=(0, 3, 0, 2),
+    filevers=(0, 3, 0, 6),
+    prodvers=(0, 3, 0, 6),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -15,13 +15,13 @@ VSVersionInfo(
         u'040904B0',
         [
           StringStruct(u'CompanyName', u'LANCTL Project'),
-          StringStruct(u'FileDescription', u'LANCTL - LAN Control CLI (Prototype Alpha 2)'),
-          StringStruct(u'FileVersion', u'0.3.0.2'),
+          StringStruct(u'FileDescription', u'LANCTL - LAN Control CLI (Prototype Alpha 6)'),
+          StringStruct(u'FileVersion', u'0.3.0.6'),
           StringStruct(u'InternalName', u'LANCTL'),
           StringStruct(u'LegalCopyright', u'Copyright © 2026 Victor'),
           StringStruct(u'OriginalFilename', u'LANCTL.exe'),
           StringStruct(u'ProductName', u'LANCTL'),
-          StringStruct(u'ProductVersion', u'0.3.0-alpha.2')
+          StringStruct(u'ProductVersion', u'0.3.0-alpha.6')
         ]
       )
     ]),

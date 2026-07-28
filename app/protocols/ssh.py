@@ -7,6 +7,9 @@ import logging
 import socket
 import subprocess
 import re
+import shutil
+import sys
+import time
 from typing import Callable
 
 
@@ -192,3 +195,86 @@ def run_show_command(
 def open_interactive(host: str, username: str, profile: SshProfile) -> int:
     """Abre OpenSSH con excepciones pasadas solo a este proceso/host."""
     return subprocess.call(profile.openssh_arguments(host, username))
+
+
+def open_colored_interactive(
+    host: str,
+    username: str,
+    password: str,
+    profile: SshProfile,
+    *,
+    theme: str = "generic",
+    input_fn: Callable[[str], str] = input,
+) -> int:
+    """Terminal SSH lineal cuyo flujo de salida puede decorar LANCTL."""
+    if not profile.fingerprint:
+        raise ValueError(
+            "la huella SSH no está fijada; usa primero ssh ELEMENTO fingerprint/trust"
+        )
+    try:
+        import paramiko
+    except ImportError as error:
+        raise OSError("falta Paramiko para abrir la terminal SSH gestionada") from error
+
+    connection = socket.create_connection((host, profile.port), timeout=8.0)
+    transport = paramiko.Transport(connection)
+    security = transport.get_security_options()
+    if profile.host_key_algorithms:
+        security.key_types = tuple(dict.fromkeys(
+            (*profile.host_key_algorithms, *security.key_types)
+        ))
+    if profile.kex_algorithms:
+        security.kex = tuple(dict.fromkeys((*profile.kex_algorithms, *security.kex)))
+    try:
+        transport.start_client(timeout=8.0)
+        presented = _key_fingerprint(transport.get_remote_server_key())
+        if presented != profile.fingerprint:
+            raise ValueError(
+                f"ALERTA: la huella SSH ha cambiado "
+                f"(esperada {profile.fingerprint}, actual {presented})"
+            )
+        transport.auth_password(username, password)
+        channel = transport.open_session(timeout=8.0)
+        size = shutil.get_terminal_size(fallback=(120, 30))
+        channel.get_pty(term="xterm-256color", width=size.columns, height=size.lines)
+        channel.invoke_shell()
+        _write_colored(_receive_until_idle(channel, idle=0.8), theme)
+        while not channel.closed:
+            try:
+                command = input_fn("")
+            except (EOFError, KeyboardInterrupt):
+                channel.send("exit\n")
+                print()
+                break
+            channel.send(command + "\n")
+            _write_colored(_receive_until_idle(channel), theme)
+        return channel.recv_exit_status() if channel.exit_status_ready() else 0
+    finally:
+        transport.close()
+
+
+def _key_fingerprint(key) -> str:
+    digest = base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode().rstrip("=")
+    return f"SHA256:{digest}"
+
+
+def _receive_until_idle(channel, idle: float = 0.35) -> str:
+    chunks: list[bytes] = []
+    deadline = time.monotonic() + idle
+    while not channel.closed:
+        if channel.recv_ready():
+            chunks.append(channel.recv(65535))
+            deadline = time.monotonic() + idle
+            continue
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(0.015)
+    return b"".join(chunks).decode("utf-8", errors="replace")
+
+
+def _write_colored(value: str, theme: str) -> None:
+    if not value:
+        return
+    from app.terminals.ssh_color import colorize_ssh_output
+    sys.stdout.write(colorize_ssh_output(value, theme))
+    sys.stdout.flush()

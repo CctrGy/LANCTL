@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include <Preferences.h>
 
 struct NetworkConfig {
   bool dhcp = true;
@@ -22,9 +21,12 @@ struct ThermalConfig {
 };
 
 struct RackConfiguration {
-  uint32_t version = 1;
+  uint32_t magic = 0x524D4632UL;
+  uint16_t version = 2;
+  uint16_t size = sizeof(RackConfiguration);
   NetworkConfig network{};
   ThermalConfig thermal{};
+  uint32_t checksum = 0;
 };
 
 class ConfigManager {
@@ -43,5 +45,5 @@ class ConfigManager {
   RackConfiguration running_{};
   RackConfiguration candidate_{};
   bool valid(const RackConfiguration &config) const;
+  static uint32_t checksum(const RackConfiguration &config);
 };
-

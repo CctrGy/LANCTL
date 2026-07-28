@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from app import __version__
+from app.cli import build_parser
 from unittest.mock import patch
 
 from colorama import Fore, Style
@@ -86,7 +87,7 @@ class OutputTests(unittest.TestCase):
         )
         self.assertEqual(
             rendered.splitlines()[1].split("  "),
-            ["-" * 13, "-" * 3, "-" * 13, "-" * 19, "-" * 17, "-" * 8, "-" * 32],
+            ["-" * 13, "-" * 3, "-" * 13, "-" * 19, "-" * 17, "-" * 8, "-" * 42],
         )
 
     def test_dhcp_range_is_delimited_with_table_separators(self):
@@ -181,6 +182,11 @@ class OutputTests(unittest.TestCase):
 
 
 class CredentialTests(unittest.TestCase):
+    def test_global_credential_list_has_no_element_selector(self):
+        args = build_parser().parse_args(["virtual", "credential", "list"])
+        self.assertEqual(args.selector, "list")
+        self.assertIsNone(args.action)
+
     def test_store_round_trip_and_file_does_not_contain_secret(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".credentials"
@@ -357,6 +363,7 @@ class Tr064Tests(unittest.TestCase):
                 {"IP": "192.168.1.2", "cnf": "X"},
                 {"IP": "192.168.1.3", "cnf": "-"},
                 {"IP": "192.168.1.4", "cnf": "S"},
+                {"IP": "192.168.1.5", "cnf": "@"},
             ],
             "table",
         )
@@ -364,6 +371,7 @@ class Tr064Tests(unittest.TestCase):
         self.assertIn(" X ", rendered)
         self.assertIn(" - ", rendered)
         self.assertIn(" S ", rendered)
+        self.assertIn(" @ ", rendered)
 
     def test_cnf_states_use_their_configured_colors(self):
         rendered = render_records(
@@ -372,6 +380,7 @@ class Tr064Tests(unittest.TestCase):
                 {"IP": "1.1.1.2", "cnf": "X"},
                 {"IP": "1.1.1.3", "cnf": "-"},
                 {"IP": "1.1.1.4", "cnf": "S"},
+                {"IP": "1.1.1.5", "cnf": "@"},
             ],
             "table",
             color=True,
@@ -380,6 +389,7 @@ class Tr064Tests(unittest.TestCase):
         self.assertIn(Fore.LIGHTRED_EX + " X ", rendered)
         self.assertIn(Fore.LIGHTYELLOW_EX + " - ", rendered)
         self.assertIn(Fore.LIGHTCYAN_EX + " S ", rendered)
+        self.assertIn(Fore.LIGHTMAGENTA_EX + " @ ", rendered)
 
     def test_colored_table_uses_colorama_codes(self):
         rendered = render_records(
@@ -446,7 +456,7 @@ class DeviceModelTests(unittest.TestCase):
 
     def test_device_description_limit(self):
         with self.assertRaises(ValueError):
-            Device(ip="192.168.1.20", description="x" * 33)
+            Device(ip="192.168.1.20", description="x" * 43)
 
     def test_mac_with_hyphens_is_normalized(self):
         self.assertEqual(
@@ -1165,7 +1175,7 @@ class GroupTests(unittest.TestCase):
             groups = GroupDatabase(str(Path(directory) / "groups.json"), devices)
             groups.create("TEST")
             with self.assertRaises(ValueError):
-                groups.set_description("TEST", "x" * 33)
+                groups.set_description("TEST", "x" * 43)
 
     def test_basic_group_is_created_for_reserved_devices(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -1253,6 +1263,12 @@ class TerminalTests(unittest.TestCase):
         tr064 = Device(ip="192.168.1.1", mac="10:20:30:40:50:61", protocols=["tr-064"])
         self.assertEqual(choose_terminal(ssh, None), "ssh")
         self.assertEqual(choose_terminal(tr064, None), "tr-064")
+
+    def test_terminal_can_request_native_ssh_fallback(self):
+        args = build_parser().parse_args([
+            "virtual", "terminal", "SW", "--native"
+        ])
+        self.assertTrue(args.native)
 
     def test_tr064_terminal_rejects_write_actions(self):
         self.assertEqual(

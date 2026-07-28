@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <ESP32-ENC28J60.h>
+#include <EthernetENC.h>
 
 #include "RackConfig.h"
 
@@ -12,9 +12,10 @@ class NetworkService {
   bool ready() const;
   String describe() const;
   String mac() const;
+  EthernetServer &consoleServer() { return consoleServer_; }
 
  private:
-  uint8_t mac_[6]{};
+  byte mac_[6]{};
   bool started_ = false;
+  EthernetServer consoleServer_{SSH_PORT};
 };
-

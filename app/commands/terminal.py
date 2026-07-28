@@ -18,6 +18,10 @@ def register_terminal_command(commands: argparse._SubParsersAction) -> None:
     )
     command.add_argument("selector", help="IP, MAC o alias del elemento.")
     command.add_argument("-p", "--protocol", help="Protocolo si hay varias terminales.")
+    command.add_argument(
+        "--native", action="store_true",
+        help="Usa el cliente SSH nativo sin la capa de color de LANCTL.",
+    )
     command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
     command.add_argument("--store", default=config["credentials"], help="Almacén cifrado de credenciales.")
     command.set_defaults(handler=run_terminal)
@@ -51,4 +55,6 @@ def run_terminal(args: argparse.Namespace) -> int:
             f"run credential {device.alias or device.ip} set {protocol} -user USUARIO"
         )
     credential = CredentialStore(args.store).get(reference)
-    return open_terminal(device, protocol, credential, config)
+    terminal_config = dict(config)
+    terminal_config["nativeTerminal"] = bool(getattr(args, "native", False))
+    return open_terminal(device, protocol, credential, terminal_config)

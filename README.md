@@ -2,9 +2,9 @@
 
 LANCTL es una herramienta de línea de comandos para descubrir, inventariar y
 administrar dispositivos de una red local. El repositorio también incluye el
-firmware experimental `ESP32_V1` para monitorización y control de racks.
+firmware experimental `RackFimeware2` para monitorización y control de racks.
 
-> Estado: `0.3.0-alpha.2` — prototipo en desarrollo.
+> Estado: `0.3.0-alpha.6` — prototipo en desarrollo.
 
 ## Funciones principales
 
@@ -17,7 +17,7 @@ firmware experimental `ESP32_V1` para monitorización y control de racks.
 - Capa de comandos para switches Cisco con vista previa y confirmación de
   operaciones sensibles.
 - Escaneo de puertos TCP.
-- Firmware ESP32-S3 para sensores de temperatura, ventiladores, Ethernet y SSH.
+- Firmware STM32F411 para sensores de temperatura, ventiladores, Ethernet y SSH.
 
 ## Requisitos
 
@@ -61,6 +61,7 @@ lanctl ping ESP --method ping
 lanctl virtual scan NAS
 lanctl virtual terminal NAS
 lanctl --gui
+lanctl -tui
 ```
 
 `ping` realiza una comprobación puntual sin modificar el inventario. El modo
@@ -156,20 +157,21 @@ python -m pip install pyinstaller
 
 Los directorios `build/` y `dist/` son artefactos locales y no se versionan.
 
-## Firmware ESP32
+## Firmware STM32
 
-El proyecto de PlatformIO está en [`ESP32_V1`](ESP32_V1). Incluye soporte para
-ESP32-S3, Ethernet ENC28J60, sensores DS18B20, relés, NeoPixel, consola USB y
-SSH. Consulta su README para el mapa GPIO y los comandos disponibles.
+El proyecto de PlatformIO está en [`RackFimeware2`](RackFimeware2). Incluye
+soporte para STM32F411CE Black Pill, Ethernet ENC28J60, sensores DS18B20,
+relés, NeoPixel, consola USB y SSH. Consulta su README para el mapa GPIO y los
+comandos disponibles.
 
 Antes de instalar el firmware en una red real, cambia las credenciales SSH de
-desarrollo definidas en `ESP32_V1/platformio.ini`.
+desarrollo definidas en `RackFimeware2/platformio.ini`.
 
 ```powershell
-cd ESP32_V1
-pio run -e esp32-s3-devkitc-1
-pio run -e esp32-s3-devkitc-1 --target upload
-pio device monitor
+cd RackFimeware2
+pio run -e blackpill_f411ce
+pio run -e blackpill_f411ce --target upload
+pio device monitor -p COM50 -b 115200
 ```
 
 ## Estructura
@@ -180,7 +182,7 @@ tests/        Pruebas automatizadas
 docs/         Documentación técnica
 assets/       Iconos y recursos
 packaging/    Metadatos del ejecutable
-ESP32_V1/     Firmware PlatformIO
+RackFimeware2/ Firmware PlatformIO para STM32F411
 ```
 
 ## Licencia

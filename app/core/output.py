@@ -48,7 +48,7 @@ TABLE_MIN_WIDTHS = {
     "MAC": 19,
     "NAME": 17,
     "GROUP": 8,
-    "description": 32,
+    "description": 42,
 }
 TABLE_HARD_MIN_WIDTHS = {
     "IP": 13, "cnf": 3, "ALIAS": 5, "MAC": 17, "NAME": 5,
@@ -119,12 +119,14 @@ CNF_COLORS = {
     "X": Fore.LIGHTRED_EX,
     "-": Fore.LIGHTYELLOW_EX,
     "S": Fore.LIGHTCYAN_EX,
+    "@": Fore.LIGHTMAGENTA_EX,
 }
 DARK_CNF_COLORS = {
     "O": Fore.GREEN,
     "X": Fore.RED,
     "-": Fore.YELLOW,
     "S": Fore.CYAN,
+    "@": Fore.MAGENTA,
 }
 
 just_fix_windows_console()

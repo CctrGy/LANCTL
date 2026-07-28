@@ -1,9 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
-
 #include "NetworkService.h"
 #include "RackConfig.h"
 #include "TemperatureService.h"
@@ -20,9 +17,8 @@ class CommandProcessor {
   TemperatureService &temperatures_;
   ThermalController &thermal_;
   NetworkService &network_;
-  SemaphoreHandle_t mutex_ = nullptr;
   String executeUnlocked(String command);
-  String show(const String &command);
-  String editTemperature(const String &command);
+  String fanCommand(const String &command);
+  String temperatureCommand(const String &command);
   String editNetwork(const String &command);
 };

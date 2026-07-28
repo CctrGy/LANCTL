@@ -221,6 +221,7 @@ def run_list(args: argparse.Namespace) -> int:
         raise ValueError("--max-hosts debe ser mayor que cero")
 
     network = resolve_network(args.network)
+    current_host_ip = str(local_ipv4())
     if args.network:
         local_ip = local_ipv4()
         if local_ip not in network:
@@ -253,7 +254,7 @@ def run_list(args: argparse.Namespace) -> int:
         timeout=effective_timeout,
         max_hosts=args.max_hosts,
     )
-    progress = ScanProgress(args.progress)
+    progress = getattr(args, "progress_instance", None) or ScanProgress(args.progress)
     try:
         records = scanner.scan(
             include_unknown=args.include_unknown,
@@ -303,11 +304,19 @@ def run_list(args: argparse.Namespace) -> int:
     display_rows = []
     for device in visible_devices:
         row = device.to_dict()
+        # Indicador efímero: identifica el equipo que está ejecutando LANCTL.
+        # No modifica el estado CNF almacenado en la base de datos.
+        if device.ip == current_host_ip:
+            row["cnf"] = "@"
         row["discovery"] = scanner.discovery_for(device)
         # Dato efimero de esta ejecucion: nunca se copia al modelo Device ni
         # llega al archivo de base de datos.
         row["responseMs"] = scanner.response_time_for(device)
         display_rows.append(row)
+
+    result_callback = getattr(args, "result_callback", None)
+    if result_callback is not None:
+        result_callback(display_rows, visible_activity)
 
     write_records(
         display_rows,
@@ -327,6 +336,18 @@ def run_list(args: argparse.Namespace) -> int:
     cache_count = sum(
         "CACHE" in scanner.discovery_for(record).split("+") for record in records
     )
+    scan_summary_callback = getattr(args, "scan_summary_callback", None)
+    if scan_summary_callback is not None:
+        scan_summary_callback({
+            "profile": profile.name,
+            "discovery": discovery,
+            "shown": len(visible_devices),
+            "total": len(devices),
+            "active": active_count,
+            "icmp": icmp_count,
+            "arp": arp_count,
+            "cache": cache_count,
+        })
     ok(
         "LISTADO",
         f"Mostrados: {len(visible_devices)} | Activos: {active_count} | "

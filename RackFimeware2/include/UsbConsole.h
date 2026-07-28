@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-
 #include "CommandProcessor.h"
 
 class UsbConsole {
@@ -9,7 +8,6 @@ class UsbConsole {
   explicit UsbConsole(CommandProcessor &commands) : commands_(commands) {}
   void begin();
   void update();
-
  private:
   CommandProcessor &commands_;
   String line_;
@@ -17,4 +15,3 @@ class UsbConsole {
   void printBanner();
   void executeLine();
 };
-

@@ -88,7 +88,7 @@ def run_group(args: argparse.Namespace) -> int:
             widths = {
                 "group": max(16, *(len(group.name) for group in stored)),
                 "count": 8,
-                "description": max(32, *(len(group.description) for group in stored)),
+                "description": max(42, *(len(group.description) for group in stored)),
             }
             widths, stacked = shrink_widths(
                 widths, {"group": 8, "count": 8, "description": 8}, fields,

@@ -115,8 +115,8 @@ class GroupDatabase:
         return target
 
     def set_description(self, name: str, description: str) -> Group:
-        if len(description) > 32:
-            raise ValueError("la descripción no puede superar 32 caracteres")
+        if len(description) > 42:
+            raise ValueError("la descripción no puede superar 42 caracteres")
         groups = self.load()
         target = self._find(groups, name)
         self._require_editable(target)

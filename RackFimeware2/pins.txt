@@ -1,0 +1,20 @@
+# distribucion de pines
+
+# ENC28J60
+MISO = B4
+MOSI = B5
+CLK = B3
+RESET = B6
+CS = B7
+INT = B8
+
+# NEOPIXELS : 3 leds
+NEO = B10
+
+# TEM "DS18B20" : x2
+TOP = B1
+LOW = B2
+
+# RELAY : x2
+RELAY1 = A6
+RELAY2 = A7
