@@ -1,33 +1,48 @@
 # LANCTL
 
-LANCTL es una herramienta de línea de comandos para descubrir, inventariar y
-administrar dispositivos de una red local. El repositorio también incluye el
-firmware experimental `RackFimeware2` para monitorización y control de racks.
+**Administración, inventario y diagnóstico de infraestructuras LAN desde Windows.**
 
-> Estado: `0.3.0-alpha.7` — prototipo en desarrollo.
+LANCTL centraliza el descubrimiento de red, la identificación de dispositivos,
+el acceso mediante protocolos de administración y la auditoría de cambios en
+una CLI reproducible. Incluye una interfaz interactiva, una TUI a pantalla
+completa y proyectos portables `.vlf` con verificación de integridad.
 
-## Funciones principales
+> **Estado del proyecto — `0.3.0-alpha.10`**
+>
+> Versión alfa orientada a desarrollo y validación. La interfaz, el formato de
+> configuración y los comandos pueden cambiar antes de la primera versión estable.
 
-- Descubrimiento LAN mediante ICMP, ARP o modo híbrido.
-- Inventario persistente identificado por dirección MAC.
-- Alias, nombres, grupos y descripciones de dispositivos.
-- Salida en tabla, JSON y CSV.
-- Terminales SSH y TR-064.
-- Almacén local de credenciales protegido con DPAPI en Windows.
-- Capa de comandos para switches Cisco con vista previa y confirmación de
-  operaciones sensibles.
-- Escaneo de puertos TCP.
-- Proyectos `.vlf` verificables para empaquetar inventario, configuración,
-  topología, auditoría y credenciales cifradas.
-- Firmware STM32F411 para sensores de temperatura, ventiladores, Ethernet y SSH.
+## Capacidades
+
+| Área | Funcionalidad |
+| --- | --- |
+| Descubrimiento | ICMP, ARP, mDNS, SSDP y WS-Discovery, según el perfil seleccionado |
+| Inventario | Identidad por MAC, IP histórica, alias, nombre, fabricante, CNF, grupos y descripción |
+| Diagnóstico | Ping, ARP activo, escaneo TCP e identificación basada en evidencias |
+| Administración | SSH, TR-064, Telnet, HTTP(S), FTP, RDP, RTSP y SMB |
+| Switching | Planificación y ejecución controlada de operaciones sobre switches Cisco |
+| Seguridad | Credenciales protegidas con DPAPI y confirmación de operaciones sensibles |
+| Presentación | CLI, consola interactiva, TUI y exportación a tabla, JSON, CSV, HTML o XML |
+| Proyectos | Contenedores `.vlf` verificables con inventario SQLite, configuración y auditoría |
+| Extensiones | Complementos `.lcp` con permisos, eventos y ámbitos definidos |
+
+## Estado y alcance
+
+LANCTL administra el modelo lógico de la red y los protocolos asociados a sus
+elementos. El mapa físico de cableado no forma parte del alcance actual.
+
+El repositorio contiene además `RackFimeware2`, un firmware experimental para
+el monitor y gestor de rack basado en STM32F411. El firmware se mantiene como
+componente independiente de la aplicación principal.
 
 ## Requisitos
 
-- Windows
-- Python 3.10 o superior
-- Acceso a la red local que se desea administrar
+- Windows 10 u 11.
+- Python 3.10 o superior para ejecutar desde el código fuente.
+- Acceso autorizado a la red y a los dispositivos que se quieran administrar.
+- Privilegios suficientes para las operaciones de red utilizadas.
 
-## Instalación
+## Instalación para desarrollo
 
 ```powershell
 git clone https://github.com/CctrGy/LANCTL.git
@@ -37,94 +52,124 @@ python -m venv .venv
 python -m pip install -e .
 ```
 
-Después de instalarlo se pueden usar los comandos `lanctl` o `als`.
-
-## Uso rápido
+La instalación registra dos puntos de entrada equivalentes:
 
 ```powershell
-lanctl --help
-lanctl virtual --help
-lanctl virtual list
-lanctl virtual list --discovery hybrid --show-discovery
-lanctl virtual list --show-detection
-lanctl list --fast --active
+lanctl --version
+als --version
+```
+
+También puede ejecutarse directamente desde el repositorio:
+
+```powershell
+python main.py --help
+run.cmd --help
+```
+
+## Inicio rápido
+
+### Descubrir e inspeccionar la red
+
+```powershell
 lanctl list --normal
+lanctl list --fast --active
 lanctl list --accurate --progress
-lanctl list --where "active and group=IOT and vendor~Amazon"
-lanctl list --format html --output inventario.html
-lanctl virtual search NAS
+lanctl search NAS
+lanctl ping ESP --arp
 lanctl scan CAM1 --identify
+```
+
+Los perfiles ajustan el equilibrio entre velocidad y profundidad:
+
+- `--fast`: prioriza ARP y reduce el tiempo de espera.
+- `--normal`: combina ICMP, ARP, mDNS y SSDP.
+- `--accurate`: añade reintentos, resolución de nombres y WS-Discovery.
+
+`scan --identify` utiliza banners y sondas inocuas. Los resultados incluyen
+servicio, producto, confianza y evidencia; el número de puerto por sí solo no
+se considera una identificación suficiente.
+
+### Consultar y exportar el inventario
+
+```powershell
+lanctl list --where "active and group=IOT and vendor~Amazon"
+lanctl list --format json
+lanctl list --format csv --output inventario.csv
+lanctl list --format html --output inventario.html
+```
+
+Las expresiones `--where` admiten términos unidos mediante `and`, los estados
+`active` e `inactive`, y los operadores `=`, `!=` y `~`. Se pueden consultar
+los campos `ip`, `mac`, `alias`, `name`, `cnf`, `group`, `vendor`, `protocol`
+y `description`. Las expresiones se interpretan sin ejecutar código.
+
+### Abrir conexiones y terminales
+
+```powershell
 lanctl open NAS https
 lanctl connect VD1 rdp
-lanctl virtual element 3C:E4:41:01:08:5E delete
-lanctl ping ESP
-lanctl ping ESP --arp
-lanctl ping ESP --method ping
-lanctl virtual scan NAS
-lanctl virtual terminal NAS
-lanctl --gui
+lanctl ssh SW
+lanctl terminal NAS
+lanctl open NAS ssh --dry-run
+```
+
+`open`, también disponible como `connect`, prepara el cliente correspondiente
+para SSH, Telnet, HTTP, HTTPS, FTP, RDP, RTSP o SMB. La opción `--dry-run`
+permite revisar el destino antes de iniciar una aplicación externa.
+
+### Interfaces interactivas
+
+```powershell
+lanctl --cli
 lanctl -tui
 ```
 
-`ping` realiza una comprobación puntual sin modificar el inventario. El modo
-`auto` combina ICMP y ARP activo, por lo que puede detectar equipos de la LAN
-que bloquean respuestas de ping. Dentro de `lanctl --gui`, `select ELEMENTO`
-permite omitir el selector en las siguientes comprobaciones.
+La CLI persistente permite seleccionar un elemento y reutilizarlo en comandos
+posteriores. La TUI ofrece inventario, detalle y acciones contextuales a
+pantalla completa.
 
-También se puede ejecutar directamente desde el código fuente:
+Todos los comandos admiten `-h`, `--help` y `/?`.
 
-```powershell
-python main.py virtual list
-run.cmd virtual list
-```
+## Configuración persistente
 
-Todos los comandos aceptan `-h`, `--help` o `/?`.
-
-## Perfiles, identificación y consultas
-
-`list` dispone de tres perfiles. `--fast` prioriza ARP y velocidad;
-`--normal` combina ICMP, ARP, mDNS y SSDP; `--accurate` añade reintentos,
-resolución de nombres y WS-Discovery. El progreso solo se dibuja en una
-terminal interactiva, por lo que JSON, archivos y scripts permanecen limpios.
-
-`scan --identify` no presupone que un puerto determine el protocolo: utiliza
-banners y sondas inocuas para aportar servicio, producto, confianza y
-evidencia. La clasificación del tipo de equipo es una deducción explícita, no
-una afirmación sin respaldo.
-
-Las consultas `--where` admiten términos unidos con `and`, los estados
-`active`/`inactive` y los operadores `=`, `!=` y `~`. Los campos disponibles
-son `ip`, `mac`, `alias`, `name`, `cnf`, `group`, `vendor`, `protocol` y
-`description`. No se evalúa código dentro de la expresión.
-
-Las tablas se pueden almacenar como `table`, `json`, `csv`, `html` o `xml`.
-El comando común `open` (alias `connect`) prepara clientes SSH, Telnet, HTTP,
-HTTPS, FTP, RDP, RTSP y SMB; `--dry-run` permite revisar el destino sin abrirlo.
-
-Opciones persistentes relevantes:
+La configuración se almacena bajo `./data/als/`, relativa al ejecutable. Entre
+las opciones más relevantes se encuentran:
 
 ```powershell
 lanctl settings --scan-profile accurate
 lanctl settings --progress on
 lanctl settings --service-identification on
 lanctl settings --workers 64 --timeout 0.8 --max-hosts 4096
+lanctl settings --projects-directory "%USERPROFILE%\Documents\LanCTL"
 ```
 
-Para eliminar por completo una MAC huérfana del inventario y de todos sus
-grupos:
+Para revisar la configuración efectiva:
 
 ```powershell
+lanctl settings
+```
+
+## Gestión de elementos
+
+Los elementos se identifican principalmente por su MAC. Las modificaciones de
+alias o nombre confirman automáticamente el registro; los elementos reservados
+`GATEWAY` y `BRODCAST` están protegidos frente a operaciones destructivas.
+
+```powershell
+lanctl element 3C:E4:41:01:08:5E description "Echo Dot cocina"
+lanctl cnf 3C:E4:41:01:08:5E O
 lanctl element 3C:E4:41:01:08:5E delete
 lanctl element 3C:E4:41:01:08:5E delete --yes
 ```
 
-Sin `--yes` se solicita confirmación. `GATEWAY` y `BRODCAST` están protegidos.
-Si el equipo continúa presente en la LAN, el próximo `list` volverá a
-descubrirlo como un elemento nuevo con `CNF=X`.
+Sin `--yes`, la eliminación solicita confirmación. Si un dispositivo eliminado
+continúa presente en la LAN, un descubrimiento posterior puede incorporarlo de
+nuevo como elemento no identificado.
 
 ## Proyectos VLF
 
-LANCTL puede empaquetar la LAN activa en un contenedor `.vlf` verificable:
+Un proyecto `.vlf` empaqueta la información necesaria para conservar y
+verificar el estado de una LAN:
 
 ```powershell
 lanctl project create Casa.vlf --name "Red de casa"
@@ -135,55 +180,85 @@ lanctl project update Casa.vlf
 lanctl project use Casa.vlf
 ```
 
-El formato es un ZIP con estructura fija, inventario SQLite, copia anterior de
-la base, configuración de red, topología, logs y credenciales cifradas opacas.
+Los nombres relativos se resuelven en `%USERPROFILE%\Documents\LanCTL\`. Se
+puede indicar una ruta absoluta o cambiar el directorio desde `settings`.
+
+El contenedor utiliza una estructura ZIP fija e incluye:
+
+- Metadatos e identificación del proyecto.
+- Inventario SQLite y copia de restauración.
+- Configuración LAN y topología lógica.
+- Credenciales cifradas como contenido opaco.
+- Auditoría diaria de modificaciones.
+- Hashes de contenido y checksum general.
+
 `project create`, `project update` y `project use` seleccionan el VLF activo.
-Consulta [docs/VLF.md](docs/VLF.md) para conocer el contrato del formato, su
-verificación de integridad y sus límites de seguridad.
+Cada entrada de auditoría renueva los hashes para conservar la validez del
+contenedor. El contrato técnico se encuentra en [docs/VLF.md](docs/VLF.md).
 
-## Configuración y datos locales
+## Registros y auditoría
 
-LANCTL crea sus archivos de trabajo en `data/als/`. Este directorio puede
-contener inventario, registros y credenciales vinculadas al usuario de Windows,
-por lo que está excluido del repositorio.
+LANCTL separa la actividad operativa de los cambios realizados sobre el
+inventario:
 
-Los registros están separados por finalidad:
+| Registro | Ubicación | Contenido |
+| --- | --- | --- |
+| Programa | `./data/als/log/dd-mm-yyyy.log` junto al ejecutable | Comandos, conexiones, escaneos y mensajes operativos |
+| Auditoría | `./logs/dd-mm-yyyy.log` dentro del VLF activo | Altas, bajas y cambios de los elementos |
 
-- `./data/als/log/dd-mm-yyyy.log`, relativo al ejecutable: actividad, comandos,
-  conexiones y mensajes del programa.
-- `./logs/dd-mm-yyyy.log`, dentro del proyecto `.vlf` activo: altas, bajas y
-  cambios realizados sobre el inventario. Las referencias de credenciales se
-  ocultan y los hashes del VLF se actualizan después de cada entrada.
-
-`project create` y `project update` dejan automáticamente seleccionado el VLF
-utilizado. Para seleccionar posteriormente otro proyecto existente:
+La auditoría muestra los valores anteriores y nuevos, pero oculta las
+referencias de credenciales. La limpieza automática del log operativo está
+desactivada inicialmente y puede configurarse así:
 
 ```powershell
-run project use MiRed.vlf
+lanctl settings -log-cleanup on -log-retention-days 90
+lanctl settings -log-cleanup off
 ```
 
-La limpieza interna de registros está desactivada inicialmente. Puede activarse
-y configurarse con:
+Solo se eliminan archivos con el formato reconocido `dd-mm-yyyy.log`; el
+registro del día actual y cualquier archivo ajeno al patrón permanecen intactos.
 
-```powershell
-run settings -log-cleanup on
-run settings -log-retention-days 90
-run settings -log-cleanup off
-```
+## Seguridad operacional
 
-Al arrancar, LANCTL elimina únicamente archivos operativos `dd-mm-yyyy.log` más
-antiguos que el periodo configurado. Nunca elimina el registro del día actual ni
-otros archivos que encuentre en el directorio de logs.
+- Utiliza LANCTL únicamente en redes y equipos para los que tengas autorización.
+- Revisa las operaciones de configuración antes de confirmarlas.
+- Las consultas automatizadas por SSH se limitan a comandos de lectura permitidos.
+- Las credenciales no se almacenan en texto plano y están vinculadas al usuario
+  de Windows mediante DPAPI.
+- Los proyectos VLF verifican estructura, tamaño, rutas internas, SQLite y hashes.
+- No publiques `data/als/`, credenciales, claves ni proyectos reales en el repositorio.
 
-## Pruebas
+## Complementos LCP
+
+Los complementos `.lcp` amplían LANCTL mediante plugins, temas, idiomas,
+automatizaciones, análisis, seguridad e interfaces. El formato declara permisos
+y eventos para que cada complemento exponga explícitamente su alcance.
+
+Consulta [docs/LCP.md](docs/LCP.md) para conocer el contrato y las restricciones
+de seguridad.
+
+## Capa de comandos Cisco
+
+Las operaciones sobre switches se clasifican por riesgo, ofrecen una vista
+previa y exigen confirmación cuando corresponde. Los comandos admitidos y el
+modelo de ejecución están documentados en
+[docs/cisco-command-layer.md](docs/cisco-command-layer.md).
+
+## Calidad y pruebas
+
+La suite automatizada se ejecuta con `unittest`:
 
 ```powershell
 python -m unittest discover -s tests -v
 ```
 
-## Crear el ejecutable de Windows
+Antes de distribuir una compilación también conviene verificar la sintaxis:
 
-Instala PyInstaller y ejecuta:
+```powershell
+python -m compileall -q app tests
+```
+
+## Compilación para Windows
 
 ```powershell
 python -m pip install pyinstaller
@@ -193,14 +268,13 @@ python -m pip install pyinstaller
 
 Los directorios `build/` y `dist/` son artefactos locales y no se versionan.
 
-## Firmware STM32
+## Firmware del rack
 
-El proyecto de PlatformIO está en [`RackFimeware2`](RackFimeware2). Incluye
-soporte para STM32F411CE Black Pill, Ethernet ENC28J60, sensores DS18B20,
-relés, NeoPixel, consola USB y SSH. Consulta su README para el mapa GPIO y los
-comandos disponibles.
+El proyecto de PlatformIO se encuentra en [`RackFimeware2`](RackFimeware2).
+Incluye soporte para STM32F411CE Black Pill, Ethernet ENC28J60, sensores
+DS18B20, relés, NeoPixel, consola USB y SSH.
 
-Antes de instalar el firmware en una red real, cambia las credenciales SSH de
+Antes de instalarlo en una red real, sustituye las credenciales SSH de
 desarrollo definidas en `RackFimeware2/platformio.ini`.
 
 ```powershell
@@ -210,18 +284,18 @@ pio run -e blackpill_f411ce --target upload
 pio device monitor -p COM50 -b 115200
 ```
 
-## Estructura
+## Estructura del repositorio
 
 ```text
-app/          Aplicación Python
-tests/        Pruebas automatizadas
-docs/         Documentación técnica
-assets/       Iconos y recursos
-packaging/    Metadatos del ejecutable
-RackFimeware2/ Firmware PlatformIO para STM32F411
+app/           Aplicación y servicios de LANCTL
+tests/         Pruebas automatizadas
+docs/          Contratos y documentación técnica
+assets/        Iconos y recursos visuales
+packaging/     Metadatos de distribución
+RackFimeware2/ Firmware experimental del rack
 ```
 
 ## Licencia
 
-Este repositorio no incluye todavía un archivo de licencia. Hasta que se añada
-uno, se mantienen todos los derechos sobre el código.
+Este repositorio todavía no incluye un archivo de licencia. Mientras no se
+publique una licencia explícita, se mantienen todos los derechos sobre el código.
