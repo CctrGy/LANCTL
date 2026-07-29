@@ -55,5 +55,6 @@ def run_automatic_log_cleanup() -> LogCleanupResult:
     retention_days = int(config.get("logRetentionDays", 90))
     if not enabled:
         return LogCleanupResult(False, retention_days)
-    deleted = cleanup_old_logs(config["log"], retention_days)
+    directory = config.get("programLog", config["log"])
+    deleted = cleanup_old_logs(directory, retention_days)
     return LogCleanupResult(True, retention_days, deleted)

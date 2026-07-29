@@ -8,6 +8,8 @@ from datetime import datetime
 
 from app.models import Device, normalize_cnf, normalize_mac
 from app.core.paths import application_path
+from app.core.config import load_config
+from app.core.logger import write_database_log
 
 
 class DeviceDatabase:
@@ -166,6 +168,7 @@ class DeviceDatabase:
         return device.copy()
 
     def _write(self, devices: list[Device]) -> None:
+        before = self.load() if self.path.exists() else []
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix(self.path.suffix + ".tmp")
         temporary.write_text(
@@ -178,6 +181,57 @@ class DeviceDatabase:
             encoding="utf-8",
         )
         temporary.replace(self.path)
+        self._audit_changes(before, devices)
+
+    def _audit_changes(self, before: list[Device], after: list[Device]) -> None:
+        """Registra los cambios del inventario principal sin guardar secretos."""
+        configured_database = application_path(load_config()["database"]).resolve()
+        if self.path.resolve() != configured_database:
+            return
+
+        def key(device: Device) -> str:
+            return device.device_id or device.mac or device.ip
+
+        previous = {key(device): device.to_dict() for device in before}
+        current = {key(device): device.to_dict() for device in after}
+        entries: list[str] = []
+
+        for identity in sorted(current.keys() - previous.keys()):
+            device = current[identity]
+            entries.append(
+                f"ALTA {identity} IP={device.get('IP', '-')} "
+                f"MAC={device.get('MAC', '-')} ALIAS={device.get('ALIAS', '-') or '-'}"
+            )
+        for identity in sorted(previous.keys() - current.keys()):
+            device = previous[identity]
+            entries.append(
+                f"BAJA {identity} IP={device.get('IP', '-')} "
+                f"MAC={device.get('MAC', '-')} ALIAS={device.get('ALIAS', '-') or '-'}"
+            )
+        for identity in sorted(previous.keys() & current.keys()):
+            changed = [
+                field for field in sorted(current[identity])
+                if previous[identity].get(field) != current[identity].get(field)
+            ]
+            if changed:
+                details = []
+                for field in changed:
+                    if field.casefold() == "credentials":
+                        old_value = new_value = "[OCULTO]"
+                    else:
+                        old_value = json.dumps(
+                            previous[identity].get(field), ensure_ascii=False,
+                            separators=(",", ":"),
+                        )
+                        new_value = json.dumps(
+                            current[identity].get(field), ensure_ascii=False,
+                            separators=(",", ":"),
+                        )
+                    details.append(f"{field}:{old_value}=>{new_value}")
+                entries.append(f"CAMBIO {identity} {'; '.join(details)}")
+
+        for entry in entries:
+            write_database_log(entry)
 
     def save_devices(self, devices: list[Device]) -> None:
         self._write(devices)

@@ -21,7 +21,7 @@ from app.core.config import normalize_dhcp_range
 from app.core.credentials import CredentialStore
 from app.core.differences import compare_scan
 from app.core.group_database import GroupDatabase
-from app.core.logger import write_log
+from app.core.logger import write_database_log, write_log
 from app.core.log_cleanup import cleanup_old_logs
 from app.core.tr064 import Tr064Client
 from app.models import Device, normalize_cnf, normalize_mac
@@ -691,6 +691,29 @@ class NetworkTests(unittest.TestCase):
 
 
 class DatabaseTests(unittest.TestCase):
+    def test_inventory_audit_describes_changes_and_hides_credentials(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "devices.json"
+            database = DeviceDatabase(str(path))
+            before = Device(
+                ip="192.168.1.10", mac="10:20:30:40:50:60", alias="OLD",
+                credentials={"ssh": "credential-1"},
+            )
+            after = before.copy()
+            after.alias = "NEW"
+            after.credentials = {"ssh": "credential-2"}
+            with (
+                patch("app.core.database.load_config", return_value={"database": str(path)}),
+                patch("app.core.database.write_database_log") as audit,
+            ):
+                database._audit_changes([before], [after])
+
+            message = audit.call_args.args[0]
+            self.assertIn('ALIAS:"OLD"=>"NEW"', message)
+            self.assertIn("credentials:[OCULTO]=>[OCULTO]", message)
+            self.assertNotIn("credential-1", message)
+            self.assertNotIn("credential-2", message)
+
     def test_detection_history_accumulates_and_updates_last_seen(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
@@ -1084,6 +1107,17 @@ class DatabaseTests(unittest.TestCase):
 
 
 class LoggerTests(unittest.TestCase):
+    def test_program_and_database_logs_use_independent_directories(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            program = write_log("programa", root / "program")
+            database = write_database_log("cambio", root / "database")
+
+            self.assertEqual(program.parent.name, "program")
+            self.assertEqual(database.parent.name, "database")
+            self.assertIn("programa", program.read_text(encoding="utf-8"))
+            self.assertIn("cambio", database.read_text(encoding="utf-8"))
+
     def test_log_uses_daily_file_and_one_timestamped_line(self):
         with tempfile.TemporaryDirectory() as directory:
             path = write_log("primera línea\nsegunda línea", Path(directory))

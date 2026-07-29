@@ -4,7 +4,7 @@ LANCTL es una herramienta de línea de comandos para descubrir, inventariar y
 administrar dispositivos de una red local. El repositorio también incluye el
 firmware experimental `RackFimeware2` para monitorización y control de racks.
 
-> Estado: `0.3.0-alpha.6` — prototipo en desarrollo.
+> Estado: `0.3.0-alpha.7` — prototipo en desarrollo.
 
 ## Funciones principales
 
@@ -17,6 +17,8 @@ firmware experimental `RackFimeware2` para monitorización y control de racks.
 - Capa de comandos para switches Cisco con vista previa y confirmación de
   operaciones sensibles.
 - Escaneo de puertos TCP.
+- Proyectos `.vlf` verificables para empaquetar inventario, configuración,
+  topología, auditoría y credenciales cifradas.
 - Firmware STM32F411 para sensores de temperatura, ventiladores, Ethernet y SSH.
 
 ## Requisitos
@@ -120,11 +122,45 @@ Sin `--yes` se solicita confirmación. `GATEWAY` y `BRODCAST` están protegidos.
 Si el equipo continúa presente en la LAN, el próximo `list` volverá a
 descubrirlo como un elemento nuevo con `CNF=X`.
 
+## Proyectos VLF
+
+LANCTL puede empaquetar la LAN activa en un contenedor `.vlf` verificable:
+
+```powershell
+lanctl project create Casa.vlf --name "Red de casa"
+lanctl project info Casa.vlf
+lanctl project verify Casa.vlf
+lanctl project list Casa.vlf
+lanctl project update Casa.vlf
+lanctl project use Casa.vlf
+```
+
+El formato es un ZIP con estructura fija, inventario SQLite, copia anterior de
+la base, configuración de red, topología, logs y credenciales cifradas opacas.
+`project create`, `project update` y `project use` seleccionan el VLF activo.
+Consulta [docs/VLF.md](docs/VLF.md) para conocer el contrato del formato, su
+verificación de integridad y sus límites de seguridad.
+
 ## Configuración y datos locales
 
 LANCTL crea sus archivos de trabajo en `data/als/`. Este directorio puede
 contener inventario, registros y credenciales vinculadas al usuario de Windows,
 por lo que está excluido del repositorio.
+
+Los registros están separados por finalidad:
+
+- `./data/als/log/dd-mm-yyyy.log`, relativo al ejecutable: actividad, comandos,
+  conexiones y mensajes del programa.
+- `./logs/dd-mm-yyyy.log`, dentro del proyecto `.vlf` activo: altas, bajas y
+  cambios realizados sobre el inventario. Las referencias de credenciales se
+  ocultan y los hashes del VLF se actualizan después de cada entrada.
+
+`project create` y `project update` dejan automáticamente seleccionado el VLF
+utilizado. Para seleccionar posteriormente otro proyecto existente:
+
+```powershell
+run project use MiRed.vlf
+```
 
 La limpieza interna de registros está desactivada inicialmente. Puede activarse
 y configurarse con:
@@ -135,9 +171,9 @@ run settings -log-retention-days 90
 run settings -log-cleanup off
 ```
 
-Al arrancar, LANCTL elimina únicamente archivos `dd-mm-yyyy.log` más antiguos
-que el periodo configurado. Nunca elimina el registro del día actual ni otros
-archivos que encuentre en el directorio de logs.
+Al arrancar, LANCTL elimina únicamente archivos operativos `dd-mm-yyyy.log` más
+antiguos que el periodo configurado. Nunca elimina el registro del día actual ni
+otros archivos que encuentre en el directorio de logs.
 
 ## Pruebas
 

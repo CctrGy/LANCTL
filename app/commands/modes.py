@@ -25,6 +25,8 @@ Escribe un comando sin el prefijo `run virtual`, por ejemplo:
   scan ESP
   element GATEWAY
   switch SW --dry-run show version
+  project create Casa.vlf --name "Red de casa"
+  project verify Casa.vlf
   help
   exit
 """

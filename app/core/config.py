@@ -11,6 +11,8 @@ DEFAULTS = {
     "database": "data/als/devices.json",
     "groups": "data/als/groups.json",
     "log": "data/als/log",
+    "programLog": "data/als/log",
+    "activeProject": None,
     "logCleanupEnabled": False,
     "logRetentionDays": 90,
     "credentials": "data/als/.credentials",
@@ -67,6 +69,11 @@ def load_config() -> dict:
     # Migración de la clave usada por versiones anteriores.
     if "network" in stored and "range" not in stored:
         stored["range"] = stored.pop("network")
+    if "log" in stored:
+        log_root = str(stored["log"]).rstrip("/\\")
+        stored.setdefault("programLog", log_root)
+        if str(stored.get("programLog", "")).rstrip("/\\") == f"{log_root}/program":
+            stored["programLog"] = log_root
     stored.pop("scanColumns", None)
     return {**DEFAULTS, **stored}
 

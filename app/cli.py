@@ -25,6 +25,7 @@ from app.commands.switch import register_switch_command
 from app.commands.list import register_list_command
 from app.commands.ping import register_ping_command
 from app.commands.open import register_open_command
+from app.commands.project import register_project_command
 from app.commands.modes import register_virtual_mode, run_global_cli
 from app.core.console import error as print_error, pending
 from app.core.parser import LANCTLArgumentParser
@@ -36,7 +37,7 @@ LEGACY_VIRTUAL_COMMANDS = {
     "list", "settings", "call", "search", "scan", "cnf", "credential",
     "credentials", "auth", "gateway", "downloadsettings", "download-settings",
     "protocol", "ssh", "terminal", "cli", "switch", "group", "element",
-    "name", "alias", "ping", "open", "connect",
+    "name", "alias", "ping", "open", "connect", "project", "projects",
 }
 
 
@@ -60,6 +61,7 @@ def register_virtual_commands(commands: argparse._SubParsersAction) -> None:
     register_element_command(commands)
     register_name_command(commands)
     register_alias_command(commands)
+    register_project_command(commands)
 
 
 def build_parser() -> argparse.ArgumentParser:
