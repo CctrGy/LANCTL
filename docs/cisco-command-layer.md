@@ -18,7 +18,7 @@ el CLI. En `dry-run` nunca invoca el adaptador.
 
 ## Perfiles
 
-El archivo opcional `data/als/cisco_profiles.json` tiene este formato:
+El archivo opcional `data/lc/cisco_profiles.json` tiene este formato:
 
 ```json
 {

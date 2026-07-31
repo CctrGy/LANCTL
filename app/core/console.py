@@ -6,6 +6,7 @@ from colorama import Fore, Style, just_fix_windows_console
 
 from app.core.logger import write_log
 from app.core.layout import terminal_columns, wrapped_lines
+from app.i18n import t
 
 # Activa ANSI en consolas antiguas de Windows sin envolver stdout/stderr.
 just_fix_windows_console()
@@ -41,8 +42,8 @@ def ok(label: str, message: str) -> None:
 
 def pending(message: str) -> None:
     print(file=sys.stderr)
-    status("PENDIENTE", message, "pending")
+    status(t("LANCTL.COMMON.STATUS.PENDING"), message, "pending")
 
 
 def error(message: str) -> None:
-    status("ERROR", message, "error")
+    status(t("LANCTL.COMMON.STATUS.ERROR"), message, "error")

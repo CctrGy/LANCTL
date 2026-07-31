@@ -58,6 +58,7 @@ class VlfProjectTests(unittest.TestCase):
         with zipfile.ZipFile(project) as archive:
             names = set(archive.namelist())
             self.assertTrue(REQUIRED_ENTRIES <= names)
+            self.assertIn("plugins/registry.json", names)
             self.assertIn("auth/keys/ssh/", names)
             self.assertIn("logs/28-07-2026.log", names)
             self.assertNotIn(b"20:00:00 TEST", archive.read("logs/28-07-2026.log"))

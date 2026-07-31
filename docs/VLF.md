@@ -13,6 +13,35 @@ project verify ARCHIVO.vlf [--json]
 project list ARCHIVO.vlf
 ```
 
+## Carpeta predeterminada
+
+Un nombre relativo se guarda en la carpeta de proyectos del usuario:
+
+`%USERPROFILE%` es la variable estándar de Windows para el perfil actual
+(`C:\Users\<usuario>`). Se conserva literalmente en `.config` y solo se
+expande al abrir o guardar, evitando nombres de usuario fijos.
+
+```text
+%USERPROFILE%\Documents\LanCTL\
+```
+
+Por ejemplo, `project create Hogar.vlf` crea
+`%USERPROFILE%\Documents\LanCTL\Hogar.vlf`. La carpeta se crea automáticamente.
+Una ruta absoluta permite utilizar cualquier otra ubicación:
+
+```bat
+lanctl project create D:\Redes\Oficina.vlf
+```
+
+La ubicación predeterminada también puede cambiarse:
+
+```bat
+lanctl settings --projects-directory D:\ProyectosLANCTL
+```
+
+Usa `lanctl settings --projects-directory default` para recuperar la ruta
+portable predeterminada.
+
 `update` conserva UUID, fecha de creación, identidad de la LAN, VLAN,
 topología complementaria, claves ya incluidas y logs históricos. La base
 anterior pasa a `devices/backup.db`, y el VLF anterior queda como `.vlf.bak`.

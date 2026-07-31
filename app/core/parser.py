@@ -9,6 +9,7 @@ from colorama import Fore, Style
 
 from app.core.console import error as print_error
 from app.core.layout import terminal_columns
+from app.i18n import t
 
 
 def _color_enabled(stream) -> bool:
@@ -25,7 +26,7 @@ def colorize_help(text: str, stream=None) -> str:
     rule_width = max(20, min(terminal_columns(stream) or 80, 100))
     for line in text.splitlines():
         stripped = line.strip()
-        if line.startswith("Uso:"):
+        if line.startswith(t("LANCTL.PARSER.SECTION.USAGE")):
             line = f"{Style.BRIGHT}{Fore.CYAN}{line}{Style.RESET_ALL}"
             colored.append(line)
             colored.append(
@@ -72,16 +73,16 @@ class LANCTLArgumentParser(argparse.ArgumentParser):
             "--help",
             "/?",
             action="help",
-            help="Muestra esta ayuda y termina.",
+            help=t("LANCTL.COMMON.ACTION.HELP"),
         )
 
     def format_help(self) -> str:
         text = super().format_help()
         replacements = {
-            "usage:": "Uso:",
-            "positional arguments:": "Argumentos:",
-            "options:": "Opciones:",
-            "optional arguments:": "Opciones:",
+            "usage:": t("LANCTL.PARSER.SECTION.USAGE"),
+            "positional arguments:": t("LANCTL.PARSER.SECTION.ARGUMENTS"),
+            "options:": t("LANCTL.PARSER.SECTION.OPTIONS"),
+            "optional arguments:": t("LANCTL.PARSER.SECTION.OPTIONS"),
         }
         lines = text.splitlines()
         normalized: list[str] = []
@@ -91,7 +92,7 @@ class LANCTLArgumentParser(argparse.ArgumentParser):
             if replacement:
                 line = replacement
             elif line.startswith("usage:"):
-                line = "Uso:" + line[len("usage:"):]
+                line = t("LANCTL.PARSER.SECTION.USAGE") + line[len("usage:"):]
             normalized.append(line)
         text = "\n".join(normalized) + "\n"
         return colorize_help(text, sys.stdout)

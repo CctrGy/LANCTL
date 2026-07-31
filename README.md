@@ -7,7 +7,7 @@ el acceso mediante protocolos de administración y la auditoría de cambios en
 una CLI reproducible. Incluye una interfaz interactiva, una TUI a pantalla
 completa y proyectos portables `.vlf` con verificación de integridad.
 
-> **Estado del proyecto — `0.3.0-alpha.10`**
+> **Estado del proyecto — `0.3.0-alpha.14`**
 >
 > Versión alfa orientada a desarrollo y validación. La interfaz, el formato de
 > configuración y los comandos pueden cambiar antes de la primera versión estable.
@@ -25,6 +25,18 @@ completa y proyectos portables `.vlf` con verificación de integridad.
 | Presentación | CLI, consola interactiva, TUI y exportación a tabla, JSON, CSV, HTML o XML |
 | Proyectos | Contenedores `.vlf` verificables con inventario SQLite, configuración y auditoría |
 | Extensiones | Complementos `.lcp` con permisos, eventos y ámbitos definidos |
+
+El complemento integrado `lanctl.example.network-summary` aporta los comandos
+`network-summary` y `netsummary` como ejemplo declarativo seguro.
+
+## Idiomas
+
+Los catálogos JSON `.lang` se gestionan en `data/lc/languajes/`. Inglés es el
+fallback integrado y los plugins LCP pueden aportar idiomas adicionales.
+Consulta [docs/LANG.md](docs/LANG.md).
+
+Los iconos JPEG de `125×125` destinados a la futura GUI se catalogan en
+`data/lc/icons/icons.json`. Consulta [docs/ICONS.md](docs/ICONS.md).
 
 ## Estado y alcance
 
@@ -132,7 +144,7 @@ Todos los comandos admiten `-h`, `--help` y `/?`.
 
 ## Configuración persistente
 
-La configuración se almacena bajo `./data/als/`, relativa al ejecutable. Entre
+La configuración se almacena bajo `./data/lc/`, relativa al ejecutable. Entre
 las opciones más relevantes se encuentran:
 
 ```powershell
@@ -148,6 +160,10 @@ Para revisar la configuración efectiva:
 ```powershell
 lanctl settings
 ```
+
+Las instalaciones anteriores con `data/als/` se migran automáticamente a
+`data/lc/`. Si ambos directorios existen, prevalece `lc`; cualquier archivo
+antiguo diferente se conserva en `data/lc/migration-backup-als/`.
 
 ## Gestión de elementos
 
@@ -203,7 +219,7 @@ inventario:
 
 | Registro | Ubicación | Contenido |
 | --- | --- | --- |
-| Programa | `./data/als/log/dd-mm-yyyy.log` junto al ejecutable | Comandos, conexiones, escaneos y mensajes operativos |
+| Programa | `./data/lc/log/dd-mm-yyyy.log` junto al ejecutable | Comandos, conexiones, escaneos y mensajes operativos |
 | Auditoría | `./logs/dd-mm-yyyy.log` dentro del VLF activo | Altas, bajas y cambios de los elementos |
 
 La auditoría muestra los valores anteriores y nuevos, pero oculta las
@@ -226,7 +242,7 @@ registro del día actual y cualquier archivo ajeno al patrón permanecen intacto
 - Las credenciales no se almacenan en texto plano y están vinculadas al usuario
   de Windows mediante DPAPI.
 - Los proyectos VLF verifican estructura, tamaño, rutas internas, SQLite y hashes.
-- No publiques `data/als/`, credenciales, claves ni proyectos reales en el repositorio.
+- No publiques `data/lc/`, credenciales, claves ni proyectos reales en el repositorio.
 
 ## Complementos LCP
 

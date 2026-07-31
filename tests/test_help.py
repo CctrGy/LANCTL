@@ -7,6 +7,7 @@ from colorama import Fore, Style
 
 from app.cli import build_parser
 from app.core.parser import LANCTLArgumentParser
+from app.i18n import t
 
 
 def all_parsers(root):
@@ -42,8 +43,8 @@ class HelpTests(unittest.TestCase):
             with self.subTest(prog=parser.prog):
                 self.assertIsInstance(parser, LANCTLArgumentParser)
                 help_text = parser.format_help()
-                self.assertTrue(help_text.startswith("Uso: "))
-                self.assertIn("Opciones:", help_text)
+                self.assertTrue(help_text.startswith(t("LANCTL.PARSER.SECTION.USAGE") + " "))
+                self.assertIn(t("LANCTL.PARSER.SECTION.OPTIONS"), help_text)
                 self.assertNotIn("usage:", help_text)
                 self.assertNotIn("positional arguments:", help_text)
                 self.assertNotIn("options:", help_text)
@@ -53,8 +54,8 @@ class HelpTests(unittest.TestCase):
         stream = TtyBuffer()
         with patch("app.core.parser.sys.stdout", stream):
             help_text = build_parser().format_help()
-        self.assertIn(Style.BRIGHT + Fore.CYAN + "Uso:", help_text)
-        self.assertIn(Style.BRIGHT + Fore.YELLOW + "Argumentos:", help_text)
+        self.assertIn(Style.BRIGHT + Fore.CYAN + t("LANCTL.PARSER.SECTION.USAGE"), help_text)
+        self.assertIn(Style.BRIGHT + Fore.YELLOW + t("LANCTL.PARSER.SECTION.ARGUMENTS"), help_text)
         self.assertIn(Fore.CYAN + "-h,", help_text)
 
     def test_no_visible_argument_lacks_help_text(self):

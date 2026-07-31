@@ -6,7 +6,7 @@ from threading import Lock
 from app.core.paths import application_path
 
 
-PROGRAM_LOG_DIRECTORY = application_path("data/als/log")
+PROGRAM_LOG_DIRECTORY = application_path("data/lc/log")
 _LOCK = Lock()
 
 

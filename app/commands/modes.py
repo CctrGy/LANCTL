@@ -13,6 +13,7 @@ from app.core.config import load_config
 from app.core.console import error as print_error, ok
 from app.core.database import DeviceDatabase
 from app.core.layout import fit_text, terminal_columns
+from app.i18n import t
 
 
 VIRTUAL_HELP = """CLI virtual de LANCTL
@@ -27,6 +28,8 @@ Escribe un comando sin el prefijo `run virtual`, por ejemplo:
   switch SW --dry-run show version
   project create Casa.vlf --name "Red de casa"
   project verify Casa.vlf
+  plugin list
+  plugin info lanctl.autoscan
   help
   exit
 """
@@ -88,8 +91,8 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
     database = DeviceDatabase(load_config()["database"])
     selection = CliSelection()
     history: list[str] = []
-    print(f"{Style.BRIGHT}{Fore.CYAN}LANCTL CLI{Style.RESET_ALL}")
-    print("Escribe 'help' para ver los comandos y 'exit' para salir.")
+    print(f"{Style.BRIGHT}{Fore.CYAN}{t('LANCTL.CLI.HEADER.TITLE')}{Style.RESET_ALL}")
+    print(t("LANCTL.CLI.HEADER.INTRO"))
     while True:
         prompt = f"LANCTL[{selection.label}]> " if selection.label else "LANCTL> "
         try:
@@ -132,7 +135,7 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             continue
         if command == "select":
             if len(parts) != 2:
-                print_error("usa: select ELEMENTO")
+                print_error(t("LANCTL.CLI.ERROR.SELECT_USAGE"))
                 continue
             try:
                 device = database.resolve(parts[1])
@@ -150,17 +153,17 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             # La MAC sigue identificando el elemento aunque su IP cambie.
             selection.selector = device.mac or device.alias or device.ip
             selection.label = device.alias or device.name or device.ip or device.mac
-            ok("SELECCIONADO", f"{selection.label} | {device.ip or '-'} | {device.mac or '-'}")
+            ok(t("LANCTL.CLI.STATUS.SELECTED"), f"{selection.label} | {device.ip or '-'} | {device.mac or '-'}")
             continue
         if command in ("info", "selected"):
             if not selection.selector:
-                print_error("no hay ningún elemento seleccionado")
+                print_error(t("LANCTL.CLI.ERROR.NO_SELECTION"))
             else:
                 main(["virtual", "element", selection.selector])
             continue
         if command == "deselect":
             selection = CliSelection()
-            ok("SELECCION", "Contexto de elemento eliminado.")
+            ok(t("LANCTL.CLI.STATUS.SELECTION"), t("LANCTL.CLI.STATUS.DESELECTED"))
             continue
         contextual = _selected_command(parts, selection, database)
         try:
@@ -176,7 +179,7 @@ def _interactive_loop(
     input_fn: Callable[[str], str] = input,
 ) -> int:
     print(f"{Style.BRIGHT}{Fore.CYAN}LANCTL/{scope}{Style.RESET_ALL}")
-    print("Escribe 'help' para ver los comandos y 'exit' para salir.")
+    print(t("LANCTL.CLI.HEADER.INTRO"))
     while True:
         try:
             raw = input_fn(f"LANCTL/{scope}> ").strip()

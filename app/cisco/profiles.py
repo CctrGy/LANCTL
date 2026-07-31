@@ -7,7 +7,7 @@ from app.cisco.models import PortProfile, SwitchProfile
 from app.core.paths import application_path
 
 
-PROFILE_PATH = application_path("data/als/cisco_profiles.json")
+PROFILE_PATH = application_path("data/lc/cisco_profiles.json")
 
 
 def _s300_profile() -> SwitchProfile:

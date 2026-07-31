@@ -26,6 +26,8 @@ from app.commands.list import register_list_command
 from app.commands.ping import register_ping_command
 from app.commands.open import register_open_command
 from app.commands.project import register_project_command
+from app.commands.plugin import register_plugin_command
+from app.commands.language import register_language_command
 from app.commands.modes import register_virtual_mode, run_global_cli
 from app.core.console import error as print_error, pending
 from app.core.parser import LANCTLArgumentParser
@@ -38,6 +40,8 @@ LEGACY_VIRTUAL_COMMANDS = {
     "credentials", "auth", "gateway", "downloadsettings", "download-settings",
     "protocol", "ssh", "terminal", "cli", "switch", "group", "element",
     "name", "alias", "ping", "open", "connect", "project", "projects",
+    "plugin", "plugins", "addon", "addons",
+    "language", "languages", "lang",
 }
 
 
@@ -62,12 +66,17 @@ def register_virtual_commands(commands: argparse._SubParsersAction) -> None:
     register_name_command(commands)
     register_alias_command(commands)
     register_project_command(commands)
+    register_plugin_command(commands)
+    register_language_command(commands)
+    from app.plugins.declarative_commands import register_declarative_commands
+    register_declarative_commands(commands)
 
 
 def build_parser() -> argparse.ArgumentParser:
+    from app.i18n import t
     parser = LANCTLArgumentParser(
         prog="LANCTL",
-        description="Control lógico de dispositivos e infraestructuras LAN.",
+        description=t("LANCTL.CORE.APP.DESCRIPTION"),
     )
     parser.add_argument(
         "--version",
@@ -79,18 +88,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--gui",
         action="store_true",
-        help="Abre la interfaz gráfica de LANCTL (reservado para una versión futura).",
+        help=t("LANCTL.CORE.APP.GUI_RESERVED"),
     )
     parser.add_argument(
         "--cli",
         action="store_true",
-        help="Abre la terminal interactiva persistente de LANCTL.",
+        help=t("LANCTL.CORE.APP.CLI_HELP"),
     )
     parser.add_argument(
         "-tui",
         "--tui",
         action="store_true",
-        help="Abre la interfaz avanzada de terminal a pantalla completa.",
+        help=t("LANCTL.CORE.APP.TUI_HELP"),
     )
     commands = parser.add_subparsers(dest="command", metavar="ÁMBITO/COMANDO")
     register_virtual_mode(commands, register_virtual_commands)
@@ -99,9 +108,30 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
-    if arguments and arguments[0].casefold() in LEGACY_VIRTUAL_COMMANDS:
-        arguments.insert(0, "virtual")
     run_automatic_log_cleanup()
+    from app.i18n import initialize_language, t
+    initialize_language()
+    from app.assets.icons import initialize_icons
+    initialize_icons()
+    from app.plugins import get_plugin_manager
+    manager = get_plugin_manager()
+    if not load_plugin_safe_mode() and manager.activate_enabled():
+        mode = "tui" if any(v in arguments for v in ("-tui", "--tui")) else "cli" if "--cli" in arguments else "command"
+        manager.events.emit(
+            "LANCTL.Core.Lifecycle.Startup",
+            {"version": __version__, "mode": mode},
+        )
+    plugin_commands = {
+        str(item.specification.get("name", "")).casefold()
+        for item in manager.extensions.list("command")
+    }
+    plugin_commands.update(
+        str(alias).casefold()
+        for item in manager.extensions.list("command")
+        for alias in item.specification.get("aliases", [])
+    )
+    if arguments and arguments[0].casefold() in LEGACY_VIRTUAL_COMMANDS | plugin_commands:
+        arguments.insert(0, "virtual")
     write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
     parser = build_parser()
     args = parser.parse_args(arguments)
@@ -113,15 +143,17 @@ def main(argv: list[str] | None = None) -> int:
         if args.cli:
             return run_global_cli()
         if not args.command:
-            pending(
-                "La interfaz gráfica todavía no está disponible. "
-                "Usa 'lanctl --cli' para abrir la terminal interactiva."
-            )
+            pending(t("LANCTL.CORE.APP.GUI_PENDING"))
             return 0
         return args.handler(args)
     except KeyboardInterrupt:
-        print_error("Operación cancelada.")
+        print_error(t("LANCTL.CORE.APP.CANCELLED"))
         return 130
     except (OSError, ValueError) as error:
         print_error(str(error))
         return 2
+
+
+def load_plugin_safe_mode() -> bool:
+    from app.core.config import load_config
+    return bool(load_config().get("pluginSafeMode", False))

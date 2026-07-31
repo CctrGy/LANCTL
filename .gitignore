@@ -17,6 +17,9 @@ dist/
 *.spec.bak
 
 # Local application data, credentials and logs
+data/lc/
+# Ruta antigua: se mantiene ignorada para no publicar datos si reaparece antes
+# de que el migrador de LANCTL pueda procesarla.
 data/als/
 *.log
 *.credentials

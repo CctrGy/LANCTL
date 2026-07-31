@@ -15,8 +15,8 @@ class ApplicationPathTests(unittest.TestCase):
             "pathlib.Path.cwd", return_value=Path(directory)
         ):
             # application_path no consulta cwd; la base se ancla al proyecto.
-            path = DeviceDatabase("data/als/devices.json").path
-        self.assertEqual(path, expected_root / "data" / "als" / "devices.json")
+            path = DeviceDatabase("data/lc/devices.json").path
+        self.assertEqual(path, expected_root / "data" / "lc" / "devices.json")
 
     def test_frozen_paths_are_relative_to_executable(self):
         executable = r"C:\Program Files\LANCTL\LANCTL.exe"
@@ -29,8 +29,8 @@ class ApplicationPathTests(unittest.TestCase):
                 Path(r"C:\Program Files\LANCTL"),
             )
             self.assertEqual(
-                application_path("data/als/.config"),
-                Path(r"C:\Program Files\LANCTL\data\als\.config"),
+                application_path("data/lc/.config"),
+                Path(r"C:\Program Files\LANCTL\data\lc\.config"),
             )
 
 

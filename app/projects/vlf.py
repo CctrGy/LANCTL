@@ -17,6 +17,7 @@ from app.core.config import load_config
 from app.core.database import DeviceDatabase
 from app.core.group_database import GroupDatabase
 from app.core.paths import application_path
+from app.projects.paths import resolve_project_path
 
 
 VLF_FORMAT_VERSION = "1.0"
@@ -30,7 +31,7 @@ REQUIRED_ENTRIES = {
 }
 DIRECTORIES = (
     "lan/", "auth/", "auth/keys/", "auth/keys/ssh/", "auth/keys/api/",
-    "auth/keys/device/", "auth/keys/logon/", "logs/", "devices/", "meta/",
+    "auth/keys/device/", "auth/keys/logon/", "logs/", "devices/", "plugins/", "meta/",
 )
 
 
@@ -100,7 +101,16 @@ def create_project(
             "description": description or old_lan.get("description", ""),
         })
 
-        credentials = application_path(active.get("credentials", "data/als/.credentials"))
+        # El proyecto conserva requisitos y estado de complementos, nunca su
+        # código ejecutable. Cada plugin dispone de un namespace propio.
+        try:
+            from app.plugins import get_plugin_manager
+            plugin_registry = get_plugin_manager().project_registry()
+        except (OSError, ValueError):
+            plugin_registry = {"schemaVersion": 1, "plugins": []}
+        _write_json(root / "plugins/registry.json", plugin_registry)
+
+        credentials = application_path(active.get("credentials", "data/lc/.credentials"))
         (root / "auth/logins.lgn").write_bytes(
             credentials.read_bytes() if credentials.exists() else b""
         )
@@ -385,6 +395,7 @@ def _copy_template_entries(source: Path, destination: Path) -> None:
                 or name.startswith("auth/keys/api/")
                 or name.startswith("auth/keys/device/")
                 or name.startswith("logs/")
+                or name.startswith("plugins/")
             ):
                 continue
             target = destination / PurePosixPath(name)
@@ -501,10 +512,8 @@ def _read_json_entry(archive: zipfile.ZipFile, name: str) -> dict:
 
 
 def _vlf_path(value: str | Path) -> Path:
-    path = Path(value).expanduser()
-    if path.suffix.casefold() != ".vlf":
-        path = path.with_suffix(".vlf")
-    return path.resolve()
+    configured = load_config().get("projectsDirectory")
+    return resolve_project_path(value, configured)
 
 
 def _existing_vlf(value: str | Path) -> Path:

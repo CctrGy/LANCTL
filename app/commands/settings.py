@@ -73,6 +73,11 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument("--groups", metavar="ARCHIVO", help="Ruta de la base de grupos.")
     command.add_argument("--log", metavar="DIRECTORIO", help="Directorio de registros.")
     command.add_argument(
+        "--projects-directory",
+        metavar="DIRECTORIO",
+        help="Carpeta predeterminada para nombres de proyecto VLF relativos.",
+    )
+    command.add_argument(
         "-log-cleanup",
         "--log-cleanup",
         choices=("on", "off"),
@@ -105,6 +110,7 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.database is None
         and args.groups is None
         and args.log is None
+        and args.projects_directory is None
         and args.log_cleanup is None
         and args.log_retention_days is None
     ):
@@ -166,11 +172,14 @@ def run_settings(args: argparse.Namespace) -> int:
         (args.database, "database", "Base de elementos"),
         (args.groups, "groups", "Base de grupos"),
         (args.log, "log", "Directorio de logs"),
+        (args.projects_directory, "projectsDirectory", "Directorio de proyectos"),
     ):
         if argument is not None:
             value = argument.strip()
             if not value:
                 raise ValueError(f"{label} no puede quedar vacío")
+            if key == "projectsDirectory" and value.casefold() in ("default", "auto"):
+                value = r"%USERPROFILE%\Documents\LanCTL"
             config[key] = value
             changes.append(f"{label}: {value}")
 

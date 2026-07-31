@@ -12,7 +12,7 @@ from app.core.logger import write_log
 from app.core.config import load_config, save_config
 from app.projects import (
     create_project, inspect_project, list_project_entries,
-    update_project, verify_project,
+    update_project, verify_project, resolve_project_path,
 )
 
 
@@ -72,6 +72,10 @@ def _create(args) -> int:
     )
     project = result["project"]
     _set_active_project(result["path"])
+    from app.plugins import get_plugin_manager
+    get_plugin_manager().events.emit("LANCTL.Project.File.Open", {
+        "path": result["path"], "project_id": project["id"],
+    })
     write_log(f"PROJECT CREATE id={project['id']} path={result['path']}")
     ok("PROYECTO", f"{project['name']} | {project['devices']} dispositivos")
     print(f" Archivo : {result['path']}")
@@ -83,6 +87,10 @@ def _create(args) -> int:
 def _update(args) -> int:
     result = update_project(args.file)
     _set_active_project(result["path"])
+    from app.plugins import get_plugin_manager
+    get_plugin_manager().events.emit("LANCTL.Project.File.Save", {
+        "path": result["path"], "project_id": result.get("project", {}).get("id"),
+    })
     write_log(f"PROJECT UPDATE path={result['path']}")
     ok("ACTUALIZADO", result["path"])
     print(f" Backup  : {result['backup']}")
@@ -101,11 +109,15 @@ def _use(args) -> int:
     result = verify_project(args.file)
     from pathlib import Path
 
-    project = Path(args.file).expanduser()
-    if project.suffix.casefold() != ".vlf":
-        project = project.with_suffix(".vlf")
-    resolved = str(project.resolve())
+    resolved = str(resolve_project_path(
+        args.file, load_config().get("projectsDirectory")
+    ))
     _set_active_project(resolved)
+    from app.plugins import get_plugin_manager
+    project_info = inspect_project(resolved)
+    get_plugin_manager().events.emit("LANCTL.Project.File.Open", {
+        "path": resolved, "project_id": project_info.get("id"),
+    })
     ok("PROYECTO ACTIVO", resolved)
     print(f" SHA-256 : {result['checksum']}")
     return 0

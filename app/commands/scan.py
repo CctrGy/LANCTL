@@ -5,6 +5,7 @@ from dataclasses import asdict
 import json
 import os
 import sys
+import uuid
 
 from colorama import Fore, Style
 
@@ -71,6 +72,20 @@ def run_scan(args: argparse.Namespace) -> int:
     ports = list(range(1, 65536)) if args.all_ports else parse_ports(args.ports)
     manufacturer = device.manufacturer or detect_manufacturer(device.mac)
     scanner = ElementScanner(timeout=args.timeout, workers=args.workers)
+    from app.plugins import get_plugin_manager
+    plugin_manager = get_plugin_manager()
+    scan_id = str(uuid.uuid4())
+    event_values = {
+        "scan_id": scan_id, "target_range": device.ip,
+        "running": True, "active": True, "devices": 0,
+    }
+    _, decision = plugin_manager.events.emit(
+        "LANCTL.Network.Scan.BeforeStart", event_values,
+        correlation_id=scan_id,
+    )
+    if not decision.allowed:
+        raise ValueError(decision.reason or "el escaneo ha sido cancelado por un complemento")
+    plugin_manager.events.emit("LANCTL.Network.Scan.Begin", event_values, correlation_id=scan_id)
     result = scanner.scan(
         device.ip,
         ports,
@@ -78,6 +93,10 @@ def run_scan(args: argparse.Namespace) -> int:
         identify=args.identify,
         manufacturer=manufacturer,
     )
+    plugin_manager.events.emit("LANCTL.Network.Scan.End", {
+        "scan_id": scan_id, "target_range": device.ip,
+        "running": False, "active": result.reachable, "devices": int(result.reachable),
+    }, correlation_id=scan_id)
     identity_match = (
         None if not result.observed_mac or not device.mac
         else result.observed_mac.casefold() == device.mac.casefold()
