@@ -3,7 +3,11 @@
 from PyInstaller.utils.hooks import collect_data_files
 
 
-datas = collect_data_files("manuf")
+datas = collect_data_files("manuf") + [
+    ("GUI", "GUI"),
+    ("bundled/lanctl.theme.default.lcp", "bundled"),
+    ("bundled/recurrent-elements.json", "bundled"),
+]
 
 a = Analysis(
     ["main.py"],

@@ -22,6 +22,7 @@ from app.plugins.functions import FunctionRegistry
 from app.plugins.models import PluginManifest, PluginState
 from app.plugins.package import install_package, inspect_package, verify_package
 from app.plugins.builtin import bootstrap_builtin_plugins
+from app.gui_theme import validate_theme_specification
 
 
 PLUGIN_ROOT = application_path("data/lc/plugins")
@@ -294,6 +295,8 @@ class PluginManager:
                 name = str(specification.get("name", ""))
                 if not re.fullmatch(r"[a-z][a-z0-9-]{1,31}", name) or specification.get("action") not in {"inventory.summary"}:
                     raise ValueError(f"especificación de comando declarativo no válida: {item.get('id')}")
+            if kind == "theme":
+                specification = validate_theme_specification(specification)
             self.extensions.register(str(item["id"]), kind, plugin.manifest.plugin_id, specification)
             if kind == "language":
                 relative = Path(str(specification.get("file", "")))

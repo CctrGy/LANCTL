@@ -41,6 +41,21 @@ TUI_ELEMENT_HELP = (
     "  element -cnf O|X|-|S            Cambia su clasificación",
     "  element -delete                 Elimina tras confirmación",
     "Puedes escribir OBJETIVO antes de cualquier opción para no usar la fila resaltada.",
+    "Usa ←/→ para elegir una opción y completa sus argumentos en el prompt.",
+)
+
+# La cadena insertada evita copiar los marcadores descriptivos (OBJETIVO,
+# TEXTO, etc.) como si fueran argumentos reales.
+TUI_ELEMENT_SUGGESTIONS = (
+    (1, "element "),
+    (2, "element "),
+    (3, "element -add "),
+    (4, "element -name "),
+    (5, "element -alias "),
+    (6, "element -description "),
+    (7, "element -group "),
+    (8, "element -cnf "),
+    (9, "element -delete"),
 )
 
 
@@ -65,6 +80,8 @@ class LanctlTui:
         self.output_index = 0
         self.output_scroll = 0
         self.output_selectable: list[int] = []
+        self.command_suggestions: list[tuple[int, str]] = []
+        self.suggestion_index = -1
         self.pending_confirmation: list[str] | None = None
         self.active_devices: set[str] = set()
         self.response_ms: dict[str, float] = {}
@@ -115,18 +132,19 @@ class LanctlTui:
             return [device for device in source if in_dhcp(device) == (mode == "dhcp")]
         return list(source)
 
-    def configure_list(self, parts: list[str]) -> None:
+    def configure_list(self, parts: list[str]) -> bool:
         try:
             self.list_filter = _parse_list_filter(parts)
         except ValueError as error:
             self.messages = [str(error)]
-            return
+            return False
         self.index = 0
         self.scroll = 0
         self.reload()
         mode, value = self.list_filter
         label = f"{mode}:{value}" if value else mode
         self.messages = [f"Filtro de lista: {label} | {len(self.devices)} elementos"]
+        return True
 
     def move(self, delta: int) -> None:
         if self.devices:
@@ -347,6 +365,27 @@ class LanctlTui:
                     f"{background}{intensity}{Fore.WHITE}"
                     f"{fit_text(marker + message, width)}{RESET}"
                 )
+        elif self.command_suggestions:
+            selected_line = (
+                self.command_suggestions[self.suggestion_index][0]
+                if self.suggestion_index >= 0 else -1
+            )
+            start = 0
+            if selected_line >= message_rows:
+                start = selected_line - message_rows + 1
+            start = min(start, max(0, len(self.messages) - message_rows))
+            wrapped = []
+            for absolute in range(start, min(len(self.messages), start + message_rows)):
+                message = self.messages[absolute]
+                selected = absolute == selected_line
+                marker = "▶ " if selected else "  "
+                background = Back.LIGHTBLACK_EX if selected else ""
+                intensity = Style.BRIGHT if selected else ""
+                wrapped.append(
+                    f"{background}{intensity}{Fore.WHITE}"
+                    f"{fit_text(marker + message, width)}{RESET}"
+                )
+            lines.extend(wrapped[-message_rows:])
         else:
             wrapped: list[str] = []
             for message in self.messages[-12:]:
@@ -565,6 +604,23 @@ class LanctlTui:
                 0, min(len(self.output_selectable) - 1, self.output_index + delta)
             )
 
+    def _move_suggestion(self, delta: int) -> None:
+        suggestions = getattr(self, "command_suggestions", [])
+        if not suggestions:
+            return
+        current = getattr(self, "suggestion_index", -1)
+        if current < 0:
+            current = 0 if delta > 0 else len(suggestions) - 1
+        else:
+            current = (current + delta) % len(suggestions)
+        self.suggestion_index = current
+        self.command = suggestions[current][1]
+        self.cursor = len(self.command)
+
+    def _clear_suggestions(self) -> None:
+        self.command_suggestions = []
+        self.suggestion_index = -1
+
     def execute(self) -> None:
         raw = self.command.strip()
         self.command = ""
@@ -599,7 +655,10 @@ class LanctlTui:
             part.casefold() in ("/?", "-h", "--help") for part in parts[1:]
         ):
             self.messages = list(TUI_ELEMENT_HELP)
+            self.command_suggestions = list(TUI_ELEMENT_SUGGESTIONS)
+            self.suggestion_index = -1
             return
+        self._clear_suggestions()
         if command in ("exit", "quit", "salir"):
             self.running = False
             return
@@ -624,7 +683,15 @@ class LanctlTui:
             ]
             return
         if command == "list":
-            self.configure_list(parts[1:])
+            if any(
+                part.casefold() in ("-recurrent", "--recurrent")
+                for part in parts[1:]
+            ):
+                result, output = self._capture(["virtual", *parts])
+                self._set_command_output(output, result)
+                return
+            if self.configure_list(parts[1:]):
+                self.refresh()
             return
         if command == "version":
             self.messages = [f"LANCTL {__version__}"]
@@ -719,6 +786,9 @@ class LanctlTui:
                 self.output_scroll = 0
                 return
             self.output_focus = False
+        if key in ("LEFT", "RIGHT") and getattr(self, "command_suggestions", []):
+            self._move_suggestion(-1 if key == "LEFT" else 1)
+            return
         if key == "UP":
             self.move(-1)
         elif key == "DOWN":
@@ -742,22 +812,27 @@ class LanctlTui:
         elif key == "ENTER":
             self.execute()
         elif key == "BACKSPACE":
+            self._clear_suggestions()
             if self.cursor:
                 self.command = self.command[:self.cursor - 1] + self.command[self.cursor:]
                 self.cursor -= 1
         elif key == "DELETE":
+            self._clear_suggestions()
             self.command = self.command[:self.cursor] + self.command[self.cursor + 1:]
         elif key == "LEFT":
             self.cursor = max(0, self.cursor - 1)
         elif key == "RIGHT":
             self.cursor = min(len(self.command), self.cursor + 1)
         elif key == "HOME":
+            self._clear_suggestions()
             self.cursor = 0
         elif key == "END":
+            self._clear_suggestions()
             self.cursor = len(self.command)
         elif key == "ESC":
             self.running = False
         elif len(key) == 1 and key.isprintable():
+            self._clear_suggestions()
             self.command = self.command[:self.cursor] + key + self.command[self.cursor:]
             self.cursor += 1
 

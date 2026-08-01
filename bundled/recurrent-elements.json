@@ -1,0 +1,72 @@
+[
+  {
+    "IP": "-",
+    "cnf": "O",
+    "ALIAS": "LV1",
+    "MAC": "70:A6:CC:36:0B:41",
+    "NAME": "LaptopVictor1",
+    "GROUP": ["VIC"],
+    "description": "Portátil que ejecuta LANCTL",
+    "manufacturer": ""
+  },
+  {
+    "IP": "-",
+    "cnf": "O",
+    "ALIAS": "VM1",
+    "MAC": "5E:8C:B3:08:05:D4",
+    "NAME": "MobilVicttor1",
+    "GROUP": ["VIC"],
+    "description": "Móvil del desarrollador",
+    "manufacturer": "MAC privada/aleatoria"
+  },
+  {
+    "IP": "-",
+    "cnf": "O",
+    "ALIAS": "",
+    "MAC": "40:16:3B:78:6D:B8",
+    "NAME": "MobilYuyu2",
+    "GROUP": [],
+    "description": "",
+    "manufacturer": ""
+  },
+  {
+    "IP": "-",
+    "cnf": "O",
+    "ALIAS": "",
+    "MAC": "FA:75:89:37:BE:52",
+    "NAME": "MobilYuyu1",
+    "GROUP": [],
+    "description": "",
+    "manufacturer": "MAC privada/aleatoria"
+  },
+  {
+    "IP": "-",
+    "cnf": "O",
+    "ALIAS": "",
+    "MAC": "5A:ED:1D:EE:D0:ED",
+    "NAME": "MobilMama1",
+    "GROUP": [],
+    "description": "",
+    "manufacturer": "MAC privada/aleatoria"
+  },
+  {
+    "IP": "-",
+    "cnf": "O",
+    "ALIAS": "",
+    "MAC": "90:78:41:0F:ED:B7",
+    "NAME": "LaptopYuyu1",
+    "GROUP": [],
+    "description": "",
+    "manufacturer": ""
+  },
+  {
+    "IP": "-",
+    "cnf": "O",
+    "ALIAS": "",
+    "MAC": "A4:B1:C1:4E:A9:A8",
+    "NAME": "LaptopMama1",
+    "GROUP": [],
+    "description": "",
+    "manufacturer": ""
+  }
+]

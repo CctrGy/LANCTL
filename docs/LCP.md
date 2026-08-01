@@ -38,6 +38,30 @@ declarativas sin ejecutar código:
 {"extensions":[{"id":"example.theme.dark","type":"theme","specification":{"palette":"dark"}}]}
 ```
 
+### Temas de la GUI
+
+Los temas son extensiones declarativas `theme` con permiso `theme.register`.
+No pueden incluir ni ejecutar CSS o JavaScript. La especificación contiene
+`tokens` globales y ajustes opcionales para identificadores estables:
+
+```json
+{
+  "id": "example.theme.dark",
+  "type": "theme",
+  "specification": {
+    "tokens": {"color.accent": "#25a9e8", "radius.panel": "10px"},
+    "components": {
+      "lanctl.primary-action": {"color.accent": "#25a9e8"}
+    }
+  }
+}
+```
+
+El core valida nombres, valores e identificadores antes de registrarlos. Los
+colores solo admiten hexadecimal y las medidas admiten `px` o `rem`, evitando
+la inyección de CSS arbitrario. El HTML enlaza el mismo contrato mediante
+`data-component-id="lanctl.*"`.
+
 ## Runtimes y confianza
 
 - `isolated`: carga manifiestos y extensiones declarativas. No ejecuta

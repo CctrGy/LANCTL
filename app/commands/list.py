@@ -14,6 +14,7 @@ from app.services.lan_scanner import DISCOVERY_MODES
 from app.services.scan_profiles import SCAN_PROFILES, apply_profile
 from app.core.progress import ScanProgress
 from app.core.query import matches_query
+from app.commands.recurrent import run_recurrent
 
 
 def register_list_command(commands: argparse._SubParsersAction) -> None:
@@ -41,6 +42,12 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
         help="Formato de salida (por defecto: table).",
     )
     command.add_argument("-o", "--output", help="Guarda la salida en un archivo.")
+    command.add_argument(
+        "-recurrent",
+        "--recurrent",
+        action="store_true",
+        help="Lista los elementos recurrentes sin escanear la LAN ni mostrar IP.",
+    )
     command.add_argument(
         "--where",
         help='Consulta combinable, por ejemplo: "active and group=IOT and vendor~Amazon".',
@@ -213,6 +220,8 @@ def filter_rows(devices, activity, args):
 
 
 def run_list(args: argparse.Namespace) -> int:
+    if args.recurrent:
+        return run_recurrent(args)
     if args.workers < 1:
         raise ValueError("--workers debe ser mayor que cero")
     if args.timeout <= 0:

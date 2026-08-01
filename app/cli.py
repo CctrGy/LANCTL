@@ -23,13 +23,14 @@ from app.commands.search import register_search_command
 from app.commands.scan import register_scan_command
 from app.commands.switch import register_switch_command
 from app.commands.list import register_list_command
+from app.commands.recurrent import register_recurrent_command
 from app.commands.ping import register_ping_command
 from app.commands.open import register_open_command
 from app.commands.project import register_project_command
 from app.commands.plugin import register_plugin_command
 from app.commands.language import register_language_command
 from app.commands.modes import register_virtual_mode, run_global_cli
-from app.core.console import error as print_error, pending
+from app.core.console import error as print_error
 from app.core.parser import LANCTLArgumentParser
 from app.core.logger import write_log
 from app.core.log_cleanup import run_automatic_log_cleanup
@@ -41,12 +42,13 @@ LEGACY_VIRTUAL_COMMANDS = {
     "protocol", "ssh", "terminal", "cli", "switch", "group", "element",
     "name", "alias", "ping", "open", "connect", "project", "projects",
     "plugin", "plugins", "addon", "addons",
-    "language", "languages", "lang",
+    "language", "languages", "lang", "recurrent",
 }
 
 
 def register_virtual_commands(commands: argparse._SubParsersAction) -> None:
     register_list_command(commands)
+    register_recurrent_command(commands)
     register_ping_command(commands)
     register_open_command(commands)
     register_settings_command(commands)
@@ -116,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
     from app.plugins import get_plugin_manager
     manager = get_plugin_manager()
     if not load_plugin_safe_mode() and manager.activate_enabled():
-        mode = "tui" if any(v in arguments for v in ("-tui", "--tui")) else "cli" if "--cli" in arguments else "command"
+        mode = "tui" if any(v in arguments for v in ("-tui", "--tui")) else "cli" if "--cli" in arguments else "gui" if "--gui" in arguments or not arguments else "command"
         manager.events.emit(
             "LANCTL.Core.Lifecycle.Startup",
             {"version": __version__, "mode": mode},
@@ -137,19 +139,19 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(arguments)
 
     try:
+        if args.gui or (not args.command and not args.tui and not args.cli):
+            from app.gui import run_gui
+            return run_gui()
         if args.tui:
             from app.tui import run_tui
             return run_tui()
         if args.cli:
             return run_global_cli()
-        if not args.command:
-            pending(t("LANCTL.CORE.APP.GUI_PENDING"))
-            return 0
         return args.handler(args)
     except KeyboardInterrupt:
         print_error(t("LANCTL.CORE.APP.CANCELLED"))
         return 130
-    except (OSError, ValueError) as error:
+    except (OSError, RuntimeError, ValueError) as error:
         print_error(str(error))
         return 2
 

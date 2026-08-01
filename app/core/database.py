@@ -10,6 +10,7 @@ from app.models import Device, normalize_cnf, normalize_mac
 from app.core.paths import application_path
 from app.core.config import load_config
 from app.core.logger import write_database_log
+from app.core.recurrent_elements import RecurrentElementDatabase
 
 
 class DeviceDatabase:
@@ -49,7 +50,9 @@ class DeviceDatabase:
     ) -> list[Device]:
         """Fusiona resultados sin modificar todavía la base de datos."""
         devices = self.load()
+        recurrent_elements = RecurrentElementDatabase()
         for record in records:
+            record = recurrent_elements.enrich(record)
             ip = str(record["IP"])
             mac = str(record.get("MAC", "")).upper()
 

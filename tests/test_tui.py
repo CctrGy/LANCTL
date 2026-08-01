@@ -105,6 +105,47 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(calls, ["reload"])
         self.assertIn("2 elementos", tui.messages[0])
 
+    def test_list_refreshes_the_network_after_setting_the_filter(self):
+        tui = object.__new__(LanctlTui)
+        tui.command = "list --connected"
+        tui.cursor = len(tui.command)
+        tui.messages = []
+        tui.output_focus = False
+        tui.output_selectable = []
+        tui.output_index = 0
+        tui.output_scroll = 0
+        tui.pending_confirmation = None
+        tui.command_suggestions = []
+        calls = []
+        tui.configure_list = lambda parts: calls.append(("filter", parts)) or True
+        tui.refresh = lambda: calls.append(("refresh", []))
+
+        tui.execute()
+
+        self.assertEqual(
+            calls,
+            [("filter", ["--connected"]), ("refresh", [])],
+        )
+
+    def test_invalid_list_filter_does_not_scan(self):
+        tui = object.__new__(LanctlTui)
+        tui.command = "list --inventado"
+        tui.cursor = len(tui.command)
+        tui.messages = []
+        tui.output_focus = False
+        tui.output_selectable = []
+        tui.output_index = 0
+        tui.output_scroll = 0
+        tui.pending_confirmation = None
+        tui.command_suggestions = []
+        calls = []
+        tui.configure_list = lambda _parts: False
+        tui.refresh = lambda: calls.append("refresh")
+
+        tui.execute()
+
+        self.assertEqual(calls, [])
+
     def test_last_seen_uses_compact_tui_format(self):
         self.assertEqual(
             _compact_timestamp("2026-07-26T17:43:35+02:00"),
@@ -147,6 +188,38 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(_read_windows_key(lambda: next(values)), "F5")
         values = iter(["\x00", "="])
         self.assertEqual(_read_windows_key(lambda: next(values)), "F3")
+
+    def test_element_help_suggestions_cycle_with_lateral_arrows(self):
+        tui = object.__new__(LanctlTui)
+        tui.command = ""
+        tui.cursor = 0
+        tui.command_suggestions = [(1, "element "), (2, "element -add ")]
+        tui.suggestion_index = -1
+        tui.output_focus = False
+        tui.detail_lines = []
+
+        tui.handle_key("RIGHT")
+        self.assertEqual(tui.command, "element ")
+        self.assertEqual(tui.cursor, len("element "))
+        tui.handle_key("RIGHT")
+        self.assertEqual(tui.command, "element -add ")
+        tui.handle_key("LEFT")
+        self.assertEqual(tui.command, "element ")
+
+    def test_typing_after_suggestion_returns_arrows_to_cursor_control(self):
+        tui = object.__new__(LanctlTui)
+        tui.command = "element -name "
+        tui.cursor = len(tui.command)
+        tui.command_suggestions = [(1, tui.command)]
+        tui.suggestion_index = 0
+        tui.output_focus = False
+        tui.detail_lines = []
+
+        tui.handle_key("R")
+        self.assertEqual(tui.command, "element -name R")
+        self.assertEqual(tui.command_suggestions, [])
+        tui.handle_key("LEFT")
+        self.assertEqual(tui.cursor, len(tui.command) - 1)
 
     def test_last_status_line_ignores_empty_lines(self):
         self.assertEqual(_last_meaningful_line("uno\n\ndos\n"), "dos")
