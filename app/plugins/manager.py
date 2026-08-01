@@ -293,7 +293,21 @@ class PluginManager:
             if kind == "command":
                 import re
                 name = str(specification.get("name", ""))
-                if not re.fullmatch(r"[a-z][a-z0-9-]{1,31}", name) or specification.get("action") not in {"inventory.summary"}:
+                action = specification.get("action")
+                function_id = str(specification.get("function", ""))
+                valid_function = (
+                    action != "function.call"
+                    or bool(re.fullmatch(
+                        r"(?!LANCTL\.)[A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z][A-Za-z0-9_-]*){2,}",
+                        function_id,
+                        re.IGNORECASE,
+                    ))
+                )
+                if (
+                    not re.fullmatch(r"[a-z][a-z0-9-]{1,31}", name)
+                    or action not in {"inventory.summary", "function.call"}
+                    or not valid_function
+                ):
                     raise ValueError(f"especificación de comando declarativo no válida: {item.get('id')}")
             if kind == "theme":
                 specification = validate_theme_specification(specification)

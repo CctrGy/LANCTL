@@ -1,0 +1,180 @@
+from __future__ import annotations
+
+import csv
+import io
+import json
+import re
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+
+from app.plugins.contracts import FunctionResult
+
+
+DATABASE = Path(__file__).resolve().parent / "assets" / "vendors.json"
+IEEE_SOURCES = (
+    ("MA-L", "https://standards-oui.ieee.org/oui/oui.csv"),
+    ("MA-M", "https://standards-oui.ieee.org/oui28/mam.csv"),
+    ("MA-S", "https://standards-oui.ieee.org/oui36/oui36.csv"),
+)
+PREFIX_LENGTHS = {6, 7, 9, 12}
+
+
+def _normalize_hex(value):
+    normalized = re.sub(r"[^0-9A-Fa-f]", "", str(value)).upper()
+    if not normalized or not re.fullmatch(r"[0-9A-F]+", normalized):
+        raise ValueError("la MAC o el prefijo no contiene hexadecimal válido")
+    return normalized
+
+
+def _normalize_prefix(value):
+    prefix = _normalize_hex(value)
+    if len(prefix) not in PREFIX_LENGTHS:
+        raise ValueError("usa un prefijo de 24, 28 o 36 bits, o una MAC completa")
+    return prefix
+
+
+def _load():
+    try:
+        document = json.loads(DATABASE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"base de fabricantes no válida: {DATABASE}") from error
+    assignments = document.get("assignments", {})
+    custom = document.get("custom", {})
+    if not isinstance(assignments, dict) or not isinstance(custom, dict):
+        raise ValueError("assignments y custom deben ser objetos JSON")
+    document["assignments"] = {
+        _normalize_prefix(key): str(value).strip()
+        for key, value in assignments.items() if str(value).strip()
+    }
+    document["custom"] = {
+        _normalize_prefix(key): str(value).strip()
+        for key, value in custom.items() if str(value).strip()
+    }
+    return document
+
+
+def _save(document):
+    DATABASE.parent.mkdir(parents=True, exist_ok=True)
+    temporary = DATABASE.with_suffix(".tmp")
+    temporary.write_text(
+        json.dumps(document, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(DATABASE)
+
+
+def _match(mac, values):
+    compact = _normalize_hex(mac)
+    if len(compact) != 12:
+        return ""
+    matches = (
+        (prefix, vendor) for prefix, vendor in values.items()
+        if compact.startswith(prefix)
+    )
+    return next((vendor for _, vendor in sorted(matches, key=lambda item: len(item[0]), reverse=True)), "")
+
+
+def resolve(mac):
+    document = _load()
+    # Las reglas editadas por el usuario tienen precedencia sobre IEEE.
+    vendor = _match(mac, document["custom"])
+    if not vendor:
+        vendor = _match(mac, document["assignments"])
+    return FunctionResult(True, data=vendor)
+
+
+def _download_ieee():
+    assignments = {}
+    headers = {"User-Agent": "LANCTL-MAC-Vendor/1.0"}
+    for registry, url in IEEE_SOURCES:
+        request = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = response.read().decode("utf-8-sig")
+        rows = csv.DictReader(io.StringIO(payload))
+        count = 0
+        for row in rows:
+            raw_prefix = row.get("Assignment", "")
+            organization = (row.get("Organization Name") or "").strip()
+            if not raw_prefix or not organization:
+                continue
+            prefix = _normalize_hex(raw_prefix)
+            if len(prefix) not in {6, 7, 9}:
+                continue
+            assignments[prefix] = organization
+            count += 1
+        if not count:
+            raise ValueError(f"IEEE {registry} no devolvió asignaciones válidas")
+    return assignments
+
+
+def _usage():
+    return (
+        "mac-vendor resolve MAC | list | add PREFIJO FABRICANTE [--force] | "
+        "remove PREFIJO | update"
+    )
+
+
+def database_command(arguments):
+    args = list(arguments or [])
+    if not args or args[0].casefold() in {"help", "-h", "--help", "/?"}:
+        return FunctionResult(True, message=_usage())
+    action = args.pop(0).casefold()
+    document = _load()
+
+    if action == "resolve" and len(args) == 1:
+        vendor = resolve(args[0]).data
+        return FunctionResult(True, message=vendor or "Fabricante no encontrado", data=vendor)
+
+    if action == "list" and not args:
+        lines = ["PREFIX       SOURCE  MANUFACTURER"]
+        for source, values in (("CUSTOM", document["custom"]), ("IEEE", document["assignments"])):
+            for prefix, vendor in sorted(values.items()):
+                lines.append(f"{prefix:<12} {source:<7} {vendor}")
+        lines.append(
+            f"Total: {len(document['custom'])} personalizadas, "
+            f"{len(document['assignments'])} IEEE/caché"
+        )
+        return FunctionResult(True, message="\n".join(lines))
+
+    if action == "add":
+        force = "--force" in [value.casefold() for value in args]
+        args = [value for value in args if value.casefold() != "--force"]
+        if len(args) < 2:
+            return FunctionResult(False, code="USAGE", message=_usage())
+        prefix = _normalize_prefix(args[0])
+        vendor = " ".join(args[1:]).strip()
+        if not vendor:
+            return FunctionResult(False, code="USAGE", message="indica el fabricante")
+        if prefix in document["custom"] and not force:
+            return FunctionResult(
+                False, code="EXISTS",
+                message=f"{prefix} ya existe; usa --force para reemplazarlo",
+            )
+        document["custom"][prefix] = vendor
+        _save(document)
+        return FunctionResult(True, message=f"{prefix} = {vendor}")
+
+    if action == "remove" and len(args) == 1:
+        prefix = _normalize_prefix(args[0])
+        if prefix not in document["custom"]:
+            return FunctionResult(False, code="NOT_FOUND", message=f"regla personalizada inexistente: {prefix}")
+        removed = document["custom"].pop(prefix)
+        _save(document)
+        return FunctionResult(True, message=f"Eliminado {prefix} = {removed}")
+
+    if action == "update" and not args:
+        assignments = _download_ieee()
+        document["assignments"] = assignments
+        document["source"] = "IEEE Registration Authority MA-L, MA-M, MA-S"
+        document["updated"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        _save(document)
+        return FunctionResult(True, message=f"Base IEEE actualizada: {len(assignments)} prefijos")
+
+    return FunctionResult(False, code="USAGE", message=_usage())
+
+
+def activate(api):
+    api.functions.register("MacVendor.Manufacturer.Resolve", resolve, FunctionResult)
+    api.functions.register("MacVendor.Database.Command", database_command, FunctionResult)
+    api.log("ACTIVATE", "MAC vendor resolver")

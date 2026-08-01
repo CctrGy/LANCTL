@@ -25,9 +25,11 @@ class ExtensionTests(unittest.TestCase):
         self.assertIn("wsd", accurate.extra_methods)
 
     def test_discovery_probes_use_standard_multicast_endpoints(self):
-        self.assertEqual(discovery_probe("ssdp")[1], ("239.255.255.250", 1900))
-        self.assertEqual(discovery_probe("mdns")[1], ("224.0.0.251", 5353))
         self.assertEqual(discovery_probe("wsd")[1], ("239.255.255.250", 3702))
+        with self.assertRaises(ValueError):
+            discovery_probe("mdns")
+        with self.assertRaises(ValueError):
+            discovery_probe("ssdp")
 
     def test_progress_is_machine_silent_and_tty_visible(self):
         silent = io.StringIO()

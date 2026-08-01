@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "source": "built-in common prefixes",
+  "updated": null,
+  "assignments": {
+    "000C29": "VMware, Inc.",
+    "005056": "VMware, Inc.",
+    "080027": "PCS Systemtechnik GmbH",
+    "B827EB": "Raspberry Pi Foundation",
+    "DCA632": "Raspberry Pi Trading Ltd"
+  },
+  "custom": {}
+}

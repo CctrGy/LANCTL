@@ -119,6 +119,7 @@ CNF_COLORS = {
     "X": Fore.LIGHTRED_EX,
     "-": Fore.LIGHTYELLOW_EX,
     "S": Fore.LIGHTCYAN_EX,
+    "F": Fore.LIGHTMAGENTA_EX,
     "@": Fore.LIGHTMAGENTA_EX,
 }
 DARK_CNF_COLORS = {
@@ -126,6 +127,7 @@ DARK_CNF_COLORS = {
     "X": Fore.RED,
     "-": Fore.YELLOW,
     "S": Fore.CYAN,
+    "F": Fore.MAGENTA,
     "@": Fore.MAGENTA,
 }
 

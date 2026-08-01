@@ -1,5 +1,19 @@
 # LANCTL Complement Platform (LCP) 1.0
 
+## Política de compatibilidad 0.3
+
+- LANCTL `0.3.x` escribe LCP con `schemaVersion: 1` y acepta paquetes creados
+  por alphas, betas y versiones estables de la misma serie que mantengan ese
+  esquema.
+- Los campos desconocidos son aditivos y se ignoran; eliminar o cambiar el
+  significado de un campo exige una nueva versión de esquema.
+- Un esquema futuro se rechaza antes de instalar o ejecutar el paquete. No se
+  intenta una conversión destructiva ni se sustituye el plugin ya instalado.
+- Actualizar un plugin es transaccional: primero se verifica y extrae en un
+  staging; si la sustitución falla se restaura la instalación anterior.
+- No se garantiza que una versión antigua de LANCTL pueda abrir paquetes
+  creados con un esquema futuro.
+
 LANCTL utiliza `.lcp` como contenedor ZIP seguro para todos sus complementos.
 Un mismo paquete puede aportar capacidades `plugin`, `theme`, `language`,
 `settings`, `automation`, `network`, `analysis`, `ui`, `security`, `protocol`,
@@ -123,6 +137,29 @@ Los paquetes `trusted` pueden declarar hooks JSON en `api/hooks/*.hook`:
 ```
 
 El handler debe existir en `main.exec` y el plugin necesita `events.listen`.
+
+## Adaptadores de fabricante y comandos con función
+
+Un plugin `trusted` puede enriquecer el análisis de una MAC registrando un
+`device-adapter` con el rol `manufacturer-resolver`. La función recibe la MAC
+normalizada y devuelve un `FunctionResult` cuyo `data` es el fabricante. Los
+adaptadores activos se consultan antes de la base local integrada:
+
+```json
+{
+  "id": "example.mac-vendor.resolver",
+  "type": "device-adapter",
+  "specification": {
+    "role": "manufacturer-resolver",
+    "function": "Example.Manufacturer.Resolve"
+  }
+}
+```
+
+Los comandos declarativos pueden usar `action: "function.call"` y declarar la
+función mediante `function`. Los argumentos restantes de la CLI se entregan a
+la función como una lista. La función debe pertenecer a un namespace no
+reservado y el plugin necesita `command.register` y `functions.register`.
 
 ## Auditoría y VLF
 

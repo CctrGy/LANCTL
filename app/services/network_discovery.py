@@ -2,30 +2,15 @@ from __future__ import annotations
 
 import select
 import socket
-import struct
 import time
 import uuid
 
 
-EXTRA_DISCOVERY_METHODS = ("mdns", "ssdp", "wsd")
-
-
-def _dns_name(value: str) -> bytes:
-    return b"".join(bytes((len(part),)) + part.encode("ascii") for part in value.split(".")) + b"\0"
+EXTRA_DISCOVERY_METHODS = ("wsd",)
 
 
 def discovery_probe(method: str) -> tuple[bytes, tuple[str, int]]:
     method = method.casefold()
-    if method == "ssdp":
-        payload = (
-            "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\n"
-            'MAN: "ssdp:discover"\r\nMX: 1\r\nST: ssdp:all\r\n\r\n'
-        ).encode("ascii")
-        return payload, ("239.255.255.250", 1900)
-    if method == "mdns":
-        # QCLASS con bit QU solicita respuesta unicast al puerto efímero.
-        question = _dns_name("_services._dns-sd._udp.local") + struct.pack("!HH", 12, 0x8001)
-        return struct.pack("!HHHHHH", 0, 0, 1, 0, 0, 0) + question, ("224.0.0.251", 5353)
     if method == "wsd":
         message_id = f"urn:uuid:{uuid.uuid4()}"
         payload = f'''<?xml version="1.0" encoding="UTF-8"?>
@@ -37,11 +22,13 @@ def discovery_probe(method: str) -> tuple[bytes, tuple[str, int]]:
  <w:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</w:Action></e:Header>
  <e:Body><d:Probe/></e:Body></e:Envelope>'''.encode("utf-8")
         return payload, ("239.255.255.250", 3702)
-    raise ValueError(f"método de descubrimiento adicional no válido: {method}")
+    raise ValueError(f"método de descubrimiento integrado no válido: {method}")
 
 
-def multicast_discover(methods: tuple[str, ...], timeout: float) -> dict[str, set[str]]:
-    """Devuelve IP de emisores que responden a sondas estándar de descubrimiento."""
+def multicast_discover(
+    methods: tuple[str, ...], timeout: float
+) -> dict[str, set[str]]:
+    """Ejecuta únicamente los descubridores multicast integrados."""
     sockets: dict[socket.socket, str] = {}
     findings: dict[str, set[str]] = {}
     try:
@@ -70,4 +57,18 @@ def multicast_discover(methods: tuple[str, ...], timeout: float) -> dict[str, se
     finally:
         for sock in sockets:
             sock.close()
+    return findings
+
+
+def discover_services(
+    methods: tuple[str, ...], timeout: float
+) -> dict[str, set[str]]:
+    """Combina descubridores integrados y extensiones scanner activas."""
+    requested = tuple(dict.fromkeys(item.casefold() for item in methods))
+    built_in = tuple(item for item in requested if item in EXTRA_DISCOVERY_METHODS)
+    findings = multicast_discover(built_in, timeout) if built_in else {}
+
+    from app.plugins.scanners import run_scanner_extensions
+    for ip, detected in run_scanner_extensions(requested, timeout).items():
+        findings.setdefault(ip, set()).update(detected)
     return findings

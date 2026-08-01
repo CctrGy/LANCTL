@@ -65,6 +65,12 @@ class PluginTests(unittest.TestCase):
             PluginManifest.from_dict(base)
         with self.assertRaises(ValueError):
             PluginManifest.from_dict({"id": "demo.valid", "entryPoint": "../main.py"})
+        with self.assertRaisesRegex(ValueError, "schema LCP no compatible"):
+            PluginManifest.from_dict({
+                "schemaVersion": 2,
+                "id": "demo.valid",
+                "capabilities": ["plugin"],
+            })
 
     def test_package_build_verify_install_and_declarative_enable(self):
         with tempfile.TemporaryDirectory() as temporary:

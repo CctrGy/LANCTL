@@ -1,0 +1,23 @@
+{
+  "extensions": [
+    {
+      "id": "lanctl.analysis.mac-vendor.resolver",
+      "type": "device-adapter",
+      "specification": {
+        "role": "manufacturer-resolver",
+        "function": "MacVendor.Manufacturer.Resolve"
+      }
+    },
+    {
+      "id": "lanctl.analysis.mac-vendor.command",
+      "type": "command",
+      "specification": {
+        "name": "mac-vendor",
+        "aliases": ["vendor-db"],
+        "help": "Consulta y edita la base local de fabricantes MAC.",
+        "action": "function.call",
+        "function": "MacVendor.Database.Command"
+      }
+    }
+  ]
+}

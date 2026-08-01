@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "lanctl.discovery.mdns-ssdp",
+  "name": "LANCTL mDNS + SSDP Discovery",
+  "version": "1.0.0",
+  "description": "Descubrimiento LAN externo mediante mDNS/DNS-SD y SSDP/UPnP.",
+  "author": "LANCTL",
+  "entryPoint": "main.exec",
+  "runtime": "trusted",
+  "lanctl": {
+    "minimumVersion": "0.3.0",
+    "maximumVersion": "0.x"
+  },
+  "permissions": [
+    "scanner.register",
+    "functions.register",
+    "network.scan"
+  ],
+  "capabilities": [
+    "plugin",
+    "scanner",
+    "network"
+  ]
+}

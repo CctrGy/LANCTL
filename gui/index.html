@@ -1,23 +1,97 @@
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LANCTL</title><link rel="stylesheet" href="styles.css"></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LANCTL</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
 <body>
 <div class="app-shell" data-component-id="lanctl.app-shell">
-  <aside class="sidebar" data-component-id="lanctl.sidebar">
-    <div class="brand"><span>⌘</span> LANCTL</div>
-    <nav><button class="active">⌂ Resumen</button><button>▣ Dispositivos</button><button>⌘ Topología</button><button>⌁ Diagnóstico</button><button>▦ Switches</button><button>□ Proyectos</button><button>◫ Auditoría</button><button>◇ Complementos</button><button>⚙ Ajustes</button></nav>
-    <div class="sidebar-foot"><i></i> Red de casa</div>
-  </aside>
-  <header class="topbar" data-component-id="lanctl.topbar"><button>▣ Red de casa⌄</button><label class="search">⌕ <input placeholder="Buscar dispositivo, IP o MAC"></label><span><i></i> Conectado</span><b class="avatar">VA</b></header>
+  <header class="topbar" data-component-id="lanctl.topbar">
+    <div class="brand"><img src="../assets/lanctl-icon-v2.png" alt=""><strong>LANCTL</strong><small>Inventario de red</small></div>
+    <div class="project"><span>Proyecto</span><select id="project-select" aria-label="Proyecto activo"><option value="">Sin proyecto</option></select><button id="project-new" title="Crear proyecto">＋</button><button id="project-save" title="Guardar proyecto">Guardar</button></div>
+    <div class="connection"><i></i><span>Conectado</span></div>
+    <div class="avatar">VA</div>
+  </header>
+
   <main class="content" data-component-id="lanctl.content">
-    <div class="heading"><div><h1>Resumen de red</h1><p>Estado lógico e inventario del proyecto activo</p></div><button class="primary" data-component-id="lanctl.primary-action">↻ Escanear red</button></div>
-    <section class="metrics" data-component-id="lanctl.status-cards"><article><em>▣</em><div><strong>24</strong><span>dispositivos</span></div></article><article><em>✓</em><div><strong>21</strong><span>activos</span></div></article><article><em>△</em><div><strong>3</strong><span>alertas</span></div></article><article><em>▦</em><div><strong>2</strong><span>switches</span></div></article></section>
-    <section class="workspace">
-      <article class="panel topology" data-component-id="lanctl.topology-panel"><header><h2>Topología lógica</h2><button>Diseño automático</button></header><div class="map"><div class="node internet">◎<b>Internet</b></div><div class="node router">▰<b>GATEWAY</b><small>192.168.1.1</small></div><div class="node switch-a">▦<b>SW-CORE</b><small>192.168.1.2</small></div><div class="node switch-b">▦<b>SW-POE</b><small>192.168.1.3</small></div><div class="node nas">▣<b>NAS</b><small>192.168.1.10</small></div><div class="node clients">▣<b>Equipos</b><small>8 dispositivos</small></div><div class="node cameras">▱<b>Cámaras</b><small>4 dispositivos</small></div><div class="node iot">◉<b>IoT</b><small>6 dispositivos</small></div></div></article>
-      <article class="panel activity" data-component-id="lanctl.activity-panel"><header><h2>Actividad reciente</h2><button>Ver todo</button></header><ul><li><em>↻</em><div><b>Escaneo rápido completado</b><span>24 dispositivos encontrados</span></div><time>Hace 2 min</time></li><li><em>＋</em><div><b>Dispositivo nuevo detectado</b><span>ESP-SALÓN · 192.168.1.45</span></div><time>Hace 7 min</time></li><li><em>⚙</em><div><b>Cambio de configuración</b><span>SW-POE · 2 cambios</span></div><time>Ayer</time></li><li><em>!</em><div><b>Dispositivo sin respuesta</b><span>CAM-03 · 192.168.1.33</span></div><time>Ayer</time></li></ul></article>
+    <section class="commandbar">
+      <button id="scan-network" class="primary" data-component-id="lanctl.primary-action">↻ Escanear red</button>
+      <button id="refresh-devices" data-component-id="lanctl.secondary-action">Actualizar inventario</button>
+      <details class="column-menu"><summary>Columnas</summary><div id="column-options"></div></details>
+      <label class="search">⌕<input id="device-search" placeholder="Filtrar por IP, MAC, alias, nombre, fabricante o grupo"></label>
+      <div class="summary" data-component-id="lanctl.status-cards">
+        <span><b id="metric-total">0</b> elementos</span>
+        <span class="healthy"><b id="metric-active">0</b> activos</span>
+        <span class="warning-text"><b id="metric-alerts">0</b> no detectados</span>
+        <span><b id="metric-switches">0</b> switches</span>
+      </div>
     </section>
-    <section class="panel devices" data-component-id="lanctl.device-table"><header><h2>Dispositivos</h2><div><button>Filtros</button><button>Exportar⌄</button></div></header><table><thead><tr><th>Estado</th><th>Alias</th><th>IP</th><th>Fabricante</th><th>Grupo</th><th>Protocolos</th><th>Última conexión</th></tr></thead><tbody><tr><td><i></i></td><td>GATEWAY</td><td>192.168.1.1</td><td>MikroTik</td><td>Red</td><td>Winbox, SSH, HTTPS</td><td>Hace 1 min</td></tr><tr class="selected"><td><i></i></td><td>SW-CORE</td><td>192.168.1.2</td><td>Cisco Systems</td><td>Red</td><td>SSH, HTTPS, SNMP</td><td>Hace 1 min</td></tr><tr><td><i></i></td><td>NAS</td><td>192.168.1.10</td><td>Synology</td><td>Almacenamiento</td><td>SMB, HTTPS</td><td>Hace 2 min</td></tr><tr><td><i class="warning"></i></td><td>ESP-SALÓN</td><td>192.168.1.45</td><td>Espressif</td><td>IoT</td><td>HTTP</td><td>Hace 3 min</td></tr></tbody></table></section>
+
+    <section class="table-panel" data-component-id="lanctl.device-table">
+      <div class="table-title">
+        <div><h1>Elementos de red</h1><p id="status-message">Cargando inventario del núcleo de LANCTL…</p></div>
+        <div class="legend"><span><i></i>Activo</span><span><i class="warning"></i>No detectado</span></div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th class="state-column" data-column="state">Estado</th><th data-column="icon">Tipo</th><th data-column="ip">IP</th><th data-column="latency">ms</th><th data-column="cnf">CNF</th>
+            <th data-column="alias">Alias</th><th data-column="mac">MAC</th><th data-column="name">Nombre</th><th data-column="vendor">Fabricante</th>
+            <th data-column="group">Grupo</th><th data-column="protocols">Protocolos</th><th data-column="description">Descripción</th><th data-column="lastSeen">Última detección</th>
+          </tr></thead>
+          <tbody id="device-rows"></tbody>
+        </table>
+        <div id="empty-devices" class="empty-state">No hay elementos registrados. Pulsa «Escanear red» para comenzar.</div>
+      </div>
+    </section>
+
+    <section class="inspector" data-component-id="lanctl.device-inspector">
+      <div class="selected-identity">
+        <img id="selected-icon" class="selected-icon" alt=""><i id="selected-status"></i>
+        <div><small>Elemento seleccionado</small><h2 id="selected-title">Ninguno</h2><p id="selected-kind">Selecciona una fila del inventario</p></div>
+      </div>
+      <dl class="technical-details">
+        <div><dt>IP</dt><dd id="selected-ip">-</dd></div>
+        <div><dt>MAC</dt><dd id="selected-mac">-</dd></div>
+        <div><dt>Fabricante</dt><dd id="selected-vendor">-</dd></div>
+        <div><dt>Protocolos</dt><dd id="selected-protocols">-</dd></div>
+      </dl>
+      <div class="editable-fields">
+        <label>Tipo<select id="edit-icon" class="field"></select></label>
+        <label>Alias<input id="edit-alias" class="field" maxlength="80"></label>
+        <label>Nombre<input id="edit-name" class="field" maxlength="80"></label>
+        <label class="description-field">Descripción<input id="edit-description" class="field" maxlength="42"></label>
+      </div>
+      <div class="element-actions">
+        <button id="save-device" data-component-id="lanctl.secondary-action">Guardar</button>
+        <button id="diagnose-device" data-component-id="lanctl.secondary-action">Diagnosticar</button>
+        <button id="show-details" data-component-id="lanctl.secondary-action">Ver detalles</button>
+        <button id="open-device" data-component-id="lanctl.secondary-action">Abrir conexión</button>
+        <button id="open-terminal" class="primary" data-component-id="lanctl.primary-action">⌁ Terminal</button>
+      </div>
+      <pre id="diagnostic-output" hidden></pre>
+      <button class="danger contract-only" data-component-id="lanctl.danger-action" disabled aria-hidden="true">Eliminar dispositivo</button>
+    </section>
   </main>
-  <aside class="inspector" data-component-id="lanctl.device-inspector"><small>Dispositivo seleccionado</small><h2><i></i> SW-CORE</h2><p>Switch</p><div class="tabs"><button class="active">Resumen</button><button>Interfaces</button><button>VLAN</button></div><dl><div><dt>IP</dt><dd>192.168.1.2</dd></div><div><dt>MAC</dt><dd>00:1A:7D:AA:BB:CC</dd></div><div><dt>Fabricante</dt><dd>Cisco Systems</dd></div><div><dt>Modelo</dt><dd>Catalyst 2960X</dd></div><div><dt>Confianza</dt><dd>100%</dd></div><div><dt>Protocolos</dt><dd><span>SSH</span> <span>HTTPS</span> <span>SNMP</span></dd></div></dl><section><button class="primary" data-component-id="lanctl.primary-action">⌁ Abrir terminal</button><button data-component-id="lanctl.secondary-action">Diagnosticar</button><button data-component-id="lanctl.secondary-action">Ver interfaces</button></section><button class="danger" data-component-id="lanctl.danger-action">Eliminar dispositivo</button></aside>
-</div><script src="app.js"></script>
-</body></html>
+
+  <footer class="statusbar"><span>LANCTL <b id="app-version">—</b></span><span>Vista de inventario lógico</span><span id="row-count">0 filas</span></footer>
+</div>
+<dialog id="device-details" aria-labelledby="details-title">
+  <div class="details-header">
+    <div><small>Detalle completo del elemento</small><h2 id="details-title">Elemento</h2></div>
+    <button id="close-details" aria-label="Cerrar">×</button>
+  </div>
+  <div id="details-loading" class="details-loading">Inspeccionando servicios y puertos…</div>
+  <div id="details-content" hidden>
+    <dl id="details-fields" class="details-fields"></dl>
+    <section class="services-section">
+      <div><h3>Puertos y utilidades</h3><p>Los puertos se muestran con el servicio detectado y su utilidad.</p></div>
+      <div id="details-services" class="service-list"></div>
+    </section>
+  </div>
+</dialog>
+<script src="app.js"></script>
+</body>
+</html>

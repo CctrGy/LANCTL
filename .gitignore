@@ -7,6 +7,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+tmp/
 .venv/
 venv/
 
@@ -23,6 +24,31 @@ data/lc/
 data/als/
 *.log
 *.credentials
+
+# Proyectos, inventarios y copias locales potencialmente sensibles
+*.vlf
+*.vlf.bak
+*.vlf.old
+*.lgn
+*.sqlite
+*.sqlite3
+secrets/
+.secrets/
+credentials/
+
+# Variables de entorno y material criptográfico privado
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.jks
+
+# Configuración local del firmware; conservar solo plantillas *.example.*
+RackFimeware2/platformio.local.ini
+RackFimeware2/include/SshHostKey.h
 
 # PlatformIO
 .pio/

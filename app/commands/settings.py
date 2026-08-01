@@ -179,9 +179,9 @@ def run_settings(args: argparse.Namespace) -> int:
             if not value:
                 raise ValueError(f"{label} no puede quedar vacío")
             if key == "projectsDirectory" and value.casefold() in ("default", "auto"):
-                value = r"%USERPROFILE%\Documents\LanCTL"
+                value = None
             config[key] = value
-            changes.append(f"{label}: {value}")
+            changes.append(f"{label}: {value or 'auto (Documentos de Windows)'}")
 
     if args.log_cleanup is not None:
         config["logCleanupEnabled"] = args.log_cleanup == "on"

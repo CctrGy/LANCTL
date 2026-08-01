@@ -8,8 +8,7 @@ if TYPE_CHECKING:
 
 
 COMPONENT_IDS = frozenset({
-    "lanctl.app-shell", "lanctl.sidebar", "lanctl.topbar", "lanctl.content",
-    "lanctl.status-cards", "lanctl.topology-panel", "lanctl.activity-panel",
+    "lanctl.app-shell", "lanctl.topbar", "lanctl.content", "lanctl.status-cards",
     "lanctl.device-table", "lanctl.device-inspector", "lanctl.primary-action",
     "lanctl.secondary-action", "lanctl.danger-action",
 })

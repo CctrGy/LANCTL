@@ -148,9 +148,9 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument(
         "-cnf",
         "--cnf-state",
-        choices=("O", "X", "-", "S"),
+        choices=("O", "X", "-", "S", "F"),
         type=str.upper,
-        help="Filtra por estado CNF: O, X, - o S.",
+        help="Filtra por estado CNF: O, X, -, S o F.",
     )
     command.add_argument(
         "-group",

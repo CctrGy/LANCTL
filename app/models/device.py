@@ -8,7 +8,7 @@ import hashlib
 
 
 MAC_PATTERN = re.compile(r"^(?:[0-9A-F]{2}:){5}[0-9A-F]{2}$")
-CNF_STATES = ("O", "X", "-", "S")
+CNF_STATES = ("O", "X", "-", "S", "F")
 
 
 def normalize_mac(value: str) -> str:
@@ -45,11 +45,13 @@ def normalize_cnf(value: Any) -> str:
         "0": "X", "no": "X",
         "-": "-", "unrecognized": "-", "unrecognised": "-",
         "s": "S", "marked": "S", "marqued": "S", "marcado": "S",
+        "f": "F", "fixed": "F", "fijo": "F", "fijado": "F",
     }
     normalized = aliases.get(str(value).strip().casefold())
     if normalized is None:
         raise ValueError(
-            "cnf debe ser O (OK), X (UNKNOWN), - (UNRECOGNIZED) o S (MARKED)"
+            "cnf debe ser O (OK), X (UNKNOWN), - (UNRECOGNIZED), "
+            "S (MARKED) o F (FIXED)"
         )
     return normalized
 
@@ -77,6 +79,7 @@ class Device(MutableMapping[str, Any]):
     discovery_methods: list[str] = field(default_factory=list)
     last_discovery: str = ""
     last_seen: str = ""
+    icon_id: str = ""
 
     JSON_FIELDS = {
         "IP": "ip",
@@ -98,6 +101,7 @@ class Device(MutableMapping[str, Any]):
         "discoveryMethods": "discovery_methods",
         "lastDiscovery": "last_discovery",
         "lastSeen": "last_seen",
+        "iconId": "icon_id",
     }
 
     @classmethod
@@ -150,6 +154,7 @@ class Device(MutableMapping[str, Any]):
             ],
             last_discovery=str(value.get("lastDiscovery", "")),
             last_seen=str(value.get("lastSeen", "")),
+            icon_id=str(value.get("iconId", "")),
         )
 
     def to_dict(self) -> dict[str, Any]:

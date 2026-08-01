@@ -96,6 +96,7 @@ class DeviceDatabase:
                     "discoveryMethods": list(record.get("discoveryMethods", [])),
                     "lastDiscovery": str(record.get("lastDiscovery", "")),
                     "lastSeen": str(record.get("lastSeen", "")),
+                    "iconId": str(record.get("iconId", "")),
                 }
             )
             if previous:
@@ -131,6 +132,7 @@ class DeviceDatabase:
                     incoming.last_discovery = previous.last_discovery
                 if not incoming.last_seen:
                     incoming.last_seen = previous.last_seen
+                incoming.icon_id = previous.icon_id
                 if previous["aliasDeleted"]:
                     incoming["ALIAS"] = ""
                 elif previous["ALIAS"] and previous["ALIAS"] != previous["defaultAlias"]:
@@ -252,6 +254,7 @@ class DeviceDatabase:
             if device["MAC"].upper() == normalized
             or device["IP"] == selector
             or device["ALIAS"].casefold() == selector.casefold()
+            or device.device_id.casefold() == selector.casefold()
         ]
         if not matches:
             raise ValueError(f"no existe ningún dispositivo para: {selector}")
@@ -352,6 +355,11 @@ class DeviceDatabase:
             device.description = value or "-"
         elif field == "cnf":
             device.cnf = normalize_cnf(value)
+        elif field == "icon":
+            normalized = value.strip().casefold()
+            if normalized and not normalized.startswith("device."):
+                raise ValueError("identificador de icono de dispositivo no válido")
+            device.icon_id = normalized
         else:
             raise ValueError(f"campo de elemento no editable: {field}")
         self._write(devices)

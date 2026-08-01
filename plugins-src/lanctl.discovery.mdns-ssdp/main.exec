@@ -1,0 +1,79 @@
+from __future__ import annotations
+
+import select
+import socket
+import struct
+import time
+
+from app.plugins.contracts import FunctionResult
+
+
+def _dns_name(value: str) -> bytes:
+    return b"".join(
+        bytes((len(part),)) + part.encode("ascii")
+        for part in value.split(".")
+    ) + b"\0"
+
+
+def _probe(method: str) -> tuple[bytes, tuple[str, int]]:
+    if method == "ssdp":
+        payload = (
+            "M-SEARCH * HTTP/1.1\r\n"
+            "HOST: 239.255.255.250:1900\r\n"
+            'MAN: "ssdp:discover"\r\n'
+            "MX: 1\r\n"
+            "ST: ssdp:all\r\n\r\n"
+        ).encode("ascii")
+        return payload, ("239.255.255.250", 1900)
+    if method == "mdns":
+        question = (
+            _dns_name("_services._dns-sd._udp.local")
+            + struct.pack("!HH", 12, 0x8001)
+        )
+        header = struct.pack("!HHHHHH", 0, 0, 1, 0, 0, 0)
+        return header + question, ("224.0.0.251", 5353)
+    raise ValueError(f"método no soportado por el plugin: {method}")
+
+
+def scan(methods, timeout):
+    sockets = {}
+    findings = {}
+    try:
+        for method in dict.fromkeys(str(item).casefold() for item in methods):
+            if method not in ("mdns", "ssdp"):
+                continue
+            payload, destination = _probe(method)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.setblocking(False)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.sendto(payload, destination)
+            sockets[sock] = method.upper()
+        deadline = time.monotonic() + max(0.1, float(timeout))
+        while sockets and time.monotonic() < deadline:
+            readable, _, _ = select.select(
+                list(sockets), [], [], max(0.0, deadline - time.monotonic())
+            )
+            if not readable:
+                break
+            for sock in readable:
+                try:
+                    _payload, address = sock.recvfrom(65535)
+                except OSError:
+                    continue
+                findings.setdefault(address[0], []).append(sockets[sock])
+    finally:
+        for sock in sockets:
+            sock.close()
+    return FunctionResult(True, data={
+        ip: sorted(set(detected)) for ip, detected in findings.items()
+    })
+
+
+def activate(api):
+    api.require("network.scan")
+    api.functions.register(
+        "MdnsSsdp.Network.Discovery.Scan",
+        scan,
+        FunctionResult,
+    )
+    api.log("ACTIVATE", "mDNS+SSDP")

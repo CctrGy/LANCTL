@@ -137,7 +137,8 @@ def _verify_signature(archive: zipfile.ZipFile, checksum: str, names: set[str]) 
 
 def directory_hash(root: Path, excluded: set[str]) -> str:
     digest = hashlib.sha256()
-    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+    files = (item for item in root.rglob("*") if item.is_file())
+    for path in sorted(files, key=lambda item: item.relative_to(root).as_posix()):
         name = path.relative_to(root).as_posix()
         if name in excluded:
             continue

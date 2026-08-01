@@ -21,10 +21,14 @@ def _parser():
 
 
 def detect_manufacturer(mac: str) -> str:
-    """Obtiene el fabricante del OUI sin realizar consultas por Internet."""
+    """Obtiene el fabricante mediante plugins activos y la base local integrada."""
     normalized = mac.strip().replace("-", ":").upper()
     if not normalized or normalized == "FF:FF:FF:FF:FF:FF":
         return ""
+    from app.plugins.device_adapters import resolve_manufacturer_extensions
+    provided = resolve_manufacturer_extensions(normalized)
+    if provided:
+        return provided
     if _is_private_mac(normalized):
         return "MAC privada/aleatoria"
     parser = _parser()

@@ -2,7 +2,10 @@ import re
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from app.core.database import DeviceDatabase
+from app.gui import GuiApi
 from app.gui_theme import COMPONENT_IDS, DEFAULT_TOKENS, resolve_theme, validate_theme_specification
 from app.plugins.manager import PluginManager
 from app.plugins.package import verify_package
@@ -12,6 +15,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class GuiIntegrationTests(unittest.TestCase):
+    def test_description_field_spans_the_full_editor_width(self):
+        html = (ROOT / "GUI/index.html").read_text(encoding="utf-8")
+        css = (ROOT / "GUI/styles.css").read_text(encoding="utf-8")
+        self.assertRegex(
+            html,
+            r'<label class="description-field">Descripción<input id="edit-description"',
+        )
+        self.assertIn(
+            ".editable-fields .description-field { grid-column:1/-1; }",
+            css,
+        )
+
     def test_html_component_ids_match_the_core_contract(self):
         html = (ROOT / "GUI/index.html").read_text(encoding="utf-8")
         identifiers = set(re.findall(r'data-component-id="([^"]+)"', html))
@@ -36,6 +51,73 @@ class GuiIntegrationTests(unittest.TestCase):
             validate_theme_specification({"components": {"lanctl.missing": {}}})
         with self.assertRaisesRegex(ValueError, "valor no válido"):
             validate_theme_specification({"tokens": {"color.accent": "red; display:none"}})
+
+    def test_gui_reads_and_updates_inventory_using_stable_device_id(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database_path = str(Path(temporary) / "devices.json")
+            database = DeviceDatabase(database_path)
+            device = database.add_device(
+                "AA:BB:CC:DD:EE:FF", name="Switch", alias="SW-TEST",
+                description="Inicial",
+            )
+            config = {"database": database_path, "timeout": 0.1, "workers": 1,
+                      "credentials": str(Path(temporary) / "credentials")}
+            with patch("app.gui.load_config", return_value=config):
+                api = GuiApi()
+                listed = api.list_devices()
+                self.assertTrue(listed["ok"])
+                self.assertEqual(listed["devices"][0]["id"], device.device_id)
+                updated = api.update_device(device.device_id, {
+                    "alias": "SW-GUI", "name": "Core", "description": "Desde GUI",
+                })
+                self.assertTrue(updated["ok"], updated.get("error"))
+                saved = database.resolve(device.device_id)
+                self.assertEqual((saved.alias, saved.name, saved.description),
+                                 ("SW-GUI", "Core", "Desde GUI"))
+
+    def test_gui_exposes_local_host_as_ephemeral_at_cnf(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database_path = str(Path(temporary) / "devices.json")
+            database = DeviceDatabase(database_path)
+            device = database.upsert([{"IP": "192.168.50.10", "MAC": "AA:BB:CC:DD:EE:10", "cnf": "O"}])[0]
+            config = {"database": database_path, "timeout": 0.1, "workers": 1,
+                      "credentials": str(Path(temporary) / "credentials")}
+            with patch("app.gui.load_config", return_value=config), patch("app.gui.local_ipv4", return_value="192.168.50.10"):
+                api = GuiApi()
+                listed = api.list_devices()
+                self.assertEqual(listed["devices"][0]["cnf"], "@")
+                self.assertEqual(database.resolve(device.device_id).cnf, "O")
+
+    def test_gui_labels_services_and_exposes_only_interactive_actions(self):
+        self.assertEqual(GuiApi._service_label("ssh"), "SSH · Terminal segura")
+        self.assertEqual(GuiApi._service_label("ipp"), "IPP · Impresora")
+        self.assertEqual(GuiApi._interactive_protocol("http-alt"), "http")
+        self.assertIsNone(GuiApi._interactive_protocol("mysql"))
+
+    def test_gui_opens_detected_http_service_on_its_real_port(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database_path = str(Path(temporary) / "devices.json")
+            database = DeviceDatabase(database_path)
+            device = database.upsert([{"IP": "192.168.1.40", "MAC": "AA:BB:CC:DD:EE:40"}])[0]
+            config = {"database": database_path, "timeout": 0.1, "workers": 1,
+                      "credentials": str(Path(temporary) / "credentials")}
+            with patch("app.gui.load_config", return_value=config), patch("app.gui.run_open") as opened:
+                result = GuiApi().open_service(device.device_id, "http-alt", 8080)
+                self.assertTrue(result["ok"], result.get("error"))
+                arguments = opened.call_args.args[0]
+                self.assertEqual((arguments.protocol, arguments.port), ("http", 8080))
+
+    def test_gui_opens_ssh_in_a_native_terminal_with_detected_port(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database_path = str(Path(temporary) / "devices.json")
+            database = DeviceDatabase(database_path)
+            device = database.upsert([{"IP": "192.168.1.41", "MAC": "AA:BB:CC:DD:EE:41"}])[0]
+            config = {"database": database_path, "timeout": 0.1, "workers": 1,
+                      "credentials": str(Path(temporary) / "credentials")}
+            with patch("app.gui.load_config", return_value=config), patch("app.gui.subprocess.Popen") as opened:
+                result = GuiApi().open_service(device.device_id, "ssh", 2222)
+                self.assertTrue(result["ok"], result.get("error"))
+                self.assertEqual(opened.call_args.args[0], ["ssh", "-p", "2222", "192.168.1.41"])
 
 
 if __name__ == "__main__":

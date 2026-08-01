@@ -11,7 +11,7 @@ from time import perf_counter
 
 from app.models import Device
 from app.services.manufacturer import detect_manufacturer
-from app.services.network_discovery import multicast_discover
+from app.services.network_discovery import discover_services
 
 
 Network = ipaddress.IPv4Network
@@ -266,7 +266,7 @@ class LanScanner:
 
         if progress and extra_methods:
             progress.phase("Servicios LAN")
-        extra_findings = multicast_discover(
+        extra_findings = discover_services(
             extra_methods, max(0.3, self.timeout * max(1, attempts))
         ) if extra_methods else {}
         extra_ips = {
@@ -360,6 +360,7 @@ class LanScanner:
                 gateway,
                 arp_entries.get(gateway, ""),
                 "GATEWAY",
+                cnf="O",
                 description="Puerta de enlace de la red",
                 groups=["BASIC"],
             ),
@@ -367,6 +368,7 @@ class LanScanner:
                 broadcast,
                 "FF:FF:FF:FF:FF:FF",
                 "BRODCAST",
+                cnf="O",
                 description="Difusion general de la LAN",
                 groups=["BASIC"],
             ),
@@ -417,11 +419,13 @@ class LanScanner:
         ip: str,
         mac: str,
         alias: str = "",
+        cnf: str = "X",
         description: str = "-",
         groups: list[str] | None = None,
     ) -> Device:
         return Device(
             ip=ip,
+            cnf=cnf,
             mac=mac,
             alias=alias,
             default_alias=alias,

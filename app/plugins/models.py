@@ -7,6 +7,7 @@ from typing import Any
 
 
 PLUGIN_ID = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$")
+LCP_SCHEMA_VERSION = 1
 EVENT_ID = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z][A-Za-z0-9_-]*){3}$")
 CAPABILITIES = {
     "plugin", "theme", "language", "settings", "automation", "network",
@@ -52,6 +53,12 @@ class PluginManifest:
     def from_dict(cls, value: dict[str, Any]) -> "PluginManifest":
         if not isinstance(value, dict):
             raise ValueError("plugin.info debe contener un objeto JSON")
+        schema_version = int(value.get("schemaVersion", 1))
+        if schema_version != LCP_SCHEMA_VERSION:
+            raise ValueError(
+                f"schema LCP no compatible: {schema_version}; "
+                f"esta versión admite {LCP_SCHEMA_VERSION}"
+            )
         plugin_id = str(value.get("id", "")).strip().casefold()
         if not PLUGIN_ID.fullmatch(plugin_id):
             raise ValueError("id de plugin no válido; usa un identificador como lanctl.autoscan")
@@ -72,7 +79,7 @@ class PluginManifest:
         if runtime not in ("isolated", "trusted"):
             raise ValueError("runtime debe ser isolated o trusted")
         return cls(
-            schema_version=int(value.get("schemaVersion", 1)), plugin_id=plugin_id,
+            schema_version=schema_version, plugin_id=plugin_id,
             name=str(value.get("name") or plugin_id), version=str(value.get("version", "0.0.0")),
             description=str(value.get("description", "")), author=str(value.get("author", "")),
             entry_point=entry, minimum_lanctl=str(compat.get("minimumVersion", "0.0.0")),

@@ -28,6 +28,8 @@ from app.services.lan_scanner import local_ipv4
 RESET = Style.RESET_ALL
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+TUI_ENTER_SCREEN = "\x1b[?1049h\x1b[?7l\x1b[2J\x1b[H"
+TUI_LEAVE_SCREEN = "\x1b[?25h\x1b[?7h\x1b[?1049l"
 
 TUI_ELEMENT_HELP = (
     "ELEMENT · gestión simplificada dentro del TUI",
@@ -38,7 +40,7 @@ TUI_ELEMENT_HELP = (
     "  element -alias TEXTO            Cambia el alias",
     "  element -description TEXTO      Cambia la descripción",
     "  element -group GRUPO            Añade al grupo",
-    "  element -cnf O|X|-|S            Cambia su clasificación",
+    "  element -cnf O|X|-|S|F          F fija la selección en el TUI",
     "  element -delete                 Elimina tras confirmación",
     "Puedes escribir OBJETIVO antes de cualquier opción para no usar la fila resaltada.",
     "Usa ←/→ para elegir una opción y completa sus argumentos en el prompt.",
@@ -147,6 +149,12 @@ class LanctlTui:
         return True
 
     def move(self, delta: int) -> None:
+        if self.selected and self.selected.cnf == "F":
+            label = self.selected.alias or self.selected.name or self.selected.ip
+            self.messages = [
+                f"Selección fijada en {label}. Usa 'cnf' o 'cnf ESTADO' para liberarla."
+            ]
+            return
         if self.devices:
             self.index = max(0, min(len(self.devices) - 1, self.index + delta))
 
@@ -842,12 +850,17 @@ class LanctlTui:
         just_fix_windows_console()
         from msvcrt import getwch
         try:
+            # La pantalla alternativa impide que cada repintado pase al
+            # historial de la consola. Desactivar el ajuste automático evita
+            # filas fantasma cuando una línea ocupa exactamente todo el ancho.
+            self.screen.write(TUI_ENTER_SCREEN)
+            self.screen.flush()
             self.refresh()
             while self.running:
                 self.render()
                 self.handle_key(_read_windows_key(getwch))
         finally:
-            self.screen.write("\x1b[?25h\x1b[2J\x1b[H")
+            self.screen.write(TUI_LEAVE_SCREEN)
             self.screen.flush()
         return 0
 

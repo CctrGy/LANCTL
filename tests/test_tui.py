@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from app.cli import build_parser
 from app.tui import (
     LanctlTui,
+    TUI_ENTER_SCREEN, TUI_LEAVE_SCREEN,
     _clean_tui_output, _compact_timestamp, _device_key, _dhcp_boundary_indexes,
     _expand_tui_widths, _fit_ansi, _function_bar,
     _inject_selected_group_element,
@@ -14,6 +15,12 @@ from app.tui import (
 
 
 class TuiTests(unittest.TestCase):
+    def test_tui_uses_an_alternate_non_wrapping_screen(self):
+        self.assertIn("\x1b[?1049h", TUI_ENTER_SCREEN)
+        self.assertIn("\x1b[?7l", TUI_ENTER_SCREEN)
+        self.assertIn("\x1b[?7h", TUI_LEAVE_SCREEN)
+        self.assertTrue(TUI_LEAVE_SCREEN.endswith("\x1b[?1049l"))
+
     def test_command_output_is_safe_for_terminal_panel(self):
         self.assertEqual(
             _clean_tui_output("\x1b[31mERROR\x1b[0m\r\nvalor\t2\x07"),

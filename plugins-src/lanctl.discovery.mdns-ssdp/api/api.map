@@ -1,0 +1,12 @@
+{
+  "extensions": [
+    {
+      "id": "lanctl.discovery.mdns-ssdp.scanner",
+      "type": "scanner",
+      "specification": {
+        "methods": ["mdns", "ssdp"],
+        "function": "MdnsSsdp.Network.Discovery.Scan"
+      }
+    }
+  ]
+}

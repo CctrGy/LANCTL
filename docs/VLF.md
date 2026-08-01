@@ -1,5 +1,19 @@
 # LANCTL VLF 1.0
 
+## Política de compatibilidad 0.3
+
+- Toda la serie LANCTL `0.3.x` escribe VLF `1.0` y puede abrir proyectos `1.0`
+  creados por versiones alpha, beta o estables de la serie.
+- Los campos JSON desconocidos son aditivos. Los namespaces de plugins y los
+  recursos no regenerados se conservan al actualizar un proyecto.
+- Una versión de formato distinta de `1.0` se rechaza antes de modificar el
+  archivo. No se realizan migraciones implícitas sobre formatos futuros.
+- `project update` verifica primero el archivo, conserva su UUID y fecha de
+  creación, genera una copia `.vlf.bak` y sustituye el original de forma
+  transaccional. La base anterior queda además como `devices/backup.db`.
+- No se garantiza compatibilidad descendente desde un futuro VLF 2.x hacia
+  ejecutables LANCTL antiguos.
+
 Un archivo `.vlf` es un contenedor ZIP con nombres internos POSIX y una
 estructura fija. No debe confundirse la compresión ZIP con cifrado.
 

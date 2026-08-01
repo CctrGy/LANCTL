@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "lanctl.analysis.mac-vendor",
+  "name": "MAC Vendor Resolver",
+  "version": "1.0.0",
+  "description": "Resuelve fabricantes por prefijos MAC usando una caché local editable y los registros públicos de IEEE.",
+  "author": "LANCTL",
+  "entryPoint": "main.exec",
+  "runtime": "trusted",
+  "lanctl": {"minimumVersion": "0.3.0", "maximumVersion": "0.x"},
+  "permissions": [
+    "command.register",
+    "device-adapter.register",
+    "functions.register",
+    "config.write",
+    "network.http"
+  ],
+  "capabilities": ["plugin", "analysis", "commands", "device-adapter", "network", "config"]
+}

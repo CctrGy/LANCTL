@@ -4,9 +4,11 @@ from PyInstaller.utils.hooks import collect_data_files
 
 
 datas = collect_data_files("manuf") + [
-    ("GUI", "GUI"),
+    ("gui", "gui"),
     ("bundled/lanctl.theme.default.lcp", "bundled"),
     ("bundled/recurrent-elements.json", "bundled"),
+    ("assets/lanctl-icon-v2.png", "assets"),
+    ("assets/device-icons", "assets/device-icons"),
 ]
 
 a = Analysis(
@@ -36,6 +38,6 @@ exe = EXE(
     strip=False,
     upx=True,
     console=True,
-    icon="assets/lanctl.ico",
+    icon="assets/lanctl-v2.ico",
     version="packaging/windows_version_info.txt",
 )

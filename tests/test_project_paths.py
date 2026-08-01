@@ -10,16 +10,23 @@ from app.core.config import DEFAULTS
 
 class ProjectPathTests(unittest.TestCase):
     def test_configuration_default_is_portable(self):
-        self.assertEqual(DEFAULTS["projectsDirectory"], r"%USERPROFILE%\Documents\LanCTL")
-        self.assertNotIn("Victor", DEFAULTS["projectsDirectory"])
+        self.assertIsNone(DEFAULTS["projectsDirectory"])
 
     def test_default_directory_uses_user_documents_lanctl(self):
-        with tempfile.TemporaryDirectory() as temporary, patch.dict(
-            os.environ, {"USERPROFILE": temporary}
-        ):
+        with tempfile.TemporaryDirectory() as temporary, patch(
+            "app.projects.paths._known_documents_directory", return_value=None
+        ), patch.dict(os.environ, {"USERPROFILE": temporary}):
             self.assertEqual(
                 default_project_directory(), Path(temporary) / "Documents" / "LanCTL"
             )
+
+    def test_default_directory_uses_onedrive_known_folder(self):
+        documents = Path(r"C:\Users\Victor\OneDrive\Documents")
+        with patch(
+            "app.projects.paths._known_documents_directory",
+            return_value=documents,
+        ):
+            self.assertEqual(default_project_directory(), documents / "LanCTL")
 
     def test_relative_project_uses_configured_directory(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -42,6 +49,19 @@ class ProjectPathTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary) / "alternative" / "Red.vlf"
             self.assertEqual(resolve_project_path(target, "ignored"), target.resolve())
+
+    def test_legacy_default_uses_redirected_documents_folder(self):
+        documents = Path(r"C:\Users\Victor\OneDrive\Documents")
+        with patch(
+            "app.projects.paths._known_documents_directory",
+            return_value=documents,
+        ):
+            self.assertEqual(
+                resolve_project_path(
+                    "Hogar", r"%USERPROFILE%\Documents\LanCTL"
+                ),
+                (documents / "LanCTL" / "Hogar.vlf").resolve(),
+            )
 
 
 if __name__ == "__main__":

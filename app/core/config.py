@@ -15,7 +15,7 @@ DEFAULTS = {
     "programLog": "data/lc/log",
     "activeProject": None,
     # Variable portable: no vincula la configuración al usuario que la creó.
-    "projectsDirectory": r"%USERPROFILE%\Documents\LanCTL",
+    "projectsDirectory": None,
     "plugins": "data/lc/plugins",
     "pluginRegistry": "data/lc/plugins.registry",
     "pluginSafeMode": False,
@@ -95,9 +95,13 @@ def load_config() -> dict:
             stored["programLog"] = log_root
     project_directory = stored.get("projectsDirectory")
     if project_directory:
+        raw_project_directory = str(project_directory).replace("/", "\\")
         legacy_default = str(Path.home() / "Documents" / "LanCTL")
-        if os.path.normcase(os.path.normpath(str(project_directory))) == os.path.normcase(
-            os.path.normpath(legacy_default)
+        if (
+            raw_project_directory.casefold()
+            == r"%USERPROFILE%\Documents\LanCTL".casefold()
+            or os.path.normcase(os.path.normpath(str(project_directory)))
+            == os.path.normcase(os.path.normpath(legacy_default))
         ):
             stored["projectsDirectory"] = DEFAULTS["projectsDirectory"]
     stored.pop("scanColumns", None)

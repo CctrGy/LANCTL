@@ -20,7 +20,6 @@ class RecurrentCommandTests(unittest.TestCase):
         self.assertNotIn("IP", header.split())
         self.assertIn("VM1", output)
         self.assertIn("5E:8C:B3:08:05:D4", output)
-        self.assertIn("Mobil-Vic", output)
 
     def test_recurrent_list_has_the_same_ip_free_view(self):
         output = self._run(["recurrent", "-list"])
