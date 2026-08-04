@@ -16,8 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class GuiIntegrationTests(unittest.TestCase):
     def test_description_field_spans_the_full_editor_width(self):
-        html = (ROOT / "GUI/index.html").read_text(encoding="utf-8")
-        css = (ROOT / "GUI/styles.css").read_text(encoding="utf-8")
+        html = (ROOT / "gui/index.html").read_text(encoding="utf-8")
+        css = (ROOT / "gui/styles.css").read_text(encoding="utf-8")
         self.assertRegex(
             html,
             r'<label class="description-field">Descripción<input id="edit-description"',
@@ -28,7 +28,7 @@ class GuiIntegrationTests(unittest.TestCase):
         )
 
     def test_html_component_ids_match_the_core_contract(self):
-        html = (ROOT / "GUI/index.html").read_text(encoding="utf-8")
+        html = (ROOT / "gui/index.html").read_text(encoding="utf-8")
         identifiers = set(re.findall(r'data-component-id="([^"]+)"', html))
         self.assertEqual(identifiers, set(COMPONENT_IDS))
 
