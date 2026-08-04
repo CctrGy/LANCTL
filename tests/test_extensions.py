@@ -37,7 +37,7 @@ class ExtensionTests(unittest.TestCase):
         from app.cli import build_parser
 
         args = build_parser().parse_args([
-            "virtual", "list", "--scan-order", "random", "--timeout", "1.25"
+            "list", "--scan-order", "random", "--timeout", "1.25"
         ])
         self.assertEqual(args.scan_order, "random")
         self.assertEqual(args.timeout, 1.25)

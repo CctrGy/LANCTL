@@ -82,7 +82,7 @@ class MonitorTests(unittest.TestCase):
 
     def test_systemd_unit_is_safe_and_install_needs_confirmation(self):
         adapter=LinuxPlatform();unit=adapter.unit_text("/usr/bin/python3","/tmp/test.vlf")
-        self.assertIn('ExecStart="/usr/bin/python3" -m app virtual monitor foreground --project "/tmp/test.vlf"',unit)
+        self.assertIn('ExecStart="/usr/bin/python3" -m app monitor foreground --project "/tmp/test.vlf"',unit)
         self.assertIn("NoNewPrivileges=true",unit);self.assertEqual(adapter.service("install",confirm=False).status,"blocked")
         with self.assertRaises(ValueError):adapter.unit_text("bad\ncommand","/tmp/test.vlf")
         with self.assertRaises(ValueError):adapter.unit_text("/usr/bin/python3","")
@@ -94,7 +94,7 @@ class MonitorTests(unittest.TestCase):
 
     def test_cli_parser_and_status_json(self):
         with tempfile.TemporaryDirectory() as temporary:
-            args=build_parser().parse_args(["virtual","monitor","status","--json","--monitor-db",str(Path(temporary)/"monitor.db"),"--lock",str(Path(temporary)/"lock")])
+            args=build_parser().parse_args(["monitor","status","--json","--monitor-db",str(Path(temporary)/"monitor.db"),"--lock",str(Path(temporary)/"lock")])
             from io import StringIO
             import contextlib
             output=StringIO()
@@ -107,7 +107,7 @@ class MonitorTests(unittest.TestCase):
 
     def test_ping_route_uses_bounded_runner_and_metrics_contract(self):
         with tempfile.TemporaryDirectory() as temporary:
-            config=self._cli_context(temporary);args=build_parser().parse_args(["virtual","monitor","ping","NAS","--duration","10s","--interval","2s","--monitor-db",config["monitorDatabase"]])
+            config=self._cli_context(temporary);args=build_parser().parse_args(["monitor","ping","NAS","--duration","10s","--interval","2s","--monitor-db",config["monitorDatabase"]])
             with patch("app.commands.monitor.load_config",return_value=config),patch("app.commands.monitor.ping_targets",return_value={"status":"completed","samples":5,"lossPercent":0}) as runner:
                 from io import StringIO
                 import contextlib
@@ -117,8 +117,8 @@ class MonitorTests(unittest.TestCase):
     def test_scan_presence_and_identify_routes_are_real(self):
         with tempfile.TemporaryDirectory() as temporary:
             config=self._cli_context(temporary)
-            scan=build_parser().parse_args(["virtual","monitor","scan","NAS","--type","presence","--monitor-db",config["monitorDatabase"]])
-            identify=build_parser().parse_args(["virtual","monitor","identify","NAS","--monitor-db",config["monitorDatabase"]])
+            scan=build_parser().parse_args(["monitor","scan","NAS","--type","presence","--monitor-db",config["monitorDatabase"]])
+            identify=build_parser().parse_args(["monitor","identify","NAS","--monitor-db",config["monitorDatabase"]])
             from io import StringIO
             import contextlib
             with patch("app.commands.monitor.load_config",return_value=config),patch("app.commands.monitor.scan_target",return_value={"success":True}) as scanner,patch("app.commands.monitor.identify_target",return_value={"confidence":"confirmed"}),contextlib.redirect_stdout(StringIO()):self.assertEqual(scan.handler(scan),0);self.assertEqual(identify.handler(identify),0)
@@ -126,7 +126,7 @@ class MonitorTests(unittest.TestCase):
 
     def test_smb_scan_is_specifically_unsupported_when_provider_absent(self):
         with tempfile.TemporaryDirectory() as temporary:
-            config=self._cli_context(temporary);args=build_parser().parse_args(["virtual","monitor","scan","NAS","--type","smb","--monitor-db",config["monitorDatabase"]])
+            config=self._cli_context(temporary);args=build_parser().parse_args(["monitor","scan","NAS","--type","smb","--monitor-db",config["monitorDatabase"]])
             manager=MagicMock();manager.list.return_value=[]
             from io import StringIO
             import contextlib
@@ -137,7 +137,7 @@ class MonitorTests(unittest.TestCase):
     def test_health_and_events_read_real_repositories(self):
         with tempfile.TemporaryDirectory() as temporary:
             config=self._cli_context(temporary)
-            health=build_parser().parse_args(["virtual","monitor","health","--monitor-db",config["monitorDatabase"]]);events=build_parser().parse_args(["virtual","monitor","events","--monitor-db",config["monitorDatabase"]])
+            health=build_parser().parse_args(["monitor","health","--monitor-db",config["monitorDatabase"]]);events=build_parser().parse_args(["monitor","events","--monitor-db",config["monitorDatabase"]])
             history=MagicMock();history.query.return_value=[]
             from io import StringIO
             import contextlib
@@ -145,7 +145,7 @@ class MonitorTests(unittest.TestCase):
 
     def test_restart_never_kills_without_verified_active_lock(self):
         with tempfile.TemporaryDirectory() as temporary:
-            config=self._cli_context(temporary);args=build_parser().parse_args(["virtual","monitor","restart","--monitor-db",config["monitorDatabase"],"--lock",config["monitorLock"]])
+            config=self._cli_context(temporary);args=build_parser().parse_args(["monitor","restart","--monitor-db",config["monitorDatabase"],"--lock",config["monitorLock"]])
             from io import StringIO
             import contextlib
             output=StringIO()

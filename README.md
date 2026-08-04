@@ -8,6 +8,28 @@ Incluye CLI, consola persistente, TUI, interfaz gráfica para Windows, proyectos
 portables `.vlf` y un sistema extensible de complementos `.lcp`.
 
 > **Versión actual — `0.3.0-beta.2`**
+
+## Instalación online
+
+GitHub Releases distribuye instaladores ya compilados y verificados por
+SHA-256. En Windows puede usarse `install.ps1`; Linux y Raspberry Pi OS 64-bit
+usan `install.sh`. Ambos permiten canal `stable|beta`, versión fija, modo
+Standard o Monitor y desinstalación conservando los datos.
+
+```powershell
+irm https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.ps1 | iex
+```
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSLo install.sh https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh
+sudo bash install.sh --channel stable
+```
+
+Descargar el script y su checksum por separado es el procedimiento recomendado.
+SSH y HTTPS permanecen apagados en todas las modalidades; `--configure-access`
+solo abre el asistente local e interactivo. Consulta [la guía completa](docs/INSTALL.md)
+para instalación verificable, portable/offline, actualizaciones, ARM64,
+desinstalación y advertencias de SmartScreen.
 >
 > Primera beta de LANCTL. Esta versión incorpora la GUI para Windows, los
 > contratos VLF/LCP, los elementos recurrentes, los plugins de descubrimiento
@@ -59,6 +81,16 @@ sesiones con autoridad explícita. `monitor status --json`, `monitor detach`,
 `monitor once` y los comandos de incidencias operan sobre estado transaccional.
 La gestión systemd está disponible en Linux con confirmación y privilegios;
 Windows devuelve `unsupported` y recomienda `foreground`.
+
+## Acceso remoto SSH y HTTPS
+
+`access init` crea almacenes separados y deja SSH/HTTPS desactivados. Configura
+un bind LAN explícito con `access configure ssh|https --bind IP --cidr CIDR`.
+Los usuarios comparten roles y permisos, pero las claves SSH y contraseñas web
+son autenticadores independientes. `access user`, `role`, `session`, `web pair`,
+`certificate` y `rotate-host-key` administran el acceso sin credenciales por
+defecto ni recuperación remota oculta. SSH restringe la sesión al subsystem
+LANCTL; HTTPS exige TLS, CSRF, cookies seguras y origen explícito.
 
 Los eventos se guardan dentro del VLF activo en
 `logs/events/YYYY-MM-DD.jsonl`. Los logs humanos `logs/dd-mm-yyyy.log` siguen

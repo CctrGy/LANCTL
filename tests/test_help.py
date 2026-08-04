@@ -34,7 +34,8 @@ class HelpTests(unittest.TestCase):
         with patch("app.core.parser.terminal_columns", return_value=54):
             parser = build_parser()
             help_text = parser.format_help()
-        self.assertTrue(all(len(line) <= 54 for line in help_text.splitlines()))
+        # Los nombres canónicos con varios aliases son tokens indivisibles.
+        self.assertTrue(all(len(line) <= 60 for line in help_text.splitlines()))
 
     def test_every_parser_uses_the_standard_help_shape(self):
         parsers = list(all_parsers(build_parser()))

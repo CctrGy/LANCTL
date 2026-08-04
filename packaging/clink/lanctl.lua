@@ -343,7 +343,12 @@ local language = clink.argmatcher():addarg({
     "install" .. project_action(), "validate" .. project_action(), "export" .. project_action()
 }):addflags(help_flags):nofiles()
 
-local virtual_commands = {
+local access = clink.argmatcher()
+    :addarg({ "status", "configure", "enable", "disable", "user", "session", "certificate", "host-key" })
+    :addflags({ "-h", "--help", "/?", "--bind", "--cidr", "--port", "--password-auth", "--role", "--ssh-key", "--expires", "--permission", "--certificate", "--private-key", "--common-name", "--yes", "--json", "--config", "--users" })
+    :nofiles()
+
+local root_commands = {
     "list" .. list, "recurrent" .. recurrent, "ping" .. ping,
     "open" .. open, "connect" .. open,
     "settings" .. settings, "call" .. call, "search" .. search, "scan" .. scan,
@@ -352,7 +357,7 @@ local virtual_commands = {
     "switch" .. switch, "name" .. name_alias, "alias" .. name_alias,
     "cnf" .. simple_selector, "ssh" .. ssh,
     "radmin" .. radmin, "wol" .. wol, "history" .. history,
-    "monitor" .. monitor, "smb" .. smb,
+    "monitor" .. monitor, "smb" .. smb, "access" .. access,
     "terminal" .. terminal, "cli" .. terminal,
     "GATEWAY" .. gateway, "gateway" .. gateway,
     "downloadSettings" .. download_settings,
@@ -362,16 +367,6 @@ local virtual_commands = {
     "plugins" .. plugin, "addon" .. plugin, "addons" .. plugin,
     "language" .. language, "languages" .. language, "lang" .. language
 }
-
-local virtual = clink.argmatcher()
-    :addarg(virtual_commands)
-    :addflags({ "-h", "--help", "/?", "--cli" })
-    :nofiles()
-
-local root_commands = { "virtual" .. virtual }
-for _, command in ipairs(virtual_commands) do
-    table.insert(root_commands, command)
-end
 
 clink.argmatcher("lanctl", "lanctl.exe", "als", "als.exe")
     :addarg(root_commands)

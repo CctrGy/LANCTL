@@ -183,7 +183,7 @@ class OutputTests(unittest.TestCase):
 
 class CredentialTests(unittest.TestCase):
     def test_global_credential_list_has_no_element_selector(self):
-        args = build_parser().parse_args(["virtual", "credential", "list"])
+        args = build_parser().parse_args(["credential", "list"])
         self.assertEqual(args.selector, "list")
         self.assertIsNone(args.action)
 
@@ -1300,7 +1300,7 @@ class TerminalTests(unittest.TestCase):
 
     def test_terminal_can_request_native_ssh_fallback(self):
         args = build_parser().parse_args([
-            "virtual", "terminal", "SW", "--native"
+            "terminal", "SW", "--native"
         ])
         self.assertTrue(args.native)
 

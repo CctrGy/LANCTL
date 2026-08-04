@@ -2,7 +2,7 @@ import unittest
 import argparse
 from pathlib import Path
 
-from app.cli import LEGACY_VIRTUAL_COMMANDS, build_parser
+from app.cli import build_parser
 
 
 class ClinkCompletionTests(unittest.TestCase):
@@ -18,12 +18,16 @@ class ClinkCompletionTests(unittest.TestCase):
             self.script,
         )
 
-    def test_all_core_legacy_commands_are_represented(self):
+    def test_all_root_commands_are_represented(self):
+        parser=build_parser(); subparsers=next(action for action in parser._actions if isinstance(action,argparse._SubParsersAction))
         missing = sorted(
-            command for command in LEGACY_VIRTUAL_COMMANDS
+            command for command in subparsers.choices
             if f'"{command}"' not in self.script
         )
         self.assertEqual(missing, [])
+
+    def test_removed_scope_is_not_completed(self):
+        self.assertNotIn('"virtual"',self.script)
 
     def test_clink_installation_instructions_are_shipped(self):
         readme = (

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import shlex
 import sys
 from collections.abc import Callable
@@ -15,24 +14,6 @@ from app.core.database import DeviceDatabase
 from app.core.layout import fit_text, terminal_columns
 from app.i18n import t
 
-
-VIRTUAL_HELP = """CLI virtual de LANCTL
-
-Gestiona la representación lógica de la LAN: elementos, IP, MAC, nombres,
-grupos, escaneos, protocolos, terminales y control gestionado.
-
-Escribe un comando sin el prefijo `run virtual`, por ejemplo:
-  list
-  scan ESP
-  element GATEWAY
-  switch SW --dry-run show version
-  project create Casa.vlf --name "Red de casa"
-  project verify Casa.vlf
-  plugin list
-  plugin info lanctl.autoscan
-  help
-  exit
-"""
 
 GLOBAL_HELP = """CLI interactiva de LANCTL
 
@@ -118,7 +99,7 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             if len(parts) == 1:
                 print(colorize_help(GLOBAL_HELP), end="")
             else:
-                main(["virtual", parts[1], "/?"])
+                main([parts[1], "/?"])
             continue
         if command in ("clear", "cls"):
             _clear_screen()
@@ -130,7 +111,7 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
                 print(prefix + fit_text(entry, max(1, width - len(prefix))))
             continue
         if command == "history":
-            main(["virtual", *parts])
+            main(parts)
             continue
         if command == "version":
             from app import __version__
@@ -162,7 +143,7 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             if not selection.selector:
                 print_error(t("LANCTL.CLI.ERROR.NO_SELECTION"))
             else:
-                main(["virtual", "element", selection.selector])
+                main(["element", selection.selector])
             continue
         if command == "deselect":
             selection = CliSelection()
@@ -170,77 +151,6 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             continue
         contextual = _selected_command(parts, selection, database)
         try:
-            main(["virtual", *contextual])
+            main(contextual)
         except SystemExit:
             continue
-
-
-def _interactive_loop(
-    scope: str,
-    help_text: str,
-    dispatch: Callable[[list[str]], int],
-    input_fn: Callable[[str], str] = input,
-) -> int:
-    print(f"{Style.BRIGHT}{Fore.CYAN}LANCTL/{scope}{Style.RESET_ALL}")
-    print(t("LANCTL.CLI.HEADER.INTRO"))
-    while True:
-        try:
-            raw = input_fn(f"LANCTL/{scope}> ").strip()
-        except EOFError:
-            print()
-            return 0
-        except KeyboardInterrupt:
-            print()
-            continue
-        if not raw:
-            continue
-        try:
-            parts = shlex.split(raw)
-        except ValueError as error:
-            print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} {error}")
-            continue
-        command = parts[0].casefold()
-        if command in ("exit", "quit", "salir"):
-            return 0
-        if command in ("clear", "cls"):
-            _clear_screen()
-            continue
-        if command in ("help", "?"):
-            print(colorize_help(help_text), end="")
-            continue
-        try:
-            dispatch(parts)
-        except SystemExit:
-            # argparse usa SystemExit para ayuda y errores; no debe cerrar el REPL.
-            continue
-
-
-def run_virtual_mode(args: argparse.Namespace) -> int:
-    if not args.cli:
-        args.mode_parser.print_help()
-        return 0
-    from app.cli import main
-
-    return _interactive_loop(
-        "virtual",
-        VIRTUAL_HELP,
-        lambda parts: main(["virtual", *parts]),
-    )
-
-
-def register_virtual_mode(
-    commands: argparse._SubParsersAction,
-    register_commands: Callable[[argparse._SubParsersAction], None],
-) -> None:
-    mode = commands.add_parser(
-        "virtual",
-        help="Inventario lógico, red, dispositivos y protocolos.",
-    )
-    mode.add_argument(
-        "--cli",
-        action="store_true",
-        help="Abre la CLI virtual interactiva.",
-    )
-    nested = mode.add_subparsers(dest="virtual_command", metavar="COMANDO")
-    register_commands(nested)
-    mode.set_defaults(handler=run_virtual_mode, mode_parser=mode)

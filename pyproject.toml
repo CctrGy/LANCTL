@@ -11,6 +11,8 @@ dependencies = [
     "colorama>=0.4.6,<1",
     "manuf>=1.1.5,<2",
     "netmiko>=4.4,<5",
+    "paramiko>=3.5,<4",
+    "cryptography>=44,<46",
     "pyserial>=3.5,<4",
     "pywebview>=6.2.1,<7",
 ]

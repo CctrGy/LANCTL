@@ -4,8 +4,7 @@ from unittest.mock import patch
 
 from app.cli import build_parser
 from app.commands.modes import (
-    CliSelection, _clear_screen, _interactive_loop, _selected_command, run_global_cli,
-    run_virtual_mode,
+    CliSelection, _clear_screen, _selected_command, run_global_cli,
 )
 
 
@@ -65,7 +64,7 @@ class LanctlModeTests(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(
             dispatched,
-            [["virtual", "scan", "AA:BB:CC:DD:EE:FF", "--ports", "22"]],
+            [["scan", "AA:BB:CC:DD:EE:FF", "--ports", "22"]],
         )
 
     def test_info_displays_the_selected_element(self):
@@ -85,46 +84,35 @@ class LanctlModeTests(unittest.TestCase):
             run_global_cli(input_fn=lambda _prompt: next(values))
         self.assertEqual(
             dispatched,
-            [["virtual", "element", "AA:BB:CC:DD:EE:FF"]],
+            [["element", "AA:BB:CC:DD:EE:FF"]],
         )
 
-    def test_virtual_commands_are_nested(self):
-        args = build_parser().parse_args(["virtual", "scan", "ESP", "--ports", "22"])
-        self.assertEqual(args.command, "virtual")
-        self.assertEqual(args.virtual_command, "scan")
+    def test_commands_are_registered_at_root(self):
+        args = build_parser().parse_args(["scan", "ESP", "--ports", "22"])
+        self.assertEqual(args.command, "scan")
         self.assertEqual(args.selector, "ESP")
 
-    def test_virtual_cli_is_registered_and_physical_scope_is_absent(self):
-        virtual = build_parser().parse_args(["virtual", "--cli"])
-        self.assertTrue(virtual.cli)
-        self.assertIs(virtual.handler, run_virtual_mode)
+    def test_removed_scope_is_rejected_and_global_cli_remains(self):
+        args = build_parser().parse_args(["--cli"])
+        self.assertTrue(args.cli)
+        with self.assertRaises(SystemExit):
+            build_parser().parse_args(["virtual", "list"])
         with self.assertRaises(SystemExit):
             build_parser().parse_args(["physical", "--cli"])
         with self.assertRaises(SystemExit):
             build_parser().parse_args(["phisic", "--cli"])
 
     def test_list_active_is_the_connected_filter_alias(self):
-        args = build_parser().parse_args(["virtual", "list", "--active"])
+        args = build_parser().parse_args(["list", "--active"])
         self.assertTrue(args.connected)
         self.assertFalse(args.disconnected)
 
     def test_element_delete_accepts_mac_and_non_interactive_confirmation(self):
         args = build_parser().parse_args(
-            ["virtual", "element", "10:20:30:40:50:60", "delete", "--yes"]
+            ["element", "10:20:30:40:50:60", "delete", "--yes"]
         )
         self.assertEqual(args.action, "delete")
         self.assertTrue(args.yes)
-
-    def test_interactive_scope_dispatches_without_run_prefix(self):
-        values = iter(["scan ESP --ports 22", "exit"])
-        dispatched = []
-        result = _interactive_loop(
-            "virtual", "help", dispatched.append,
-            input_fn=lambda _prompt: next(values),
-        )
-        self.assertEqual(result, 0)
-        self.assertEqual(dispatched, [["scan", "ESP", "--ports", "22"]])
-
 
 if __name__ == "__main__":
     unittest.main()

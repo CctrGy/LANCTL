@@ -4,7 +4,7 @@ from pathlib import Path, PurePosixPath
 from .base import PlatformAdapter,ServiceResult
 
 class LinuxPlatform(PlatformAdapter):
-    UNIT="""[Unit]\nDescription=LANCTL Monitor\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nExecStart={executable} -m app virtual monitor foreground --project {project}\nRestart=on-failure\nNoNewPrivileges=true\nPrivateTmp=true\n\n[Install]\nWantedBy=multi-user.target\n"""
+    UNIT="""[Unit]\nDescription=LANCTL Monitor\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nExecStart={executable} -m app monitor foreground --project {project}\nRestart=on-failure\nNoNewPrivileges=true\nPrivateTmp=true\n\n[Install]\nWantedBy=multi-user.target\n"""
     def unit_text(self,executable,project):
         if not str(executable).strip() or not str(project).strip():
             raise ValueError("el ejecutable y el proyecto son obligatorios para systemd")

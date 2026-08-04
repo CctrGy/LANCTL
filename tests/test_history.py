@@ -49,7 +49,7 @@ class HistoryTests(unittest.TestCase):
     def test_cli_json_and_no_active_project_error(self):
         with tempfile.TemporaryDirectory() as temporary:
             project=self.project(Path(temporary)); HistoryService(project).write(HistoryEvent("device.detected","test","local","success","detectado",device=DeviceSnapshot("dev","02:11:22:33:44:55","192.168.1.8","NAS")))
-            args=build_parser().parse_args(["virtual","history","NAS","--format","json"]); output=io.StringIO()
+            args=build_parser().parse_args(["history","NAS","--format","json"]); output=io.StringIO()
             with patch("app.core.history.load_config",return_value={"activeProject":str(project)}),contextlib.redirect_stdout(output): self.assertEqual(args.handler(args),0)
             self.assertEqual(json.loads(output.getvalue())[0]["type"],"device.detected")
             with patch("app.core.history.load_config",return_value={"activeProject":None}),self.assertRaisesRegex(ValueError,"proyecto VLF activo"): HistoryService()

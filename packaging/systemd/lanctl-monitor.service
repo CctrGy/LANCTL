@@ -1,0 +1,21 @@
+[Unit]
+Description=LANCTL monitor node
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lanctl
+Group=lanctl
+WorkingDirectory=/var/lib/lanctl
+ExecStart=/usr/bin/lanctl monitor foreground
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/lanctl /etc/lanctl
+
+[Install]
+WantedBy=multi-user.target

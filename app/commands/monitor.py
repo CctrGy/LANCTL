@@ -43,7 +43,7 @@ def run_monitor(args):
         if args.authority != "observe":raise PermissionError("operate/administer requiere una identidad de LAN confirmada por el proveedor de configuración")
         seconds=duration(args.duration) if args.duration else None;mode="permanent" if args.permanent else args.mode
         session=sessions.start(platform.node() or "manager",str(project),mode=mode,authority=args.authority,duration=seconds)
-        command=[sys.executable,str(Path(__file__).resolve().parents[2]/"main.py"),"virtual","monitor","foreground","--monitor-db",args.monitor_db,"--profiles",args.profiles,"--assignments-store",args.assignments_store,"--lock",args.lock]
+        command=_lanctl_command("monitor","foreground","--monitor-db",args.monitor_db,"--profiles",args.profiles,"--assignments-store",args.assignments_store,"--lock",args.lock)
         flags=getattr(subprocess,"CREATE_NO_WINDOW",0) if platform.system()=="Windows" else 0
         process=subprocess.Popen(command,creationflags=flags,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         payload={**asdict(session),"processId":process.pid}
@@ -110,7 +110,10 @@ def run_monitor(args):
     elif action=="service":payload=asdict(_platform().service(words[1] if len(words)>1 else "status",confirm=args.yes,executable=sys.executable,project=args.project or load_config().get("activeProject") or ""))
     elif action=="foreground":
         active=sessions.repository.active()
-        if not active:raise RuntimeError("no hay una sesión pendiente para foreground")
+        if not active:
+            project=load_config().get("activeProject")
+            if not project:raise RuntimeError("no hay una sesión pendiente ni un proyecto activo para foreground")
+            active=sessions.start(platform.node() or "manager",str(project),mode="permanent",authority="observe")
         class Assignments:
             def targets(self,_session):
                 inventory=DeviceDatabase(load_config()["database"]);configured=AssignmentManager(application_path(args.assignments_store)).list()
@@ -194,7 +197,7 @@ def run_monitor(args):
             if SingletonLock(application_path(args.lock)).status().get("running"):payload={"status":"error","message":"El proceso monitor no se detuvo dentro del límite"}
             else:
                 replacement=sessions.start(active.managerId,active.projectId,active.network,active.interface,active.localIp,active.mode,active.authority,None)
-                command=[sys.executable,str(Path(__file__).resolve().parents[2]/"main.py"),"virtual","monitor","foreground","--monitor-db",args.monitor_db,"--profiles",args.profiles,"--assignments-store",args.assignments_store,"--lock",args.lock];flags=getattr(subprocess,"CREATE_NO_WINDOW",0) if platform.system()=="Windows" else 0;process=subprocess.Popen(command,creationflags=flags,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);payload={"status":"restarted","previousPid":old_pid,"processId":process.pid,"sessionId":replacement.sessionId}
+                command=_lanctl_command("monitor","foreground","--monitor-db",args.monitor_db,"--profiles",args.profiles,"--assignments-store",args.assignments_store,"--lock",args.lock);flags=getattr(subprocess,"CREATE_NO_WINDOW",0) if platform.system()=="Windows" else 0;process=subprocess.Popen(command,creationflags=flags,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);payload={"status":"restarted","previousPid":old_pid,"processId":process.pid,"sessionId":replacement.sessionId}
     else:raise ValueError("acción monitor no válida")
     print(json.dumps(payload,indent=2,ensure_ascii=False) if args.json or isinstance(payload,(dict,list)) else payload)
     database=getattr(sessions.repository,"db",None)
@@ -214,3 +217,5 @@ def _targets(database,selector=None,group=None):
     if group:rows=[device for device in rows if group.casefold() in (item.casefold() for item in device.groups)]
     if not rows:raise ValueError("no hay dispositivos para la operación monitor")
     return rows
+def _lanctl_command(*arguments):
+    return [sys.executable,*arguments] if getattr(sys,"frozen",False) else [sys.executable,str(Path(__file__).resolve().parents[2]/"main.py"),*arguments]

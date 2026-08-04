@@ -16,7 +16,7 @@ class RecurrentElementDatabaseTests(unittest.TestCase):
         )
         self.assertEqual(vm1.mac, "5E:8C:B3:08:05:D4")
         self.assertEqual(vm1.ip, "-")
-        self.assertEqual(vm1.name, "MobilVicttor1")
+        self.assertEqual(vm1.name, "MobilVictor1")
 
     def test_scan_recognizes_known_mac_on_any_network(self):
         catalog = [{

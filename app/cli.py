@@ -21,6 +21,7 @@ from app.commands.radmin import register_radmin_command
 from app.commands.wol import register_wol_command
 from app.commands.history import register_history_command
 from app.commands.monitor import register_monitor_command
+from app.commands.access import register_access_command
 from app.commands.smb import register_smb_command
 from app.commands.terminal import register_terminal_command
 from app.commands.settings import register_settings_command
@@ -34,24 +35,14 @@ from app.commands.open import register_open_command
 from app.commands.project import register_project_command
 from app.commands.plugin import register_plugin_command
 from app.commands.language import register_language_command
-from app.commands.modes import register_virtual_mode, run_global_cli
+from app.commands.modes import run_global_cli
 from app.core.console import error as print_error
 from app.core.parser import LANCTLArgumentParser
 from app.core.logger import write_log
 from app.core.log_cleanup import run_automatic_log_cleanup
 
 
-LEGACY_VIRTUAL_COMMANDS = {
-    "list", "settings", "call", "search", "scan", "cnf", "credential",
-    "credentials", "auth", "gateway", "downloadsettings", "download-settings",
-    "protocol", "ssh", "radmin", "wol", "history", "monitor", "terminal", "cli", "switch", "group", "element",
-    "name", "alias", "ping", "open", "connect", "project", "projects",
-    "plugin", "plugins", "addon", "addons",
-    "language", "languages", "lang", "recurrent", "smb",
-}
-
-
-def register_virtual_commands(commands: argparse._SubParsersAction) -> None:
+def register_commands(commands: argparse._SubParsersAction) -> None:
     register_list_command(commands)
     register_recurrent_command(commands)
     register_ping_command(commands)
@@ -70,6 +61,7 @@ def register_virtual_commands(commands: argparse._SubParsersAction) -> None:
     register_wol_command(commands)
     register_history_command(commands)
     register_monitor_command(commands)
+    register_access_command(commands)
     register_smb_command(commands)
     register_terminal_command(commands)
     register_switch_command(commands)
@@ -113,8 +105,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=t("LANCTL.CORE.APP.TUI_HELP"),
     )
-    commands = parser.add_subparsers(dest="command", metavar="ÁMBITO/COMANDO")
-    register_virtual_mode(commands, register_virtual_commands)
+    commands = parser.add_subparsers(dest="command", metavar="COMANDO")
+    register_commands(commands)
     return parser
 
 
@@ -133,17 +125,6 @@ def main(argv: list[str] | None = None) -> int:
             "LANCTL.Core.Lifecycle.Startup",
             {"version": __version__, "mode": mode},
         )
-    plugin_commands = {
-        str(item.specification.get("name", "")).casefold()
-        for item in manager.extensions.list("command")
-    }
-    plugin_commands.update(
-        str(alias).casefold()
-        for item in manager.extensions.list("command")
-        for alias in item.specification.get("aliases", [])
-    )
-    if arguments and arguments[0].casefold() in LEGACY_VIRTUAL_COMMANDS | plugin_commands:
-        arguments.insert(0, "virtual")
     write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
     parser = build_parser()
     args = parser.parse_args(arguments)

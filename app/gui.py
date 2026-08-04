@@ -127,7 +127,7 @@ class GuiApi:
                 raise ValueError("perfil de escaneo GUI no válido")
             from app.cli import build_parser
             args = build_parser().parse_args([
-                "virtual", "list", "--profile", profile, "--no-progress",
+                "list", "--profile", profile, "--no-progress",
                 "--format", "json",
             ])
             def capture(rows, activity) -> None:
@@ -252,10 +252,10 @@ class GuiApi:
             if not device.protocols:
                 raise ValueError("el dispositivo no tiene protocolos configurados")
             if getattr(sys, "frozen", False):
-                command = [sys.executable, "virtual", "terminal", device.device_id]
+                command = [sys.executable, "terminal", device.device_id]
             else:
                 command = [sys.executable, str(Path(__file__).resolve().parents[1] / "main.py"),
-                           "virtual", "terminal", device.device_id]
+                           "terminal", device.device_id]
             flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
             subprocess.Popen(command, creationflags=flags)
             return {"message": "Terminal iniciada en una ventana independiente"}
@@ -267,7 +267,7 @@ class GuiApi:
             config = load_config(); values = options if isinstance(options, dict) else {}
             allowed = {"broadcast", "port", "repeat", "interval", "wait", "method", "checkPort"}
             if set(values) - allowed: raise ValueError("opciones WOL GUI no válidas")
-            arguments = ["virtual", "wol", selector, "wakeup", "--json", "--database", config["database"]]
+            arguments = ["wol", selector, "wakeup", "--json", "--database", config["database"]]
             for key, flag in (("broadcast","--broadcast"),("port","--port"),("repeat","--repeat"),("interval","--interval"),("wait","--wait"),("method","--method"),("checkPort","--check-port")):
                 if key in values: arguments.extend((flag, str(values[key])))
             parsed = build_parser().parse_args(arguments); output = io.StringIO()

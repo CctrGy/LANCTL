@@ -7,7 +7,7 @@ from app.cli import build_parser
 
 class RecurrentCommandTests(unittest.TestCase):
     def _run(self, arguments: list[str]) -> str:
-        args = build_parser().parse_args(["virtual", *arguments])
+        args = build_parser().parse_args([*arguments])
         output = io.StringIO()
         with redirect_stdout(output):
             result = args.handler(args)

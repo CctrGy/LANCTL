@@ -34,7 +34,7 @@ class WolTests(unittest.TestCase):
         self.assertEqual(count, 2); self.assertEqual(sock.sendto.call_count, 2); sock.close.assert_called_once()
 
     def test_parser_defaults_to_wakeup_and_stacks_conditions(self):
-        args = build_parser().parse_args(["virtual", "wol", "PC", "-if", "offline", "--if", "time after 07:00", "--dry-run"])
+        args = build_parser().parse_args(["wol", "PC", "-if", "offline", "--if", "time after 07:00", "--dry-run"])
         self.assertEqual(args.words, ["PC"]); self.assertEqual(args.conditions, ["offline", "time after 07:00"])
 
     def test_closed_condition_parser_and_combinators(self):
@@ -53,7 +53,7 @@ class WolTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = str(Path(temporary) / "devices.json"); db = DeviceDatabase(path)
             device = db.upsert([{"IP":"192.168.1.8","MAC":"02:11:22:33:44:55","ALIAS":"PC"}])[0]
-            args = build_parser().parse_args(["virtual","wol",device.device_id,"--dry-run","--json","--database",path])
+            args = build_parser().parse_args(["wol",device.device_id,"--dry-run","--json","--database",path])
             with patch("app.commands.wol._online", return_value=False), patch("app.commands.wol.send_magic_packet") as send, patch("app.commands.wol.write_log"):
                 from io import StringIO
                 import contextlib
@@ -64,7 +64,7 @@ class WolTests(unittest.TestCase):
     def test_remote_power_is_blocked_without_transport(self):
         with tempfile.TemporaryDirectory() as temporary:
             path=str(Path(temporary)/"devices.json"); DeviceDatabase(path).upsert([{"IP":"192.168.1.8","MAC":"02:11:22:33:44:55","ALIAS":"PC"}])
-            args=build_parser().parse_args(["virtual","wol","PC","shutdown","-t","10m","--json","--database",path])
+            args=build_parser().parse_args(["wol","PC","shutdown","-t","10m","--json","--database",path])
             with patch("app.commands.wol.write_log"):
                 from io import StringIO
                 import contextlib
@@ -75,7 +75,7 @@ class WolTests(unittest.TestCase):
     def test_false_condition_skips_without_sending(self):
         with tempfile.TemporaryDirectory() as temporary:
             path=str(Path(temporary)/"devices.json"); DeviceDatabase(path).upsert([{"IP":"192.168.1.8","MAC":"02:11:22:33:44:55","ALIAS":"PC"}])
-            args=build_parser().parse_args(["virtual","wol","PC","-if","online","--json","--database",path])
+            args=build_parser().parse_args(["wol","PC","-if","online","--json","--database",path])
             with patch("app.commands.wol._online", return_value=False), patch("app.commands.wol.send_magic_packet") as send, patch("app.commands.wol.write_log"):
                 from io import StringIO
                 import contextlib
@@ -86,7 +86,7 @@ class WolTests(unittest.TestCase):
     def test_all_requires_explicit_confirmation(self):
         with tempfile.TemporaryDirectory() as temporary:
             path=str(Path(temporary)/"devices.json"); DeviceDatabase(path).upsert([{"IP":"192.168.1.8","MAC":"02:11:22:33:44:55"}])
-            args=build_parser().parse_args(["virtual","wol","placeholder","--all","--database",path])
+            args=build_parser().parse_args(["wol","placeholder","--all","--database",path])
             with self.assertRaisesRegex(ValueError,"--yes"): run_wol(args)
 
 

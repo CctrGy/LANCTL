@@ -23,13 +23,13 @@ class FixedCnfTests(unittest.TestCase):
                 "AA:BB:CC:DD:EE:FF", alias="PORTATIL"
             )
             fixed = build_parser().parse_args([
-                "virtual", "cnf", device.mac, "F", "--database", str(path)
+                "cnf", device.mac, "F", "--database", str(path)
             ])
             fixed.handler(fixed)
             self.assertEqual(database.resolve(device.mac).cnf, "F")
 
             released = build_parser().parse_args([
-                "virtual", "cnf", device.mac, "--database", str(path)
+                "cnf", device.mac, "--database", str(path)
             ])
             released.handler(released)
             self.assertEqual(database.resolve(device.mac).cnf, "O")
@@ -40,7 +40,7 @@ class FixedCnfTests(unittest.TestCase):
             database = DeviceDatabase(str(path))
             device = database.add_device("AA:BB:CC:DD:EE:FF")
             args = build_parser().parse_args([
-                "virtual", "cnf", device.mac, "--database", str(path)
+                "cnf", device.mac, "--database", str(path)
             ])
             args.handler(args)
             self.assertEqual(database.resolve(device.mac).cnf, "X")

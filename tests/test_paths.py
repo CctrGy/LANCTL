@@ -18,11 +18,12 @@ class ApplicationPathTests(unittest.TestCase):
             path = DeviceDatabase("data/lc/devices.json").path
         self.assertEqual(path, expected_root / "data" / "lc" / "devices.json")
 
-    def test_frozen_paths_are_relative_to_executable(self):
+    def test_frozen_program_data_is_separate_from_executable(self):
         executable = r"C:\Program Files\LANCTL\LANCTL.exe"
         with (
             patch.object(sys, "frozen", True, create=True),
             patch.object(sys, "executable", executable),
+            patch.dict("os.environ", {"PROGRAMDATA": r"C:\ProgramData"}),
         ):
             self.assertEqual(
                 application_directory(),
@@ -30,7 +31,7 @@ class ApplicationPathTests(unittest.TestCase):
             )
             self.assertEqual(
                 application_path("data/lc/.config"),
-                Path(r"C:\Program Files\LANCTL\data\lc\.config"),
+                Path(r"C:\ProgramData\LANCTL\.config"),
             )
 
 

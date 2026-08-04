@@ -34,6 +34,8 @@ DEFAULTS = {
     "monitorRuntime": "data/lc/monitor-sessions.json",
     "monitorIncidents": "data/lc/monitor-incidents.json",
     "monitorLock": "data/lc/monitor.lock",
+    "accessConfig": "data/lc/access/config.json",
+    "accessUsers": "data/lc/access/users.json",
     "monitorDatabase": "data/lc/monitor.db",
     "monitorProfiles": "data/lc/monitor-profiles.json",
     "monitorAssignments": "data/lc/monitor-assignments.json",

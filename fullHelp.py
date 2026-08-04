@@ -229,11 +229,6 @@ def build_full_help() -> str:
         "LANCTL",
     ]
     _emit_parser(lines, parser, "")
-    lines.extend([
-        "",
-        "Compatibilidad",
-        TREE_LAST + "Los comandos virtuales también aceptan la forma abreviada: run <comando> ...",
-    ])
     return "\n".join(lines) + "\n"
 
 

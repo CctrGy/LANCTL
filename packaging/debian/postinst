@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+getent group lanctl >/dev/null 2>&1 || addgroup --system lanctl
+getent passwd lanctl >/dev/null 2>&1 || adduser --system --ingroup lanctl --home /var/lib/lanctl --no-create-home --disabled-login --shell /usr/sbin/nologin lanctl
+install -d -o lanctl -g lanctl -m 0750 /var/lib/lanctl
+install -d -o root -g lanctl -m 0750 /etc/lanctl
+systemctl daemon-reload >/dev/null 2>&1 || true
+exit 0

@@ -502,7 +502,7 @@ class LanctlTui:
         captured_activity: list[bool] = []
         output_buffer = io.StringIO()
         try:
-            args = build_parser().parse_args(["virtual", "list", "--no-progress"])
+            args = build_parser().parse_args(["list", "--no-progress"])
             def collect_result(rows, activity) -> None:
                 captured_rows.extend(rows)
                 captured_activity.extend(activity)
@@ -539,7 +539,7 @@ class LanctlTui:
             self.messages = ["No hay ningún elemento seleccionado."]
             return
         result, output = self._capture([
-            "virtual", "element", self.selected.mac or self.selected.ip
+            "element", self.selected.mac or self.selected.ip
         ])
         self._set_command_output(output, result)
 
@@ -551,7 +551,7 @@ class LanctlTui:
         self.messages = ["Obteniendo informacion completa del elemento..."]
         self.render()
         result, output = self._capture([
-            "virtual", "scan", device.mac or device.ip,
+            "scan", device.mac or device.ip,
             "--identify", "--banners", "--json",
         ])
         try:
@@ -613,7 +613,7 @@ class LanctlTui:
             self.messages = ["No hay ningún elemento seleccionado para comprobar."]
             return
         result, output = self._capture([
-            "virtual", "ping", device.mac or device.ip
+            "ping", device.mac or device.ip
         ])
         if result == 0:
             self.active_devices.add(_device_key(device.mac, device.ip))
@@ -666,7 +666,7 @@ class LanctlTui:
             if answer in ("s", "si", "sí", "y", "yes"):
                 contextual = self.pending_confirmation
                 self.pending_confirmation = None
-                result, output = self._capture(["virtual", *contextual])
+                result, output = self._capture(contextual)
                 self.reload()
                 self._set_command_output(output, result)
             elif answer in ("n", "no", "cancel", "cancelar"):
@@ -701,7 +701,7 @@ class LanctlTui:
             return
         if command in ("help", "?", "commands"):
             if len(parts) > 1 and parts[1].casefold() != "list":
-                help_result, output = self._capture(["virtual", parts[1], "/?"])
+                help_result, output = self._capture([parts[1], "/?"])
                 self._set_command_output(output or "No hay ayuda disponible.", help_result)
             else:
                 self.messages = [
@@ -721,7 +721,7 @@ class LanctlTui:
                 part.casefold() in ("-recurrent", "--recurrent")
                 for part in parts[1:]
             ):
-                result, output = self._capture(["virtual", *parts])
+                result, output = self._capture(parts)
                 self._set_command_output(output, result)
                 return
             if self.configure_list(parts[1:]):
@@ -783,7 +783,7 @@ class LanctlTui:
             "ping", "protocol", "scan", "search", "ssh", "switch", "terminal",
         }:
             contextual.insert(1, self.selected.mac or self.selected.ip)
-        result, output = self._capture(["virtual", *contextual])
+        result, output = self._capture(contextual)
         self.reload()
         self._set_command_output(output, result)
 
