@@ -8,7 +8,7 @@ on:
       version:
         description: Version without v prefix
         required: true
-        default: 0.3.0-beta.3
+        default: 0.3.0-beta.4
 
 permissions:
   contents: read

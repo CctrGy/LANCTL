@@ -21,7 +21,7 @@ VSVersionInfo(
           StringStruct(u'LegalCopyright', u'Copyright © 2026 Victor'),
           StringStruct(u'OriginalFilename', u'LANCTL.exe'),
           StringStruct(u'ProductName', u'LANCTL'),
-          StringStruct(u'ProductVersion', u'0.3.0-beta.3')
+          StringStruct(u'ProductVersion', u'0.3.0-beta.4')
         ]
       )
     ]),

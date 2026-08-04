@@ -1,4 +1,4 @@
-[CmdletBinding()] param([string]$Version = '0.3.0-beta.3')
+[CmdletBinding()] param([string]$Version = '0.3.0-beta.4')
 $ErrorActionPreference='Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$') { throw 'Invalid version' }
 $Root=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
