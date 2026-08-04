@@ -7,7 +7,7 @@ el acceso mediante protocolos de administración y la auditoría de cambios.
 Incluye CLI, consola persistente, TUI, interfaz gráfica para Windows, proyectos
 portables `.vlf` y un sistema extensible de complementos `.lcp`.
 
-> **Versión actual — `0.3.0-beta.2`**
+> **Versión actual — `0.3.0-beta.3`**
 
 ## Instalación online
 

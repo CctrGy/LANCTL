@@ -99,6 +99,9 @@ class LanctlTui:
         self.view_state = "inventory"
         self.history_events = []
         self.history_index = 0
+        self.command_history: list[str] = []
+        self.command_history_index = 0
+        self.command_history_scroll = 0
         self.reload()
 
     @property
@@ -344,7 +347,12 @@ class LanctlTui:
         title = f" LANCTL TUI {__version__} "
         mode, value = self.list_filter
         filter_name = f"{mode}:{value}" if value else mode
-        counter = (f" [history] {self.history_index + 1 if self.history_events else 0}/{len(self.history_events)} " if self.view_state == "history" else f" [{filter_name}] {self.index + 1 if self.devices else 0}/{len(self.devices)} ")
+        if self.view_state == "history":
+            counter = f" [history] {self.history_index + 1 if self.history_events else 0}/{len(self.history_events)} "
+        elif self.view_state == "command-history":
+            counter = f" [commands] {self.command_history_index + 1 if self.command_history else 0}/{len(self.command_history)} "
+        else:
+            counter = f" [{filter_name}] {self.index + 1 if self.devices else 0}/{len(self.devices)} "
         title_space = max(0, width - len(title) - len(counter))
         title_content = (
             f"{title}{'─' * title_space}{counter}"
@@ -353,7 +361,13 @@ class LanctlTui:
         )
         lines = [
             f"{Style.BRIGHT}{Fore.CYAN}{title_content}{RESET}",
-            *(self._history_lines(width, list_height) if self.view_state == "history" else self._inventory_lines(width, list_height)),
+            *(
+                self._history_lines(width, list_height)
+                if self.view_state == "history"
+                else self._command_history_lines(width, list_height)
+                if self.view_state == "command-history"
+                else self._inventory_lines(width, list_height)
+            ),
             f"{Fore.CYAN}{'─' * width}{RESET}",
             *(_fit_ansi(line, width) for line in self._status_lines(width)),
         ]
@@ -429,6 +443,32 @@ class LanctlTui:
             self.history_index = 0; self.view_state = "history"
             self.messages = [f"Historial: {len(self.history_events)} eventos | Enter detalle | Esc inventario"]
         except ValueError as error: self.messages = [str(error)]
+
+    def show_command_history(self) -> None:
+        self.view_state = "command-history"
+        self.command_history_index = max(0, len(self.command_history) - 1)
+        self.command_history_scroll = max(0, self.command_history_index)
+        self.messages = [
+            f"Historial de comandos: {len(self.command_history)} | "
+            "Flechas seleccionan | Enter recupera | Esc inventario"
+        ]
+
+    def _command_history_lines(self, width: int, height: int) -> list[str]:
+        if not self.command_history:
+            return [" Sin comandos en esta sesion"]
+        height = max(1, height)
+        if self.command_history_index < self.command_history_scroll:
+            self.command_history_scroll = self.command_history_index
+        elif self.command_history_index >= self.command_history_scroll + height:
+            self.command_history_scroll = self.command_history_index - height + 1
+        maximum = max(0, len(self.command_history) - height)
+        self.command_history_scroll = max(0, min(self.command_history_scroll, maximum))
+        rows = []
+        end = min(len(self.command_history), self.command_history_scroll + height)
+        for index in range(self.command_history_scroll, end):
+            marker = "▶" if index == self.command_history_index else " "
+            rows.append(f"{marker} {index + 1:>4} | {self.command_history[index]}")
+        return [fit_text(row, width) for row in rows]
 
     def _history_lines(self, width: int, height: int) -> list[str]:
         rows=[]
@@ -661,6 +701,10 @@ class LanctlTui:
         self.cursor = 0
         if not raw:
             return
+        if not hasattr(self, "command_history"):
+            self.command_history = []
+        if not self.command_history or self.command_history[-1] != raw:
+            self.command_history.append(raw)
         if getattr(self, "pending_confirmation", None) is not None:
             answer = raw.casefold()
             if answer in ("s", "si", "sí", "y", "yes"):
@@ -808,6 +852,25 @@ class LanctlTui:
             elif key == "F5": self.show_history("all" if self.history_events and not self.history_events[0].device else None)
             elif key == "ESC": self.view_state="inventory"; self.messages=["Inventario restaurado"]
             return
+        if getattr(self, "view_state", "inventory") == "command-history":
+            if key in ("UP", "PGUP"):
+                step = 10 if key == "PGUP" else 1
+                self.command_history_index = max(0, self.command_history_index - step)
+            elif key in ("DOWN", "PGDN"):
+                step = 10 if key == "PGDN" else 1
+                self.command_history_index = min(
+                    max(0, len(self.command_history) - 1),
+                    self.command_history_index + step,
+                )
+            elif key == "ENTER" and self.command_history:
+                self.command = self.command_history[self.command_history_index]
+                self.cursor = len(self.command)
+                self.view_state = "inventory"
+                self.messages = ["Comando recuperado; pulsa Enter para ejecutarlo."]
+            elif key == "ESC":
+                self.view_state = "inventory"
+                self.messages = ["Inventario restaurado"]
+            return
         if self.output_focus:
             if key == "UP":
                 self._move_output(-1)
@@ -843,7 +906,7 @@ class LanctlTui:
             self.move(10)
         elif key == "F1":
             self.messages = [
-                "F1 ayuda | F2 información | F3 ping | F5 escaneo | flechas selección | Esc salir",
+                "F1 ayuda | F2 información | F3 ping | F5 escaneo | Ctrl+H comandos | flechas selección | Esc salir",
                 "TUI: reload recarga el inventario sin escanear la red.",
                 "Filtros: list --all|--connected|--disconnected|-group NOMBRE|-dhcp|-statics",
             ]
@@ -853,8 +916,8 @@ class LanctlTui:
             self.ping_selected()
         elif key == "F5":
             self.refresh()
-        elif key.upper() == "H":
-            self.show_history()
+        elif key == "CTRL_H":
+            self.show_command_history()
         elif key == "ENTER":
             self.execute()
         elif key == "BACKSPACE":
@@ -903,7 +966,17 @@ class LanctlTui:
         return 0
 
 
-def _read_windows_key(getwch) -> str:
+def _windows_control_pressed() -> bool:
+    if os.name != "nt":
+        return False
+    try:
+        import ctypes
+        return bool(ctypes.windll.user32.GetKeyState(0x11) & 0x8000)
+    except (AttributeError, OSError):
+        return False
+
+
+def _read_windows_key(getwch, control_pressed=None) -> str:
     first = getwch()
     if first in ("\x00", "\xe0"):
         return {
@@ -911,8 +984,11 @@ def _read_windows_key(getwch) -> str:
             "I": "PGUP", "Q": "PGDN", "G": "HOME", "O": "END",
             "S": "DELETE", ";": "F1", "<": "F2", "=": "F3", "?": "F5",
         }.get(getwch(), "UNKNOWN")
+    if first == "\x08":
+        pressed = control_pressed or _windows_control_pressed
+        return "CTRL_H" if pressed() else "BACKSPACE"
     return {
-        "\r": "ENTER", "\n": "ENTER", "\x08": "BACKSPACE",
+        "\r": "ENTER", "\n": "ENTER",
         "\x1b": "ESC", "\x03": "ESC",
     }.get(first, first)
 
@@ -1184,7 +1260,7 @@ def _last_meaningful_line(value: str) -> str:
 def _function_bar(width: int) -> str:
     buttons = (
         ("F1", "Ayuda"), ("F2", "Info"), ("F3", "Ping"),
-        ("F5", "Actualizar"),
+        ("F5", "Actualizar"), ("Ctrl+H", "Comandos"),
         ("↑↓", "Seleccionar"), ("Enter", "Ejecutar"), ("Esc", "Salir"),
     )
     output = ""

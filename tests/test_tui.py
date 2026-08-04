@@ -16,6 +16,78 @@ from app.tui import (
 
 
 class TuiTests(unittest.TestCase):
+    def test_lowercase_h_is_written_in_the_command_editor(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.output_focus = False
+        tui.command_suggestions = []
+        tui.command = ""
+        tui.cursor = 0
+        tui.running = True
+        tui._clear_suggestions = lambda: None
+        tui.show_history = lambda: self.fail("lowercase h opened history")
+
+        tui.handle_key("h")
+
+        self.assertEqual(tui.command, "h")
+        self.assertEqual(tui.cursor, 1)
+
+    def test_uppercase_h_is_also_available_to_the_command_editor(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.output_focus = False
+        tui.command_suggestions = []
+        tui.command = ""
+        tui.cursor = 0
+        tui._clear_suggestions = lambda: None
+
+        tui.handle_key("H")
+
+        self.assertEqual(tui.command, "H")
+
+    def test_ctrl_h_is_distinguished_from_backspace(self):
+        keys = iter(["\x08", "\x08"])
+        self.assertEqual(_read_windows_key(lambda: next(keys), lambda: True), "CTRL_H")
+        self.assertEqual(_read_windows_key(lambda: next(keys), lambda: False), "BACKSPACE")
+
+    def test_command_history_replaces_inventory_and_recovers_selection(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.output_focus = False
+        tui.command_suggestions = []
+        tui.command = ""
+        tui.cursor = 0
+        tui.messages = []
+        tui.command_history = ["list --all", "scan", "monitor status"]
+        tui.command_history_index = 0
+        tui.command_history_scroll = 0
+
+        tui.handle_key("CTRL_H")
+        self.assertEqual(tui.view_state, "command-history")
+        self.assertEqual(tui.command_history_index, 2)
+        tui.handle_key("UP")
+        self.assertEqual(tui.command_history_index, 1)
+        tui.handle_key("ENTER")
+
+        self.assertEqual(tui.view_state, "inventory")
+        self.assertEqual(tui.command, "scan")
+        self.assertEqual(tui.cursor, 4)
+
+    def test_command_history_lines_scroll_only_the_command_list(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.command_history = [f"command {index}" for index in range(20)]
+        tui.command_history_index = 19
+        tui.command_history_scroll = 0
+
+        lines = tui._command_history_lines(80, 4)
+
+        self.assertEqual(len(lines), 4)
+        self.assertIn("command 19", lines[-1])
+        self.assertEqual(tui.command_history_scroll, 16)
+
     def test_history_view_replaces_inventory_and_escape_restores_selection(self):
         tui=LanctlTui.__new__(LanctlTui); device=SimpleNamespace(device_id="dev_nas",mac="02:11:22:33:44:55",ip="192.168.1.8",alias="NAS",name="NAS")
         tui.devices=[device]; tui.index=0; tui.scroll=4; tui.messages=[]; tui.view_state="inventory"; tui.history_events=[]; tui.history_index=0; tui.detail_lines=[]; tui.output_focus=False
