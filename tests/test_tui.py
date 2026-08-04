@@ -1,5 +1,6 @@
 import unittest
 import json
+import io
 from unittest.mock import patch
 from types import SimpleNamespace
 
@@ -11,11 +12,21 @@ from app.tui import (
     _expand_tui_widths, _fit_ansi, _function_bar,
     _inject_selected_group_element,
     _last_meaningful_line, _parse_list_filter, _selectable_output_indexes,
-    _read_windows_key, _spinner_character, _translate_tui_element,
+    _is_interactive_terminal, _read_windows_key, _spinner_character,
+    _translate_tui_element,
 )
 
 
 class TuiTests(unittest.TestCase):
+    def test_redirected_tui_stops_cleanly_before_writing_terminal_codes(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.screen = io.StringIO()
+        with patch("app.tui.os.name", "nt"), patch("app.tui.sys.stdin", io.StringIO()):
+            with self.assertRaisesRegex(OSError, "terminal interactiva"):
+                tui.run()
+        self.assertEqual(tui.screen.getvalue(), "")
+        self.assertFalse(_is_interactive_terminal(tui.screen))
+
     def test_lowercase_h_is_written_in_the_command_editor(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.detail_lines = []

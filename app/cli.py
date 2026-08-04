@@ -42,6 +42,19 @@ from app.core.logger import write_log
 from app.core.log_cleanup import run_automatic_log_cleanup
 
 
+def configure_utf8_stdio() -> None:
+    """Normaliza la salida textual, incluida la que se redirige a otro proceso."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (AttributeError, OSError, ValueError):
+                # Consolas embebidas y algunos lanzadores no permiten
+                # reconfigurar el stream; en ellos se conserva el contrato dado.
+                pass
+
+
 def register_commands(commands: argparse._SubParsersAction, include_plugin_commands: bool = False) -> None:
     register_list_command(commands)
     register_recurrent_command(commands)
@@ -112,6 +125,7 @@ def build_parser(include_plugin_commands: bool = False) -> argparse.ArgumentPars
 
 
 def main(argv: list[str] | None = None) -> int:
+    configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
     if any(value in arguments for value in ("-h","--help","/?","--version")):
         return build_parser(include_plugin_commands=False).parse_args(arguments)

@@ -948,6 +948,11 @@ class LanctlTui:
     def run(self) -> int:
         if os.name != "nt":
             raise OSError("LANCTL TUI utiliza actualmente la entrada de teclado de Windows")
+        if not _is_interactive_terminal(sys.stdin) or not _is_interactive_terminal(self.screen):
+            raise OSError(
+                "LANCTL TUI necesita una terminal interactiva; usa --cli o un comando "
+                "normal cuando la entrada o la salida estén redirigidas"
+            )
         just_fix_windows_console()
         from msvcrt import getwch
         try:
@@ -964,6 +969,14 @@ class LanctlTui:
             self.screen.write(TUI_LEAVE_SCREEN)
             self.screen.flush()
         return 0
+
+
+def _is_interactive_terminal(stream) -> bool:
+    """Consulta isatty sin asumir que el stream capturado implementa una consola."""
+    try:
+        return bool(stream.isatty())
+    except (AttributeError, OSError, ValueError):
+        return False
 
 
 def _windows_control_pressed() -> bool:
