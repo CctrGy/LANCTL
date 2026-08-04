@@ -88,22 +88,36 @@ try {
     Download-Asset $artifact $artifactPath; Download-Asset $sums $sumsPath
     Assert-Hash $artifactPath $sumsPath $artifactName
     if ($Portable) {
-        $destination = Join-Path $env:LOCALAPPDATA "Programs\LANCTL\$resolvedVersion"
+        $portableBase=Join-Path $env:LOCALAPPDATA 'Programs\LANCTL';$destination = Join-Path $portableBase $resolvedVersion
         $staging = "$destination.new-$([guid]::NewGuid().ToString('N'))"
         New-Item -ItemType Directory -Path $staging -Force | Out-Null
         Expand-SafeZip $artifactPath $staging
+        $previousData=$null
+        if(Test-Path -LiteralPath (Join-Path $destination 'data\lanctl')){$previousData=Join-Path $destination 'data\lanctl'}
+        elseif(Test-Path -LiteralPath $portableBase){$previous=Get-ChildItem -LiteralPath $portableBase -Directory | Where-Object {$_.Name -notmatch '\.(new|previous)-'} | Sort-Object LastWriteTime -Descending | Select-Object -First 1;if($previous -and (Test-Path -LiteralPath (Join-Path $previous.FullName 'data\lanctl'))){$previousData=Join-Path $previous.FullName 'data\lanctl'}}
+        if($previousData){New-Item -ItemType Directory -Path (Join-Path $staging 'data') -Force|Out-Null;Copy-Item -LiteralPath $previousData -Destination (Join-Path $staging 'data\lanctl') -Recurse}
         if (Test-Path -LiteralPath $destination) {
             $backup = "$destination.previous-$([guid]::NewGuid().ToString('N'))"
             Move-Item -LiteralPath $destination -Destination $backup
             Write-Host "Previous portable installation preserved at $backup"
         }
         Move-Item -LiteralPath $staging -Destination $destination
+        if ((Get-Content -LiteralPath (Join-Path $destination 'LANCTL.portable') -Raw).Trim() -ne 'LANCTL-PORTABLE-V1') { throw 'Portable marker is missing or invalid' }
+        if (Test-Path -LiteralPath (Join-Path $destination '_internal')) { throw 'Portable package unexpectedly contains _internal' }
         Write-Host "Portable LANCTL installed at $destination (PATH is not modified)."
     } else {
         $arguments = @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/MODE=$Mode")
         if ($Yes) { $arguments += '/SP-' }
         $process = Start-Process -FilePath $artifactPath -ArgumentList $arguments -Wait -PassThru
         if ($process.ExitCode -ne 0) { throw "Setup failed with exit code $($process.ExitCode)" }
+        $installRoot=Join-Path $env:ProgramFiles 'LANCTL';$dataRoot=Join-Path $env:ProgramData 'LANCTL'
+        if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'LANCTL.exe'))) { throw 'Setup did not install LANCTL.exe' }
+        foreach($unexpected in @('LANCTL.portable','_internal','data')) { if(Test-Path -LiteralPath (Join-Path $installRoot $unexpected)){throw "Unsafe installed layout: $unexpected"} }
+        if (-not (Test-Path -LiteralPath $dataRoot)) { throw 'Setup did not create the ProgramData root' }
+        $systemPath=[Environment]::GetEnvironmentVariable('Path','Machine')
+        if ($systemPath -notlike "*$installRoot*") { throw 'Setup did not add LANCTL to the system PATH' }
+        $configuredData=[Environment]::GetEnvironmentVariable('LANCTL_DATA_DIR','Machine')
+        if ($configuredData -and ([IO.Path]::GetFullPath($configuredData) -ne [IO.Path]::GetFullPath($dataRoot))) { throw 'Existing LANCTL_DATA_DIR points outside the installed data root' }
     }
     if ($ConfigureAccess) {
         if ($Yes) { Write-Warning 'Remote access cannot be enabled with -Yes; run lanctl access setup-wizard interactively.' }

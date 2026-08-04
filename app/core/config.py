@@ -81,8 +81,7 @@ def normalize_dhcp_range(value: str) -> str | None:
 
 
 def load_config() -> dict:
-    from app.core.data_migration import ensure_data_layout, migrate_config_paths
-    ensure_data_layout()
+    from app.core.data_migration import migrate_config_paths
     if not CONFIG_PATH.exists():
         return DEFAULTS.copy()
     try:

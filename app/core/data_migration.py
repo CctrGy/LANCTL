@@ -4,70 +4,71 @@ import hashlib
 import shutil
 from pathlib import Path
 
-from app.core.paths import application_directory
+from app.core.paths import application_directory, application_path, data_root, is_portable_install, secret_root
 
-
-CURRENT_DATA_NAME = "lc"
-LEGACY_DATA_NAME = "als"
+LAYOUT_DIRECTORIES = ("config","database","logs","monitoring","plugins","projects","automation")
 
 
 def ensure_data_layout() -> Path:
-    """Migra data/als a data/lc sin sobrescribir conflictos silenciosamente."""
-    data_root = application_directory() / "data"
-    current = data_root / CURRENT_DATA_NAME
-    legacy = data_root / LEGACY_DATA_NAME
-    if not legacy.exists():
-        current.mkdir(parents=True, exist_ok=True)
-        return current.resolve()
-    if not current.exists():
-        data_root.mkdir(parents=True, exist_ok=True)
-        legacy.replace(current)
-        return current.resolve()
+    """Crea el layout mutable y copia datos legacy sin escribir junto al EXE."""
+    root = data_root()
+    for name in LAYOUT_DIRECTORIES:
+        (root / name).mkdir(parents=True, exist_ok=True)
+    secret_root().mkdir(parents=True,exist_ok=True)
+    marker=root/"config"/"migration-v2.complete"
+    sources=[] if marker.exists() else _legacy_sources(root)
+    conflicts=[]
+    for source in sources:
+        conflicts.extend(_copy_legacy_tree(source,root))
+    if conflicts:
+        joined=", ".join(str(path) for path in conflicts[:5])
+        raise ValueError(f"migración detenida por conflictos de datos legacy: {joined}")
+    if not marker.exists():
+        temporary=marker.with_suffix(".tmp");temporary.write_text("LANCTL-DATA-V2\n",encoding="ascii");temporary.replace(marker)
+    return root.resolve()
 
-    backup_root = current / "migration-backup-als"
-    for source in sorted(legacy.rglob("*")):
-        if source.is_dir():
+
+def _legacy_sources(destination: Path) -> list[Path]:
+    candidates=[]
+    source_root=application_directory()/"data"
+    for name in ("lc","als"):
+        candidate=source_root/name
+        if candidate.exists() and candidate.resolve()!=destination.resolve():candidates.append(candidate)
+    if is_portable_install():
+        old=application_directory()/"data"/"lc"
+        if old.exists() and old not in candidates:candidates.append(old)
+    return candidates
+
+
+def _copy_legacy_tree(source: Path,destination_root: Path) -> list[Path]:
+    conflicts=[]
+    for item in sorted(source.rglob("*")):
+        if item.is_dir():continue
+        relative=item.relative_to(source)
+        if relative.parts and (relative.parts[0].startswith(".merge-backup-") or relative.parts[0].startswith("migration-backup-")):continue
+        destination=application_path(Path("data/lc")/relative)
+        if destination.exists():
+            if not _same_file(item,destination):conflicts.append(relative)
             continue
-        relative = source.relative_to(legacy)
-        destination = current / relative
-        if not destination.exists():
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            source.replace(destination)
-            continue
-        if _same_file(source, destination):
-            source.unlink()
-            continue
-        backup = backup_root / relative
-        backup.parent.mkdir(parents=True, exist_ok=True)
-        counter = 1
-        while backup.exists():
-            backup = backup.with_name(f"{backup.stem}.{counter}{backup.suffix}")
-            counter += 1
-        source.replace(backup)
-    shutil.rmtree(legacy)
-    return current.resolve()
+        destination.parent.mkdir(parents=True,exist_ok=True)
+        shutil.copy2(item,destination)
+    return conflicts
 
 
 def migrate_config_paths(value):
-    """Convierte rutas históricas dentro de objetos JSON de configuración."""
-    if isinstance(value, dict):
-        return {key: migrate_config_paths(item) for key, item in value.items()}
-    if isinstance(value, list):
-        return [migrate_config_paths(item) for item in value]
-    if isinstance(value, str):
-        return value.replace("data/als/", "data/lc/").replace("data\\als\\", "data\\lc\\")
+    """Normaliza rutas históricas; application_path aplica el layout final."""
+    if isinstance(value,dict):return {key:migrate_config_paths(item) for key,item in value.items()}
+    if isinstance(value,list):return [migrate_config_paths(item) for item in value]
+    if isinstance(value,str):return value.replace("data/als/","data/lc/").replace("data\\als\\","data\\lc\\")
     return value
 
 
-def _same_file(first: Path, second: Path) -> bool:
-    if first.stat().st_size != second.stat().st_size:
-        return False
-    return _digest(first) == _digest(second)
+def _same_file(first: Path,second: Path) -> bool:
+    return first.stat().st_size==second.stat().st_size and _digest(first)==_digest(second)
 
 
 def _digest(path: Path) -> str:
-    digest = hashlib.sha256()
+    digest=hashlib.sha256()
     with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
+        for block in iter(lambda:stream.read(1024*1024),b""):digest.update(block)
     return digest.hexdigest()

@@ -213,8 +213,10 @@ Todos los comandos admiten `-h`, `--help` y `/?`.
 
 ## Configuración persistente
 
-La configuración se almacena bajo `./data/lc/`, relativa al ejecutable. Entre
-las opciones más relevantes se encuentran:
+Las rutas lógicas heredadas `data/lc/...` se resuelven mediante una capa central:
+`C:\ProgramData\LANCTL` en Windows instalado, `/var/lib/lanctl` en Linux y
+`data/lanctl` junto al EXE portable. Nunca se escriben datos junto a una
+instalación de Program Files. Entre las opciones más relevantes se encuentran:
 
 ```powershell
 lanctl settings --scan-profile accurate
@@ -230,9 +232,9 @@ Para revisar la configuración efectiva:
 lanctl settings
 ```
 
-Las instalaciones anteriores con `data/als/` se migran automáticamente a
-`data/lc/`. Si ambos directorios existen, prevalece `lc`; cualquier archivo
-antiguo diferente se conserva en `data/lc/migration-backup-als/`.
+Las instalaciones anteriores con `data/als/` o `data/lc/` junto al ejecutable se
+copian al nuevo destino sin borrar el original. Un archivo distinto en ambos
+destinos detiene la migración y muestra el conflicto en lugar de sobrescribirlo.
 
 ## Gestión de elementos
 
@@ -315,7 +317,7 @@ inventario:
 
 | Registro | Ubicación | Contenido |
 | --- | --- | --- |
-| Programa | `./data/lc/log/dd-mm-yyyy.log` junto al ejecutable | Comandos, conexiones, escaneos y mensajes operativos |
+| Programa | `logs/dd-mm-yyyy.log` bajo la raíz de datos | Comandos, conexiones, escaneos y mensajes operativos |
 | Auditoría | `./logs/dd-mm-yyyy.log` dentro del VLF activo | Altas, bajas y cambios de los elementos |
 
 La auditoría muestra los valores anteriores y nuevos, pero oculta las
@@ -415,8 +417,9 @@ Los directorios `build/` y `dist/` son artefactos locales y no se versionan.
 La distribución prevista separa los datos de instalación de los proyectos del
 usuario:
 
-- Programa y recursos: `C:\Program Files\LANCTL\`.
-- Datos internos necesarios: `C:\Program Files\LANCTL\data\lc\`.
+- Programa y documentación inmutable: `C:\Program Files\LANCTL\`.
+- Datos comunes: `C:\ProgramData\LANCTL\`.
+- Secretos de usuario: `%LOCALAPPDATA%\LANCTL\access\`.
 - Proyectos por defecto: carpeta Documentos conocida por Windows, subcarpeta
   `LANctl` (incluido OneDrive cuando Documentos está redirigido).
 

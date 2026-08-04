@@ -48,12 +48,23 @@ Monitor instala la unidad, pero no la inicia hasta que exista un proyecto activo
 
 ## Datos, actualización y rollback
 
-Los binarios y los datos están separados. Las instalaciones estándar conservan
+Los binarios y los datos están separados. En Windows, `Program Files\LANCTL`
+contiene únicamente el EXE onefile y documentación; inventario, configuración,
+logs, monitorización, plugins y proyectos viven en `ProgramData\LANCTL`. Los
+secretos de usuario (DPAPI, host keys y configuración de acceso) viven bajo el
+perfil local del usuario, o bajo `LANCTL_SECRET_DIR`/`LANCTL_DATA_DIR` cuando un
+servicio establece explícitamente su raíz protegida. Las instalaciones estándar conservan
 proyectos, configuración, almacenes cifrados y métricas. Los instaladores no
 eliminan `/var/lib/lanctl`, `/etc/lanctl`, ProgramData ni proyectos durante una
 desinstalación normal. Windows Setup y DEB realizan el reemplazo mediante sus
 mecanismos transaccionales; el instalador portable prepara una carpeta nueva y
 conserva la anterior antes del cambio.
+
+El ZIP portable contiene solo `LANCTL.exe`, `README-portable.txt` y el marcador
+firmado `LANCTL.portable`; sus datos se guardan en `data/lanctl` dentro del propio
+directorio portable. Un override `LANCTL_DATA_DIR` debe ser absoluto. Al detectar
+datos de versiones antiguas junto al EXE, LANCTL los copia al nuevo destino sin
+borrar el original y detiene la migración si encuentra un conflicto diferente.
 
 ## Acceso remoto opcional
 

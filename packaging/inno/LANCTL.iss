@@ -3,7 +3,7 @@
   #define MyAppVersion "0.3.0-beta.3"
 #endif
 #ifndef BuildRoot
-  #define BuildRoot "..\..\dist\LANCTL"
+  #define BuildRoot "..\..\dist"
 #endif
 
 [Setup]
@@ -33,8 +33,21 @@ Name: core; Description: "LANCTL application"; Types: standard monitor custom; F
 Name: path; Description: "Add LANCTL to system PATH"; Types: standard monitor custom
 Name: monitor; Description: "Monitor service"; Types: monitor custom
 
+[Dirs]
+Name: "{commonappdata}\LANCTL"
+Name: "{commonappdata}\LANCTL\config"; Permissions: users-modify
+Name: "{commonappdata}\LANCTL\access"; Permissions: admins-full system-full
+Name: "{commonappdata}\LANCTL\database"; Permissions: users-modify
+Name: "{commonappdata}\LANCTL\logs"; Permissions: users-modify
+Name: "{commonappdata}\LANCTL\monitoring"; Permissions: users-modify
+Name: "{commonappdata}\LANCTL\plugins"; Permissions: users-modify
+Name: "{commonappdata}\LANCTL\projects"; Permissions: users-modify
+Name: "{commonappdata}\LANCTL\automation"; Permissions: users-modify
+
 [Files]
-Source: "{#BuildRoot}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: core
+Source: "{#BuildRoot}\LANCTL.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
+Source: "..\..\docs\INSTALL.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
+Source: "..\..\docs\ACCESS.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 
 [Icons]
 Name: "{group}\LANCTL"; Filename: "{app}\LANCTL.exe"

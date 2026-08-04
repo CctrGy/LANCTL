@@ -40,8 +40,19 @@ class DistributionTests(unittest.TestCase):
 
     def test_frozen_standard_and_portable_data_roots(self):
         import app.core.paths as paths
-        with mock.patch.object(paths.sys,"frozen",True,create=True),mock.patch.object(paths.sys,"executable",r"C:\Program Files\LANCTL\LANCTL.exe"),mock.patch.object(paths.platform,"system",return_value="Windows"),mock.patch.dict(paths.os.environ,{"PROGRAMDATA":r"C:\ProgramData"},clear=False),mock.patch.object(Path,"exists",return_value=False):
-            self.assertIn("ProgramData",str(paths.application_path("data/lc/access/config.json")))
+        with mock.patch.object(paths.sys,"frozen",True,create=True),mock.patch.object(paths.sys,"executable",r"C:\Program Files\LANCTL\LANCTL.exe"),mock.patch.object(paths.platform,"system",return_value="Windows"),mock.patch.dict(paths.os.environ,{"PROGRAMDATA":r"C:\ProgramData","LOCALAPPDATA":r"C:\Users\tester\AppData\Local"},clear=False):
+            self.assertIn("ProgramData",str(paths.application_path("data/lc/monitor.db")))
+            self.assertIn("AppData",str(paths.application_path("data/lc/access/config.json")))
+
+    def test_onefile_and_clean_installer_contract(self):
+        root=Path(__file__).resolve().parents[1]
+        spec=(root/"LANCTL.spec").read_text(encoding="utf-8")
+        build=(root/"scripts/build-windows.ps1").read_text(encoding="utf-8")
+        inno=(root/"packaging/inno/LANCTL.iss").read_text(encoding="utf-8")
+        self.assertNotIn("COLLECT(",spec);self.assertIn("a.datas",spec)
+        self.assertIn("dist\\LANCTL.exe",build);self.assertNotIn("_internal",build)
+        self.assertIn('Source: "{#BuildRoot}\\LANCTL.exe"',inno);self.assertNotIn("recursesubdirs",inno)
+        self.assertIn("{commonappdata}\\LANCTL\\database",inno);self.assertIn("admins-full system-full",inno)
 
 
 if __name__=="__main__":unittest.main()

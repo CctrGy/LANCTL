@@ -42,7 +42,7 @@ from app.core.logger import write_log
 from app.core.log_cleanup import run_automatic_log_cleanup
 
 
-def register_commands(commands: argparse._SubParsersAction) -> None:
+def register_commands(commands: argparse._SubParsersAction, include_plugin_commands: bool = False) -> None:
     register_list_command(commands)
     register_recurrent_command(commands)
     register_ping_command(commands)
@@ -72,11 +72,12 @@ def register_commands(commands: argparse._SubParsersAction) -> None:
     register_project_command(commands)
     register_plugin_command(commands)
     register_language_command(commands)
-    from app.plugins.declarative_commands import register_declarative_commands
-    register_declarative_commands(commands)
+    if include_plugin_commands:
+        from app.plugins.declarative_commands import register_declarative_commands
+        register_declarative_commands(commands)
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser(include_plugin_commands: bool = False) -> argparse.ArgumentParser:
     from app.i18n import t
     parser = LANCTLArgumentParser(
         prog="LANCTL",
@@ -106,30 +107,33 @@ def build_parser() -> argparse.ArgumentParser:
         help=t("LANCTL.CORE.APP.TUI_HELP"),
     )
     commands = parser.add_subparsers(dest="command", metavar="COMANDO")
-    register_commands(commands)
+    register_commands(commands,include_plugin_commands)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
-    run_automatic_log_cleanup()
-    from app.i18n import initialize_language, t
-    initialize_language()
-    from app.assets.icons import initialize_icons
-    initialize_icons()
-    from app.plugins import get_plugin_manager
-    manager = get_plugin_manager()
-    if not load_plugin_safe_mode() and manager.activate_enabled():
-        mode = "tui" if any(v in arguments for v in ("-tui", "--tui")) else "cli" if "--cli" in arguments else "gui" if "--gui" in arguments or not arguments else "command"
-        manager.events.emit(
-            "LANCTL.Core.Lifecycle.Startup",
-            {"version": __version__, "mode": mode},
-        )
-    write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
-    parser = build_parser()
-    args = parser.parse_args(arguments)
-
+    if any(value in arguments for value in ("-h","--help","/?","--version")):
+        return build_parser(include_plugin_commands=False).parse_args(arguments)
     try:
+        from app.core.data_migration import ensure_data_layout
+        ensure_data_layout()
+        run_automatic_log_cleanup()
+        from app.i18n import initialize_language, t
+        initialize_language()
+        from app.assets.icons import initialize_icons
+        initialize_icons()
+        from app.plugins import get_plugin_manager
+        manager = get_plugin_manager()
+        if not load_plugin_safe_mode() and manager.activate_enabled():
+            mode = "tui" if any(v in arguments for v in ("-tui", "--tui")) else "cli" if "--cli" in arguments else "gui" if "--gui" in arguments or not arguments else "command"
+            manager.events.emit(
+                "LANCTL.Core.Lifecycle.Startup",
+                {"version": __version__, "mode": mode},
+            )
+        write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
+        parser=build_parser(include_plugin_commands=True)
+        args=parser.parse_args(arguments)
         if args.gui or (not args.command and not args.tui and not args.cli):
             from app.gui import run_gui
             return run_gui()

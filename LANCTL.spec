@@ -31,8 +31,9 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
     name="LANCTL",
     debug=False,
     bootloader_ignore_signals=False,
@@ -41,12 +42,4 @@ exe = EXE(
     console=True,
     icon="assets/lanctl-v2.ico",
     version="packaging/windows_version_info.txt",
-)
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
-    name="LANCTL",
 )
