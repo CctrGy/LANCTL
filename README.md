@@ -274,8 +274,8 @@ lanctl recurrent -list --format json
 ```
 
 Ambas formas muestran únicamente la identidad estable y omiten deliberadamente
-la IP. Los registros incluidos con el programa se encuentran en
-`bundled/recurrent-elements.json`.
+la IP. El catálogo es privado y no se incluye en los binarios ni en GitHub. Se
+guarda como `recurrent-elements.json` bajo la raíz de datos de cada instalación.
 
 ## Proyectos VLF
 

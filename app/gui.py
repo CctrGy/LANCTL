@@ -33,12 +33,40 @@ class GuiApi:
 
     def __init__(self) -> None:
         self._lock = RLock()
+        self._window = None
         self._response_ms: dict[str, float | None] = {}
         self._activity: dict[str, bool] = {}
         try:
             self._local_ip = str(local_ipv4())
         except (OSError, ValueError):
             self._local_ip = ""
+
+    def attach_window(self, window) -> None:
+        self._window = window
+
+    def select_project_file(self) -> dict:
+        def operation() -> dict:
+            if self._window is None:
+                raise RuntimeError("la ventana gráfica todavía no está disponible")
+            import webview
+            selected = self._window.create_file_dialog(
+                webview.FileDialog.OPEN, directory=str(default_project_directory()),
+                file_types=("Proyecto LANCTL (*.vlf)",), allow_multiple=False,
+            )
+            return {"path": str(selected[0]) if selected else ""}
+        return self._respond(operation)
+
+    def select_project_directory(self) -> dict:
+        def operation() -> dict:
+            if self._window is None:
+                raise RuntimeError("la ventana gráfica todavía no está disponible")
+            import webview
+            selected = self._window.create_file_dialog(
+                webview.FileDialog.FOLDER, directory=str(default_project_directory()),
+                allow_multiple=False,
+            )
+            return {"path": str(selected[0]) if selected else ""}
+        return self._respond(operation)
 
     def bootstrap(self) -> dict:
         self._ensure_device_icons()
@@ -198,13 +226,14 @@ class GuiApi:
             return {**self._projects_payload(), "message": f"Proyecto guardado: {Path(result['path']).stem}"}
         return self._respond(operation)
 
-    def create_project(self, name: str) -> dict:
+    def create_project(self, name: str, directory: str = "") -> dict:
         def operation() -> dict:
             clean = str(name).strip()
             if not clean or len(clean) > 80:
                 raise ValueError("indica un nombre de proyecto válido")
             filename = re.sub(r"[^A-Za-z0-9._ -]+", "", clean).strip(" .") or "Proyecto"
-            result = create_project(filename, name=clean)
+            destination = Path(directory).expanduser() / filename if directory else Path(filename)
+            result = create_project(destination, name=clean)
             config = load_config(); config["activeProject"] = result["path"]; save_config(config)
             return {**self._projects_payload(), "message": f"Proyecto creado: {clean}"}
         return self._respond(operation)
@@ -440,7 +469,9 @@ def run_gui() -> int:
     index = bundled_path("gui/index.html")
     if not index.is_file():
         raise RuntimeError(f"No se encontraron los recursos de la GUI: {index}")
-    webview.create_window("LANCTL", index.as_uri(), js_api=GuiApi(), width=1480, height=900,
-                          min_size=(1100, 700), background_color="#071522")
+    api = GuiApi()
+    window = webview.create_window("LANCTL", index.as_uri(), js_api=api, width=1480, height=900,
+                                   min_size=(1100, 700), background_color="#071522")
+    api.attach_window(window)
     webview.start(debug=False)
     return 0

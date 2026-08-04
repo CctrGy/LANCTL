@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 
-from app.core.resources import bundled_path
+from app.core.paths import application_path
 from app.models import Device, normalize_mac
 
 
-RECURRENT_ELEMENTS_RESOURCE = "bundled/recurrent-elements.json"
+RECURRENT_ELEMENTS_RESOURCE = "data/lc/recurrent-elements.json"
 
 
 class RecurrentElementDatabase:
@@ -19,7 +19,7 @@ class RecurrentElementDatabase:
     def load(self) -> list[Device]:
         if self._devices is not None:
             return [device.copy() for device in self._devices]
-        path = bundled_path(RECURRENT_ELEMENTS_RESOURCE)
+        path = application_path(RECURRENT_ELEMENTS_RESOURCE)
         if not path.exists():
             return []
         try:

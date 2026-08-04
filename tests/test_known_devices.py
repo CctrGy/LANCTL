@@ -10,10 +10,14 @@ from app.core.recurrent_elements import RecurrentElementDatabase
 
 class RecurrentElementDatabaseTests(unittest.TestCase):
     def test_catalog_recovers_vm1_identity_without_old_ip(self):
-        vm1 = next(
-            device for device in RecurrentElementDatabase().load()
-            if device.alias == "VM1"
-        )
+        with tempfile.TemporaryDirectory() as directory:
+            resource = Path(directory) / "recurrent.json"
+            resource.write_text(json.dumps([{
+                "IP": "-", "cnf": "O", "ALIAS": "VM1",
+                "MAC": "5E:8C:B3:08:05:D4", "NAME": "MobilVictor1",
+            }]), encoding="utf-8")
+            with patch("app.core.recurrent_elements.application_path", return_value=resource):
+                vm1 = RecurrentElementDatabase().load()[0]
         self.assertEqual(vm1.mac, "5E:8C:B3:08:05:D4")
         self.assertEqual(vm1.ip, "-")
         self.assertEqual(vm1.name, "MobilVictor1")
@@ -29,7 +33,7 @@ class RecurrentElementDatabaseTests(unittest.TestCase):
             resource = root / "known.json"
             database_path = root / "devices.json"
             resource.write_text(json.dumps(catalog), encoding="utf-8")
-            with patch("app.core.recurrent_elements.bundled_path", return_value=resource):
+            with patch("app.core.recurrent_elements.application_path", return_value=resource):
                 device = DeviceDatabase(str(database_path)).upsert([{
                     "IP": "10.20.30.40", "MAC": "5e-8c-b3-08-05-d4"
                 }])[0]
@@ -50,7 +54,7 @@ class RecurrentElementDatabaseTests(unittest.TestCase):
             resource = root / "known.json"
             database_path = root / "devices.json"
             resource.write_text(json.dumps(catalog), encoding="utf-8")
-            with patch("app.core.recurrent_elements.bundled_path", return_value=resource):
+            with patch("app.core.recurrent_elements.application_path", return_value=resource):
                 database = DeviceDatabase(str(database_path))
                 database.upsert([{
                     "IP": "192.168.1.39", "MAC": "5E:8C:B3:08:05:D4"

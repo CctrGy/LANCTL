@@ -10,6 +10,7 @@ try {
     if(Test-Path -LiteralPath $portable){Remove-Item -LiteralPath $portable -Recurse -Force}
     New-Item -ItemType Directory -Path $portable | Out-Null
     Copy-Item dist\LANCTL.exe (Join-Path $portable 'LANCTL.exe')
+    Copy-Item dist\LANCTL-GUI.exe (Join-Path $portable 'LANCTL-GUI.exe')
     Copy-Item packaging\portable\README-portable.txt (Join-Path $portable 'README-portable.txt')
     Set-Content -LiteralPath (Join-Path $portable 'LANCTL.portable') -Value 'LANCTL-PORTABLE-V1' -Encoding ascii
     Compress-Archive -Path "$portable\*" -DestinationPath "dist\release\LANCTL-$Version-windows-x64-portable.zip" -Force

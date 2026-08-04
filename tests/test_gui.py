@@ -27,6 +27,26 @@ class GuiIntegrationTests(unittest.TestCase):
             css,
         )
 
+    def test_main_layout_reserves_navigation_content_and_status_rows(self):
+        html = (ROOT / "gui/index.html").read_text(encoding="utf-8")
+        css = (ROOT / "gui/styles.css").read_text(encoding="utf-8")
+        self.assertIn("grid-template-rows:54px 43px minmax(0,1fr) 28px", css)
+        self.assertIn('id="activity-rows"', html)
+        self.assertIn('id="project-open"', html)
+        self.assertNotIn("background:#fff", css)
+
+    def test_gui_api_creates_a_project_in_the_selected_directory(self):
+        with tempfile.TemporaryDirectory() as directory, patch(
+            "app.gui.create_project"
+        ) as creator, patch("app.gui.save_config"), patch(
+            "app.gui.GuiApi._projects_payload",
+            return_value={"projects": [], "activeProject": ""},
+        ):
+            creator.return_value = {"path": str(Path(directory) / "Casa.vlf")}
+            result = GuiApi().create_project("Casa", directory)
+        self.assertTrue(result["ok"])
+        self.assertEqual(creator.call_args.args[0], Path(directory) / "Casa")
+
     def test_html_component_ids_match_the_core_contract(self):
         html = (ROOT / "gui/index.html").read_text(encoding="utf-8")
         identifiers = set(re.findall(r'data-component-id="([^"]+)"', html))

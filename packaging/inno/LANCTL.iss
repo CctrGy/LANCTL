@@ -46,11 +46,16 @@ Name: "{commonappdata}\LANCTL\automation"; Permissions: users-modify
 
 [Files]
 Source: "{#BuildRoot}\LANCTL.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
+Source: "{#BuildRoot}\LANCTL-GUI.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "..\..\docs\INSTALL.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "..\..\docs\ACCESS.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 
 [Icons]
-Name: "{group}\LANCTL"; Filename: "{app}\LANCTL.exe"
+Name: "{group}\LANCTL"; Filename: "{app}\LANCTL-GUI.exe"
+Name: "{autodesktop}\LANCTL"; Filename: "{app}\LANCTL-GUI.exe"; Tasks: desktopicon
+
+[Tasks]
+Name: desktopicon; Description: "Crear acceso directo en el escritorio"; Flags: unchecked
 
 [Registry]
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: NeedsAddPath('{app}'); Components: path

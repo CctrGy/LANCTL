@@ -50,8 +50,11 @@ class DistributionTests(unittest.TestCase):
         build=(root/"scripts/build-windows.ps1").read_text(encoding="utf-8")
         inno=(root/"packaging/inno/LANCTL.iss").read_text(encoding="utf-8")
         self.assertNotIn("COLLECT(",spec);self.assertIn("a.datas",spec)
-        self.assertIn("dist\\LANCTL.exe",build);self.assertNotIn("_internal",build)
+        self.assertIn("dist\\LANCTL.exe",build);self.assertIn("dist\\LANCTL-GUI.exe",build);self.assertNotIn("_internal",build)
         self.assertIn('Source: "{#BuildRoot}\\LANCTL.exe"',inno);self.assertNotIn("recursesubdirs",inno)
+        self.assertIn('Source: "{#BuildRoot}\\LANCTL-GUI.exe"',inno)
+        self.assertIn('Filename: "{app}\\LANCTL-GUI.exe"',inno)
+        self.assertNotIn("recurrent-elements.json", spec)
         self.assertIn("{commonappdata}\\LANCTL\\database",inno);self.assertIn("admins-full system-full",inno)
 
 

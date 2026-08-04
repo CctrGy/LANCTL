@@ -8,7 +8,6 @@ datas = collect_data_files("manuf") + [
     ("bundled/lanctl.theme.default.lcp", "bundled"),
     ("bundled/lanctl.discovery.windows-smb.lcp", "bundled"),
     ("bundled/lanctl.network.wol.lcp", "bundled"),
-    ("bundled/recurrent-elements.json", "bundled"),
     ("assets/lanctl-icon-v2.png", "assets"),
     ("assets/device-icons", "assets/device-icons"),
 ]
@@ -40,6 +39,22 @@ exe = EXE(
     strip=False,
     upx=True,
     console=True,
+    icon="assets/lanctl-v2.ico",
+    version="packaging/windows_version_info.txt",
+)
+
+gui_exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name="LANCTL-GUI",
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=False,
     icon="assets/lanctl-v2.ico",
     version="packaging/windows_version_info.txt",
 )

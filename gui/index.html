@@ -10,7 +10,7 @@
 <div class="app-shell" data-component-id="lanctl.app-shell">
   <header class="topbar" data-component-id="lanctl.topbar">
     <div class="brand"><img src="../assets/lanctl-icon-v2.png" alt=""><strong>LANCTL</strong><small>Inventario de red</small></div>
-    <div class="project"><span>Proyecto</span><select id="project-select" aria-label="Proyecto activo"><option value="">Sin proyecto</option></select><button id="project-new" title="Crear proyecto">＋</button><button id="project-save" title="Guardar proyecto">Guardar</button></div>
+    <div class="project"><span>Proyecto</span><select id="project-select" aria-label="Proyecto activo"><option value="">Sin proyecto</option></select><button id="project-open" title="Seleccionar un archivo VLF">Abrir…</button><button id="project-new" title="Crear proyecto y elegir ubicación">＋</button><button id="project-save" title="Guardar proyecto">Guardar</button></div>
     <div class="connection"><i></i><span>Conectado</span></div>
     <div class="avatar">VA</div>
   </header>
@@ -79,7 +79,7 @@
     </section>
   </main>
   <main id="plugin-panel" class="plugin-panel" hidden><section class="plugin-toolbar"><div><h1 id="plugin-title">Recursos compartidos</h1><p id="plugin-description"></p></div><div id="plugin-toolbar-actions"></div></section><section id="plugin-metrics" class="plugin-metrics"></section><section class="plugin-browser"><div class="plugin-table"><input id="plugin-search" placeholder="Buscar servidor, carpeta, impresora o grupo de trabajo"><table><thead><tr id="plugin-head"></tr></thead><tbody id="plugin-rows"></tbody></table><div id="plugin-empty" class="empty-state"></div></div><aside id="plugin-detail"><h2>Selecciona un recurso</h2></aside></section></main>
-  <main id="activity-panel" class="plugin-panel" hidden><section class="empty-state">La actividad estructurada aparecerá aquí.</section></main>
+  <main id="activity-panel" class="plugin-panel" hidden><section class="activity-card"><div class="activity-toolbar"><div><h1>Actividad</h1><p>Eventos estructurados del proyecto activo</p></div><button id="activity-refresh">Actualizar</button></div><div class="table-scroll"><table class="activity-table"><thead><tr><th>Fecha</th><th>Elemento</th><th>Evento</th><th>Resultado</th><th>Resumen</th></tr></thead><tbody id="activity-rows"></tbody></table><div id="activity-empty" class="empty-state">No hay eventos registrados.</div></div></section></main>
 
   <footer class="statusbar"><span>LANCTL <b id="app-version">—</b></span><span>Vista de inventario lógico</span><span id="row-count">0 filas</span></footer>
 </div>
