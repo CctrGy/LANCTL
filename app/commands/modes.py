@@ -99,7 +99,7 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             if len(parts) == 1:
                 print(colorize_help(GLOBAL_HELP), end="")
             else:
-                main([parts[1], "/?"])
+                main([parts[1], "-h"])
             continue
         if command in ("clear", "cls"):
             _clear_screen()

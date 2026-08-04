@@ -65,16 +65,16 @@ class LANCTLArgumentParser(argparse.ArgumentParser):
 
     def __init__(self, *args, **kwargs):
         kwargs["add_help"] = False
-        kwargs["prefix_chars"] = "-/"
+        # En POSIX una ruta absoluta comienza por '/', por lo que aceptarlo
+        # como prefijo de opción convierte /tmp/... en un argumento inválido.
+        # La ayuda /? se conserva únicamente en Windows.
+        kwargs["prefix_chars"] = "-/" if os.name == "nt" else "-"
         kwargs.setdefault("formatter_class", LANCTLHelpFormatter)
         super().__init__(*args, **kwargs)
-        self.add_argument(
-            "-h",
-            "--help",
-            "/?",
-            action="help",
-            help=t("LANCTL.COMMON.ACTION.HELP"),
-        )
+        help_options = ["-h", "--help"]
+        if os.name == "nt":
+            help_options.append("/?")
+        self.add_argument(*help_options, action="help", help=t("LANCTL.COMMON.ACTION.HELP"))
 
     def format_help(self) -> str:
         text = super().format_help()

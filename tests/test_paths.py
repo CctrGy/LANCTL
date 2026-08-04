@@ -18,6 +18,7 @@ class ApplicationPathTests(unittest.TestCase):
             path = DeviceDatabase("data/lc/devices.json").path
         self.assertEqual(path, expected_root / "data" / "lc" / "devices.json")
 
+    @unittest.skipUnless(sys.platform == "win32", "semántica de rutas de Windows")
     def test_frozen_program_data_is_separate_from_executable(self):
         executable = r"C:\Program Files\LANCTL\LANCTL.exe"
         with (
