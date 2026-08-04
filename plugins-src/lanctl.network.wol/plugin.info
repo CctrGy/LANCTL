@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "lanctl.network.wol",
+  "name": "Wake-on-LAN",
+  "version": "1.0.0",
+  "description": "Emite paquetes mágicos Wake-on-LAN mediante la fachada de red de LANCTL.",
+  "author": "LANCTL",
+  "entryPoint": "main.exec",
+  "runtime": "trusted",
+  "lanctl": {"minimumVersion": "0.3.0", "maximumVersion": "*"},
+  "permissions": ["network.udp", "functions.register", "ui-action.register"],
+  "capabilities": ["plugin", "network", "commands", "ui"]
+}

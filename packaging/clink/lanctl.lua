@@ -1,5 +1,6 @@
 -- LANCTL completion for Clink 1.3.23+
--- Install this directory with: clink installscripts <path>\packaging\clink
+-- Development: clink installscripts <path>\packaging\clink
+-- Installed layout: <install-dir>\clink\lanctl.lua
 
 local function values(items)
     return clink.argmatcher():addarg(items):nofiles()
@@ -13,11 +14,12 @@ local help_flags = { "-h", "--help", "/?" }
 local formats = values({ "table", "json", "csv", "html", "xml" })
 local discovery = values({ "icmp", "arp", "hybrid" })
 local profiles = values({ "fast", "normal", "accurate" })
+local scan_orders = values({ "ascending", "descending", "random" })
 local on_off = values({ "on", "off" })
 local cnf_states = values({ "O", "X", "-", "S", "F" })
 local protocols = values({
     "auto", "ssh", "tr-064", "telnet", "http", "https", "ftp",
-    "rdp", "rtsp", "smb"
+    "rdp", "rtsp", "smb", "radmin", "wol"
 })
 local selector = history_value("IP, MAC, alias o nombre")
 local file_arg = clink.argmatcher():addarg(clink.filematches)
@@ -35,6 +37,7 @@ local list = clink.argmatcher()
         "--where" .. history_value("Consulta de filtrado"),
         "-w" .. history_value("Workers"), "--workers" .. history_value("Workers"),
         "-t" .. history_value("Segundos"), "--timeout" .. history_value("Segundos"),
+        "--scan-order" .. scan_orders,
         "--include-unknown", "--resolve-names", "--max-hosts" .. history_value("Máximo"),
         "--discovery" .. discovery, "--profile" .. profiles,
         "--fast", "--normal", "--accurate", "--progress", "--no-progress",
@@ -64,10 +67,11 @@ local ping = clink.argmatcher()
 
 local open = clink.argmatcher()
     :addarg({ fromhistory = true, hint = "IP, MAC o alias" })
-    :addarg({ "auto", "ssh", "tr-064", "telnet", "http", "https", "ftp", "rdp", "rtsp", "smb" })
+    :addarg({ "auto", "ssh", "tr-064", "telnet", "http", "https", "ftp", "rdp", "rtsp", "smb", "radmin" })
     :addflags({
         "-h", "--help", "/?", "--port" .. history_value("Puerto"),
-        "--path" .. history_value("Ruta remota"), "--dry-run",
+        "--path" .. history_value("Ruta remota"),
+        "--mode" .. values({ "control", "view" }), "--dry-run",
         "--database" .. file_arg, "--store" .. file_arg
     }):nofiles()
 
@@ -82,6 +86,7 @@ local settings = clink.argmatcher()
         "--scan-profile" .. profiles, "--progress" .. on_off,
         "--service-identification" .. on_off,
         "--workers" .. history_value("Workers"), "--timeout" .. history_value("Segundos"),
+        "--scan-order" .. scan_orders,
         "--max-hosts" .. history_value("Máximo"), "--database" .. file_arg,
         "--groups" .. file_arg, "--log" .. dir_arg,
         "--projects-directory" .. dir_arg,
@@ -147,7 +152,7 @@ local credential = clink.argmatcher()
 local protocol = clink.argmatcher()
     :addarg({ fromhistory = true, hint = "Elemento" })
     :addarg({ "show", "configure" })
-    :addarg({ "ssh", "tr-064", "telnet", "http", "https", "ftp", "rdp", "rtsp", "smb" })
+    :addarg({ "ssh", "tr-064", "telnet", "http", "https", "ftp", "rdp", "rtsp", "smb", "radmin", "wol" })
     :addflags({
         "-h", "--help", "/?", "--port" .. history_value("Puerto"),
         "--driver" .. history_value("Driver"), "--host-key" .. history_value("Algoritmo"),
@@ -172,6 +177,101 @@ local terminal = clink.argmatcher()
         "--protocol" .. history_value("Protocolo"), "--native",
         "--database" .. file_arg, "--store" .. file_arg
     }):nofiles()
+
+local ssh = clink.argmatcher()
+    :addarg({ fromhistory = true, hint = "IP, MAC o alias" })
+    :addarg({ "probe", "fingerprint", "trust", "open", "show" })
+    :addarg({ fromhistory = true, hint = "Huella o comando remoto" })
+    :addflags({
+        "-h", "--help", "/?", "--database" .. file_arg,
+        "--store" .. file_arg, "--host" .. history_value("IP candidata")
+    }):loop(3)
+
+local radmin = clink.argmatcher()
+    :addarg({ fromhistory = true, hint = "IP, MAC o alias" })
+    :addarg({ "probe", "configure", "open" })
+    :addflags({
+        "-h", "--help", "/?", "--mode" .. values({ "control", "view" }),
+        "--port" .. history_value("Puerto"), "--executable" .. file_arg,
+        "--database" .. file_arg, "--store" .. file_arg
+    }):nofiles()
+
+local history = clink.argmatcher()
+    :addarg({ fromhistory = true, hint = "Elemento" })
+    :addflags({
+        "-h", "--help", "/?", "--all", "--commands", "--today",
+        "--from" .. history_value("AAAA-MM-DD"), "--to" .. history_value("AAAA-MM-DD"),
+        "--type" .. history_value("Tipo de evento"), "--source" .. history_value("Origen"),
+        "--result" .. history_value("Resultado"), "--errors",
+        "--search" .. history_value("Texto"), "--limit" .. history_value("Cantidad"),
+        "--reverse", "--format" .. values({ "table", "json", "csv" })
+    }):nofiles()
+
+local wol = clink.argmatcher()
+    :addarg({ fromhistory = true, hint = "Elemento o sequence" })
+    :addarg({ "wakeup", "status", "shutdown", "restart", "sleep", "hibernate", "create", "add", "run" })
+    :addarg({ fromhistory = true, hint = "Elemento, secuencia o valor" })
+    :addflags({
+        "-h", "--help", "/?", "-if" .. history_value("CondiciÃ³n"),
+        "--if" .. history_value("CondiciÃ³n"), "--if-all" .. history_value("CondiciÃ³n"),
+        "--if-any" .. history_value("CondiciÃ³n"), "--if-not" .. history_value("CondiciÃ³n"),
+        "-t" .. history_value("Tiempo"), "--time" .. history_value("Tiempo"),
+        "--message" .. history_value("Mensaje"), "--force", "--cancel",
+        "--broadcast" .. history_value("IPv4 broadcast"), "--port" .. history_value("Puerto UDP"),
+        "--repeat" .. history_value("Repeticiones"), "--interval" .. history_value("Segundos"),
+        "--wait" .. history_value("Segundos"), "--method" .. values({ "auto", "arp", "ping", "port" }),
+        "--check-port" .. history_value("Puerto TCP"), "--interface" .. history_value("Interfaz/IP"),
+        "--retry" .. history_value("Intentos"), "--dry-run", "--json", "--quiet",
+        "--group" .. history_value("Grupo"), "--all", "--yes",
+        "--after" .. history_value("Dependencia"), "--delay" .. history_value("DuraciÃ³n"),
+        "--timeout" .. history_value("Segundos"),
+        "--on-failure" .. values({ "stop", "continue", "retry" }),
+        "--cooldown" .. history_value("DuraciÃ³n"), "--max-attempts" .. history_value("Intentos"),
+        "--database" .. file_arg, "--sequences" .. file_arg
+    }):loop(3)
+
+local smb = clink.argmatcher()
+    :addarg({ fromhistory = true, hint = "Servidor o scan/workgroups/printers" })
+    :addarg({ "scan", "info", "shares", "open", "printers", "workgroups", "connect", "disconnect", "status", "printer" })
+    :addarg({ fromhistory = true, hint = "Recurso compartido" })
+    :addarg({ "open", "queue", "connect" })
+    :addflags({
+        "-h", "--help", "/?", "--network", "--group" .. history_value("Grupo"),
+        "--timeout" .. history_value("Segundos"), "--workers" .. history_value("Workers"),
+        "--anonymous", "--include-system", "--dry-run", "--yes", "--json",
+        "--database" .. file_arg, "--store" .. file_arg, "--storage" .. dir_arg
+    }):loop(4)
+
+local monitor = clink.argmatcher()
+    :addarg({
+        "attach", "start", "detach", "stop", "restart", "status", "once",
+        "session", "incidents", "incident", "service", "foreground", "configure",
+        "profile", "assign", "unassign", "assignments", "report", "ping", "scan",
+        "identify", "health", "events"
+    })
+    :addarg({
+        "start", "stop", "list", "report", "acknowledge", "close", "install",
+        "uninstall", "create", "update", "delete", "show", "latest", "permanent", "temporary"
+    })
+    :addarg({ fromhistory = true, hint = "Proyecto, elemento, perfil o ID" })
+    :addflags({
+        "-h", "--help", "/?", "--project" .. file_arg, "--permanent",
+        "--duration" .. history_value("DuraciÃ³n"),
+        "--mode" .. values({ "permanent", "temporary", "diagnostic", "once" }),
+        "--authority" .. values({ "observe", "operate", "administer" }),
+        "--json", "--yes", "--interval" .. history_value("DuraciÃ³n"),
+        "--every" .. history_value("DuraciÃ³n"), "--group" .. history_value("Grupo"),
+        "--type" .. values({ "presence", "services", "ports", "identity", "smb", "full" }),
+        "--fast", "--unknown", "--follow", "--sessions" .. file_arg,
+        "--incidents-store" .. file_arg, "--lock" .. file_arg, "--monitor-db" .. file_arg,
+        "--profiles" .. file_arg, "--assignments-store" .. file_arg,
+        "--profile" .. history_value("Perfil"),
+        "--priority" .. values({ "low", "normal", "high", "critical" }),
+        "--check" .. history_value("ping, arp o port:NN"),
+        "--presence" .. history_value("DuraciÃ³n"), "--discovery" .. history_value("DuraciÃ³n"),
+        "--services" .. history_value("DuraciÃ³n"), "--deep" .. history_value("DuraciÃ³n"),
+        "--workers" .. history_value("Workers"), "--timeout" .. history_value("Segundos")
+    }):loop(3)
 
 local download_settings = clink.argmatcher()
     :addarg({ fromhistory = true, hint = "Gateway opcional" })
@@ -250,7 +350,9 @@ local virtual_commands = {
     "element" .. element, "group" .. group, "credential" .. credential,
     "credentials" .. credential, "auth" .. credential, "protocol" .. protocol,
     "switch" .. switch, "name" .. name_alias, "alias" .. name_alias,
-    "cnf" .. simple_selector, "ssh" .. simple_selector,
+    "cnf" .. simple_selector, "ssh" .. ssh,
+    "radmin" .. radmin, "wol" .. wol, "history" .. history,
+    "monitor" .. monitor, "smb" .. smb,
     "terminal" .. terminal, "cli" .. terminal,
     "GATEWAY" .. gateway, "gateway" .. gateway,
     "downloadSettings" .. download_settings,

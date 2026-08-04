@@ -1,5 +1,6 @@
 import unittest
 import json
+from unittest.mock import patch
 from types import SimpleNamespace
 
 from app.cli import build_parser
@@ -15,6 +16,17 @@ from app.tui import (
 
 
 class TuiTests(unittest.TestCase):
+    def test_history_view_replaces_inventory_and_escape_restores_selection(self):
+        tui=LanctlTui.__new__(LanctlTui); device=SimpleNamespace(device_id="dev_nas",mac="02:11:22:33:44:55",ip="192.168.1.8",alias="NAS",name="NAS")
+        tui.devices=[device]; tui.index=0; tui.scroll=4; tui.messages=[]; tui.view_state="inventory"; tui.history_events=[]; tui.history_index=0; tui.detail_lines=[]; tui.output_focus=False
+        event=SimpleNamespace(timestamp="2026-08-03T10:00:00+02:00",type="device.detected",summary="Detectado",result="success",source="test",correlationId=None,runId=None,taskId=None,operationId=None,error=None,changes=(),device=SimpleNamespace(label="NAS"))
+        with patch("app.core.history.HistoryService") as service:
+            service.return_value.query.return_value=[event]; tui.show_history()
+        self.assertEqual(tui.view_state,"history"); self.assertEqual(tui.selected,device)
+        tui.handle_key("ENTER"); self.assertTrue(tui.detail_lines)
+        tui.handle_key("ESC"); self.assertFalse(tui.detail_lines); self.assertEqual(tui.view_state,"history")
+        tui.handle_key("ESC"); self.assertEqual(tui.view_state,"inventory"); self.assertEqual(tui.scroll,4)
+
     def test_tui_uses_an_alternate_non_wrapping_screen(self):
         self.assertIn("\x1b[?1049h", TUI_ENTER_SCREEN)
         self.assertIn("\x1b[?7l", TUI_ENTER_SCREEN)

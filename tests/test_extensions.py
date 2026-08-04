@@ -1,4 +1,5 @@
 import io
+import ipaddress
 import unittest
 
 from app.commands.open import connection_target
@@ -7,6 +8,7 @@ from app.core.progress import ScanProgress
 from app.core.query import matches_query
 from app.models import Device
 from app.services.network_discovery import discovery_probe
+from app.services.lan_scanner import LanScanner
 from app.services.scan_profiles import apply_profile
 
 
@@ -16,6 +18,30 @@ class _Tty(io.StringIO):
 
 
 class ExtensionTests(unittest.TestCase):
+    def test_lan_scan_order_controls_probe_sequence(self):
+        network = ipaddress.ip_network("192.168.1.0/30")
+        ascending = LanScanner(network, 1, 0.1, 8)
+        descending = LanScanner(network, 1, 0.1, 8, scan_order="descending")
+        self.assertEqual(
+            [str(host) for host in ascending._ordered_hosts()],
+            ["192.168.1.1", "192.168.1.2"],
+        )
+        self.assertEqual(
+            [str(host) for host in descending._ordered_hosts()],
+            ["192.168.1.2", "192.168.1.1"],
+        )
+        with self.assertRaises(ValueError):
+            LanScanner(network, 1, 0.1, 8, scan_order="invalid")
+
+    def test_scan_options_are_available_from_cli(self):
+        from app.cli import build_parser
+
+        args = build_parser().parse_args([
+            "virtual", "list", "--scan-order", "random", "--timeout", "1.25"
+        ])
+        self.assertEqual(args.scan_order, "random")
+        self.assertEqual(args.timeout, 1.25)
+
     def test_scan_profiles_apply_distinct_tradeoffs(self):
         fast, fast_timeout, fast_workers = apply_profile("fast", 1.0, 64)
         accurate, accurate_timeout, accurate_workers = apply_profile("accurate", 1.0, 64)

@@ -311,6 +311,10 @@ class PluginManager:
                     raise ValueError(f"especificación de comando declarativo no válida: {item.get('id')}")
             if kind == "theme":
                 specification = validate_theme_specification(specification)
+            if kind in {"ui-panel", "ui-action"}:
+                from app.plugins.ui_contracts import validate_ui_action, validate_ui_panel
+                specification = (validate_ui_panel(specification) if kind == "ui-panel"
+                                 else validate_ui_action(specification))
             self.extensions.register(str(item["id"]), kind, plugin.manifest.plugin_id, specification)
             if kind == "language":
                 relative = Path(str(specification.get("file", "")))

@@ -13,6 +13,7 @@ from app.core.config import (
 from app.core.console import ok
 from app.core.output import normalize_columns
 from app.services.scan_profiles import SCAN_PROFILES
+from app.services.lan_scanner import SCAN_ORDERS
 
 
 def register_settings_command(commands: argparse._SubParsersAction) -> None:
@@ -68,6 +69,11 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
     )
     command.add_argument("--workers", type=int, help="Concurrencia predeterminada de los escaneos.")
     command.add_argument("--timeout", type=float, help="Timeout predeterminado por operación de red.")
+    command.add_argument(
+        "--scan-order",
+        choices=SCAN_ORDERS,
+        help="Orden predeterminado de sondeo: ascending, descending o random.",
+    )
     command.add_argument("--max-hosts", type=int, help="Máximo de hosts autorizado por escaneo.")
     command.add_argument("--database", metavar="ARCHIVO", help="Ruta del inventario de elementos.")
     command.add_argument("--groups", metavar="ARCHIVO", help="Ruta de la base de grupos.")
@@ -106,6 +112,7 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.service_identification is None
         and args.workers is None
         and args.timeout is None
+        and args.scan_order is None
         and args.max_hosts is None
         and args.database is None
         and args.groups is None
@@ -163,6 +170,9 @@ def run_settings(args: argparse.Namespace) -> int:
             raise ValueError("timeout debe ser mayor que cero")
         config["timeout"] = args.timeout
         changes.append(f"Timeout: {args.timeout}")
+    if args.scan_order is not None:
+        config["scanOrder"] = args.scan_order
+        changes.append(f"Orden de escaneo: {args.scan_order}")
     if args.max_hosts is not None:
         if args.max_hosts < 1:
             raise ValueError("max-hosts debe ser mayor que cero")

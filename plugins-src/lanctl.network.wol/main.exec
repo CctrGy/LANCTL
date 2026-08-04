@@ -1,0 +1,15 @@
+from app.plugins.contracts import FunctionResult
+
+
+def activate(api):
+    api.require("network.udp")
+
+    def send(mac, broadcast="255.255.255.255", port=9, repeat=3, interval=.5, interface=None):
+        count = api.network.send_wol(mac, broadcast, port, repeat, interval, interface)
+        return FunctionResult(True, "WOL.SEND.OK", "Paquete mágico enviado", {"packets": count})
+
+    api.functions.register("lanctl-network-wol.send", send, FunctionResult)
+    api.extensions.register("lanctl.network.wol.action", "ui-action", {
+        "action": "wol.wakeup", "label": "Encender", "requires": ["mac"],
+        "javascript": False
+    })

@@ -1,0 +1,9 @@
+{
+  "extensions": [
+    {"id":"windows-smb.resources","type":"ui-panel","specification":{"title":"Recursos compartidos","icon":"folder-network","location":"main","order":200,"dataProvider":"WindowsSMB.Resources.List","layout":"resource-browser","columns":[{"field":"server","label":"Servidor","type":"device"},{"field":"name","label":"Recurso","type":"text"},{"field":"type","label":"Tipo","type":"badge"},{"field":"access","label":"Acceso","type":"status"},{"field":"state","label":"Estado","type":"status"}],"emptyState":{"title":"No se han buscado recursos","description":"Busca carpetas e impresoras disponibles en los dispositivos Windows de tu red.","action":"windows-smb.scan"}}},
+    {"id":"windows-smb.scan","type":"ui-action","specification":{"label":"Buscar recursos","function":"WindowsSMB.Resources.Scan","placement":"panel-toolbar"}},
+    {"id":"smb.share.open","type":"ui-action","specification":{"label":"Abrir","function":"WindowsSMB.Share.Open","placement":"detail","requiresSelection":true}},
+    {"id":"smb.printer.open","type":"ui-action","specification":{"label":"Ver cola","function":"WindowsSMB.Printer.Open","placement":"detail","requiresSelection":true}},
+    {"id":"smb.printer.connect","type":"ui-action","specification":{"label":"Conectar a Windows","function":"WindowsSMB.Printer.Connect","placement":"detail","requiresSelection":true,"confirmation":"Esta acción agregará la impresora a Windows."}}
+  ]
+}

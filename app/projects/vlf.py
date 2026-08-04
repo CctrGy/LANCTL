@@ -8,6 +8,7 @@ import sqlite3
 import tempfile
 import uuid
 import zipfile
+from threading import RLock
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Mapping
@@ -33,6 +34,7 @@ DIRECTORIES = (
     "lan/", "auth/", "auth/keys/", "auth/keys/ssh/", "auth/keys/api/",
     "auth/keys/device/", "auth/keys/logon/", "logs/", "devices/", "plugins/", "meta/",
 )
+_VLF_WRITE_LOCK = RLock()
 
 
 def create_project(
@@ -191,7 +193,7 @@ def append_database_log(
     clean_message = " | ".join(str(message).splitlines()).strip()
     log_name = f"logs/{timestamp:%d-%m-%Y}.log"
 
-    with tempfile.TemporaryDirectory(prefix="lanctl-vlf-log-") as temporary:
+    with _VLF_WRITE_LOCK, tempfile.TemporaryDirectory(prefix="lanctl-vlf-log-") as temporary:
         root = Path(temporary)
         with _safe_archive(source) as archive:
             archive.extractall(root)
@@ -212,6 +214,41 @@ def append_database_log(
             "contentHash": content_hash,
         })
         _write_archive(root, source)
+    return source
+
+
+def append_history_event(path: str | Path, payload: Mapping, *, now: datetime | None = None) -> Path:
+    """Añade una línea JSONL estructurada y renueva los hashes del VLF."""
+    source = _existing_vlf(path); verify_project(source)
+    timestamp = now or datetime.now().astimezone()
+    name = f"logs/events/{timestamp:%Y-%m-%d}.jsonl"
+    line = json.dumps(dict(payload), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    with _VLF_WRITE_LOCK, tempfile.TemporaryDirectory(prefix="lanctl-vlf-event-") as temporary:
+        root = Path(temporary)
+        with _safe_archive(source) as archive: archive.extractall(root)
+        target = root / PurePosixPath(name); target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("a", encoding="utf-8", newline="") as stream: stream.write(line + "\n")
+        info = json.loads((root / "project.info").read_text(encoding="utf-8"))
+        info["updated"] = timestamp.astimezone().isoformat(timespec="seconds")
+        content_hash = _hash_directory(root, {"project.info", "meta/checksum"}); info["contentHash"] = content_hash
+        _write_json(root / "project.info", info)
+        archive_hash = _hash_directory(root, {"meta/checksum"})
+        _write_json(root / "meta/checksum", {"algorithm":"SHA-256","hash":archive_hash,"scope":"all files except meta/checksum","contentHash":content_hash})
+        _write_archive(root, source)
+    return source
+
+
+def append_monitor_document(path: str | Path, entry: str, payload: Mapping, *, now: datetime | None = None) -> Path:
+    """Escribe un resumen monitor portable; nunca incluye monitor.db."""
+    source=_existing_vlf(path); verify_project(source); timestamp=now or datetime.now().astimezone()
+    relative=PurePosixPath(entry)
+    if not str(relative).startswith("monitoring/") or ".." in relative.parts or relative.suffix!=".json": raise ValueError("entrada monitor VLF no válida")
+    with _VLF_WRITE_LOCK,tempfile.TemporaryDirectory(prefix="lanctl-vlf-monitor-") as temporary:
+        root=Path(temporary)
+        with _safe_archive(source) as archive:archive.extractall(root)
+        _write_json(root/relative,dict(payload)); info=json.loads((root/"project.info").read_text(encoding="utf-8")); info["updated"]=timestamp.astimezone().isoformat(timespec="seconds")
+        content_hash=_hash_directory(root,{"project.info","meta/checksum"});info["contentHash"]=content_hash;_write_json(root/"project.info",info)
+        archive_hash=_hash_directory(root,{"meta/checksum"});_write_json(root/"meta/checksum",{"algorithm":"SHA-256","hash":archive_hash,"scope":"all files except meta/checksum","contentHash":content_hash});_write_archive(root,source)
     return source
 
 
@@ -334,6 +371,7 @@ def _network_document(config: Mapping, devices) -> dict:
         "dhcpRange": config.get("dhcpRange"),
         "discovery": config.get("discovery"),
         "scanProfile": config.get("scanProfile"),
+        "scanOrder": config.get("scanOrder", "ascending"),
     }
 
 

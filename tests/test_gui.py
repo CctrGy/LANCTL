@@ -119,6 +119,17 @@ class GuiIntegrationTests(unittest.TestCase):
                 self.assertTrue(result["ok"], result.get("error"))
                 self.assertEqual(opened.call_args.args[0], ["ssh", "-p", "2222", "192.168.1.41"])
 
+    def test_gui_exposes_wol_only_for_devices_with_a_mac(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database_path = str(Path(temporary) / "devices.json")
+            database = DeviceDatabase(database_path)
+            database.upsert([{"IP":"192.168.1.50","MAC":"02:11:22:33:44:55"}, {"IP":"192.168.1.51"}])
+            config = {"database": database_path, "timeout": .1, "workers": 1,
+                      "credentials": str(Path(temporary) / "credentials")}
+            with patch("app.gui.load_config", return_value=config):
+                devices = GuiApi().list_devices()["devices"]
+            self.assertEqual([item["wolAvailable"] for item in devices], [True, False])
+
 
 if __name__ == "__main__":
     unittest.main()

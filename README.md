@@ -7,7 +7,7 @@ el acceso mediante protocolos de administración y la auditoría de cambios.
 Incluye CLI, consola persistente, TUI, interfaz gráfica para Windows, proyectos
 portables `.vlf` y un sistema extensible de complementos `.lcp`.
 
-> **Versión actual — `0.3.0-beta.1`**
+> **Versión actual — `0.3.0-beta.2`**
 >
 > Primera beta de LANCTL. Esta versión incorpora la GUI para Windows, los
 > contratos VLF/LCP, los elementos recurrentes, los plugins de descubrimiento
@@ -41,6 +41,28 @@ Los iconos JPEG de `125×125` utilizados por la GUI se catalogan en
 `data/lc/icons/icons.json`. Consulta [docs/ICONS.md](docs/ICONS.md).
 
 ## Estado y alcance
+
+## Historial estructurado del proyecto
+
+`history NAME` consulta actividad vinculada a la identidad estable del equipo;
+`history --all` incluye eventos generales. Admite `--today`, `--from`, `--to`,
+`--type`, `--source`, `--result`, `--errors`, `--search`, `--limit`, `--reverse`
+y `--format table|json|csv`. Dentro de la CLI interactiva, `history` y
+`history --commands` conservan el historial de órdenes de la sesión.
+
+## Backend Monitor
+
+El runtime Monitor separa sesiones, scheduler monotónico, checks, evaluación
+con histéresis e incidencias. `monitor attach PROYECTO --permanent` y
+`monitor session start --project X --duration 30m --mode diagnostic` crean
+sesiones con autoridad explícita. `monitor status --json`, `monitor detach`,
+`monitor once` y los comandos de incidencias operan sobre estado transaccional.
+La gestión systemd está disponible en Linux con confirmación y privilegios;
+Windows devuelve `unsupported` y recomienda `foreground`.
+
+Los eventos se guardan dentro del VLF activo en
+`logs/events/YYYY-MM-DD.jsonl`. Los logs humanos `logs/dd-mm-yyyy.log` siguen
+siendo compatibles y se leen en modo best-effort como eventos legacy.
 
 LANCTL administra el modelo lógico de la red y los protocolos asociados a sus
 elementos. El mapa físico de cableado no forma parte del alcance actual.
@@ -166,7 +188,7 @@ las opciones más relevantes se encuentran:
 lanctl settings --scan-profile accurate
 lanctl settings --progress on
 lanctl settings --service-identification on
-lanctl settings --workers 64 --timeout 0.8 --max-hosts 4096
+lanctl settings --workers 64 --timeout 0.8 --scan-order ascending --max-hosts 4096
 lanctl settings --projects-directory "%USERPROFILE%\Documents\LanCTL"
 ```
 
@@ -401,3 +423,37 @@ RackFimeware2/ Firmware experimental del rack
 
 Este repositorio todavía no incluye un archivo de licencia. Mientras no se
 publique una licencia explícita, se mantienen todos los derechos sobre el código.
+# Wake-on-LAN (`wol`)
+
+El complemento trusted `lanctl.network.wol` emite únicamente paquetes mágicos
+UDP mediante una fachada de red limitada. El núcleo resuelve el inventario,
+valida parámetros, evalúa condiciones y coordina secuencias.
+
+```text
+lanctl wol PC
+lanctl wol PC wakeup --broadcast 192.168.1.255 --repeat 3 --wait 60
+lanctl wol PC -if offline -if "time between 07:00 09:00"
+lanctl wol PC --if-any "ping responds" --if-not online
+lanctl wol PC status --method auto
+lanctl wol PC shutdown -t 10m
+lanctl wol sequence create startup.office
+lanctl wol sequence startup.office add ROUTER
+lanctl wol sequence startup.office add SWITCH --after router
+lanctl wol sequence startup.office run
+```
+
+Las condiciones repetidas con `-if`/`--if` usan AND. `--if-any` crea el grupo
+OR y `--if-not` niega condiciones. Una condición falsa devuelve `skipped`.
+Wake-on-LAN solo envía la señal: `sent` no garantiza que el equipo arranque.
+Las acciones `shutdown`, `restart`, `sleep` y `hibernate` devuelven
+`WOL.POWER.UNSUPPORTED` hasta que el dispositivo tenga un transporte remoto
+explícito y autorizado; nunca se ejecutan órdenes libres.
+
+La salida `--json` contiene `runId`, `taskId`, `operationId`, timestamps,
+duración, estado y errores estructurados. Las secuencias se guardan mediante
+reemplazo transaccional en `data/lc/wol-sequences.json` y rechazan ciclos.
+# Windows SMB Discovery
+
+LANCTL incluye el paquete instalable `bundled/lanctl.discovery.windows-smb.lcp`. Instálalo y habilítalo con confianza explícita para aportar la vista **Recursos compartidos**. La CLI admite `smb scan`, `smb NAS`, `smb NAS shares`, `smb NAS open Public --dry-run`, `smb printers`, `smb NAS printers`, `smb workgroups`, `smb NAS connect|disconnect|status` y `smb NAS printer HP open|queue|connect --yes`.
+
+La detección usa TCP/445 y APIs modernas de Windows; no activa SMB1. Las observaciones viven en almacenamiento transaccional del plugin y las contraseñas permanecen cifradas mediante DPAPI en `CredentialStore`.

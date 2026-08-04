@@ -7,6 +7,7 @@ import io
 import subprocess
 import sys
 import re
+import json
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -46,7 +47,51 @@ class GuiApi:
             "theme": resolve_theme(get_plugin_manager().extensions.list("theme")),
             **self._projects_payload(), "icons": self._icons_payload(),
             **self._inventory_payload(),
+            "pluginPanels": self._plugin_panels(),
         })
+
+    def list_plugin_panels(self) -> dict:
+        return self._respond(lambda: {"pluginPanels": self._plugin_panels()})
+
+    def monitor_data(self) -> dict:
+        def operation():
+            from app.monitor.database import MonitorDatabase
+            from app.monitor.reports import monitor_view
+            with MonitorDatabase(load_config()["monitorDatabase"]) as database:return {"data":{"success":True,"code":"OK","message":"","data":monitor_view(database)}}
+        return self._respond(operation)
+
+    def plugin_panel_data(self, panel_id: str, context: dict | None = None) -> dict:
+        def operation():
+            manager=get_plugin_manager(); panels={x.extension_id.casefold():x for x in manager.extensions.list("ui-panel")}
+            panel=panels.get(str(panel_id).casefold())
+            if not panel: raise ValueError("panel de plugin no disponible")
+            function_id=str(panel.specification["dataProvider"])
+            if manager.functions.owner(function_id) != panel.owner: raise PermissionError("proveedor ajeno al panel")
+            result=manager.functions.call(function_id, dict(context or {}), caller="LANCTL.GUI")
+            return {"panelId":panel.extension_id,"data":result.to_dict()}
+        return self._respond(operation)
+
+    def plugin_action(self, action_id: str, values: dict | None = None) -> dict:
+        def operation():
+            manager=get_plugin_manager(); actions={x.extension_id.casefold():x for x in manager.extensions.list("ui-action")}
+            action=actions.get(str(action_id).casefold())
+            if not action: raise ValueError("acción de plugin no disponible")
+            specification=action.specification; function_id=specification["function"]
+            if manager.functions.owner(function_id) != action.owner: raise PermissionError("una acción no puede llamar a otro plugin")
+            payload=dict(values or {})
+            if specification.get("requiresSelection") and not payload.get("itemId"): raise ValueError("la acción requiere selección")
+            if specification.get("confirmation") and payload.pop("confirmed",False) is not True: raise PermissionError("confirmación requerida")
+            result=manager.functions.call(function_id,payload,caller="LANCTL.GUI")
+            return {"result":result.to_dict()}
+        return self._respond(operation)
+
+    @staticmethod
+    def _plugin_panels() -> list[dict]:
+        manager=get_plugin_manager(); actions=manager.extensions.list("ui-action")
+        monitor={"id":"lanctl.monitor","owner":"LANCTL","title":"Monitorización","location":"main","order":150,"dataProvider":"LANCTL.Monitor.List","layout":"resource-browser","columns":[{"field":"device_id","label":"Dispositivo","type":"device"},{"field":"presence","label":"Presencia","type":"status"},{"field":"health","label":"Salud","type":"status"},{"field":"latency_ms","label":"Latencia","type":"text"},{"field":"updated_at","label":"Último cambio","type":"date"}],"emptyState":{"title":"Sin datos de monitorización","description":"Inicia una sesión para observar el estado de la red."},"actions":[]}
+        return [monitor,*[{"id":x.extension_id,"owner":x.owner,**x.specification,
+                 "actions":[{"id":a.extension_id,**a.specification} for a in actions if a.owner==x.owner]}
+                for x in manager.extensions.list("ui-panel")]]
 
     def list_devices(self, query: str = "") -> dict:
         return self._respond(lambda: self._inventory_payload(query))
@@ -216,6 +261,32 @@ class GuiApi:
             return {"message": "Terminal iniciada en una ventana independiente"}
         return self._respond(operation)
 
+    def wake_device(self, selector: str, options: dict | None = None) -> dict:
+        def operation() -> dict:
+            from app.cli import build_parser
+            config = load_config(); values = options if isinstance(options, dict) else {}
+            allowed = {"broadcast", "port", "repeat", "interval", "wait", "method", "checkPort"}
+            if set(values) - allowed: raise ValueError("opciones WOL GUI no válidas")
+            arguments = ["virtual", "wol", selector, "wakeup", "--json", "--database", config["database"]]
+            for key, flag in (("broadcast","--broadcast"),("port","--port"),("repeat","--repeat"),("interval","--interval"),("wait","--wait"),("method","--method"),("checkPort","--check-port")):
+                if key in values: arguments.extend((flag, str(values[key])))
+            parsed = build_parser().parse_args(arguments); output = io.StringIO()
+            with contextlib.redirect_stdout(output): parsed.handler(parsed)
+            payload = json.loads(output.getvalue())
+            device = self._database().resolve(selector); name = device.alias or device.name or selector
+            message = f"{name} está disponible" if payload["status"] == "online" else payload.get("error", {}).get("message", f"Señal de encendido enviada a {name}")
+            return {"result": payload, "message": message}
+        return self._respond(operation)
+
+    def get_history(self, selector: str = "", filters: dict | None = None) -> dict:
+        def operation() -> dict:
+            from app.core.history import HistoryService
+            values=filters if isinstance(filters,dict) else {}; allowed={"types","source","result","errors","search","limit","reverse"}
+            if set(values)-allowed: raise ValueError("filtros de historial no válidos")
+            rows=HistoryService().query(selector or None,types=tuple(values.get("types",())),source=values.get("source"),result=values.get("result"),errors=bool(values.get("errors",False)),search=values.get("search"),limit=int(values.get("limit",100)),reverse=bool(values.get("reverse",True)))
+            return {"events":[event.to_dict() for event in rows]}
+        return self._respond(operation)
+
     def _respond(self, operation) -> dict:
         try:
             with self._lock:
@@ -305,6 +376,7 @@ class GuiApi:
             "alias": device.alias, "name": device.name,
             "manufacturer": device.manufacturer, "groups": list(device.groups),
             "description": device.description, "protocols": list(device.protocols),
+            "wolAvailable": bool(device.mac and device.mac not in {"00:00:00:00:00:00", "FF:FF:FF:FF:FF:FF"} and device.protocol_options.get("wol", {}).get("enabled", True)),
             "cnf": "@" if device.ip == self._local_ip else device.cnf,
             "lastDiscovery": device.last_discovery, "lastSeen": device.last_seen,
             "active": active,

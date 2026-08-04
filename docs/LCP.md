@@ -175,3 +175,18 @@ El código no se incrusta en el VLF. El proyecto incorpora
 
 La configuración `pluginSafeMode: true` impide activar complementos durante
 el arranque para permitir recuperación ante fallos.
+# Fachada Wake-on-LAN
+
+Los plugins trusted pueden solicitar `network.udp` y usar exclusivamente
+`api.network.send_wol(mac, broadcast, port, repeat, interval, interface)`.
+La fachada valida MAC, IPv4, puerto y límites; no entrega sockets, credenciales
+ni dispositivos internos al plugin. `lanctl.network.wol` registra la función
+tipada `lanctl-network-wol.send` y una `ui-action` declarativa sin JavaScript.
+
+Los plugins pueden solicitar `history.write`. Solo pueden emitir tipos bajo su
+propio namespace mediante `api.history.write(...)`; no pueden falsificar tipos
+reservados del núcleo, el actor ni el origen. Todos los detalles pasan por la
+redacción central antes de escribirse en el VLF.
+# Paneles y acciones de datos
+
+`ui-panel` declara una plantilla permitida (`resource-browser`, `master-detail`, `table` o `form`), un `dataProvider` JSON y columnas con tipos visuales validados. `ui-action` declara una función del mismo propietario, placement, selección y confirmación. El core nunca interpreta HTML, JavaScript o CSS de plugins y elimina paneles/acciones al desactivar su propietario. Los contratos son JSON transportables y no dependen de pywebview.

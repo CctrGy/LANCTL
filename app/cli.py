@@ -17,6 +17,11 @@ from app.commands.group import register_group_command
 from app.commands.name import register_name_command
 from app.commands.protocol import register_protocol_command
 from app.commands.ssh import register_ssh_command
+from app.commands.radmin import register_radmin_command
+from app.commands.wol import register_wol_command
+from app.commands.history import register_history_command
+from app.commands.monitor import register_monitor_command
+from app.commands.smb import register_smb_command
 from app.commands.terminal import register_terminal_command
 from app.commands.settings import register_settings_command
 from app.commands.search import register_search_command
@@ -39,10 +44,10 @@ from app.core.log_cleanup import run_automatic_log_cleanup
 LEGACY_VIRTUAL_COMMANDS = {
     "list", "settings", "call", "search", "scan", "cnf", "credential",
     "credentials", "auth", "gateway", "downloadsettings", "download-settings",
-    "protocol", "ssh", "terminal", "cli", "switch", "group", "element",
+    "protocol", "ssh", "radmin", "wol", "history", "monitor", "terminal", "cli", "switch", "group", "element",
     "name", "alias", "ping", "open", "connect", "project", "projects",
     "plugin", "plugins", "addon", "addons",
-    "language", "languages", "lang", "recurrent",
+    "language", "languages", "lang", "recurrent", "smb",
 }
 
 
@@ -61,6 +66,11 @@ def register_virtual_commands(commands: argparse._SubParsersAction) -> None:
     register_download_settings_command(commands)
     register_protocol_command(commands)
     register_ssh_command(commands)
+    register_radmin_command(commands)
+    register_wol_command(commands)
+    register_history_command(commands)
+    register_monitor_command(commands)
+    register_smb_command(commands)
     register_terminal_command(commands)
     register_switch_command(commands)
     register_group_command(commands)

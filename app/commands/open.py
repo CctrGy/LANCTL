@@ -9,11 +9,13 @@ from app.commands.terminal import run_terminal
 from app.core.config import load_config
 from app.core.database import DeviceDatabase
 from app.models import normalize_protocol
+from app.core.logger import write_log
+from app.protocols.radmin import DEFAULT_PORT as RADMIN_PORT, launch as launch_radmin, validate_mode
 
 
 OPEN_PROTOCOLS = (
     "auto", "ssh", "tr-064", "telnet", "http", "https", "ftp",
-    "rdp", "rtsp", "smb",
+    "rdp", "rtsp", "smb", "radmin",
 )
 DEFAULT_PORTS = {
     "telnet": 23, "http": 80, "https": 443, "ftp": 21,
@@ -44,6 +46,7 @@ def register_open_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument("protocol", nargs="?", default="auto", choices=OPEN_PROTOCOLS, help="Protocolo o detección automática.")
     command.add_argument("--port", type=int, help="Puerto alternativo.")
     command.add_argument("--path", default="", help="Ruta HTTP/FTP/RTSP o recurso SMB.")
+    command.add_argument("--mode", choices=("control", "view"), help="Modo Radmin: control o solo visualización.")
     command.add_argument("--dry-run", action="store_true", help="Muestra el destino sin abrirlo.")
     command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
     command.add_argument("--store", default=config["credentials"], help="Almacén cifrado de credenciales.")
@@ -73,6 +76,21 @@ def run_open(args: argparse.Namespace) -> int:
         return run_terminal(argparse.Namespace(
             selector=args.selector, protocol=protocol, database=args.database, store=args.store
         ))
+    if protocol == "radmin":
+        options = device.protocol_options.get("radmin", {})
+        port = args.port if args.port is not None else options.get("port", RADMIN_PORT)
+        mode = validate_mode(getattr(args, "mode", None) or options.get("mode", "control"))
+        configured_executable = options.get("executable") or load_config().get("radminViewer")
+        if args.dry_run:
+            print(f"radmin://{device.ip}:{port}?mode={mode}")
+            return 0
+        try:
+            launched = launch_radmin(device.ip, port=port, mode=mode, executable_path=configured_executable)
+        except Exception as error:
+            write_log(f"OPEN protocol=radmin target={device.ip}:{port} mode={mode} result=error detail={error}")
+            raise
+        write_log(f"OPEN protocol=radmin target={device.ip}:{port} mode={mode} result=started")
+        return 0
 
     target = connection_target(device.ip, protocol, args.port, args.path)
     if args.dry_run:

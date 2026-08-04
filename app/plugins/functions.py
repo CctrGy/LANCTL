@@ -36,5 +36,9 @@ class FunctionRegistry:
             self.audit(caller, "FUNCTION CALL", function_id, "ERROR", str(error))
             raise
 
+    def owner(self, function_id: str) -> str:
+        try: return self._items[function_id.casefold()][0]
+        except KeyError as error: raise ValueError(f"función no registrada: {function_id}") from error
+
     def remove_owner(self, owner: str) -> None:
         self._items = {key: value for key, value in self._items.items() if value[0] != owner}

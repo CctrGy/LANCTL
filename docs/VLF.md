@@ -106,3 +106,10 @@ credenciales cifrado de LANCTL como datos opacos.
   512 MiB.
 - Compartir un VLF puede revelar inventario, topología y logs incluso cuando
   las credenciales permanezcan cifradas.
+# Eventos estructurados
+
+VLF 1.0 admite de forma aditiva `logs/events/YYYY-MM-DD.jsonl`, con un objeto
+`HistoryEvent` por línea. Cada append renueva `project.info.contentHash` y
+`meta/checksum`; `project update` preserva el directorio completo. Las líneas
+corruptas o truncadas se omiten en lectura normal y producen error en modo
+estricto. `logs/dd-mm-yyyy.log` permanece disponible para auditoría legacy.

@@ -1,0 +1,61 @@
+from app.core.config import load_config
+from app.core.credentials import CredentialStore
+from app.core.database import DeviceDatabase
+from app.core.plugin_storage import PluginStorage
+from app.plugins.contracts import FunctionResult
+from app.plugins.smb_runtime import SMBError, SMBService
+
+
+PLUGIN_ID = "lanctl.discovery.windows-smb"
+
+
+def _resources():
+    config=load_config(); observations=PluginStorage(config["smbStorage"],PLUGIN_ID).load()["observations"]
+    rows=[]
+    for device_id, observation in observations.items():
+        smb=observation.get("smb",{})
+        for share in smb.get("shares",[]):
+            rows.append({"id":device_id+":"+share["name"],"deviceId":device_id,"server":observation.get("host",""),
+                         "state":observation.get("state","error"),**share,
+                         "technical":{"port":smb.get("port"),"workgroup":smb.get("workgroup",""),"domain":smb.get("domain",""),"lastScan":smb.get("lastScan"),"authentication":smb.get("authentication")}})
+    return rows
+
+
+def activate(api):
+    storage=api.storage.open()
+    def listing(context):
+        rows=_resources(); device_id=str(context.get("deviceId", ""))
+        if device_id: rows=[row for row in rows if row["deviceId"]==device_id]
+        return FunctionResult(True,data={"items":rows,"metrics":{"servers":len({r["deviceId"] for r in rows}),"folders":sum(r["type"]=="disk" for r in rows),"printers":sum(r["type"]=="printer" for r in rows),"needCredential":0}})
+
+    def scan(_values):
+        config=load_config(); devices=api.inventory.list(); service=SMBService(); done=0; errors=[]
+        for device in devices:
+            credential=None; reference=device.credentials.get("smb")
+            if reference:
+                credential=api.credentials.get_for_device(device.device_id,"smb")
+            try:
+                observation,_=service.inspect(device,timeout=config["timeout"],credential=credential); storage.put_observation(device.device_id,observation); done+=1
+            except SMBError as error: errors.append({"deviceId":device.device_id,"code":error.code,"state":error.state})
+        return FunctionResult(True,"SMB.SCAN.COMPLETED","Búsqueda completada",{"processed":len(devices),"available":done,"errors":errors})
+
+    def open_share(values):
+        row=next((r for r in _resources() if r["id"]==values.get("itemId")),None)
+        if not row: return FunctionResult(False,"SMB.SHARE.NOT_FOUND","Recurso no encontrado")
+        return FunctionResult(True,data=SMBService().open_share(row["server"],row["name"]))
+
+    def printer_open(values):
+        row=next((r for r in _resources() if r["id"]==values.get("itemId") and r["type"]=="printer"),None)
+        if not row: return FunctionResult(False,"SMB.SHARE.NOT_FOUND","Impresora no encontrada")
+        return FunctionResult(True,data=SMBService().printer(row["server"],row["name"],"open"))
+
+    def printer_connect(values):
+        row=next((r for r in _resources() if r["id"]==values.get("itemId") and r["type"]=="printer"),None)
+        if not row: return FunctionResult(False,"SMB.SHARE.NOT_FOUND","Impresora no encontrada")
+        return FunctionResult(True,data=SMBService().printer(row["server"],row["name"],"connect",yes=True))
+
+    api.functions.register("WindowsSMB.Resources.List",listing,FunctionResult)
+    api.functions.register("WindowsSMB.Resources.Scan",scan,FunctionResult)
+    api.functions.register("WindowsSMB.Share.Open",open_share,FunctionResult)
+    api.functions.register("WindowsSMB.Printer.Open",printer_open,FunctionResult)
+    api.functions.register("WindowsSMB.Printer.Connect",printer_connect,FunctionResult)

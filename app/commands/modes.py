@@ -123,11 +123,14 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
         if command in ("clear", "cls"):
             _clear_screen()
             continue
-        if command == "history":
+        if command == "history" and (len(parts) == 1 or parts[1:] == ["--commands"]):
             width = terminal_columns() or 120
             for number, entry in enumerate(history, 1):
                 prefix = f"{number:>3}  "
                 print(prefix + fit_text(entry, max(1, width - len(prefix))))
+            continue
+        if command == "history":
+            main(["virtual", *parts])
             continue
         if command == "version":
             from app import __version__

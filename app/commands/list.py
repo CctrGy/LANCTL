@@ -10,7 +10,7 @@ from app.core.database import DeviceDatabase
 from app.core.group_database import GroupDatabase
 from app.core.output import write_records
 from app.services.lan_scanner import LanScanner, local_ipv4, resolve_network
-from app.services.lan_scanner import DISCOVERY_MODES
+from app.services.lan_scanner import DISCOVERY_MODES, SCAN_ORDERS
 from app.services.scan_profiles import SCAN_PROFILES, apply_profile
 from app.core.progress import ScanProgress
 from app.core.query import matches_query
@@ -64,7 +64,13 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
         "--timeout",
         type=float,
         default=config["timeout"],
-        help="Segundos por host.",
+        help="Timeout base en segundos por operación y host; el perfil puede ajustarlo.",
+    )
+    command.add_argument(
+        "--scan-order",
+        choices=SCAN_ORDERS,
+        default=config.get("scanOrder", "ascending"),
+        help="Orden de sondeo de IP: ascending, descending o random.",
     )
     command.add_argument(
         "--include-unknown",
@@ -262,6 +268,7 @@ def run_list(args: argparse.Namespace) -> int:
         workers=effective_workers,
         timeout=effective_timeout,
         max_hosts=args.max_hosts,
+        scan_order=args.scan_order,
     )
     progress = getattr(args, "progress_instance", None) or ScanProgress(args.progress)
     try:
@@ -362,7 +369,8 @@ def run_list(args: argparse.Namespace) -> int:
         f"Mostrados: {len(visible_devices)} | Activos: {active_count} | "
         f"No detectados: {len(visible_devices) - active_count} | "
         f"Total registrados: {len(devices)}\n"
-        f"Perfil: {profile.name} | Descubrimiento: {discovery} | ICMP: {icmp_count} | "
+        f"Perfil: {profile.name} | Descubrimiento: {discovery} | "
+        f"Orden: {args.scan_order} | Timeout: {effective_timeout:g}s | ICMP: {icmp_count} | "
         f"ARP: {arp_count} | Cache no verificada: {cache_count}",
     )
     return 0

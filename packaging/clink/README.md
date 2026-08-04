@@ -4,6 +4,11 @@
 y `als.exe`. Incluye comandos directos heredados y el ámbito explícito
 `virtual`.
 
+El completado incluye las acciones y opciones de `history`, `monitor`,
+`radmin`, `smb` y `wol`, ademÃ¡s de los comandos clÃ¡sicos. La prueba de
+integraciÃ³n compara las opciones publicadas por el parser de LANCTL con este
+script para detectar argumentos nuevos que todavÃ­a no tengan completado.
+
 Instala la carpeta de scripts una vez:
 
 ```bat

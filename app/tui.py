@@ -96,6 +96,9 @@ class LanctlTui:
         self.scan_summary: dict[str, object] = {}
         self.detail_lines: list[str] = []
         self.detail_scroll = 0
+        self.view_state = "inventory"
+        self.history_events = []
+        self.history_index = 0
         self.reload()
 
     @property
@@ -341,7 +344,7 @@ class LanctlTui:
         title = f" LANCTL TUI {__version__} "
         mode, value = self.list_filter
         filter_name = f"{mode}:{value}" if value else mode
-        counter = f" [{filter_name}] {self.index + 1 if self.devices else 0}/{len(self.devices)} "
+        counter = (f" [history] {self.history_index + 1 if self.history_events else 0}/{len(self.history_events)} " if self.view_state == "history" else f" [{filter_name}] {self.index + 1 if self.devices else 0}/{len(self.devices)} ")
         title_space = max(0, width - len(title) - len(counter))
         title_content = (
             f"{title}{'─' * title_space}{counter}"
@@ -350,7 +353,7 @@ class LanctlTui:
         )
         lines = [
             f"{Style.BRIGHT}{Fore.CYAN}{title_content}{RESET}",
-            *self._inventory_lines(width, list_height),
+            *(self._history_lines(width, list_height) if self.view_state == "history" else self._inventory_lines(width, list_height)),
             f"{Fore.CYAN}{'─' * width}{RESET}",
             *(_fit_ansi(line, width) for line in self._status_lines(width)),
         ]
@@ -417,6 +420,29 @@ class LanctlTui:
             + f"\x1b[{height - 1};{cursor_column}H"
         )
         self.screen.flush()
+
+    def show_history(self, selector: str | None = None) -> None:
+        from app.core.history import HistoryService
+        target = selector or ((self.selected.device_id or self.selected.mac or self.selected.ip) if self.selected else None)
+        try:
+            self.history_events = HistoryService().query(None if target == "all" else target, limit=1000, reverse=True)
+            self.history_index = 0; self.view_state = "history"
+            self.messages = [f"Historial: {len(self.history_events)} eventos | Enter detalle | Esc inventario"]
+        except ValueError as error: self.messages = [str(error)]
+
+    def _history_lines(self, width: int, height: int) -> list[str]:
+        rows=[]
+        for index,event in enumerate(self.history_events[:height]):
+            marker="▶" if index==self.history_index else " "
+            label=event.device.label if event.device else "LAN"
+            rows.append(f"{marker} {event.timestamp[:19]} | {label} | {event.type} | {event.summary}")
+        return [fit_text(line,width) for line in rows] or [" Sin eventos"]
+
+    def show_history_detail(self) -> None:
+        if not self.history_events: return
+        event=self.history_events[self.history_index]; device=event.device
+        self.detail_lines=[f"Tipo: {event.type}",f"Fecha: {event.timestamp}",f"Elemento: {device.label if device else '-'}",f"Source: {event.source}",f"Resultado: {event.result}",f"CorrelationId: {event.correlationId or '-'}",f"RunId: {event.runId or '-'}",f"TaskId: {event.taskId or '-'}",f"OperationId: {event.operationId or '-'}",f"Resumen: {event.summary}","Cambios:",* [f"  {x.get('field')}: {x.get('before')} => {x.get('after')}" for x in event.changes]]
+        if event.error:self.detail_lines.extend((f"Error: {event.error.get('code','-')}",f"Origen: {event.error.get('origin','-')}",f"Mensaje: {event.error.get('message','-')}"))
 
     def _render_detail(self, width: int, height: int) -> None:
         rows = max(1, height - 4)
@@ -707,6 +733,9 @@ class LanctlTui:
         if command in ("info", "selected"):
             self.show_info()
             return
+        if command == "history":
+            self.show_history(parts[1] if len(parts)>1 else None)
+            return
         if command == "select" and len(parts) == 2:
             try:
                 wanted = self.database.resolve(parts[1])
@@ -772,6 +801,13 @@ class LanctlTui:
                 self.detail_lines = []
                 self.detail_scroll = 0
             return
+        if getattr(self, "view_state", "inventory") == "history":
+            if key in ("UP","PGUP"): self.history_index=max(0,self.history_index-(10 if key=="PGUP" else 1))
+            elif key in ("DOWN","PGDN"): self.history_index=min(max(0,len(self.history_events)-1),self.history_index+(10 if key=="PGDN" else 1))
+            elif key == "ENTER": self.show_history_detail()
+            elif key == "F5": self.show_history("all" if self.history_events and not self.history_events[0].device else None)
+            elif key == "ESC": self.view_state="inventory"; self.messages=["Inventario restaurado"]
+            return
         if self.output_focus:
             if key == "UP":
                 self._move_output(-1)
@@ -817,6 +853,8 @@ class LanctlTui:
             self.ping_selected()
         elif key == "F5":
             self.refresh()
+        elif key.upper() == "H":
+            self.show_history()
         elif key == "ENTER":
             self.execute()
         elif key == "BACKSPACE":

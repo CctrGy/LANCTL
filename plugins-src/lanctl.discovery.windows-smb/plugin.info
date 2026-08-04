@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "lanctl.discovery.windows-smb",
+  "name": "Windows SMB Discovery",
+  "version": "1.0.0",
+  "description": "Descubre servidores, carpetas e impresoras SMB sin habilitar SMB1.",
+  "author": "LANCTL",
+  "entryPoint": "main.exec",
+  "runtime": "trusted",
+  "lanctl": {"minimumVersion": "0.3.0", "maximumVersion": "*"},
+  "permissions": ["functions.register", "ui-panel.register", "ui-action.register", "inventory.read", "credentials.read.scoped", "network.tcp.probe", "network.smb", "windows.network-session", "process.open.path", "ui-data.provide", "ui-form.request", "ui-navigation.request", "automation.condition.register", "plugin.storage"],
+  "capabilities": ["plugin", "network", "ui", "automation"]
+}

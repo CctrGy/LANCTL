@@ -237,6 +237,27 @@ class DeviceDatabase:
 
         for entry in entries:
             write_database_log(entry)
+        try:
+            from app.core.history import DeviceSnapshot, HistoryEvent, HistoryService
+            service = HistoryService()
+            def snapshot(value):
+                return DeviceSnapshot(str(value.get("deviceId", "")), str(value.get("MAC", "")), str(value.get("IP", "")), str(value.get("ALIAS") or value.get("NAME") or value.get("IP") or ""))
+            for identity in sorted(current.keys() - previous.keys()):
+                service.write(HistoryEvent("device.created","lanctl.database","local","success","Dispositivo añadido al inventario",device=snapshot(current[identity]),operationId="database.device.update"))
+            for identity in sorted(previous.keys() - current.keys()):
+                service.write(HistoryEvent("device.deleted","lanctl.database","local","success","Dispositivo eliminado del inventario",device=snapshot(previous[identity]),operationId="database.device.update"))
+            type_by_field={"IP":"device.ip.changed","MAC":"device.mac.changed","NAME":"device.name.changed","ALIAS":"device.alias.changed","protocols":"device.protocol.configured","credentials":"device.credential.bound"}
+            for identity in sorted(previous.keys() & current.keys()):
+                changes=[]
+                for field_name in sorted(current[identity]):
+                    if previous[identity].get(field_name)!=current[identity].get(field_name):
+                        hidden=field_name.casefold()=="credentials"
+                        changes.append({"field":field_name,"before":"[OCULTO]" if hidden else previous[identity].get(field_name),"after":"[OCULTO]" if hidden else current[identity].get(field_name)})
+                if changes:
+                    event_type=type_by_field.get(changes[0]["field"],"device.updated") if len(changes)==1 else "device.updated"
+                    service.write(HistoryEvent(event_type,"lanctl.database","local","success","Inventario del dispositivo actualizado",device=snapshot(current[identity]),changes=tuple(changes),operationId="database.device.update"))
+        except (ValueError, OSError):
+            pass
 
     def save_devices(self, devices: list[Device]) -> None:
         self._write(devices)

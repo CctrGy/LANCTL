@@ -196,6 +196,7 @@ def bootstrap_builtin_plugins(root: Path) -> None:
     info.write_text(json.dumps(EXAMPLE_MANIFEST, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     api_map.write_text(json.dumps(EXAMPLE_API_MAP, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     _install_builtin_theme(root)
+    _install_builtin_package(root, "bundled/lanctl.discovery.windows-smb.lcp")
 
 
 def _install_builtin_theme(root: Path) -> None:
@@ -211,4 +212,15 @@ def _install_builtin_theme(root: Path) -> None:
                 return
         except (OSError, json.JSONDecodeError):
             pass
+    install_package(package, root)
+
+
+def _install_builtin_package(root: Path, relative: str) -> None:
+    package = bundled_path(relative)
+    if not package.is_file(): return
+    incoming = inspect_package(package); installed_info = root / incoming.plugin_id / "plugin.info"
+    if installed_info.is_file():
+        try:
+            if json.loads(installed_info.read_text(encoding="utf-8")).get("version") == incoming.version: return
+        except (OSError, json.JSONDecodeError): pass
     install_package(package, root)

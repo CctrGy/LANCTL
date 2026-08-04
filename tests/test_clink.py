@@ -1,7 +1,8 @@
 import unittest
+import argparse
 from pathlib import Path
 
-from app.cli import LEGACY_VIRTUAL_COMMANDS
+from app.cli import LEGACY_VIRTUAL_COMMANDS, build_parser
 
 
 class ClinkCompletionTests(unittest.TestCase):
@@ -30,6 +31,18 @@ class ClinkCompletionTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("clink installscripts", readme)
         self.assertIn("clink uninstallscripts", readme)
+
+    def test_all_core_parser_options_are_represented(self):
+        pending = [build_parser()]
+        options = set()
+        while pending:
+            parser = pending.pop()
+            for action in parser._actions:
+                options.update(action.option_strings)
+                if isinstance(action, argparse._SubParsersAction):
+                    pending.extend(action.choices.values())
+        missing = sorted(option for option in options if f'"{option}"' not in self.script)
+        self.assertEqual(missing, [])
 
 
 if __name__ == "__main__":

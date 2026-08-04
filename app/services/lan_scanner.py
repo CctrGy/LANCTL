@@ -3,6 +3,7 @@ from __future__ import annotations
 import ipaddress
 import ctypes
 import platform
+import random
 import re
 import socket
 import subprocess
@@ -17,6 +18,7 @@ from app.services.network_discovery import discover_services
 Network = ipaddress.IPv4Network
 MAC_PATTERN = r"(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}"
 DISCOVERY_MODES = ("icmp", "arp", "hybrid")
+SCAN_ORDERS = ("ascending", "descending", "random")
 
 
 def active_arp_mac(ip: str, timeout: float = 1.0) -> str:
@@ -77,14 +79,32 @@ def resolve_network(value: str | None) -> Network:
 
 
 class LanScanner:
-    def __init__(self, network: Network, workers: int, timeout: float, max_hosts: int):
+    def __init__(
+        self, network: Network, workers: int, timeout: float, max_hosts: int,
+        scan_order: str = "ascending",
+    ):
+        scan_order = scan_order.casefold()
+        if scan_order not in SCAN_ORDERS:
+            raise ValueError(
+                f"orden de escaneo no válido: {scan_order}. "
+                f"Disponibles: {', '.join(SCAN_ORDERS)}"
+            )
         self.network = network
         self.workers = workers
         self.timeout = timeout
         self.max_hosts = max_hosts
+        self.scan_order = scan_order
         self.discovery_methods: dict[str, set[str]] = {}
         self.confirmed_devices: set[str] = set()
         self.response_times_ms: dict[str, dict[str, float]] = {}
+
+    def _ordered_hosts(self) -> list[ipaddress.IPv4Address]:
+        hosts = list(self.network.hosts())
+        if self.scan_order == "descending":
+            hosts.reverse()
+        elif self.scan_order == "random":
+            random.shuffle(hosts)
+        return hosts
 
     @staticmethod
     def _timed(function, *args):
@@ -222,7 +242,7 @@ class LanScanner:
         self.discovery_methods = {}
         self.confirmed_devices = set()
         self.response_times_ms = {}
-        hosts = list(self.network.hosts())
+        hosts = self._ordered_hosts()
         if len(hosts) > self.max_hosts:
             raise ValueError(
                 f"la red contiene {len(hosts)} hosts; usa --max-hosts para autorizarla"

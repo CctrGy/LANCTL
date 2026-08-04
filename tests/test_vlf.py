@@ -45,6 +45,7 @@ class VlfProjectTests(unittest.TestCase):
             "programLog": str(self.logs), "databaseLog": str(self.database_logs),
             "range": "192.168.50.0/24", "dhcpRange": "192.168.50.20-192.168.50.100",
             "discovery": "hybrid", "scanProfile": "normal",
+            "scanOrder": "descending",
         }
 
     def tearDown(self):
@@ -61,6 +62,8 @@ class VlfProjectTests(unittest.TestCase):
             self.assertIn("plugins/registry.json", names)
             self.assertIn("auth/keys/ssh/", names)
             self.assertIn("logs/28-07-2026.log", names)
+            network_config = json.loads(archive.read("lan/network.config"))
+            self.assertEqual(network_config["scanOrder"], "descending")
             self.assertNotIn(b"20:00:00 TEST", archive.read("logs/28-07-2026.log"))
             self.assertIn(b"CAMBIO TEST", archive.read("logs/28-07-2026.log"))
             self.assertEqual(archive.read("auth/logins.lgn"), self.credentials.read_bytes())

@@ -28,12 +28,24 @@ DEFAULTS = {
     "range": None,
     "dhcpRange": None,
     "tr064Port": 49000,
+    "radminViewer": None,
+    "wol": {"port": 9, "repeat": 3, "interval": 0.5, "wait": 60, "method": "auto"},
+    "wolSequences": "data/lc/wol-sequences.json",
+    "monitorRuntime": "data/lc/monitor-sessions.json",
+    "monitorIncidents": "data/lc/monitor-incidents.json",
+    "monitorLock": "data/lc/monitor.lock",
+    "monitorDatabase": "data/lc/monitor.db",
+    "monitorProfiles": "data/lc/monitor-profiles.json",
+    "monitorAssignments": "data/lc/monitor-assignments.json",
+    "monitor": {"enabled": False, "profile": "normal", "mode": "permanent", "authority": "observe", "intervals": {"criticalDevices": 15, "deviceStatus": 60, "networkDiscovery": 300, "serviceScan": 1800, "fullScan": 86400}, "workers": 32, "timeout": 0.8, "scanOrder": "ascending", "failureThreshold": 3, "recoveryThreshold": 2, "retention": {"rawSamples": "24h", "fiveMinuteAggregates": "30d", "hourlyAggregates": "365d", "events": "permanent"}},
+    "smbStorage": "data/lc/plugin-storage",
     "ciscoProfiles": "data/lc/cisco_profiles.json",
     "workers": 64,
     "timeout": 0.8,
     "maxHosts": 4096,
     "discovery": "hybrid",
     "scanProfile": "normal",
+    "scanOrder": "ascending",
     "progress": True,
     "serviceIdentification": True,
     "listColumns": [
@@ -105,7 +117,12 @@ def load_config() -> dict:
         ):
             stored["projectsDirectory"] = DEFAULTS["projectsDirectory"]
     stored.pop("scanColumns", None)
-    return {**DEFAULTS, **stored}
+    merged={**DEFAULTS,**stored}
+    monitor={**DEFAULTS["monitor"],**stored.get("monitor",{})}
+    monitor["intervals"]={**DEFAULTS["monitor"]["intervals"],**stored.get("monitor",{}).get("intervals",{})}
+    monitor["retention"]={**DEFAULTS["monitor"]["retention"],**stored.get("monitor",{}).get("retention",{})}
+    merged["monitor"]=monitor
+    return merged
 
 
 def save_config(config: dict) -> Path:

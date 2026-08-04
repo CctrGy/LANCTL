@@ -15,7 +15,8 @@
     <div class="avatar">VA</div>
   </header>
 
-  <main class="content" data-component-id="lanctl.content">
+  <nav class="main-navigation"><button class="active" data-panel="devices">Dispositivos</button><span id="plugin-navigation"></span><button data-panel="activity">Actividad</button></nav>
+  <main id="devices-panel" class="content" data-component-id="lanctl.content">
     <section class="commandbar">
       <button id="scan-network" class="primary" data-component-id="lanctl.primary-action">↻ Escanear red</button>
       <button id="refresh-devices" data-component-id="lanctl.secondary-action">Actualizar inventario</button>
@@ -68,6 +69,8 @@
         <button id="save-device" data-component-id="lanctl.secondary-action">Guardar</button>
         <button id="diagnose-device" data-component-id="lanctl.secondary-action">Diagnosticar</button>
         <button id="show-details" data-component-id="lanctl.secondary-action">Ver detalles</button>
+        <button id="show-shares" data-component-id="lanctl.secondary-action">Ver recursos compartidos</button>
+        <button id="wake-device" data-component-id="lanctl.secondary-action" disabled>Encender</button>
         <button id="open-device" data-component-id="lanctl.secondary-action">Abrir conexión</button>
         <button id="open-terminal" class="primary" data-component-id="lanctl.primary-action">⌁ Terminal</button>
       </div>
@@ -75,6 +78,8 @@
       <button class="danger contract-only" data-component-id="lanctl.danger-action" disabled aria-hidden="true">Eliminar dispositivo</button>
     </section>
   </main>
+  <main id="plugin-panel" class="plugin-panel" hidden><section class="plugin-toolbar"><div><h1 id="plugin-title">Recursos compartidos</h1><p id="plugin-description"></p></div><div id="plugin-toolbar-actions"></div></section><section id="plugin-metrics" class="plugin-metrics"></section><section class="plugin-browser"><div class="plugin-table"><input id="plugin-search" placeholder="Buscar servidor, carpeta, impresora o grupo de trabajo"><table><thead><tr id="plugin-head"></tr></thead><tbody id="plugin-rows"></tbody></table><div id="plugin-empty" class="empty-state"></div></div><aside id="plugin-detail"><h2>Selecciona un recurso</h2></aside></section></main>
+  <main id="activity-panel" class="plugin-panel" hidden><section class="empty-state">La actividad estructurada aparecerá aquí.</section></main>
 
   <footer class="statusbar"><span>LANCTL <b id="app-version">—</b></span><span>Vista de inventario lógico</span><span id="row-count">0 filas</span></footer>
 </div>

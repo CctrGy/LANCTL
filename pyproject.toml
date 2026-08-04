@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lanctl"
-version = "0.3.0-beta.1"
+version = "0.3.0-beta.2"
 description = "CLI de control lógico y físico de infraestructuras LAN"
 requires-python = ">=3.10"
 dependencies = [
