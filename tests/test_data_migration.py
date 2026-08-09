@@ -1,3 +1,4 @@
+import json
 import sys
 import tempfile
 import unittest
@@ -8,6 +9,60 @@ from app.core.data_migration import ensure_data_layout, migrate_config_paths
 
 
 class DataMigrationTests(unittest.TestCase):
+    def test_clean_install_creates_complete_valid_layout(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "lanctl-data"
+            with (
+                patch("app.core.data_migration.application_directory", return_value=Path(temporary)),
+                patch.dict("os.environ", {"LANCTL_DATA_DIR": str(root)}, clear=False),
+            ):
+                current = ensure_data_layout()
+
+            self.assertEqual(current, root.resolve())
+            for relative in (
+                "config/icons",
+                "config/languages",
+                "database",
+                "logs",
+                "monitoring",
+                "plugins/storage",
+                "projects/workspaces",
+                "automation",
+                "access",
+            ):
+                self.assertTrue((root / relative).is_dir(), relative)
+
+            for relative in (
+                "config/config.json",
+                "database/devices.json",
+                "database/groups.json",
+                "recurrent-elements.json",
+                "plugins/registry.json",
+                "automation/wol-sequences.json",
+                "monitoring/sessions.json",
+                "monitoring/incidents.json",
+                "monitoring/profiles.json",
+                "monitoring/assignments.json",
+                "config/cisco_profiles.json",
+            ):
+                with self.subTest(relative=relative):
+                    json.loads((root / relative).read_text(encoding="utf-8"))
+
+    def test_bootstrap_does_not_overwrite_existing_data(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "lanctl-data"
+            database = root / "database/devices.json"
+            database.parent.mkdir(parents=True)
+            database.write_text(
+                '[{"IP":"192.0.2.1","MAC":"00:11:22:33:44:55"}]', encoding="utf-8"
+            )
+            with (
+                patch("app.core.data_migration.application_directory", return_value=Path(temporary)),
+                patch.dict("os.environ", {"LANCTL_DATA_DIR": str(root)}, clear=False),
+            ):
+                ensure_data_layout()
+            self.assertIn("192.0.2.1", database.read_text(encoding="utf-8"))
+
     def test_legacy_directory_is_copied_without_deleting_original(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

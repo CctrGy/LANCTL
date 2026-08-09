@@ -137,6 +137,27 @@ run.cmd --help
 
 ## Inicio rápido
 
+### Primer arranque limpio
+
+En una instalación nueva no es necesario copiar `data/lc` ni crear archivos a
+mano. El primer comando normal de LANCTL prepara automáticamente la jerarquía
+de configuración, inventario, monitorización, plugins, proyectos, automatización
+y credenciales, con documentos JSON iniciales válidos y escrituras atómicas.
+`--help` y `--version` siguen siendo consultas de solo lectura.
+
+Para probar un estado completamente vacío durante el desarrollo puede indicarse
+un directorio absoluto nuevo; LANCTL lo inicializará sin importar datos de otra
+instalación:
+
+```powershell
+$env:LANCTL_DATA_DIR = "$PWD\runtime-clean"
+python main.py settings
+```
+
+Los datos locales continúan excluidos de Git. Una actualización nunca reemplaza
+un archivo existente: la inicialización solo completa carpetas o archivos que
+falten.
+
 ### Descubrir e inspeccionar la red
 
 ```powershell
@@ -417,6 +438,8 @@ python -m compileall -q app tests
 ```powershell
 python -m pip install pyinstaller
 .\build.cmd
+# Sin Inno Setup: genera los EXE y el ZIP portable
+.\scripts\build-windows.ps1 -SkipInstaller
 .\dist\LANCTL.exe --version
 ```
 

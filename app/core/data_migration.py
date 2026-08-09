@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import shutil
+from copy import deepcopy
 from pathlib import Path
 
+from app.core.file_transaction import atomic_write_json
 from app.core.paths import (
     application_directory,
     application_path,
@@ -14,13 +16,37 @@ from app.core.paths import (
 
 LAYOUT_DIRECTORIES = (
     "config",
+    "config/icons",
+    "config/languages",
     "database",
     "logs",
     "monitoring",
     "plugins",
+    "plugins/storage",
     "projects",
+    "projects/workspaces",
     "automation",
 )
+
+INITIAL_JSON_FILES = {
+    "data/lc/devices.json": [],
+    "data/lc/groups.json": [
+        {
+            "name": "BASIC",
+            "description": "Elementos basicos de la LAN",
+            "members": [],
+            "editable": False,
+        }
+    ],
+    "data/lc/recurrent-elements.json": [],
+    "data/lc/plugins.registry": {},
+    "data/lc/wol-sequences.json": {"sequences": {}, "runs": {}},
+    "data/lc/monitor-sessions.json": {},
+    "data/lc/monitor-incidents.json": [],
+    "data/lc/monitor-profiles.json": {},
+    "data/lc/monitor-assignments.json": {},
+    "data/lc/cisco_profiles.json": {},
+}
 
 
 def ensure_data_layout() -> Path:
@@ -37,11 +63,25 @@ def ensure_data_layout() -> Path:
     if conflicts:
         joined = ", ".join(str(path) for path in conflicts[:5])
         raise ValueError(f"migración detenida por conflictos de datos legacy: {joined}")
+    _create_initial_files()
     if not marker.exists():
         temporary = marker.with_suffix(".tmp")
         temporary.write_text("LANCTL-DATA-V2\n", encoding="ascii")
         temporary.replace(marker)
     return root.resolve()
+
+
+def _create_initial_files() -> None:
+    """Crea los JSON base atómicamente y nunca sobrescribe datos existentes."""
+    from app.core.config import DEFAULTS
+
+    initial_files = {application_path("data/lc/.config"): deepcopy(DEFAULTS)}
+    initial_files.update(
+        (application_path(name), deepcopy(value)) for name, value in INITIAL_JSON_FILES.items()
+    )
+    for path, value in initial_files.items():
+        if not path.exists():
+            atomic_write_json(path, value)
 
 
 def _legacy_sources(destination: Path) -> list[Path]:

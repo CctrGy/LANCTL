@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 
 datas = collect_data_files("manuf") + [
@@ -17,7 +17,9 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=datas,
-    hiddenimports=["paramiko", "cryptography"],
+    # Los comandos se registran por nombre para mantener --help/--version
+    # ligeros. PyInstaller no puede descubrir esos imports sin esta lista.
+    hiddenimports=["paramiko", "cryptography"] + collect_submodules("app"),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
