@@ -27,9 +27,7 @@ class SpecialElementCnfTests(unittest.TestCase):
                 return_value=ipaddress.IPv4Address("10.0.0.2"),
             ),
         ):
-            records = scanner.scan(
-                discovery="hybrid", resolve_names=False
-            )
+            records = scanner.scan(discovery="hybrid", resolve_names=False)
 
         special = {record.alias: record for record in records}
         self.assertEqual(special["GATEWAY"].cnf, "O")

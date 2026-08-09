@@ -6,7 +6,7 @@ from pathlib import Path
 from app.cisco.adapters import FakeCiscoAdapter
 from app.cisco.context import CiscoContext
 from app.cisco.executor import CiscoExecutor
-from app.cisco.models import PortProfile, Risk, SwitchProfile
+from app.cisco.models import Risk
 from app.cisco.planner import CiscoPlanner
 from app.cisco.profiles import load_profile
 from app.commands.switch import _device_profile
@@ -94,13 +94,24 @@ class CiscoCommandLayerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "profiles.json"
             path.write_text(
-                json.dumps({"profiles": [{
-                    "id": "custom", "model": "Custom",
-                    "ports": [{
-                        "id": "port:7", "native": "GigabitEthernet1/7",
-                        "aliases": ["x7"], "label": "NAS",
-                    }],
-                }]}),
+                json.dumps(
+                    {
+                        "profiles": [
+                            {
+                                "id": "custom",
+                                "model": "Custom",
+                                "ports": [
+                                    {
+                                        "id": "port:7",
+                                        "native": "GigabitEthernet1/7",
+                                        "aliases": ["x7"],
+                                        "label": "NAS",
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                ),
                 encoding="utf-8",
             )
             profile = load_profile("custom", path)

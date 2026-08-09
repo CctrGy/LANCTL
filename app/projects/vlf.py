@@ -3,40 +3,59 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import json
+import os
 import shutil
 import sqlite3
 import tempfile
 import uuid
 import zipfile
-from threading import RLock
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path, PurePosixPath
-from typing import Mapping
+from threading import RLock
 
 from app import __version__
 from app.core.config import load_config
 from app.core.database import DeviceDatabase
+from app.core.file_transaction import transactional_path_argument
 from app.core.group_database import GroupDatabase
 from app.core.paths import application_path
 from app.projects.paths import resolve_project_path
-
 
 VLF_FORMAT_VERSION = "1.0"
 MAX_ENTRY_SIZE = 256 * 1024 * 1024
 MAX_TOTAL_SIZE = 512 * 1024 * 1024
 REQUIRED_ENTRIES = {
-    "project.info", "lan/lanIdentifier.info", "lan/network.config",
-    "lan/vlan.config", "lan/topology.map", "auth/logins.lgn",
-    "auth/keys/logon/access.info", "devices/backup.db",
-    "devices/elements.db", "meta/version", "meta/created", "meta/checksum",
+    "project.info",
+    "lan/lanIdentifier.info",
+    "lan/network.config",
+    "lan/vlan.config",
+    "lan/topology.map",
+    "auth/logins.lgn",
+    "auth/keys/logon/access.info",
+    "devices/backup.db",
+    "devices/elements.db",
+    "meta/version",
+    "meta/created",
+    "meta/checksum",
 }
 DIRECTORIES = (
-    "lan/", "auth/", "auth/keys/", "auth/keys/ssh/", "auth/keys/api/",
-    "auth/keys/device/", "auth/keys/logon/", "logs/", "devices/", "plugins/", "meta/",
+    "lan/",
+    "auth/",
+    "auth/keys/",
+    "auth/keys/ssh/",
+    "auth/keys/api/",
+    "auth/keys/device/",
+    "auth/keys/logon/",
+    "logs/",
+    "devices/",
+    "plugins/",
+    "meta/",
 )
 _VLF_WRITE_LOCK = RLock()
 
 
+@transactional_path_argument("output", transform=lambda value: _vlf_path(value))
 def create_project(
     output: str | Path,
     *,
@@ -54,9 +73,7 @@ def create_project(
 ) -> dict:
     destination = _vlf_path(output)
     if destination.exists() and not overwrite:
-        raise ValueError(
-            f"ya existe el proyecto VLF: {destination}; usa --force o project update"
-        )
+        raise ValueError(f"ya existe el proyecto VLF: {destination}; usa --force o project update")
     active = dict(config or load_config())
     now = datetime.now().astimezone().isoformat(timespec="seconds")
     identity = dict(identity or {})
@@ -81,32 +98,42 @@ def create_project(
         network = _network_document(active, devices)
         _write_json(root / "lan/network.config", network)
         if not (root / "lan/vlan.config").exists():
-            _write_json(root / "lan/vlan.config", {
-                "schemaVersion": 1, "vlans": [], "nativeVlan": None,
-                "managementVlan": None,
-            })
+            _write_json(
+                root / "lan/vlan.config",
+                {
+                    "schemaVersion": 1,
+                    "vlans": [],
+                    "nativeVlan": None,
+                    "managementVlan": None,
+                },
+            )
         topology_path = root / "lan/topology.map"
         old_topology = (
             json.loads(topology_path.read_text(encoding="utf-8"))
-            if topology_path.exists() else None
+            if topology_path.exists()
+            else None
         )
         _write_json(topology_path, _topology_document(devices, old_topology))
         old_lan = {}
         lan_identifier_path = root / "lan/lanIdentifier.info"
         if lan_identifier_path.exists():
             old_lan = json.loads(lan_identifier_path.read_text(encoding="utf-8"))
-        _write_json(root / "lan/lanIdentifier.info", {
-            "name": lan_name or old_lan.get("name") or project_name,
-            "location": location or old_lan.get("location", ""),
-            "company": company or old_lan.get("company", ""),
-            "responsible": responsible or old_lan.get("responsible", ""),
-            "description": description or old_lan.get("description", ""),
-        })
+        _write_json(
+            root / "lan/lanIdentifier.info",
+            {
+                "name": lan_name or old_lan.get("name") or project_name,
+                "location": location or old_lan.get("location", ""),
+                "company": company or old_lan.get("company", ""),
+                "responsible": responsible or old_lan.get("responsible", ""),
+                "description": description or old_lan.get("description", ""),
+            },
+        )
 
         # El proyecto conserva requisitos y estado de complementos, nunca su
-        # código ejecutable. Cada plugin dispone de un namespace propio.
+        # código ejecutable. Cada plugin dispone de un espacio de nombres propio.
         try:
             from app.plugins import get_plugin_manager
+
             plugin_registry = get_plugin_manager().project_registry()
         except (OSError, ValueError):
             plugin_registry = {"schemaVersion": 1, "plugins": []}
@@ -117,17 +144,20 @@ def create_project(
             credentials.read_bytes() if credentials.exists() else b""
         )
         if not (root / "auth/keys/logon/access.info").exists():
-            _write_json(root / "auth/keys/logon/access.info", {
-                "schemaVersion": 1, "users": [], "roles": [],
-                "note": "Las contraseñas deben permanecer cifradas; VLF no almacena texto plano.",
-            })
+            _write_json(
+                root / "auth/keys/logon/access.info",
+                {
+                    "schemaVersion": 1,
+                    "users": [],
+                    "roles": [],
+                    "note": "Las contraseñas deben permanecer cifradas; VLF no almacena texto plano.",
+                },
+            )
         _copy_logs(root / "logs", active)
 
         (root / "meta/version").write_text(VLF_FORMAT_VERSION + "\n", encoding="utf-8")
         (root / "meta/created").write_text(created + "\n", encoding="utf-8")
-        content_hash = _hash_directory(
-            root, {"project.info", "meta/checksum"}
-        )
+        content_hash = _hash_directory(root, {"project.info", "meta/checksum"})
         project_info = {
             "format": "LANCTL VLF",
             "formatVersion": VLF_FORMAT_VERSION,
@@ -144,18 +174,22 @@ def create_project(
         }
         _write_json(root / "project.info", project_info)
         archive_hash = _hash_directory(root, {"meta/checksum"})
-        _write_json(root / "meta/checksum", {
-            "algorithm": "SHA-256",
-            "hash": archive_hash,
-            "scope": "all files except meta/checksum",
-            "contentHash": content_hash,
-        })
+        _write_json(
+            root / "meta/checksum",
+            {
+                "algorithm": "SHA-256",
+                "hash": archive_hash,
+                "scope": "all files except meta/checksum",
+                "contentHash": content_hash,
+            },
+        )
         _write_archive(root, destination)
     result = verify_project(destination)
     result.update({"path": str(destination), "project": project_info})
     return result
 
 
+@transactional_path_argument("path", transform=lambda value: _vlf_path(value))
 def update_project(path: str | Path, *, config: Mapping | None = None) -> dict:
     source = _existing_vlf(path)
     verify_project(source)
@@ -166,30 +200,28 @@ def update_project(path: str | Path, *, config: Mapping | None = None) -> dict:
         temporary.unlink()
     result = create_project(
         temporary,
-        name=info["name"], description=info.get("description", ""),
-        author=info.get("author", ""), config=config, identity=info,
+        name=info["name"],
+        description=info.get("description", ""),
+        author=info.get("author", ""),
+        config=config,
+        identity=info,
         template=source,
     )
     if backup.exists():
         backup.unlink()
-    source.replace(backup)
-    try:
-        temporary.replace(source)
-    except Exception:
-        backup.replace(source)
-        raise
+    shutil.copy2(source, backup)
+    os.replace(temporary, source)
     result["path"] = str(source)
     result["backup"] = str(backup)
     return result
 
 
-def append_database_log(
-    path: str | Path, message: str, *, now: datetime | None = None
-) -> Path:
+@transactional_path_argument("path", transform=lambda value: _vlf_path(value))
+def append_database_log(path: str | Path, message: str, *, now: datetime | None = None) -> Path:
     """Añade una auditoría a ./logs/ dentro del VLF y renueva sus hashes."""
     source = _existing_vlf(path)
     verify_project(source)
-    timestamp = now or datetime.now()
+    timestamp = now or datetime.now().astimezone()
     clean_message = " | ".join(str(message).splitlines()).strip()
     log_name = f"logs/{timestamp:%d-%m-%Y}.log"
 
@@ -208,65 +240,114 @@ def append_database_log(
         info["contentHash"] = content_hash
         _write_json(root / "project.info", info)
         archive_hash = _hash_directory(root, {"meta/checksum"})
-        _write_json(root / "meta/checksum", {
-            "algorithm": "SHA-256", "hash": archive_hash,
-            "scope": "all files except meta/checksum",
-            "contentHash": content_hash,
-        })
+        _write_json(
+            root / "meta/checksum",
+            {
+                "algorithm": "SHA-256",
+                "hash": archive_hash,
+                "scope": "all files except meta/checksum",
+                "contentHash": content_hash,
+            },
+        )
         _write_archive(root, source)
     return source
 
 
-def append_history_event(path: str | Path, payload: Mapping, *, now: datetime | None = None) -> Path:
+@transactional_path_argument("path", transform=lambda value: _vlf_path(value))
+def append_history_event(
+    path: str | Path, payload: Mapping, *, now: datetime | None = None
+) -> Path:
     """Añade una línea JSONL estructurada y renueva los hashes del VLF."""
-    source = _existing_vlf(path); verify_project(source)
+    source = _existing_vlf(path)
+    verify_project(source)
     timestamp = now or datetime.now().astimezone()
     name = f"logs/events/{timestamp:%Y-%m-%d}.jsonl"
     line = json.dumps(dict(payload), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     with _VLF_WRITE_LOCK, tempfile.TemporaryDirectory(prefix="lanctl-vlf-event-") as temporary:
         root = Path(temporary)
-        with _safe_archive(source) as archive: archive.extractall(root)
-        target = root / PurePosixPath(name); target.parent.mkdir(parents=True, exist_ok=True)
-        with target.open("a", encoding="utf-8", newline="") as stream: stream.write(line + "\n")
+        with _safe_archive(source) as archive:
+            archive.extractall(root)
+        target = root / PurePosixPath(name)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("a", encoding="utf-8", newline="") as stream:
+            stream.write(line + "\n")
         info = json.loads((root / "project.info").read_text(encoding="utf-8"))
         info["updated"] = timestamp.astimezone().isoformat(timespec="seconds")
-        content_hash = _hash_directory(root, {"project.info", "meta/checksum"}); info["contentHash"] = content_hash
+        content_hash = _hash_directory(root, {"project.info", "meta/checksum"})
+        info["contentHash"] = content_hash
         _write_json(root / "project.info", info)
         archive_hash = _hash_directory(root, {"meta/checksum"})
-        _write_json(root / "meta/checksum", {"algorithm":"SHA-256","hash":archive_hash,"scope":"all files except meta/checksum","contentHash":content_hash})
+        _write_json(
+            root / "meta/checksum",
+            {
+                "algorithm": "SHA-256",
+                "hash": archive_hash,
+                "scope": "all files except meta/checksum",
+                "contentHash": content_hash,
+            },
+        )
         _write_archive(root, source)
     return source
 
 
-def append_monitor_document(path: str | Path, entry: str, payload: Mapping, *, now: datetime | None = None) -> Path:
+@transactional_path_argument("path", transform=lambda value: _vlf_path(value))
+def append_monitor_document(
+    path: str | Path, entry: str, payload: Mapping, *, now: datetime | None = None
+) -> Path:
     """Escribe un resumen monitor portable; nunca incluye monitor.db."""
-    source=_existing_vlf(path); verify_project(source); timestamp=now or datetime.now().astimezone()
-    relative=PurePosixPath(entry)
-    if not str(relative).startswith("monitoring/") or ".." in relative.parts or relative.suffix!=".json": raise ValueError("entrada monitor VLF no válida")
-    with _VLF_WRITE_LOCK,tempfile.TemporaryDirectory(prefix="lanctl-vlf-monitor-") as temporary:
-        root=Path(temporary)
-        with _safe_archive(source) as archive:archive.extractall(root)
-        _write_json(root/relative,dict(payload)); info=json.loads((root/"project.info").read_text(encoding="utf-8")); info["updated"]=timestamp.astimezone().isoformat(timespec="seconds")
-        content_hash=_hash_directory(root,{"project.info","meta/checksum"});info["contentHash"]=content_hash;_write_json(root/"project.info",info)
-        archive_hash=_hash_directory(root,{"meta/checksum"});_write_json(root/"meta/checksum",{"algorithm":"SHA-256","hash":archive_hash,"scope":"all files except meta/checksum","contentHash":content_hash});_write_archive(root,source)
+    source = _existing_vlf(path)
+    verify_project(source)
+    timestamp = now or datetime.now().astimezone()
+    relative = PurePosixPath(entry)
+    if (
+        not str(relative).startswith("monitoring/")
+        or ".." in relative.parts
+        or relative.suffix != ".json"
+    ):
+        raise ValueError("entrada monitor VLF no válida")
+    with _VLF_WRITE_LOCK, tempfile.TemporaryDirectory(prefix="lanctl-vlf-monitor-") as temporary:
+        root = Path(temporary)
+        with _safe_archive(source) as archive:
+            archive.extractall(root)
+        _write_json(root / relative, dict(payload))
+        info = json.loads((root / "project.info").read_text(encoding="utf-8"))
+        info["updated"] = timestamp.astimezone().isoformat(timespec="seconds")
+        content_hash = _hash_directory(root, {"project.info", "meta/checksum"})
+        info["contentHash"] = content_hash
+        _write_json(root / "project.info", info)
+        archive_hash = _hash_directory(root, {"meta/checksum"})
+        _write_json(
+            root / "meta/checksum",
+            {
+                "algorithm": "SHA-256",
+                "hash": archive_hash,
+                "scope": "all files except meta/checksum",
+                "contentHash": content_hash,
+            },
+        )
+        _write_archive(root, source)
     return source
 
 
+@transactional_path_argument("path", transform=lambda value: _vlf_path(value))
 def inspect_project(path: str | Path) -> dict:
     source = _existing_vlf(path)
     with _safe_archive(source) as archive:
         return _read_json_entry(archive, "project.info")
 
 
+@transactional_path_argument("path", transform=lambda value: _vlf_path(value))
 def list_project_entries(path: str | Path) -> list[dict]:
     source = _existing_vlf(path)
     with _safe_archive(source) as archive:
         return [
             {"path": item.filename, "size": item.file_size, "compressed": item.compress_size}
-            for item in archive.infolist() if not item.is_dir()
+            for item in archive.infolist()
+            if not item.is_dir()
         ]
 
 
+@transactional_path_argument("path", transform=lambda value: _vlf_path(value))
 def verify_project(path: str | Path) -> dict:
     source = _existing_vlf(path)
     with _safe_archive(source) as archive:
@@ -277,12 +358,8 @@ def verify_project(path: str | Path) -> dict:
         info = _read_json_entry(archive, "project.info")
         checksum = _read_json_entry(archive, "meta/checksum")
         if str(info.get("formatVersion")) != VLF_FORMAT_VERSION:
-            raise ValueError(
-                f"versión VLF no compatible: {info.get('formatVersion')}"
-            )
-        content_hash = _hash_archive(
-            archive, {"project.info", "meta/checksum"}
-        )
+            raise ValueError(f"versión VLF no compatible: {info.get('formatVersion')}")
+        content_hash = _hash_archive(archive, {"project.info", "meta/checksum"})
         archive_hash = _hash_archive(archive, {"meta/checksum"})
         if info.get("contentHash") != content_hash:
             raise ValueError("contentHash de project.info no coincide")
@@ -294,9 +371,12 @@ def verify_project(path: str | Path) -> dict:
         _verify_sqlite(database_bytes)
         _verify_sqlite(archive.read("devices/backup.db"))
         return {
-            "valid": True, "formatVersion": VLF_FORMAT_VERSION,
-            "contentHash": content_hash, "checksum": archive_hash,
-            "entries": len(names), "size": source.stat().st_size,
+            "valid": True,
+            "formatVersion": VLF_FORMAT_VERSION,
+            "contentHash": content_hash,
+            "checksum": archive_hash,
+            "entries": len(names),
+            "size": source.stat().st_size,
         }
 
 
@@ -329,9 +409,15 @@ def _write_elements_database(path: Path, devices, groups) -> None:
             connection.execute(
                 "INSERT INTO devices VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
-                    device.device_id, device.ip, device.mac, device.cnf,
-                    device.alias, device.name, device.default_name,
-                    device.description, device.manufacturer,
+                    device.device_id,
+                    device.ip,
+                    device.mac,
+                    device.cnf,
+                    device.alias,
+                    device.name,
+                    device.default_name,
+                    device.description,
+                    device.manufacturer,
                     json.dumps(device.groups, ensure_ascii=False),
                     json.dumps(device.protocols, ensure_ascii=False),
                     json.dumps(device.discovery_methods, ensure_ascii=False),
@@ -378,17 +464,22 @@ def _network_document(config: Mapping, devices) -> dict:
 def _topology_document(devices, previous: Mapping | None = None) -> dict:
     previous = dict(previous or {})
     prior_nodes = {
-        node.get("id"): dict(node)
-        for node in previous.get("nodes", []) if isinstance(node, dict)
+        node.get("id"): dict(node) for node in previous.get("nodes", []) if isinstance(node, dict)
     }
     nodes = []
     for device in devices:
         node = prior_nodes.get(device.device_id, {})
-        node.update({
-            "id": device.device_id, "ip": device.ip, "mac": device.mac,
-            "alias": device.alias, "name": device.name,
-            "groups": list(device.groups), "type": node.get("type", "device"),
-        })
+        node.update(
+            {
+                "id": device.device_id,
+                "ip": device.ip,
+                "mac": device.mac,
+                "alias": device.alias,
+                "name": device.name,
+                "groups": list(device.groups),
+                "type": node.get("type", "device"),
+            }
+        )
         nodes.append(node)
     return {
         "schemaVersion": 1,
@@ -400,8 +491,8 @@ def _topology_document(devices, previous: Mapping | None = None) -> dict:
 
 
 def _copy_logs(destination: Path, config: Mapping) -> None:
-    # Compatibilidad: importa únicamente auditorías antiguas. El log operativo
-    # del programa nunca forma parte del proyecto VLF.
+    # Por compatibilidad solo se importan auditorías antiguas. El registro
+    # operativo del programa nunca forma parte del proyecto VLF.
     configured = config.get("databaseLog")
     if not configured:
         return
@@ -415,25 +506,29 @@ def _copy_logs(destination: Path, config: Mapping) -> None:
 
 def _copy_template_entries(source: Path, destination: Path) -> None:
     preserved = {
-        "lan/lanIdentifier.info", "lan/vlan.config", "lan/topology.map",
+        "lan/lanIdentifier.info",
+        "lan/vlan.config",
+        "lan/topology.map",
         "auth/keys/logon/access.info",
     }
     with _safe_archive(source) as archive:
         # La base principal anterior pasa a ser el punto de restauración.
-        (destination / "devices/backup.db").write_bytes(
-            archive.read("devices/elements.db")
-        )
+        (destination / "devices/backup.db").write_bytes(archive.read("devices/elements.db"))
         for item in archive.infolist():
             name = item.filename
             if item.is_dir():
                 continue
             if not (
                 name in preserved
-                or name.startswith("auth/keys/ssh/")
-                or name.startswith("auth/keys/api/")
-                or name.startswith("auth/keys/device/")
-                or name.startswith("logs/")
-                or name.startswith("plugins/")
+                or name.startswith(
+                    (
+                        "auth/keys/ssh/",
+                        "auth/keys/api/",
+                        "auth/keys/device/",
+                        "logs/",
+                        "plugins/",
+                    )
+                )
             ):
                 continue
             target = destination / PurePosixPath(name)
@@ -450,13 +545,21 @@ def _normalized_log_name(name: str) -> str:
 
 def _write_archive(root: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary = destination.with_suffix(destination.suffix + ".tmp")
-    with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-        for directory in DIRECTORIES:
-            archive.writestr(directory, b"")
-        for source in sorted(path for path in root.rglob("*") if path.is_file()):
-            archive.write(source, source.relative_to(root).as_posix())
-    temporary.replace(destination)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.", suffix=".tmp", dir=destination.parent
+    )
+    os.close(descriptor)
+    temporary = Path(temporary_name)
+    try:
+        with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+            for directory in DIRECTORIES:
+                archive.writestr(directory, b"")
+            for source in sorted(path for path in root.rglob("*") if path.is_file()):
+                archive.write(source, source.relative_to(root).as_posix())
+        os.replace(temporary, destination)
+    finally:
+        # Si la compresión falla, no deja residuos ni sustituye el VLF válido.
+        temporary.unlink(missing_ok=True)
 
 
 def _safe_archive(path: Path):
@@ -493,9 +596,8 @@ def _verify_sqlite(payload: bytes) -> None:
                 raise ValueError(f"elements.db no supera integrity_check: {result}")
             required = {"devices", "groups", "group_members"}
             tables = {
-                row[0] for row in connection.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table'"
-                )
+                row[0]
+                for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
             }
             if not required <= tables:
                 raise ValueError("elements.db no contiene el esquema VLF requerido")
@@ -516,7 +618,8 @@ def _hash_directory(root: Path, excluded: set[str]) -> str:
 def _hash_archive(archive: zipfile.ZipFile, excluded: set[str]) -> str:
     digest = hashlib.sha256()
     names = sorted(
-        item.filename for item in archive.infolist()
+        item.filename
+        for item in archive.infolist()
         if not item.is_dir() and item.filename not in excluded
     )
     for name in names:

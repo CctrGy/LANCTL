@@ -1,25 +1,41 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.plugins.extensions import Extension
 
 
-COMPONENT_IDS = frozenset({
-    "lanctl.app-shell", "lanctl.topbar", "lanctl.content", "lanctl.status-cards",
-    "lanctl.device-table", "lanctl.device-inspector", "lanctl.primary-action",
-    "lanctl.secondary-action", "lanctl.danger-action",
-})
+COMPONENT_IDS = frozenset(
+    {
+        "lanctl.app-shell",
+        "lanctl.topbar",
+        "lanctl.content",
+        "lanctl.status-cards",
+        "lanctl.device-table",
+        "lanctl.device-inspector",
+        "lanctl.primary-action",
+        "lanctl.secondary-action",
+        "lanctl.danger-action",
+    }
+)
 
 DEFAULT_TOKENS = {
-    "color.background": "#071522", "color.surface": "#0d2031",
-    "color.surface-raised": "#122a3e", "color.border": "#244157",
-    "color.text": "#edf6ff", "color.text-muted": "#91a8ba",
-    "color.accent": "#25a9e8", "color.success": "#55c879",
-    "color.warning": "#f5a623", "color.danger": "#ef5350",
-    "radius.panel": "10px", "radius.control": "7px", "space.unit": "8px",
+    "color.background": "#071522",
+    "color.surface": "#0d2031",
+    "color.surface-raised": "#122a3e",
+    "color.border": "#244157",
+    "color.text": "#edf6ff",
+    "color.text-muted": "#91a8ba",
+    "color.accent": "#25a9e8",
+    "color.success": "#55c879",
+    "color.warning": "#f5a623",
+    "color.danger": "#ef5350",
+    "radius.panel": "10px",
+    "radius.control": "7px",
+    "space.unit": "8px",
 }
 TOKEN_TO_CSS = {key: "--" + key.replace(".", "-") for key in DEFAULT_TOKENS}
 _COLOR = re.compile(r"^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$")
@@ -53,7 +69,7 @@ def validate_theme_specification(specification: Any) -> dict[str, Any]:
     return {"tokens": dict(tokens), "components": cleaned_components}
 
 
-def resolve_theme(extensions: Iterable["Extension"]) -> dict[str, Any]:
+def resolve_theme(extensions: Iterable[Extension]) -> dict[str, Any]:
     tokens, components = dict(DEFAULT_TOKENS), {}
     active_id = "lanctl.core.fallback"
     for extension in extensions:
@@ -65,7 +81,10 @@ def resolve_theme(extensions: Iterable["Extension"]) -> dict[str, Any]:
     return {
         "id": active_id,
         "tokens": {TOKEN_TO_CSS[key]: value for key, value in tokens.items()},
-        "components": {component_id: {TOKEN_TO_CSS[key]: value for key, value in values.items()} for component_id, values in components.items()},
+        "components": {
+            component_id: {TOKEN_TO_CSS[key]: value for key, value in values.items()}
+            for component_id, values in components.items()
+        },
     }
 
 

@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
 import json
 import os
 import sys
 import uuid
+from dataclasses import asdict
 
 from colorama import Fore, Style
 
 from app.core.config import load_config
 from app.core.database import DeviceDatabase
-from app.core.logger import write_log
 from app.core.layout import fit_text, terminal_columns, wrapped_lines
+from app.core.logger import write_log
 from app.services.element_scanner import ElementScanner, parse_ports
 from app.services.manufacturer import detect_manufacturer
 
@@ -29,17 +29,25 @@ def register_scan_command(commands: argparse._SubParsersAction) -> None:
     )
     command.add_argument("selector", help="IP, MAC o alias registrado en LANCTL.")
     command.add_argument(
-        "--ports", default="common", metavar="LISTA",
+        "--ports",
+        default="common",
+        metavar="LISTA",
         help="Puertos o rangos: 22,80,443,8000-8100 (por defecto: common).",
     )
     command.add_argument(
-        "--all-ports", action="store_true",
+        "--all-ports",
+        action="store_true",
         help="Autoriza explícitamente el escaneo TCP 1-65535.",
     )
-    command.add_argument("--timeout", type=float, default=0.5, help="Tiempo máximo por conexión, en segundos.")
-    command.add_argument("--workers", type=int, default=128, help="Número máximo de conexiones simultáneas.")
     command.add_argument(
-        "--banners", action="store_true",
+        "--timeout", type=float, default=0.5, help="Tiempo máximo por conexión, en segundos."
+    )
+    command.add_argument(
+        "--workers", type=int, default=128, help="Número máximo de conexiones simultáneas."
+    )
+    command.add_argument(
+        "--banners",
+        action="store_true",
         help="Lee banners pasivos; no envía sondas específicas de protocolo.",
     )
     command.add_argument(
@@ -49,7 +57,9 @@ def register_scan_command(commands: argparse._SubParsersAction) -> None:
         help="Reconoce servicios y deduce el tipo de dispositivo con evidencias.",
     )
     command.add_argument("--json", action="store_true", help="Salida JSON.")
-    command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
+    command.add_argument(
+        "--database", default=config["database"], help="Archivo JSON de elementos."
+    )
     command.set_defaults(handler=run_scan)
 
 
@@ -73,14 +83,19 @@ def run_scan(args: argparse.Namespace) -> int:
     manufacturer = device.manufacturer or detect_manufacturer(device.mac)
     scanner = ElementScanner(timeout=args.timeout, workers=args.workers)
     from app.plugins import get_plugin_manager
+
     plugin_manager = get_plugin_manager()
     scan_id = str(uuid.uuid4())
     event_values = {
-        "scan_id": scan_id, "target_range": device.ip,
-        "running": True, "active": True, "devices": 0,
+        "scan_id": scan_id,
+        "target_range": device.ip,
+        "running": True,
+        "active": True,
+        "devices": 0,
     }
     _, decision = plugin_manager.events.emit(
-        "LANCTL.Network.Scan.BeforeStart", event_values,
+        "LANCTL.Network.Scan.BeforeStart",
+        event_values,
         correlation_id=scan_id,
     )
     if not decision.allowed:
@@ -93,12 +108,20 @@ def run_scan(args: argparse.Namespace) -> int:
         identify=args.identify,
         manufacturer=manufacturer,
     )
-    plugin_manager.events.emit("LANCTL.Network.Scan.End", {
-        "scan_id": scan_id, "target_range": device.ip,
-        "running": False, "active": result.reachable, "devices": int(result.reachable),
-    }, correlation_id=scan_id)
+    plugin_manager.events.emit(
+        "LANCTL.Network.Scan.End",
+        {
+            "scan_id": scan_id,
+            "target_range": device.ip,
+            "running": False,
+            "active": result.reachable,
+            "devices": int(result.reachable),
+        },
+        correlation_id=scan_id,
+    )
     identity_match = (
-        None if not result.observed_mac or not device.mac
+        None
+        if not result.observed_mac or not device.mac
         else result.observed_mac.casefold() == device.mac.casefold()
     )
     write_log(
@@ -109,16 +132,24 @@ def run_scan(args: argparse.Namespace) -> int:
     if args.json:
         payload = {
             "element": {
-                "deviceId": device.device_id, "ip": device.ip, "mac": device.mac,
-                "alias": device.alias, "name": device.name,
-                "manufacturer": manufacturer, "groups": device.groups,
+                "deviceId": device.device_id,
+                "ip": device.ip,
+                "mac": device.mac,
+                "alias": device.alias,
+                "name": device.name,
+                "manufacturer": manufacturer,
+                "groups": device.groups,
             },
             "observation": {**asdict(result), "identityMatch": identity_match},
         }
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         return 0
 
-    state = _color("ACTIVO", Fore.LIGHTGREEN_EX) if result.reachable else _color("NO DETECTADO", Fore.LIGHTRED_EX)
+    state = (
+        _color("ACTIVO", Fore.LIGHTGREEN_EX)
+        if result.reachable
+        else _color("NO DETECTADO", Fore.LIGHTRED_EX)
+    )
     print(f"\n{_color('ELEMENTO', Fore.CYAN)}")
     print(f"  Estado       : {state}")
     print(f"  IP registrada: {_color(device.ip, Fore.LIGHTBLUE_EX)}")
@@ -143,7 +174,9 @@ def run_scan(args: argparse.Namespace) -> int:
         banner_width = max(6, *(len(port.product or port.banner) for port in result.open_ports))
         if available:
             banner_width = max(6, min(banner_width, available - 43))
-        print(f"  {'port':<5}  {'service':<16}  {'confidence':<10}  {'product/banner':<{banner_width}}")
+        print(
+            f"  {'port':<5}  {'service':<16}  {'confidence':<10}  {'product/banner':<{banner_width}}"
+        )
         print(f"  {'-' * 5}  {'-' * 16}  {'-' * 10}  {'-' * banner_width}")
         for port in result.open_ports:
             banner = fit_text(port.product or port.banner or "-", banner_width)
@@ -157,9 +190,7 @@ def run_scan(args: argparse.Namespace) -> int:
         f"Examinados: {result.scanned_ports} | Abiertos: {len(result.open_ports)} "
         f"| Duración: {result.duration:.2f} s"
     )
-    for index, line in enumerate(
-        wrapped_lines(summary, max(1, (terminal_columns() or 120) - 2))
-    ):
+    for index, line in enumerate(wrapped_lines(summary, max(1, (terminal_columns() or 120) - 2))):
         print(("\n  " if index == 0 else "  ") + line)
     if not args.all_ports:
         print("  Alcance: puertos habituales; usa --all-ports para 1-65535.")

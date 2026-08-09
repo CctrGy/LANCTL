@@ -1,0 +1,59 @@
+name: Continuous integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: >-
+          python -m pip install -e . coverage==7.10.6 ruff==0.16.2
+          bandit==1.8.6 pip-audit==2.9.0
+      - run: python -m pip check
+      - name: Integration tests and branch coverage
+        run: |
+          python -m coverage run --branch --source=app -m unittest discover -s tests
+          python -m coverage report --fail-under=60
+          python -m coverage xml -o coverage.xml
+      - name: Static correctness
+        run: python -m ruff check app tests
+      - name: Stable Python formatting
+        run: python -m ruff format --check app tests
+      - name: Source security
+        run: python -m bandit -q -r app -ll
+      - name: Dependency vulnerabilities
+        # Véase docs/SECURITY.md: una API inaccesible de cryptography y la
+        # compatibilidad RSA/SHA-1 desactivada en Paramiko son excepciones
+        # temporales y acotadas.
+        run: >-
+          python -m pip_audit . --strict
+          --ignore-vuln PYSEC-2026-3552
+          --ignore-vuln PYSEC-2026-2858
+      - run: python -m compileall -q app tests
+      - run: bash -n install.sh scripts/build-linux.sh
+      - run: git diff --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: coverage.xml
+          if-no-files-found: error
+          retention-days: 14

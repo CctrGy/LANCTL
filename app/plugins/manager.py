@@ -5,25 +5,32 @@ import importlib.util
 import json
 import shutil
 import sys
-from dataclasses import MISSING, asdict, dataclass, field, make_dataclass
+from contextlib import suppress
+from dataclasses import dataclass, field, make_dataclass
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
 
 from app import __version__
 from app.core.config import load_config
+from app.core.file_transaction import atomic_write_json, locked_file
 from app.core.logger import write_database_log, write_log
 from app.core.paths import application_path
+from app.gui_theme import validate_theme_specification
 from app.plugins.api import PluginApi
-from app.plugins.contracts import DeviceRemoteEvent, EventContract, LifecycleEvent, NetworkScanEvent, ProjectFileEvent
+from app.plugins.builtin import bootstrap_builtin_plugins
+from app.plugins.contracts import (
+    DeviceRemoteEvent,
+    EventContract,
+    LifecycleEvent,
+    NetworkScanEvent,
+    ProjectFileEvent,
+)
 from app.plugins.events import EventBus, EventRegistry
 from app.plugins.extensions import ExtensionRegistry
 from app.plugins.functions import FunctionRegistry
 from app.plugins.models import PluginManifest, PluginState
-from app.plugins.package import install_package, inspect_package, verify_package
-from app.plugins.builtin import bootstrap_builtin_plugins
-from app.gui_theme import validate_theme_specification
-
+from app.plugins.package import inspect_package, install_package, verify_package
 
 PLUGIN_ROOT = application_path("data/lc/plugins")
 PLUGIN_REGISTRY = application_path("data/lc/plugins.registry")
@@ -82,14 +89,22 @@ class PluginManager:
             try:
                 manifest = PluginManifest.from_dict(json.loads(info.read_text(encoding="utf-8")))
                 saved = persisted.get(manifest.plugin_id, {})
-                default_enabled = bool(manifest.raw.get("builtIn") and manifest.raw.get("defaultEnabled"))
-                state = PluginState(saved.get("state", "ENABLED" if default_enabled else "DISABLED"))
+                default_enabled = bool(
+                    manifest.raw.get("builtIn") and manifest.raw.get("defaultEnabled")
+                )
+                state = PluginState(
+                    saved.get("state", "ENABLED" if default_enabled else "DISABLED")
+                )
                 granted = set(saved.get("granted", manifest.permissions if default_enabled else []))
                 discovered[manifest.plugin_id] = InstalledPlugin(
-                    manifest, info.parent, state, granted,
-                    bool(saved.get("trusted", False)), str(saved.get("error", "")),
+                    manifest,
+                    info.parent,
+                    state,
+                    granted,
+                    bool(saved.get("trusted", False)),
+                    str(saved.get("error", "")),
                 )
-            except Exception as error:
+            except Exception as error:  # noqa: BLE001 - manifiesto externo
                 self.audit(info.parent.name, "DISCOVER", str(info), "ERROR", str(error))
         self.plugins = discovered
         return self.list()
@@ -101,17 +116,25 @@ class PluginManager:
             if plugin.state == PluginState.ENABLED:
                 try:
                     self._activate(plugin)
-                except Exception as error:
+                except Exception as error:  # noqa: BLE001 - código de plugin
                     self.events.unsubscribe_plugin(plugin.manifest.plugin_id)
                     self.event_registry.remove_owner(plugin.manifest.plugin_id)
                     self.extensions.remove_owner(plugin.manifest.plugin_id)
                     self.functions.remove_owner(plugin.manifest.plugin_id)
                     from app.i18n import get_language_manager
+
                     get_language_manager().remove_provider(plugin.manifest.plugin_id)
                     from app.assets.icons import get_icon_manager
+
                     get_icon_manager().remove_provider(plugin.manifest.plugin_id)
                     plugin.state, plugin.error = PluginState.ERROR, str(error)
-                    self.audit(plugin.manifest.plugin_id, "LOAD", plugin.manifest.version, "ERROR", str(error))
+                    self.audit(
+                        plugin.manifest.plugin_id,
+                        "LOAD",
+                        plugin.manifest.version,
+                        "ERROR",
+                        str(error),
+                    )
         self._save_registry()
         self.initialized = True
         return True
@@ -120,25 +143,33 @@ class PluginManager:
         incoming = inspect_package(package)
         existing = self.plugins.get(incoming.plugin_id)
         if existing and existing.manifest.raw.get("builtIn"):
-            raise PermissionError("un complemento integrado no se puede reemplazar con plugin install")
+            raise PermissionError(
+                "un complemento integrado no se puede reemplazar con plugin install"
+            )
         manifest, destination, result = install_package(package, self.root)
         plugin = InstalledPlugin(manifest, destination)
         self.plugins[manifest.plugin_id] = plugin
         self._save_registry()
-        self.audit(manifest.plugin_id, "INSTALL", manifest.version, "OK", f"checksum={result['checksum']}")
+        self.audit(
+            manifest.plugin_id, "INSTALL", manifest.version, "OK", f"checksum={result['checksum']}"
+        )
         return plugin
 
     def uninstall(self, plugin_id: str) -> None:
         plugin = self.get(plugin_id)
         if plugin.manifest.raw.get("builtIn"):
-            raise PermissionError("los complementos integrados pueden desactivarse, pero no desinstalarse")
+            raise PermissionError(
+                "los complementos integrados pueden desactivarse, pero no desinstalarse"
+            )
         self.disable(plugin_id)
         shutil.rmtree(plugin.path)
         self.plugins.pop(plugin.manifest.plugin_id, None)
         self._save_registry()
         self.audit(plugin.manifest.plugin_id, "UNINSTALL", plugin.manifest.version, "OK")
 
-    def enable(self, plugin_id: str, *, grant: set[str] | None = None, trusted: bool = False) -> InstalledPlugin:
+    def enable(
+        self, plugin_id: str, *, grant: set[str] | None = None, trusted: bool = False
+    ) -> InstalledPlugin:
         plugin = self.get(plugin_id)
         if grant is not None:
             plugin.granted = {item.casefold() for item in grant}
@@ -161,13 +192,17 @@ class PluginManager:
             self.extensions.remove_owner(plugin.manifest.plugin_id)
             self.functions.remove_owner(plugin.manifest.plugin_id)
             from app.i18n import get_language_manager
+
             get_language_manager().remove_provider(plugin.manifest.plugin_id)
             from app.assets.icons import get_icon_manager
+
             get_icon_manager().remove_provider(plugin.manifest.plugin_id)
             plugin.module = None
             plugin.state, plugin.error = PluginState.BLOCKED, str(error)
             self._save_registry()
-            self.audit(plugin.manifest.plugin_id, "ENABLE", plugin.manifest.version, "ERROR", str(error))
+            self.audit(
+                plugin.manifest.plugin_id, "ENABLE", plugin.manifest.version, "ERROR", str(error)
+            )
             raise
         plugin.state = PluginState.ENABLED
         self._save_registry()
@@ -179,15 +214,23 @@ class PluginManager:
         if plugin.module and hasattr(plugin.module, "deactivate"):
             try:
                 plugin.module.deactivate()
-            except Exception as error:
-                self.audit(plugin.manifest.plugin_id, "UNLOAD", plugin.manifest.version, "ERROR", str(error))
+            except Exception as error:  # noqa: BLE001 - código de plugin
+                self.audit(
+                    plugin.manifest.plugin_id,
+                    "UNLOAD",
+                    plugin.manifest.version,
+                    "ERROR",
+                    str(error),
+                )
         self.events.unsubscribe_plugin(plugin.manifest.plugin_id)
         self.event_registry.remove_owner(plugin.manifest.plugin_id)
         self.extensions.remove_owner(plugin.manifest.plugin_id)
         self.functions.remove_owner(plugin.manifest.plugin_id)
         from app.i18n import get_language_manager
+
         get_language_manager().remove_provider(plugin.manifest.plugin_id)
         from app.assets.icons import get_icon_manager
+
         get_icon_manager().remove_provider(plugin.manifest.plugin_id)
         plugin.module, plugin.state = None, PluginState.DISABLED
         self._save_registry()
@@ -205,7 +248,13 @@ class PluginManager:
         if path.suffix.casefold() == ".lcp" or path.exists():
             return verify_package(path)
         plugin = self.get(plugin_id_or_file)
-        return {"valid": True, "installed": True, "manifest": plugin.manifest, "path": str(plugin.path), "state": plugin.state.value}
+        return {
+            "valid": True,
+            "installed": True,
+            "manifest": plugin.manifest,
+            "path": str(plugin.path),
+            "state": plugin.state.value,
+        }
 
     def get(self, plugin_id: str) -> InstalledPlugin:
         try:
@@ -216,22 +265,31 @@ class PluginManager:
     def list(self) -> list[InstalledPlugin]:
         return sorted(self.plugins.values(), key=lambda item: item.manifest.name.casefold())
 
-    def audit(self, plugin_id: str, action: str, target: str = "-", result: str = "OK", detail: str = "") -> None:
+    def audit(
+        self, plugin_id: str, action: str, target: str = "-", result: str = "OK", detail: str = ""
+    ) -> None:
         clean = " | ".join(str(detail).splitlines()).strip()
         message = f"PLUGIN id={plugin_id} action={action} target={target} result={result}"
         if clean:
             message += f" detail={clean}"
         write_log(message)
-        try:
+        with suppress(OSError, ValueError):
             write_database_log(message)
-        except (OSError, ValueError):
-            pass
 
     def project_registry(self) -> dict:
-        return {"schemaVersion": 1, "plugins": [
-            {"id": p.manifest.plugin_id, "version": p.manifest.version, "state": p.state.value,
-             "required": False, "capabilities": list(p.manifest.capabilities)} for p in self.list()
-        ]}
+        return {
+            "schemaVersion": 1,
+            "plugins": [
+                {
+                    "id": p.manifest.plugin_id,
+                    "version": p.manifest.version,
+                    "state": p.state.value,
+                    "required": False,
+                    "capabilities": list(p.manifest.capabilities),
+                }
+                for p in self.list()
+            ],
+        }
 
     def _activate(self, plugin: InstalledPlugin) -> None:
         self._load_declarative_events(plugin)
@@ -240,11 +298,19 @@ class PluginManager:
         if not entry.exists():
             return
         if plugin.manifest.runtime == "isolated":
-            self.audit(plugin.manifest.plugin_id, "LOAD", plugin.manifest.version, "OK", "runtime=isolated declarative")
+            self.audit(
+                plugin.manifest.plugin_id,
+                "LOAD",
+                plugin.manifest.version,
+                "OK",
+                "runtime=isolated declarative",
+            )
             return
         if not plugin.trusted:
             raise PermissionError("el código in-process requiere confianza explícita (--trust)")
-        module_name = "lanctl_plugin_" + plugin.manifest.plugin_id.replace(".", "_").replace("-", "_")
+        module_name = "lanctl_plugin_" + plugin.manifest.plugin_id.replace(".", "_").replace(
+            "-", "_"
+        )
         loader = importlib.machinery.SourceFileLoader(module_name, str(entry))
         spec = importlib.util.spec_from_loader(module_name, loader)
         if not spec:
@@ -273,7 +339,8 @@ class PluginManager:
             if not callable(handler):
                 raise ValueError(f"hook {path.name}: handler inexistente {handler_name}")
             self.events.subscribe(
-                str(document["event"]), handler,
+                str(document["event"]),
+                handler,
                 plugin_id=plugin.manifest.plugin_id,
                 version=int(document.get("version", 1)),
                 priority=int(document.get("priority", 100)),
@@ -292,36 +359,52 @@ class PluginManager:
                 raise PermissionError(f"falta el permiso {permission}")
             if kind == "command":
                 import re
+
                 name = str(specification.get("name", ""))
                 action = specification.get("action")
                 function_id = str(specification.get("function", ""))
-                valid_function = (
-                    action != "function.call"
-                    or bool(re.fullmatch(
+                valid_function = action != "function.call" or bool(
+                    re.fullmatch(
                         r"(?!LANCTL\.)[A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z][A-Za-z0-9_-]*){2,}",
                         function_id,
                         re.IGNORECASE,
-                    ))
+                    )
                 )
                 if (
                     not re.fullmatch(r"[a-z][a-z0-9-]{1,31}", name)
                     or action not in {"inventory.summary", "function.call"}
                     or not valid_function
                 ):
-                    raise ValueError(f"especificación de comando declarativo no válida: {item.get('id')}")
+                    raise ValueError(
+                        f"especificación de comando declarativo no válida: {item.get('id')}"
+                    )
             if kind == "theme":
                 specification = validate_theme_specification(specification)
             if kind in {"ui-panel", "ui-action"}:
-                from app.plugins.ui_contracts import validate_ui_action, validate_ui_panel
-                specification = (validate_ui_panel(specification) if kind == "ui-panel"
-                                 else validate_ui_action(specification))
-            self.extensions.register(str(item["id"]), kind, plugin.manifest.plugin_id, specification)
+                from app.plugins.ui_contracts import (
+                    validate_ui_action,
+                    validate_ui_panel,
+                )
+
+                specification = (
+                    validate_ui_panel(specification)
+                    if kind == "ui-panel"
+                    else validate_ui_action(specification)
+                )
+            self.extensions.register(
+                str(item["id"]), kind, plugin.manifest.plugin_id, specification
+            )
             if kind == "language":
                 relative = Path(str(specification.get("file", "")))
                 target = (plugin.path / relative).resolve()
-                if not relative.parts or ".." in relative.parts or not target.is_relative_to(plugin.path.resolve()):
+                if (
+                    not relative.parts
+                    or ".." in relative.parts
+                    or not target.is_relative_to(plugin.path.resolve())
+                ):
                     raise ValueError("ruta de catálogo de idioma no segura")
                 from app.i18n import get_language_manager
+
                 language_manager = get_language_manager()
                 catalog = language_manager.add_provider(plugin.manifest.plugin_id, target)
                 configured = str(load_config().get("language", "en"))
@@ -330,11 +413,17 @@ class PluginManager:
             elif kind == "icon":
                 relative = Path(str(specification.get("file", "")))
                 target = (plugin.path / relative).resolve()
-                if not relative.parts or ".." in relative.parts or not target.is_relative_to(plugin.path.resolve()):
+                if (
+                    not relative.parts
+                    or ".." in relative.parts
+                    or not target.is_relative_to(plugin.path.resolve())
+                ):
                     raise ValueError("ruta de icono no segura")
                 from app.assets.icons import get_icon_manager
+
                 get_icon_manager().add_provider(
-                    plugin.manifest.plugin_id, target,
+                    plugin.manifest.plugin_id,
+                    target,
                     icon_id=str(specification.get("iconId") or item["id"]),
                     name=str(specification.get("name") or item["id"]),
                     category=str(specification.get("category") or "general"),
@@ -361,25 +450,38 @@ class PluginManager:
                 is_optional = kind.endswith("?")
                 annotation = _schema_type(kind.rstrip("?"))
                 target = optional if is_optional else required
-                target.append((name, annotation, field(default=None)) if is_optional else (name, annotation))
+                target.append(
+                    (name, annotation, field(default=None)) if is_optional else (name, annotation)
+                )
             class_name = class_names.get(event_id) or event_id.replace(".", "_")
             contract = make_dataclass(
-                class_name, [*required, *optional], bases=(EventContract,),
-                frozen=True, slots=True,
+                class_name,
+                [*required, *optional],
+                bases=(EventContract,),
+                frozen=True,
+                slots=True,
             )
             self.event_registry.register(
-                event_id, contract, owner=plugin.manifest.plugin_id,
+                event_id,
+                contract,
+                owner=plugin.manifest.plugin_id,
                 version=int(spec.get("version", 1)),
                 cancelable=bool(spec.get("cancelable", False)),
             )
 
     def _check_dependencies(self, plugin: InstalledPlugin) -> None:
-        missing = [dep.plugin_id for dep in plugin.manifest.dependencies if dep.plugin_id not in self.plugins or self.plugins[dep.plugin_id].state != PluginState.ENABLED]
+        missing = [
+            dep.plugin_id
+            for dep in plugin.manifest.dependencies
+            if dep.plugin_id not in self.plugins
+            or self.plugins[dep.plugin_id].state != PluginState.ENABLED
+        ]
         if missing:
             raise ValueError(f"dependencias no activas: {', '.join(missing)}")
 
     def _check_compatibility(self, plugin: InstalledPlugin) -> None:
-        # Comparación conservadora de versiones numéricas base; prereleases comparten base.
+        # Se comparan los componentes numéricos de la versión; las versiones
+        # preliminares comparten la misma base que su versión estable.
         current = _version_tuple(__version__)
         if current < _version_tuple(plugin.manifest.minimum_lanctl):
             plugin.state = PluginState.INCOMPATIBLE
@@ -400,34 +502,49 @@ class PluginManager:
 
     def _save_registry(self) -> None:
         self.registry_path.parent.mkdir(parents=True, exist_ok=True)
-        data = {"schemaVersion": 1, "plugins": {p.manifest.plugin_id: {
-            "state": p.state.value, "granted": sorted(p.granted), "trusted": p.trusted,
-            "error": p.error, "version": p.manifest.version,
-        } for p in self.list()}}
-        temporary = self.registry_path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        temporary.replace(self.registry_path)
+        data = {
+            "schemaVersion": 1,
+            "plugins": {
+                p.manifest.plugin_id: {
+                    "state": p.state.value,
+                    "granted": sorted(p.granted),
+                    "trusted": p.trusted,
+                    "error": p.error,
+                    "version": p.manifest.version,
+                }
+                for p in self.list()
+            },
+        }
+        with locked_file(self.registry_path):
+            atomic_write_json(self.registry_path, data)
 
 
 def _version_tuple(value: str) -> tuple[int, int, int]:
     numbers = []
     for part in value.split("-", 1)[0].split(".")[:3]:
-        try: numbers.append(int(part))
-        except ValueError: numbers.append(0)
-    return tuple((numbers + [0, 0, 0])[:3])
+        try:
+            numbers.append(int(part))
+        except ValueError:
+            numbers.append(0)
+    return tuple([*numbers, 0, 0, 0][:3])
 
 
 def _matches_maximum(current: tuple[int, int, int], maximum: str) -> bool:
     if maximum.endswith(".x"):
         prefix = tuple(int(v) for v in maximum[:-2].split(".") if v)
-        return current[:len(prefix)] == prefix
+        return current[: len(prefix)] == prefix
     return current <= _version_tuple(maximum)
 
 
 def _schema_type(value: str):
     return {
-        "string": str, "integer": int, "number": float, "boolean": bool,
-        "datetime": datetime, "object": dict, "array": list,
+        "string": str,
+        "integer": int,
+        "number": float,
+        "boolean": bool,
+        "datetime": datetime,
+        "object": dict,
+        "array": list,
     }.get(value.casefold(), object)
 
 

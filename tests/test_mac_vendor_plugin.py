@@ -21,9 +21,7 @@ class MacVendorPluginTests(unittest.TestCase):
             )
 
     def test_plugin_resolves_bundled_and_custom_longest_prefixes(self):
-        source = Path(__file__).resolve().parents[1] / (
-            "plugins-src/lanctl.analysis.mac-vendor"
-        )
+        source = Path(__file__).resolve().parents[1] / ("plugins-src/lanctl.analysis.mac-vendor")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             package = root / "mac-vendor.lcp"
@@ -38,8 +36,11 @@ class MacVendorPluginTests(unittest.TestCase):
             plugin = manager.enable(
                 "lanctl.analysis.mac-vendor",
                 grant={
-                    "command.register", "device-adapter.register",
-                    "functions.register", "config.write", "network.http",
+                    "command.register",
+                    "device-adapter.register",
+                    "functions.register",
+                    "config.write",
+                    "network.http",
                 },
                 trusted=True,
             )
@@ -60,9 +61,7 @@ class MacVendorPluginTests(unittest.TestCase):
             self.assertEqual(plugin.state.value, "ENABLED")
 
     def test_invalid_prefix_is_rejected_without_changing_database(self):
-        source = Path(__file__).resolve().parents[1] / (
-            "plugins-src/lanctl.analysis.mac-vendor"
-        )
+        source = Path(__file__).resolve().parents[1] / ("plugins-src/lanctl.analysis.mac-vendor")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             package = root / "mac-vendor.lcp"
@@ -72,15 +71,16 @@ class MacVendorPluginTests(unittest.TestCase):
             manager.enable(
                 "lanctl.analysis.mac-vendor",
                 grant={
-                    "command.register", "device-adapter.register",
-                    "functions.register", "config.write", "network.http",
+                    "command.register",
+                    "device-adapter.register",
+                    "functions.register",
+                    "config.write",
+                    "network.http",
                 },
                 trusted=True,
             )
             with self.assertRaises(ValueError):
-                manager.functions.call(
-                    "MacVendor.Database.Command", ["add", "0011", "Inválido"]
-                )
+                manager.functions.call("MacVendor.Database.Command", ["add", "0011", "Inválido"])
 
 
 if __name__ == "__main__":

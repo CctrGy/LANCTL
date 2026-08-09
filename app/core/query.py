@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import re
 
-
 QUERY_FIELDS = {
-    "ip": "ip", "mac": "mac", "alias": "alias", "name": "name",
-    "cnf": "cnf", "group": "groups", "vendor": "manufacturer",
-    "manufacturer": "manufacturer", "protocol": "protocols",
+    "ip": "ip",
+    "mac": "mac",
+    "alias": "alias",
+    "name": "name",
+    "cnf": "cnf",
+    "group": "groups",
+    "vendor": "manufacturer",
+    "manufacturer": "manufacturer",
+    "protocol": "protocols",
     "description": "description",
 }
 
@@ -21,7 +26,11 @@ def _values(device, field: str) -> list[str]:
 def matches_query(device, active: bool, expression: str | None) -> bool:
     if not expression:
         return True
-    terms = [term.strip() for term in re.split(r"\s+and\s+", expression, flags=re.I) if term.strip()]
+    terms = [
+        term.strip()
+        for term in re.split(r"\s+and\s+", expression, flags=re.IGNORECASE)
+        if term.strip()
+    ]
     if not terms:
         raise ValueError("la consulta --where está vacía")
     for term in terms:
@@ -41,10 +50,9 @@ def matches_query(device, active: bool, expression: str | None) -> bool:
         field = field.casefold()
         if field not in QUERY_FIELDS:
             raise ValueError(
-                f"campo --where no válido: {field}. Disponibles: "
-                + ", ".join(QUERY_FIELDS)
+                f"campo --where no válido: {field}. Disponibles: " + ", ".join(QUERY_FIELDS)
             )
-        expected = expected.strip().strip('"\'').casefold()
+        expected = expected.strip().strip("\"'").casefold()
         values = [value.casefold() for value in _values(device, field)]
         equal = expected in values
         contains = any(expected in value for value in values)

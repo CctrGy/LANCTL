@@ -196,6 +196,8 @@ permite revisar el destino antes de iniciar una aplicación externa.
 lanctl --gui
 lanctl --cli
 lanctl -tui
+lanctl --project "C:\Users\Victor\Desktop\Casa.vlf"
+lanctl --tui --project "C:\Users\Victor\Desktop\Casa.vlf"
 ```
 
 La GUI ofrece inventario actualizable, edición de elementos, proyectos,
@@ -209,13 +211,19 @@ el desplazamiento vertical. La CLI persistente permite seleccionar un elemento
 y reutilizarlo en comandos posteriores. La TUI ofrece inventario, detalle y
 acciones contextuales a pantalla completa.
 
+`--project` (también `-project`) activa el VLF antes de construir la interfaz.
+Dentro del TUI, `project` o `project status` muestran el proyecto seleccionado;
+`project use "RUTA.vlf"` cambia de proyecto y sustituye inmediatamente el
+inventario visible. `help project` muestra el resto de operaciones disponibles.
+
 Todos los comandos admiten `-h`, `--help` y `/?`.
 
 ## Configuración persistente
 
 Las rutas lógicas heredadas `data/lc/...` se resuelven mediante una capa central:
-`C:\ProgramData\LANCTL` en Windows instalado, `/var/lib/lanctl` en Linux y
-`data/lanctl` junto al EXE portable. Nunca se escriben datos junto a una
+`C:\ProgramData\LANCTL` en Windows instalado, el directorio XDG del usuario en
+Linux y `data/lanctl` junto al ejecutable portable. systemd usa explícitamente
+`/var/lib/lanctl` y `/etc/lanctl/access`. Nunca se escriben datos junto a una
 instalación de Program Files. Entre las opciones más relevantes se encuentran:
 
 ```powershell
@@ -458,6 +466,15 @@ RackFimeware2/ Firmware experimental del rack
 
 Este repositorio todavía no incluye un archivo de licencia. Mientras no se
 publique una licencia explícita, se mantienen todos los derechos sobre el código.
+# Radmin Viewer
+
+La integración abre Radmin Viewer mediante sus switches documentados y admite
+los modos `control`, `view`, `file`, `shutdown`, `chat`, `voice`, `message` y
+`telnet`, además de servidor intermedio, pantalla completa, profundidad de color,
+frecuencia de actualización y phonebooks `.rpb`. Radmin no ofrece switches
+documentados para usuario/contraseña: LANCTL no coloca secretos en argumentos de
+proceso; la autenticación automática debe gestionarse en el phonebook de Radmin.
+
 # Wake-on-LAN (`wol`)
 
 El complemento trusted `lanctl.network.wol` emite únicamente paquetes mágicos
@@ -480,15 +497,21 @@ lanctl wol sequence startup.office run
 Las condiciones repetidas con `-if`/`--if` usan AND. `--if-any` crea el grupo
 OR y `--if-not` niega condiciones. Una condición falsa devuelve `skipped`.
 Wake-on-LAN solo envía la señal: `sent` no garantiza que el equipo arranque.
-Las acciones `shutdown`, `restart`, `sleep` y `hibernate` devuelven
-`WOL.POWER.UNSUPPORTED` hasta que el dispositivo tenga un transporte remoto
-explícito y autorizado; nunca se ejecutan órdenes libres.
+Las acciones `shutdown`, `restart`, `sleep` y `hibernate` requieren un transporte
+SSH explícito, credencial cifrada y host key fijada. Se configura con
+`wol NAME configure --power-transport ssh --power-platform windows|linux` y se
+confirma con `--yes`; `--dry-run` muestra el plan sin ejecutarlo. Las plantillas
+administradas se registran con `--power-command ACCIÓN=COMANDO`.
 
 La salida `--json` contiene `runId`, `taskId`, `operationId`, timestamps,
 duración, estado y errores estructurados. Las secuencias se guardan mediante
 reemplazo transaccional en `data/lc/wol-sequences.json` y rechazan ciclos.
-# Windows SMB Discovery
+# SMB Discovery
 
 LANCTL incluye el paquete instalable `bundled/lanctl.discovery.windows-smb.lcp`. Instálalo y habilítalo con confianza explícita para aportar la vista **Recursos compartidos**. La CLI admite `smb scan`, `smb NAS`, `smb NAS shares`, `smb NAS open Public --dry-run`, `smb printers`, `smb NAS printers`, `smb workgroups`, `smb NAS connect|disconnect|status` y `smb NAS printer HP open|queue|connect --yes`.
 
-La detección usa TCP/445 y APIs modernas de Windows; no activa SMB1. Las observaciones viven en almacenamiento transaccional del plugin y las contraseñas permanecen cifradas mediante DPAPI en `CredentialStore`.
+La detección usa TCP/445 y APIs modernas de Windows; en Linux/Raspberry Pi usa
+`smbclient` con un archivo de autenticación temporal de permisos restringidos.
+No activa SMB1 ni expone contraseñas en la línea de procesos. Las observaciones
+viven en almacenamiento transaccional y las credenciales permanecen en
+`CredentialStore`.

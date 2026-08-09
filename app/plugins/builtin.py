@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from app.core.file_transaction import atomic_write_json
 from app.core.resources import bundled_path
-from app.plugins.package import install_package, inspect_package
-
+from app.plugins.package import inspect_package, install_package
 
 EXAMPLE_PLUGIN_ID = "lanctl.example.network-summary"
 
@@ -26,16 +26,18 @@ EXAMPLE_MANIFEST = {
 }
 
 EXAMPLE_API_MAP = {
-    "extensions": [{
-        "id": "lanctl.example.network-summary.command",
-        "type": "command",
-        "specification": {
-            "name": "network-summary",
-            "aliases": ["netsummary"],
-            "help": "Resume los dispositivos almacenados sin escanear la red.",
-            "action": "inventory.summary",
-        },
-    }]
+    "extensions": [
+        {
+            "id": "lanctl.example.network-summary.command",
+            "type": "command",
+            "specification": {
+                "name": "network-summary",
+                "aliases": ["netsummary"],
+                "help": "Resume los dispositivos almacenados sin escanear la red.",
+                "action": "inventory.summary",
+            },
+        }
+    ]
 }
 
 PLUGIN_README = r"""# Desarrollo de complementos LANCTL (LCP 1.0)
@@ -193,8 +195,8 @@ def bootstrap_builtin_plugins(root: Path) -> None:
     info = plugin / "plugin.info"
     api_map = plugin / "api/api.map"
     api_map.parent.mkdir(parents=True, exist_ok=True)
-    info.write_text(json.dumps(EXAMPLE_MANIFEST, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    api_map.write_text(json.dumps(EXAMPLE_API_MAP, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    atomic_write_json(info, EXAMPLE_MANIFEST)
+    atomic_write_json(api_map, EXAMPLE_API_MAP)
     _install_builtin_theme(root)
     _install_builtin_package(root, "bundled/lanctl.discovery.windows-smb.lcp")
 
@@ -217,10 +219,17 @@ def _install_builtin_theme(root: Path) -> None:
 
 def _install_builtin_package(root: Path, relative: str) -> None:
     package = bundled_path(relative)
-    if not package.is_file(): return
-    incoming = inspect_package(package); installed_info = root / incoming.plugin_id / "plugin.info"
+    if not package.is_file():
+        return
+    incoming = inspect_package(package)
+    installed_info = root / incoming.plugin_id / "plugin.info"
     if installed_info.is_file():
         try:
-            if json.loads(installed_info.read_text(encoding="utf-8")).get("version") == incoming.version: return
-        except (OSError, json.JSONDecodeError): pass
+            if (
+                json.loads(installed_info.read_text(encoding="utf-8")).get("version")
+                == incoming.version
+            ):
+                return
+        except (OSError, json.JSONDecodeError):
+            pass
     install_package(package, root)

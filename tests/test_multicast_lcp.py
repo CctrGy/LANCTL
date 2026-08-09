@@ -8,9 +8,7 @@ from app.plugins.package import build_package, verify_package
 
 class MulticastLcpTests(unittest.TestCase):
     def test_package_activates_and_registers_external_scanner(self):
-        source = Path(__file__).resolve().parents[1] / (
-            "plugins-src/lanctl.discovery.mdns-ssdp"
-        )
+        source = Path(__file__).resolve().parents[1] / ("plugins-src/lanctl.discovery.mdns-ssdp")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             package = root / "multicast.lcp"
@@ -34,9 +32,7 @@ class MulticastLcpTests(unittest.TestCase):
             extensions = manager.extensions.list("scanner")
             self.assertEqual(plugin.state.value, "ENABLED")
             self.assertEqual(extensions[0].specification["methods"], ["mdns", "ssdp"])
-            result = manager.functions.call(
-                "MdnsSsdp.Network.Discovery.Scan", [], 0.01
-            )
+            result = manager.functions.call("MdnsSsdp.Network.Discovery.Scan", [], 0.01)
             self.assertTrue(result.success)
             self.assertEqual(result.data, {})
 

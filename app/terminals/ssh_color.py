@@ -4,7 +4,6 @@ import re
 
 from colorama import Fore, Style
 
-
 RESET = Style.RESET_ALL
 ANSI_PATTERN = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 TOKEN_PATTERN = re.compile(
@@ -27,7 +26,7 @@ def colorize_ssh_output(value: str, theme: str = "generic") -> str:
 
 def _colorize_line(line: str, theme: str) -> str:
     body = line.rstrip("\r\n")
-    ending = line[len(body):]
+    ending = line[len(body) :]
     lowered = body.strip().casefold()
     if not body:
         return line
@@ -49,7 +48,7 @@ def _colorize_line(line: str, theme: str) -> str:
     output: list[str] = []
     position = 0
     for match in TOKEN_PATTERN.finditer(body):
-        output.append(body[position:match.start()])
+        output.append(body[position : match.start()])
         output.append(f"{Style.BRIGHT}{colors[match.lastgroup]}{match.group(0)}{RESET}")
         position = match.end()
     output.append(body[position:])

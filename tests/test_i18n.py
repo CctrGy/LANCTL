@@ -1,5 +1,4 @@
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -22,11 +21,16 @@ class LanguageTests(unittest.TestCase):
             manager = LanguageManager(root)
             manager.initialize("en")
             partial = root / "partial.lang"
-            partial.write_text(json.dumps({
-                "schemaVersion": 1,
-                "meta": {"code": "xx", "name": "Test", "nativeName": "Test"},
-                "strings": {"LANCTL.COMMON.STATUS.ERROR": "ERR"},
-            }), encoding="utf-8")
+            partial.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "meta": {"code": "xx", "name": "Test", "nativeName": "Test"},
+                        "strings": {"LANCTL.COMMON.STATUS.ERROR": "ERR"},
+                    }
+                ),
+                encoding="utf-8",
+            )
             manager.discover()
             manager.select("xx")
             self.assertEqual(manager.translate("LANCTL.COMMON.STATUS.ERROR"), "ERR")
@@ -38,11 +42,16 @@ class LanguageTests(unittest.TestCase):
     def test_placeholder_mismatch_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "broken.lang"
-            path.write_text(json.dumps({
-                "schemaVersion": 1,
-                "meta": {"code": "xx", "name": "Test"},
-                "strings": {"LANCTL.LANGUAGE.ERROR.NOT_FOUND": "Missing"},
-            }), encoding="utf-8")
+            path.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "meta": {"code": "xx", "name": "Test"},
+                        "strings": {"LANCTL.LANGUAGE.ERROR.NOT_FOUND": "Missing"},
+                    }
+                ),
+                encoding="utf-8",
+            )
             with self.assertRaises(ValueError):
                 LanguageManager(temporary).load_file(path)
 

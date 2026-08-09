@@ -11,9 +11,10 @@ from app.core.config import (
     save_config,
 )
 from app.core.console import ok
+from app.core.file_transaction import transactional_file
 from app.core.output import normalize_columns
-from app.services.scan_profiles import SCAN_PROFILES
 from app.services.lan_scanner import SCAN_ORDERS
+from app.services.scan_profiles import SCAN_PROFILES
 
 
 def register_settings_command(commands: argparse._SubParsersAction) -> None:
@@ -40,9 +41,7 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         "--dhcp-range",
         "-dhcp",
         metavar="INICIO-FIN",
-        help=(
-            "Rango DHCP manual. Usa 'off' para dejarlo sin configurar."
-        ),
+        help=("Rango DHCP manual. Usa 'off' para dejarlo sin configurar."),
     )
     command.add_argument(
         "-credentials",
@@ -61,14 +60,18 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         choices=tuple(SCAN_PROFILES),
         help="Perfil predeterminado de list: fast, normal o accurate.",
     )
-    command.add_argument("--progress", choices=("on", "off"), help="Activa o desactiva el progreso interactivo.")
+    command.add_argument(
+        "--progress", choices=("on", "off"), help="Activa o desactiva el progreso interactivo."
+    )
     command.add_argument(
         "--service-identification",
         choices=("on", "off"),
         help="Activa o desactiva el reconocimiento de servicios en scan.",
     )
     command.add_argument("--workers", type=int, help="Concurrencia predeterminada de los escaneos.")
-    command.add_argument("--timeout", type=float, help="Timeout predeterminado por operación de red.")
+    command.add_argument(
+        "--timeout", type=float, help="Timeout predeterminado por operación de red."
+    )
     command.add_argument(
         "--scan-order",
         choices=SCAN_ORDERS,
@@ -99,6 +102,7 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
     command.set_defaults(handler=run_settings)
 
 
+@transactional_file(CONFIG_PATH)
 def run_settings(args: argparse.Namespace) -> int:
     config = load_config()
     if (

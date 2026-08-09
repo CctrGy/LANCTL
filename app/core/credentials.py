@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import base64
 import ctypes
-from ctypes import wintypes
 import hashlib
 import json
 import os
-from pathlib import Path
-from typing import Callable
+from collections.abc import Callable
+from ctypes import wintypes
+
+from app.core.file_transaction import atomic_write_bytes, transactional_method
 from app.core.paths import application_path
 
 
@@ -20,6 +21,36 @@ def _blob(value: bytes) -> tuple[_DataBlob, object]:
     return _DataBlob(len(value), ctypes.cast(buffer, ctypes.POINTER(ctypes.c_byte))), buffer
 
 
+def _dpapi():
+    """Carga DPAPI con firmas de puntero correctas para Windows x64."""
+    crypt32 = ctypes.WinDLL("Crypt32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("Kernel32", use_last_error=True)
+    blob_pointer = ctypes.POINTER(_DataBlob)
+    crypt32.CryptProtectData.argtypes = [
+        blob_pointer,
+        wintypes.LPCWSTR,
+        blob_pointer,
+        wintypes.LPVOID,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        blob_pointer,
+    ]
+    crypt32.CryptProtectData.restype = wintypes.BOOL
+    crypt32.CryptUnprotectData.argtypes = [
+        blob_pointer,
+        ctypes.POINTER(wintypes.LPWSTR),
+        blob_pointer,
+        wintypes.LPVOID,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        blob_pointer,
+    ]
+    crypt32.CryptUnprotectData.restype = wintypes.BOOL
+    kernel32.LocalFree.argtypes = [wintypes.HLOCAL]
+    kernel32.LocalFree.restype = wintypes.HLOCAL
+    return crypt32, kernel32
+
+
 def protect_secret(value: bytes) -> bytes:
     """Cifra con DPAPI; el secreto solo puede abrirlo este usuario de Windows."""
     if os.name != "nt":
@@ -27,16 +58,21 @@ def protect_secret(value: bytes) -> bytes:
     source, source_buffer = _blob(value)
     entropy, entropy_buffer = _blob(b"ALS credentials v1")
     output = _DataBlob()
-    crypt32 = ctypes.windll.crypt32
+    crypt32, kernel32 = _dpapi()
     if not crypt32.CryptProtectData(
-        ctypes.byref(source), "ALS", ctypes.byref(entropy), None, None, 1,
+        ctypes.byref(source),
+        "ALS",
+        ctypes.byref(entropy),
+        None,
+        None,
+        1,
         ctypes.byref(output),
     ):
-        raise ctypes.WinError()
+        raise ctypes.WinError(ctypes.get_last_error())
     try:
         return ctypes.string_at(output.pbData, output.cbData)
     finally:
-        ctypes.windll.kernel32.LocalFree(output.pbData)
+        kernel32.LocalFree(ctypes.cast(output.pbData, wintypes.HLOCAL))
         _ = (source_buffer, entropy_buffer)
 
 
@@ -46,16 +82,21 @@ def unprotect_secret(value: bytes) -> bytes:
     source, source_buffer = _blob(value)
     entropy, entropy_buffer = _blob(b"ALS credentials v1")
     output = _DataBlob()
-    crypt32 = ctypes.windll.crypt32
+    crypt32, kernel32 = _dpapi()
     if not crypt32.CryptUnprotectData(
-        ctypes.byref(source), None, ctypes.byref(entropy), None, None, 1,
+        ctypes.byref(source),
+        None,
+        ctypes.byref(entropy),
+        None,
+        None,
+        1,
         ctypes.byref(output),
     ):
-        raise ctypes.WinError()
+        raise ctypes.WinError(ctypes.get_last_error())
     try:
         return ctypes.string_at(output.pbData, output.cbData)
     finally:
-        ctypes.windll.kernel32.LocalFree(output.pbData)
+        kernel32.LocalFree(ctypes.cast(output.pbData, wintypes.HLOCAL))
         _ = (source_buffer, entropy_buffer)
 
 
@@ -87,17 +128,14 @@ class CredentialStore:
             raise ValueError(f"formato de credenciales no compatible: {self.path}")
         return value
 
+    @transactional_method
     def _save(self, value: dict) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
         clear = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
         encoded = base64.b64encode(self._protect(clear))
-        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
-        temporary.write_bytes(encoded + b"\n")
-        temporary.replace(self.path)
+        atomic_write_bytes(self.path, encoded + b"\n")
 
-    def set(
-        self, device_id: str, protocol: str, username: str, password: str
-    ) -> str:
+    @transactional_method
+    def set(self, device_id: str, protocol: str, username: str, password: str) -> str:
         credential_id = self.identifier(device_id, protocol)
         value = self._load()
         value["entries"][credential_id] = {
@@ -115,6 +153,7 @@ class CredentialStore:
             raise ValueError(f"credencial no encontrada: {credential_id}")
         return dict(entry)
 
+    @transactional_method
     def delete(self, credential_id: str) -> bool:
         value = self._load()
         existed = value["entries"].pop(credential_id, None) is not None

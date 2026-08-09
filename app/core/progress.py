@@ -32,8 +32,7 @@ class ScanProgress:
             self.found_total = max(0, found_total)
             self._found_keys.clear()
             self._known_identities = {
-                key.casefold(): identity
-                for key, identity in (known_identities or {}).items()
+                key.casefold(): identity for key, identity in (known_identities or {}).items()
             }
             self._draw()
 

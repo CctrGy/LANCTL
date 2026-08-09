@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, fields, is_dataclass
 from datetime import datetime
-from typing import Any, Mapping, TypeVar
+from typing import Any, TypeVar
 
 
 @dataclass(frozen=True, slots=True)

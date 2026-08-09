@@ -11,8 +11,12 @@ def add_edit_arguments(command: argparse.ArgumentParser) -> None:
     command.add_argument("selector", help="MAC, IP o alias del dispositivo.")
     actions = command.add_mutually_exclusive_group(required=True)
     actions.add_argument("value", nargs="?", help="Nuevo valor.")
-    actions.add_argument("-def", dest="use_default", action="store_true", help="Restaura el valor predeterminado.")
-    actions.add_argument("-del", dest="delete", action="store_true", help="Deja el valor en blanco.")
+    actions.add_argument(
+        "-def", dest="use_default", action="store_true", help="Restaura el valor predeterminado."
+    )
+    actions.add_argument(
+        "-del", dest="delete", action="store_true", help="Deja el valor en blanco."
+    )
     command.add_argument(
         "--database",
         default=load_config()["database"],

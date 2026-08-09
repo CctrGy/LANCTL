@@ -3,9 +3,9 @@ import json,sys
 from datetime import datetime,timezone
 from pathlib import Path
 
-# Al ejecutarse como ``python scripts/release-metadata.py``, Python sitúa
-# scripts/ (no la raíz del checkout) en sys.path. Añadimos explícitamente la
-# raíz para que el script funcione igual en GitHub Actions y localmente.
+# Al ejecutarse como `python scripts/release-metadata.py`, Python sitúa
+# `scripts/` (no la raíz del repositorio) en `sys.path`. Se añade explícitamente
+# la raíz para que el script funcione igual en GitHub Actions y en local.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.distribution.release import validate_version

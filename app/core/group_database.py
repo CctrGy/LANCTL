@@ -1,11 +1,21 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from functools import wraps
 
 from app.core.database import DeviceDatabase
+from app.core.file_transaction import atomic_write_json, locked_files
 from app.core.paths import application_path
 from app.models import Device, Group
+
+
+def _transaction(method):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with locked_files((self.path, self.devices.path)):
+            return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class GroupDatabase:
@@ -25,18 +35,7 @@ class GroupDatabase:
         return [Group.from_dict(item) for item in value]
 
     def _write(self, groups: list[Group]) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
-        temporary.write_text(
-            json.dumps(
-                [group.to_dict() for group in groups],
-                indent=2,
-                ensure_ascii=False,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-        temporary.replace(self.path)
+        atomic_write_json(self.path, [group.to_dict() for group in groups])
 
     @staticmethod
     def _find(groups: list[Group], name: str) -> Group:
@@ -51,6 +50,7 @@ class GroupDatabase:
         if not group.editable:
             raise ValueError(f"el grupo {group.name} no es editable")
 
+    @_transaction
     def ensure_basic(self, devices: list[Device]) -> list[Group]:
         groups = self.load()
         basic = next((group for group in groups if group.name == "BASIC"), None)
@@ -71,6 +71,7 @@ class GroupDatabase:
         self._write(groups)
         return groups
 
+    @_transaction
     def create(self, name: str) -> Group:
         normalized = name.upper()
         if not normalized:
@@ -83,6 +84,7 @@ class GroupDatabase:
         self._write(groups)
         return group
 
+    @_transaction
     def delete(self, name: str) -> None:
         normalized = name.upper()
         groups = self.load()
@@ -95,6 +97,7 @@ class GroupDatabase:
         self.devices.save_devices(devices)
         self._write(groups)
 
+    @_transaction
     def rename(self, name: str, new_name: str) -> Group:
         normalized = name.upper()
         replacement = new_name.upper()
@@ -107,13 +110,13 @@ class GroupDatabase:
         devices = self.devices.load()
         for device in devices:
             device.groups = [
-                replacement if group == normalized else group
-                for group in device.groups
+                replacement if group == normalized else group for group in device.groups
             ]
         self.devices.save_devices(devices)
         self._write(groups)
         return target
 
+    @_transaction
     def set_description(self, name: str, description: str) -> Group:
         if len(description) > 42:
             raise ValueError("la descripción no puede superar 42 caracteres")
@@ -124,6 +127,7 @@ class GroupDatabase:
         self._write(groups)
         return target
 
+    @_transaction
     def add(self, group_name: str, selector: str) -> tuple[Group, Device]:
         groups = self.load()
         group = self._find(groups, group_name)
@@ -141,6 +145,7 @@ class GroupDatabase:
         self._write(groups)
         return group, target
 
+    @_transaction
     def remove(self, group_name: str, selector: str) -> tuple[Group, Device]:
         groups = self.load()
         group = self._find(groups, group_name)
@@ -156,6 +161,7 @@ class GroupDatabase:
         self._write(groups)
         return group, target
 
+    @_transaction
     def delete_device(self, selector: str) -> Device:
         """Elimina un elemento y todas sus referencias de grupo por MAC."""
         devices = self.devices.load()

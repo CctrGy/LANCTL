@@ -14,7 +14,6 @@ from app.core.logger import write_log
 from app.services.element_scanner import observed_arp_mac, ping_details
 from app.services.lan_scanner import active_arp_mac
 
-
 PING_METHODS = ("auto", "ping", "arp")
 
 
@@ -32,23 +31,35 @@ def register_ping_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument("selector", help="IP, MAC, alias o nombre registrado.")
     method = command.add_mutually_exclusive_group()
     method.add_argument(
-        "--method", choices=PING_METHODS, default="auto",
+        "--method",
+        choices=PING_METHODS,
+        default="auto",
         help="Buscador utilizado: auto, ping o arp (por defecto: auto).",
     )
     method.add_argument(
-        "--ping", dest="method", action="store_const", const="ping",
+        "--ping",
+        dest="method",
+        action="store_const",
+        const="ping",
         help="Usa únicamente una solicitud ICMP.",
     )
     method.add_argument(
-        "--arp", dest="method", action="store_const", const="arp",
+        "--arp",
+        dest="method",
+        action="store_const",
+        const="arp",
         help="Usa únicamente una solicitud ARP activa.",
     )
     command.add_argument(
-        "--timeout", type=float, default=config["timeout"],
+        "--timeout",
+        type=float,
+        default=config["timeout"],
         help="Tiempo máximo de cada comprobación, en segundos.",
     )
     command.add_argument("--json", action="store_true", help="Devuelve el diagnóstico como JSON.")
-    command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
+    command.add_argument(
+        "--database", default=config["database"], help="Archivo JSON de elementos."
+    )
     command.set_defaults(handler=run_ping)
 
 
@@ -91,15 +102,14 @@ def run_ping(args: argparse.Namespace) -> int:
     if args.method in ("auto", "arp"):
         arp_mac = active_arp_mac(ip, args.timeout)
     elif ping_ok:
-        # PING suele poblar la caché; se consulta sin generar otra sonda.
+        # Una sonda ICMP suele poblar la caché; se consulta sin generar otra.
         arp_mac = observed_arp_mac(ip)
 
     arp_ok = bool(arp_mac) if args.method in ("auto", "arp") else False
     detected = ping_ok or arp_ok
     expected_mac = device.mac if device else ""
     identity_match = (
-        None if not expected_mac or not arp_mac
-        else expected_mac.casefold() == arp_mac.casefold()
+        None if not expected_mac or not arp_mac else expected_mac.casefold() == arp_mac.casefold()
     )
     methods = [name for name, found in (("PING", ping_ok), ("ARP", arp_ok)) if found]
     payload = {
@@ -122,7 +132,11 @@ def run_ping(args: argparse.Namespace) -> int:
     if args.json:
         print(json.dumps(payload, indent=2, ensure_ascii=False))
     else:
-        state = _paint("DETECTADO", Fore.LIGHTGREEN_EX) if detected else _paint("NO DETECTADO", Fore.LIGHTRED_EX)
+        state = (
+            _paint("DETECTADO", Fore.LIGHTGREEN_EX)
+            if detected
+            else _paint("NO DETECTADO", Fore.LIGHTRED_EX)
+        )
         print(f"{_paint('CONEXIÓN', Fore.CYAN)} {args.selector}")
         print(f"  Estado       : {state}")
         print(f"  IP           : {_paint(ip, Fore.LIGHTBLUE_EX)}")

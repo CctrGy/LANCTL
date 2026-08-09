@@ -6,30 +6,34 @@ import unittest
 from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
-
-from app import __version__
-from app.cli import build_parser
 from unittest.mock import patch
 
 from colorama import Fore, Style
 
-from app.commands.group import _paint
+from app import __version__
+from app.cli import build_parser
 from app.commands.download_settings import lan_settings
+from app.commands.group import _paint
 from app.commands.list import active_flags, filter_rows, ip_in_range
-from app.core.database import DeviceDatabase
+from app.commands.terminal import choose_terminal
 from app.core.config import normalize_dhcp_range
 from app.core.credentials import CredentialStore
+from app.core.database import DeviceDatabase
 from app.core.differences import compare_scan
 from app.core.group_database import GroupDatabase
-from app.core.logger import write_database_log, write_log
 from app.core.log_cleanup import cleanup_old_logs
+from app.core.logger import write_database_log, write_log
+from app.core.output import STRIKETHROUGH, normalize_columns, render_records
 from app.core.tr064 import Tr064Client
 from app.models import Device, normalize_cnf, normalize_mac
-from app.core.output import STRIKETHROUGH, normalize_columns, render_records
+from app.protocols.ssh import (
+    SSH_PROFILES,
+    SshProfile,
+    disabled_algorithms,
+    run_show_command,
+)
 from app.services.lan_scanner import LanScanner, resolve_network
 from app.services.manufacturer import detect_manufacturer
-from app.protocols.ssh import SSH_PROFILES, SshProfile, run_show_command
-from app.commands.terminal import choose_terminal
 from app.terminals.tr064 import parse_call
 
 
@@ -49,11 +53,15 @@ class OutputTests(unittest.TestCase):
 
     def test_table_shrinks_to_terminal_width(self):
         rendered = render_records(
-            [Device(
-                ip="192.168.100.250", mac="AA:BB:CC:DD:EE:FF",
-                alias="ALIAS-MUY-LARGO", name="Nombre especialmente largo",
-                description="Descripcion extensa de elemento",
-            )],
+            [
+                Device(
+                    ip="192.168.100.250",
+                    mac="AA:BB:CC:DD:EE:FF",
+                    alias="ALIAS-MUY-LARGO",
+                    name="Nombre especialmente largo",
+                    description="Descripcion extensa de elemento",
+                )
+            ],
             "table",
             max_width=80,
         )
@@ -218,9 +226,7 @@ class Tr064Tests(unittest.TestCase):
             49000,
         )
         self.assertEqual(result["range"], "192.168.1.0/24")
-        self.assertEqual(
-            result["dhcpRange"], "192.168.1.20-192.168.1.200"
-        )
+        self.assertEqual(result["dhcpRange"], "192.168.1.20-192.168.1.200")
         self.assertTrue(result["dhcpEnabled"])
         self.assertEqual(result["dhcpLeaseTime"], 86400)
         self.assertEqual(result["dnsServers"], ["192.168.1.1", "1.1.1.1"])
@@ -280,21 +286,13 @@ class Tr064Tests(unittest.TestCase):
     def test_device_protocol_and_credential_reference_survive_scan(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
-            database.upsert(
-                [{"IP": "192.168.1.1", "MAC": "10:20:30:40:50:60"}]
-            )
+            database.upsert([{"IP": "192.168.1.1", "MAC": "10:20:30:40:50:60"}])
             device = database.resolve("192.168.1.1")
-            database.bind_credential(
-                "192.168.1.1", "TR_064", "cred_example"
-            )
-            rescanned = database.upsert(
-                [{"IP": "192.168.1.2", "MAC": "10:20:30:40:50:60"}]
-            )[0]
+            database.bind_credential("192.168.1.1", "TR_064", "cred_example")
+            rescanned = database.upsert([{"IP": "192.168.1.2", "MAC": "10:20:30:40:50:60"}])[0]
             self.assertEqual(rescanned.device_id, device.device_id)
             self.assertEqual(rescanned.protocols, ["tr-064"])
-            self.assertEqual(
-                rescanned.credentials, {"tr-064": "cred_example"}
-            )
+            self.assertEqual(rescanned.credentials, {"tr-064": "cred_example"})
 
     def test_column_names_accept_commas_and_reject_unknown_values(self):
         self.assertEqual(
@@ -335,9 +333,7 @@ class Tr064Tests(unittest.TestCase):
         self.assertIn("mac", render_records([], "table"))
 
     def test_table_hides_default_name(self):
-        rendered = render_records(
-            [{"IP": "192.168.1.1", "defaultName": "router"}], "table"
-        )
+        rendered = render_records([{"IP": "192.168.1.1", "defaultName": "router"}], "table")
         self.assertNotIn("defaultName", rendered)
         self.assertNotIn("router", rendered)
 
@@ -513,9 +509,7 @@ class NetworkTests(unittest.TestCase):
                 "192.168.1.16-192.168.1.192",
             )
         )
-        self.assertFalse(
-            ip_in_range("-", "192.168.1.16-192.168.1.192")
-        )
+        self.assertFalse(ip_in_range("-", "192.168.1.16-192.168.1.192"))
 
     def test_dhcp_range_is_normalized_and_validated(self):
         self.assertEqual(
@@ -595,9 +589,7 @@ class NetworkTests(unittest.TestCase):
             patch.object(scanner, "_resolve_name", return_value=""),
             patch(
                 "app.services.lan_scanner.active_arp_mac",
-                side_effect=lambda ip, _timeout: (
-                    target_mac if ip == "192.168.1.44" else ""
-                ),
+                side_effect=lambda ip, _timeout: target_mac if ip == "192.168.1.44" else "",
             ),
             patch(
                 "app.services.lan_scanner.local_ipv4",
@@ -631,9 +623,7 @@ class NetworkTests(unittest.TestCase):
             patch.object(scanner, "_ping", side_effect=ping),
             patch("app.services.lan_scanner.active_arp_mac", side_effect=arp),
         ):
-            alive, macs = scanner._parallel_discovery(
-                ["192.168.1.1"], use_icmp=True, use_arp=True
-            )
+            alive, macs = scanner._parallel_discovery(["192.168.1.1"], use_icmp=True, use_arp=True)
 
         self.assertEqual(alive, {"192.168.1.1"})
         self.assertEqual(macs, {"192.168.1.1": "DE:AD:BE:EF:FE:ED"})
@@ -681,9 +671,7 @@ class NetworkTests(unittest.TestCase):
                 return_value=ipaddress.IPv4Address("192.168.1.46"),
             ),
         ):
-            records = scanner.scan(
-                discovery="icmp", include_arp_cache=True
-            )
+            records = scanner.scan(discovery="icmp", include_arp_cache=True)
 
         target = next(record for record in records if record.ip == "192.168.1.44")
         self.assertEqual(scanner.discovery_for(target), "CACHE")
@@ -696,7 +684,9 @@ class DatabaseTests(unittest.TestCase):
             path = Path(directory) / "devices.json"
             database = DeviceDatabase(str(path))
             before = Device(
-                ip="192.168.1.10", mac="10:20:30:40:50:60", alias="OLD",
+                ip="192.168.1.10",
+                mac="10:20:30:40:50:60",
+                alias="OLD",
                 credentials={"ssh": "credential-1"},
             )
             after = before.copy()
@@ -717,15 +707,20 @@ class DatabaseTests(unittest.TestCase):
     def test_detection_history_accumulates_and_updates_last_seen(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
-            database.upsert([
-                {
-                    "IP": "192.168.1.44", "MAC": "DE:AD:BE:EF:FE:ED",
-                    "discoveryMethods": ["ARP"], "lastDiscovery": "ARP",
-                    "lastSeen": "2026-07-25T20:00:00+02:00",
-                }
-            ])
+            database.upsert(
+                [
+                    {
+                        "IP": "192.168.1.44",
+                        "MAC": "DE:AD:BE:EF:FE:ED",
+                        "discoveryMethods": ["ARP"],
+                        "lastDiscovery": "ARP",
+                        "lastSeen": "2026-07-25T20:00:00+02:00",
+                    }
+                ]
+            )
             updated = database.record_detection(
-                "DE:AD:BE:EF:FE:ED", ["PING"],
+                "DE:AD:BE:EF:FE:ED",
+                ["PING"],
                 seen_at="2026-07-25T21:00:00+02:00",
             )
             self.assertEqual(updated.discovery_methods, ["ARP", "PING"])
@@ -735,16 +730,18 @@ class DatabaseTests(unittest.TestCase):
     def test_rescan_without_detection_metadata_preserves_history(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
-            database.upsert([
-                {
-                    "IP": "192.168.1.44", "MAC": "DE:AD:BE:EF:FE:ED",
-                    "discoveryMethods": ["ARP"], "lastDiscovery": "ARP",
-                    "lastSeen": "2026-07-25T20:00:00+02:00",
-                }
-            ])
-            device = database.upsert([
-                {"IP": "192.168.1.44", "MAC": "DE:AD:BE:EF:FE:ED"}
-            ])[0]
+            database.upsert(
+                [
+                    {
+                        "IP": "192.168.1.44",
+                        "MAC": "DE:AD:BE:EF:FE:ED",
+                        "discoveryMethods": ["ARP"],
+                        "lastDiscovery": "ARP",
+                        "lastSeen": "2026-07-25T20:00:00+02:00",
+                    }
+                ]
+            )
+            device = database.upsert([{"IP": "192.168.1.44", "MAC": "DE:AD:BE:EF:FE:ED"}])[0]
             self.assertEqual(device.discovery_methods, ["ARP"])
             self.assertEqual(device.last_discovery, "ARP")
 
@@ -813,9 +810,7 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(result.colors[0]["MAC"], "blue")
 
     def test_scan_differences_detect_mac_conflict_at_saved_ip(self):
-        saved = [
-            Device(ip="192.168.1.10", mac="AA:BB:CC:DD:EE:FF")
-        ]
+        saved = [Device(ip="192.168.1.10", mac="AA:BB:CC:DD:EE:FF")]
         records = [{"IP": "192.168.1.10", "MAC": "11:22:33:44:55:66"}]
         result = compare_scan(
             records,
@@ -830,12 +825,8 @@ class DatabaseTests(unittest.TestCase):
     def test_new_mac_on_used_ip_is_added_without_erasing_old_mac(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
-            database.upsert(
-                [{"IP": "192.168.1.10", "MAC": "AA:BB:CC:DD:EE:FF"}]
-            )
-            devices = database.upsert(
-                [{"IP": "192.168.1.10", "MAC": "11:22:33:44:55:66"}]
-            )
+            database.upsert([{"IP": "192.168.1.10", "MAC": "AA:BB:CC:DD:EE:FF"}])
+            devices = database.upsert([{"IP": "192.168.1.10", "MAC": "11:22:33:44:55:66"}])
             self.assertEqual(len(devices), 2)
             self.assertEqual(
                 {device.mac for device in devices},
@@ -853,9 +844,7 @@ class DatabaseTests(unittest.TestCase):
     def test_editing_name_or_alias_confirms_device(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
-            database.upsert(
-                [{"IP": "192.168.1.20", "MAC": "10:20:30:40:50:60"}]
-            )
+            database.upsert([{"IP": "192.168.1.20", "MAC": "10:20:30:40:50:60"}])
             named = database.set_name("10:20:30:40:50:60", "Sensor")
             self.assertEqual(named.cnf, "O")
             database.edit_device("10:20:30:40:50:60", "cnf", "X")
@@ -903,9 +892,7 @@ class DatabaseTests(unittest.TestCase):
                     }
                 ]
             )
-            devices = database.upsert(
-                [{"IP": "192.168.1.20", "MAC": "00:11:22:33:44:55"}]
-            )
+            devices = database.upsert([{"IP": "192.168.1.20", "MAC": "00:11:22:33:44:55"}])
             self.assertEqual(devices[0]["manufacturer"], "Fabricante guardado")
 
     def test_old_database_is_migrated_and_custom_alias_is_preserved(self):
@@ -1032,9 +1019,7 @@ class DatabaseTests(unittest.TestCase):
             self.assertEqual(deleted["ALIAS"], "")
 
             database.set_value("AA:BB:CC:DD:EE:FF", "NAME", "default")
-            restored = database.set_value(
-                "AA:BB:CC:DD:EE:FF", "ALIAS", "default"
-            )
+            restored = database.set_value("AA:BB:CC:DD:EE:FF", "ALIAS", "default")
             self.assertEqual(restored["NAME"], "router")
             self.assertEqual(restored["ALIAS"], "AUTO")
 
@@ -1094,13 +1079,9 @@ class DatabaseTests(unittest.TestCase):
     def test_ip_change_preserves_user_alias_by_mac(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
-            database.upsert(
-                [{"IP": "192.168.1.20", "MAC": "10:20:30:40:50:60"}]
-            )
+            database.upsert([{"IP": "192.168.1.20", "MAC": "10:20:30:40:50:60"}])
             database.set_alias("10:20:30:40:50:60", "CAMARA")
-            devices = database.upsert(
-                [{"IP": "192.168.1.90", "MAC": "10:20:30:40:50:60"}]
-            )
+            devices = database.upsert([{"IP": "192.168.1.90", "MAC": "10:20:30:40:50:60"}])
             self.assertEqual(len(devices), 1)
             self.assertEqual(devices[0]["IP"], "192.168.1.90")
             self.assertEqual(devices[0]["ALIAS"], "CAMARA")
@@ -1128,7 +1109,6 @@ class LoggerTests(unittest.TestCase):
                 r"^\d{2}:\d{2}:\d{2} primera línea \| segunda línea\n$",
             )
 
-
     def test_cleanup_removes_only_recognized_logs_older_than_retention(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -1139,9 +1119,7 @@ class LoggerTests(unittest.TestCase):
             for path in (old_log, boundary_log, current_log, unknown_log):
                 path.write_text("test\n", encoding="utf-8")
 
-            deleted = cleanup_old_logs(
-                root, 10, today=date(2026, 1, 20)
-            )
+            deleted = cleanup_old_logs(root, 10, today=date(2026, 1, 20))
 
             self.assertEqual(deleted, (old_log.resolve(),))
             self.assertFalse(old_log.exists())
@@ -1150,9 +1128,8 @@ class LoggerTests(unittest.TestCase):
             self.assertTrue(unknown_log.exists())
 
     def test_cleanup_rejects_invalid_retention(self):
-        with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaises(ValueError):
-                cleanup_old_logs(directory, 0)
+        with tempfile.TemporaryDirectory() as directory, self.assertRaises(ValueError):
+            cleanup_old_logs(directory, 0)
 
 
 class GroupTests(unittest.TestCase):
@@ -1163,9 +1140,7 @@ class GroupTests(unittest.TestCase):
     def test_group_membership_is_stored_on_both_sides(self):
         with tempfile.TemporaryDirectory() as directory:
             devices = DeviceDatabase(str(Path(directory) / "devices.json"))
-            devices.upsert(
-                [{"IP": "192.168.1.20", "MAC": "10:20:30:40:50:60"}]
-            )
+            devices.upsert([{"IP": "192.168.1.20", "MAC": "10:20:30:40:50:60"}])
             groups = GroupDatabase(str(Path(directory) / "groups.json"), devices)
             groups.create("cameras")
             group, device = groups.add("CAMERAS", "192.168.1.20")
@@ -1175,9 +1150,7 @@ class GroupTests(unittest.TestCase):
     def test_delete_device_removes_inventory_and_every_group_reference(self):
         with tempfile.TemporaryDirectory() as directory:
             devices = DeviceDatabase(str(Path(directory) / "devices.json"))
-            devices.upsert(
-                [{"IP": "192.168.1.18", "MAC": "10:20:30:40:50:60"}]
-            )
+            devices.upsert([{"IP": "192.168.1.18", "MAC": "10:20:30:40:50:60"}])
             groups = GroupDatabase(str(Path(directory) / "groups.json"), devices)
             groups.create("IOT")
             groups.add("IOT", "10:20:30:40:50:60")
@@ -1192,12 +1165,14 @@ class GroupTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             devices = DeviceDatabase(str(Path(directory) / "devices.json"))
             devices.upsert(
-                [{
-                    "IP": "192.168.1.1",
-                    "MAC": "10:20:30:40:50:60",
-                    "ALIAS": "GATEWAY",
-                    "defaultAlias": "GATEWAY",
-                }]
+                [
+                    {
+                        "IP": "192.168.1.1",
+                        "MAC": "10:20:30:40:50:60",
+                        "ALIAS": "GATEWAY",
+                        "defaultAlias": "GATEWAY",
+                    }
+                ]
             )
             groups = GroupDatabase(str(Path(directory) / "groups.json"), devices)
             with self.assertRaises(ValueError):
@@ -1289,6 +1264,16 @@ class LegacySshTests(unittest.TestCase):
         self.assertEqual(profile.host_key_algorithms, ())
         self.assertEqual(profile.kex_algorithms, ())
         self.assertEqual(profile_options["terminalAdapter"], "esp32_rack_monitor")
+        blocked = disabled_algorithms(profile)
+        self.assertIn("ssh-rsa", blocked["keys"])
+        self.assertIn("diffie-hellman-group14-sha1", blocked["kex"])
+
+    def test_legacy_profile_opens_only_its_scoped_host_algorithms(self):
+        profile = SshProfile.from_options(SSH_PROFILES["ssh_legacy_cisco_s300"])
+        blocked = disabled_algorithms(profile)
+        self.assertNotIn("ssh-rsa", blocked["keys"])
+        self.assertNotIn("diffie-hellman-group14-sha1", blocked["kex"])
+        self.assertIn("ssh-rsa", blocked["pubkeys"])
 
 
 class TerminalTests(unittest.TestCase):
@@ -1299,9 +1284,7 @@ class TerminalTests(unittest.TestCase):
         self.assertEqual(choose_terminal(tr064, None), "tr-064")
 
     def test_terminal_can_request_native_ssh_fallback(self):
-        args = build_parser().parse_args([
-            "terminal", "SW", "--native"
-        ])
+        args = build_parser().parse_args(["terminal", "SW", "--native"])
         self.assertTrue(args.native)
 
     def test_tr064_terminal_rejects_write_actions(self):
@@ -1314,10 +1297,20 @@ class TerminalTests(unittest.TestCase):
 
 
 class VersionTests(unittest.TestCase):
+    def test_version_does_not_build_commands_or_touch_data(self):
+        from app.cli import main
+
+        with (
+            patch("app.cli.build_parser", side_effect=AssertionError("data access")),
+            patch("builtins.print") as output,
+            self.assertRaises(SystemExit) as result,
+        ):
+            main(["--version"])
+        self.assertEqual(result.exception.code, 0)
+        output.assert_called_once_with(f"LANCTL {__version__}")
+
     def test_package_and_cli_versions_match(self):
-        project = (Path(__file__).parents[1] / "pyproject.toml").read_text(
-            encoding="utf-8"
-        )
+        project = (Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8")
         declared = next(
             line for line in project.splitlines() if line.startswith("version = ")
         ).split('"', 2)[1]

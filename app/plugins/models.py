@@ -5,15 +5,29 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-
 PLUGIN_ID = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$")
 LCP_SCHEMA_VERSION = 1
 EVENT_ID = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z][A-Za-z0-9_-]*){3}$")
 CAPABILITIES = {
-    "plugin", "theme", "language", "settings", "automation", "network",
-    "analysis", "ui", "security", "config", "commands", "protocol",
-    "scanner", "device-adapter", "parser", "exporter", "project-handler",
-    "physical-model", "icon",
+    "plugin",
+    "theme",
+    "language",
+    "settings",
+    "automation",
+    "network",
+    "analysis",
+    "ui",
+    "security",
+    "config",
+    "commands",
+    "protocol",
+    "scanner",
+    "device-adapter",
+    "parser",
+    "exporter",
+    "project-handler",
+    "physical-model",
+    "icon",
 }
 
 
@@ -50,7 +64,7 @@ class PluginManifest:
     raw: dict[str, Any] = field(default_factory=dict, compare=False)
 
     @classmethod
-    def from_dict(cls, value: dict[str, Any]) -> "PluginManifest":
+    def from_dict(cls, value: dict[str, Any]) -> PluginManifest:
         if not isinstance(value, dict):
             raise ValueError("plugin.info debe contener un objeto JSON")
         schema_version = int(value.get("schemaVersion", 1))
@@ -62,14 +76,17 @@ class PluginManifest:
         plugin_id = str(value.get("id", "")).strip().casefold()
         if not PLUGIN_ID.fullmatch(plugin_id):
             raise ValueError("id de plugin no válido; usa un identificador como lanctl.autoscan")
-        capabilities = tuple(dict.fromkeys(str(v).casefold() for v in value.get("capabilities", ["plugin"])))
+        capabilities = tuple(
+            dict.fromkeys(str(v).casefold() for v in value.get("capabilities", ["plugin"]))
+        )
         unknown = sorted(set(capabilities) - CAPABILITIES)
         if unknown:
             raise ValueError(f"capacidades LCP desconocidas: {', '.join(unknown)}")
         compat = value.get("lanctl") or {}
         dependencies = tuple(
             PluginDependency(str(item["id"]).casefold(), str(item.get("version", "*")))
-            if isinstance(item, dict) else _parse_dependency(str(item))
+            if isinstance(item, dict)
+            else _parse_dependency(str(item))
             for item in value.get("depends", [])
         )
         entry = str(value.get("entryPoint", "main.exec")).replace("\\", "/")
@@ -79,13 +96,22 @@ class PluginManifest:
         if runtime not in ("isolated", "trusted"):
             raise ValueError("runtime debe ser isolated o trusted")
         return cls(
-            schema_version=schema_version, plugin_id=plugin_id,
-            name=str(value.get("name") or plugin_id), version=str(value.get("version", "0.0.0")),
-            description=str(value.get("description", "")), author=str(value.get("author", "")),
-            entry_point=entry, minimum_lanctl=str(compat.get("minimumVersion", "0.0.0")),
+            schema_version=schema_version,
+            plugin_id=plugin_id,
+            name=str(value.get("name") or plugin_id),
+            version=str(value.get("version", "0.0.0")),
+            description=str(value.get("description", "")),
+            author=str(value.get("author", "")),
+            entry_point=entry,
+            minimum_lanctl=str(compat.get("minimumVersion", "0.0.0")),
             maximum_lanctl=str(compat.get("maximumVersion", "*")),
-            permissions=tuple(dict.fromkeys(str(v).casefold() for v in value.get("permissions", []))),
-            capabilities=capabilities, dependencies=dependencies, runtime=runtime, raw=dict(value),
+            permissions=tuple(
+                dict.fromkeys(str(v).casefold() for v in value.get("permissions", []))
+            ),
+            capabilities=capabilities,
+            dependencies=dependencies,
+            runtime=runtime,
+            raw=dict(value),
         )
 
 

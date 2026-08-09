@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shlex
 import sys
 from collections.abc import Callable
 from dataclasses import replace
-import re
 
 from colorama import Fore, Style
 
 from app.cisco.adapters import FakeCiscoAdapter
-from app.cisco.catalog import CATALOG
 from app.cisco.context import CiscoContext
 from app.cisco.executor import CiscoExecutor
 from app.cisco.models import CommandPlan, Risk
@@ -20,10 +19,9 @@ from app.cisco.profiles import PROFILE_PATH, load_profile
 from app.core.config import load_config
 from app.core.console import ok
 from app.core.database import DeviceDatabase
+from app.core.layout import fit_text, shrink_widths, terminal_columns
 from app.core.logger import write_log
 from app.core.parser import colorize_help
-from app.core.layout import fit_text, shrink_widths, terminal_columns
-
 
 HELP = """Comandos Cisco gestionados:
   show COMANDO
@@ -81,8 +79,7 @@ def _device_profile(device, profile):
     if not isinstance(labels, dict):
         raise ValueError("portLabels del elemento debe ser un objeto")
     ports = tuple(
-        replace(port, label=str(labels.get(port.id, port.label)))
-        for port in profile.ports
+        replace(port, label=str(labels.get(port.id, port.label))) for port in profile.ports
     )
     return replace(profile, ports=ports)
 
@@ -114,10 +111,18 @@ def _print_ports(profile, selected=None) -> None:
     alias_width = max(5, *(len(",".join(port.aliases)) for port in profile.ports))
     native_width = max(6, *(len(port.native) for port in profile.ports))
     widths, stacked = shrink_widths(
-        {"sel": 3, "id": 7, "alias": alias_width, "native": native_width, "label": max(5, *(len(port.label or "-") for port in profile.ports))},
+        {
+            "sel": 3,
+            "id": 7,
+            "alias": alias_width,
+            "native": native_width,
+            "label": max(5, *(len(port.label or "-") for port in profile.ports)),
+        },
         {"sel": 3, "id": 5, "alias": 5, "native": 6, "label": 5},
-        ("sel", "id", "alias", "native", "label"), terminal_columns(),
-        ("label", "alias", "native", "id"), gap=2,
+        ("sel", "id", "alias", "native", "label"),
+        terminal_columns(),
+        ("label", "alias", "native", "id"),
+        gap=2,
     )
     if stacked:
         for index, port in enumerate(profile.ports):
@@ -130,12 +135,18 @@ def _print_ports(profile, selected=None) -> None:
             print(f"label  : {port.label or '-'}")
         return
     alias_width, native_width = widths["alias"], widths["native"]
-    print(f"sel  {'id':<{widths['id']}}  {'alias':<{alias_width}}  {'native':<{native_width}}  label")
-    print(f"---  {'-' * widths['id']}  {'-' * alias_width}  {'-' * native_width}  {'-' * widths['label']}")
+    print(
+        f"sel  {'id':<{widths['id']}}  {'alias':<{alias_width}}  {'native':<{native_width}}  label"
+    )
+    print(
+        f"---  {'-' * widths['id']}  {'-' * alias_width}  {'-' * native_width}  {'-' * widths['label']}"
+    )
     for port in profile.ports:
         aliases = ",".join(port.aliases)
         marker = " > " if selected and port.id == selected.id else "   "
-        print(f"{marker}  {fit_text(port.id, widths['id']):<{widths['id']}}  {fit_text(aliases, alias_width):<{alias_width}}  {fit_text(port.native, native_width):<{native_width}}  {fit_text(port.label or '-', widths['label'])}")
+        print(
+            f"{marker}  {fit_text(port.id, widths['id']):<{widths['id']}}  {fit_text(aliases, alias_width):<{alias_width}}  {fit_text(port.native, native_width):<{native_width}}  {fit_text(port.label or '-', widths['label'])}"
+        )
 
 
 def _paint_risk(risk: Risk) -> str:
@@ -216,7 +227,9 @@ def run_managed_terminal(
     while True:
         selected = f"/{context.selected_port.id}" if context.selected_port else ""
         try:
-            raw = input_fn(f"{planner.device.alias or planner.device.ip}/switch{selected}> ").strip()
+            raw = input_fn(
+                f"{planner.device.alias or planner.device.ip}/switch{selected}> "
+            ).strip()
         except EOFError:
             print()
             return 0
@@ -238,7 +251,15 @@ def run_managed_terminal(
                 context.deselect()
                 ok("DESELECCIONADO", "Ningún puerto seleccionado.")
                 continue
-            _process(planner, context, tokens, dry_run=dry_run, assume_yes=assume_yes, adapter=adapter, input_fn=input_fn)
+            _process(
+                planner,
+                context,
+                tokens,
+                dry_run=dry_run,
+                assume_yes=assume_yes,
+                adapter=adapter,
+                input_fn=input_fn,
+            )
         except ValueError as error:
             print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} {error}")
 
@@ -273,8 +294,7 @@ def run_switch(args: argparse.Namespace) -> int:
         # Valida que el nombre nuevo no colisione con otra referencia.
         for other in profile.ports:
             if other.id != port.id and any(
-                tokens[3].casefold() == value.casefold()
-                for value in other.references() if value
+                tokens[3].casefold() == value.casefold() for value in other.references() if value
             ):
                 raise ValueError(f"la etiqueta ya identifica {other.id}: {tokens[3]}")
         options = dict(device.protocol_options.get("cisco-cli", {}))
@@ -298,12 +318,14 @@ def run_switch(args: argparse.Namespace) -> int:
     planner = CiscoPlanner(device, profile)
     context = CiscoContext(profile)
     if lowered == ["terminal"]:
-        return run_managed_terminal(
-            planner, context, dry_run=args.dry_run, assume_yes=args.yes
-        )
+        return run_managed_terminal(planner, context, dry_run=args.dry_run, assume_yes=args.yes)
     if lowered[:2] in (["port", "select"], ["port", "deselect"]):
         raise ValueError("la selección de puerto requiere: switch ELEMENTO terminal")
     return _process(
-        planner, context, tokens, dry_run=args.dry_run, assume_yes=args.yes,
+        planner,
+        context,
+        tokens,
+        dry_run=args.dry_run,
+        assume_yes=args.yes,
         adapter=FakeCiscoAdapter(),
     )

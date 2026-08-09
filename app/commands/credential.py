@@ -19,11 +19,20 @@ def register_credential_command(commands: argparse._SubParsersAction) -> None:
         help="Asocia credenciales cifradas a un elemento y protocolo.",
     )
     command.add_argument("selector", help="IP, MAC o alias del elemento.")
-    command.add_argument("action", nargs="?", choices=("set", "list", "delete"), help="Operación sobre la credencial.")
+    command.add_argument(
+        "action",
+        nargs="?",
+        choices=("set", "list", "delete"),
+        help="Operación sobre la credencial.",
+    )
     command.add_argument("protocol", nargs="?", help="Protocolo, por ejemplo tr-064.")
     command.add_argument("-user", "--username", dest="username", help="Nombre de usuario remoto.")
-    command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
-    command.add_argument("--store", default=config["credentials"], help="Almacén cifrado de credenciales.")
+    command.add_argument(
+        "--database", default=config["database"], help="Archivo JSON de elementos."
+    )
+    command.add_argument(
+        "--store", default=config["credentials"], help="Almacén cifrado de credenciales."
+    )
     command.set_defaults(handler=run_credential)
 
 
@@ -35,13 +44,15 @@ def run_credential(args: argparse.Namespace) -> int:
         for device in database.load():
             for protocol, reference in device.credentials.items():
                 credential = store.get(reference)
-                rows.append({
-                    "element": device.alias or device.name or device.ip or device.mac,
-                    "ip": device.ip,
-                    "protocol": protocol,
-                    "credentialId": reference,
-                    "username": credential["username"],
-                })
+                rows.append(
+                    {
+                        "element": device.alias or device.name or device.ip or device.mac,
+                        "ip": device.ip,
+                        "protocol": protocol,
+                        "credentialId": reference,
+                        "username": credential["username"],
+                    }
+                )
         print(json.dumps(rows, indent=2, ensure_ascii=False))
         return 0
     if args.action is None:
@@ -74,9 +85,7 @@ def run_credential(args: argparse.Namespace) -> int:
         confirmation = getpass.getpass("Repite la contraseña: ")
         if password != confirmation:
             raise ValueError("las contraseñas no coinciden")
-        credential_id = store.set(
-            device.device_id, protocol, args.username, password
-        )
+        credential_id = store.set(device.device_id, protocol, args.username, password)
         updated = database.bind_credential(args.selector, protocol, credential_id)
         ok(
             "CREDENCIAL",
@@ -86,9 +95,7 @@ def run_credential(args: argparse.Namespace) -> int:
 
     reference = device.credentials.get(protocol)
     if not reference:
-        raise ValueError(
-            f"{device.alias or device.ip} no tiene credencial para {protocol}"
-        )
+        raise ValueError(f"{device.alias or device.ip} no tiene credencial para {protocol}")
     store.delete(reference)
     database.unbind_credential(args.selector, protocol)
     ok("ELIMINADA", f"{device.alias or device.ip} | {protocol}")

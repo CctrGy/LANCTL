@@ -43,8 +43,8 @@ bool NetworkConsole::begin() {
   wolfSSH_SetIOSend(ctx_, sendCallback);
   wolfSSH_SetUserAuth(ctx_, authCallback);
   wolfSSH_CTX_SetBanner(ctx_, "RackMonitor Firmware 2 / STM32F411");
-  // The wolfSSH desktop default reserves a 128 KiB receive window per
-  // channel, which exhausts this MCU's RAM. The CLI only needs small packets.
+  // wolfSSH reserva por defecto 128 KiB de recepción por canal, lo que agotaría
+  // la RAM de este microcontrolador. La consola solo necesita paquetes pequeños.
   if (wolfSSH_CTX_SetWindowPacketSize(ctx_, 4096, 1024) != WS_SUCCESS) {
     return false;
   }

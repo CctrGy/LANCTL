@@ -2,44 +2,48 @@ from __future__ import annotations
 
 import argparse
 import sys
+from contextlib import suppress
+from importlib import import_module
 
 from app import __version__
-from app.commands.alias import register_alias_command
-from app.commands.call import register_call_command
-from app.commands.cnf import register_cnf_command
-from app.commands.credential import register_credential_command
-from app.commands.download_settings import (
-    register_download_settings_command,
-    register_gateway_command,
-)
-from app.commands.element import register_element_command
-from app.commands.group import register_group_command
-from app.commands.name import register_name_command
-from app.commands.protocol import register_protocol_command
-from app.commands.ssh import register_ssh_command
-from app.commands.radmin import register_radmin_command
-from app.commands.wol import register_wol_command
-from app.commands.history import register_history_command
-from app.commands.monitor import register_monitor_command
-from app.commands.access import register_access_command
-from app.commands.smb import register_smb_command
-from app.commands.terminal import register_terminal_command
-from app.commands.settings import register_settings_command
-from app.commands.search import register_search_command
-from app.commands.scan import register_scan_command
-from app.commands.switch import register_switch_command
-from app.commands.list import register_list_command
-from app.commands.recurrent import register_recurrent_command
-from app.commands.ping import register_ping_command
-from app.commands.open import register_open_command
-from app.commands.project import register_project_command
-from app.commands.plugin import register_plugin_command
-from app.commands.language import register_language_command
-from app.commands.modes import run_global_cli
-from app.core.console import error as print_error
-from app.core.parser import LANCTLArgumentParser
-from app.core.logger import write_log
 from app.core.log_cleanup import run_automatic_log_cleanup
+from app.core.logger import write_log
+
+# El registro usa nombres importables para que `lanctl --version` no cargue
+# drivers de red, GUI, SSH y plugins antes de saber qué modo se ha solicitado.
+_COMMAND_REGISTRARS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("app.commands.list", ("register_list_command",)),
+    ("app.commands.recurrent", ("register_recurrent_command",)),
+    ("app.commands.ping", ("register_ping_command",)),
+    ("app.commands.open", ("register_open_command",)),
+    ("app.commands.settings", ("register_settings_command",)),
+    ("app.commands.call", ("register_call_command",)),
+    ("app.commands.search", ("register_search_command",)),
+    ("app.commands.scan", ("register_scan_command",)),
+    ("app.commands.cnf", ("register_cnf_command",)),
+    ("app.commands.credential", ("register_credential_command",)),
+    (
+        "app.commands.download_settings",
+        ("register_gateway_command", "register_download_settings_command"),
+    ),
+    ("app.commands.protocol", ("register_protocol_command",)),
+    ("app.commands.ssh", ("register_ssh_command",)),
+    ("app.commands.radmin", ("register_radmin_command",)),
+    ("app.commands.wol", ("register_wol_command",)),
+    ("app.commands.history", ("register_history_command",)),
+    ("app.commands.monitor", ("register_monitor_command",)),
+    ("app.commands.access", ("register_access_command",)),
+    ("app.commands.smb", ("register_smb_command",)),
+    ("app.commands.terminal", ("register_terminal_command",)),
+    ("app.commands.switch", ("register_switch_command",)),
+    ("app.commands.group", ("register_group_command",)),
+    ("app.commands.element", ("register_element_command",)),
+    ("app.commands.name", ("register_name_command",)),
+    ("app.commands.alias", ("register_alias_command",)),
+    ("app.commands.project", ("register_project_command",)),
+    ("app.commands.plugin", ("register_plugin_command",)),
+    ("app.commands.language", ("register_language_command",)),
+)
 
 
 def configure_utf8_stdio() -> None:
@@ -47,51 +51,45 @@ def configure_utf8_stdio() -> None:
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if callable(reconfigure):
-            try:
+            # Consolas embebidas y algunos lanzadores no permiten
+            # reconfigurar el flujo; en ellos se conserva el contrato dado.
+            with suppress(AttributeError, OSError, ValueError):
                 reconfigure(encoding="utf-8", errors="replace")
-            except (AttributeError, OSError, ValueError):
-                # Consolas embebidas y algunos lanzadores no permiten
-                # reconfigurar el stream; en ellos se conserva el contrato dado.
-                pass
 
 
-def register_commands(commands: argparse._SubParsersAction, include_plugin_commands: bool = False) -> None:
-    register_list_command(commands)
-    register_recurrent_command(commands)
-    register_ping_command(commands)
-    register_open_command(commands)
-    register_settings_command(commands)
-    register_call_command(commands)
-    register_search_command(commands)
-    register_scan_command(commands)
-    register_cnf_command(commands)
-    register_credential_command(commands)
-    register_gateway_command(commands)
-    register_download_settings_command(commands)
-    register_protocol_command(commands)
-    register_ssh_command(commands)
-    register_radmin_command(commands)
-    register_wol_command(commands)
-    register_history_command(commands)
-    register_monitor_command(commands)
-    register_access_command(commands)
-    register_smb_command(commands)
-    register_terminal_command(commands)
-    register_switch_command(commands)
-    register_group_command(commands)
-    register_element_command(commands)
-    register_name_command(commands)
-    register_alias_command(commands)
-    register_project_command(commands)
-    register_plugin_command(commands)
-    register_language_command(commands)
+def register_commands(
+    commands: argparse._SubParsersAction, include_plugin_commands: bool = False
+) -> None:
+    for module_name, registrar_names in _COMMAND_REGISTRARS:
+        module = import_module(module_name)
+        for registrar_name in registrar_names:
+            getattr(module, registrar_name)(commands)
     if include_plugin_commands:
         from app.plugins.declarative_commands import register_declarative_commands
+
         register_declarative_commands(commands)
 
 
+def run_global_cli() -> int:
+    """Carga la consola persistente únicamente cuando se solicita ``--cli``."""
+
+    from app.commands.modes import run_global_cli as run
+
+    return run()
+
+
+def print_error(message: str) -> None:
+    """Evita cargar Colorama durante rutas rápidas como ``--version``."""
+
+    from app.core.console import error
+
+    error(message)
+
+
 def build_parser(include_plugin_commands: bool = False) -> argparse.ArgumentParser:
+    from app.core.parser import LANCTLArgumentParser
     from app.i18n import t
+
     parser = LANCTLArgumentParser(
         prog="LANCTL",
         description=t("LANCTL.CORE.APP.DESCRIPTION"),
@@ -119,40 +117,77 @@ def build_parser(include_plugin_commands: bool = False) -> argparse.ArgumentPars
         action="store_true",
         help=t("LANCTL.CORE.APP.TUI_HELP"),
     )
+    parser.add_argument(
+        "-project",
+        "--project",
+        dest="startup_project",
+        metavar="ARCHIVO.vlf",
+        help=("Selecciona un proyecto VLF antes de abrir la GUI, el TUI o ejecutar un comando."),
+    )
     commands = parser.add_subparsers(dest="command", metavar="COMANDO")
-    register_commands(commands,include_plugin_commands)
+    register_commands(commands, include_plugin_commands)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
-    if any(value in arguments for value in ("-h","--help","/?","--version")):
+    if "--version" in arguments:
+        print(f"LANCTL {__version__}")
+        raise SystemExit(0)
+    if any(value in arguments for value in ("-h", "--help", "/?")):
         return build_parser(include_plugin_commands=False).parse_args(arguments)
     try:
         from app.core.data_migration import ensure_data_layout
+
         ensure_data_layout()
         run_automatic_log_cleanup()
         from app.i18n import initialize_language, t
+
         initialize_language()
         from app.assets.icons import initialize_icons
+
         initialize_icons()
         from app.plugins import get_plugin_manager
+
         manager = get_plugin_manager()
-        if not load_plugin_safe_mode() and manager.activate_enabled():
-            mode = "tui" if any(v in arguments for v in ("-tui", "--tui")) else "cli" if "--cli" in arguments else "gui" if "--gui" in arguments or not arguments else "command"
+        plugins_active = not load_plugin_safe_mode() and manager.activate_enabled()
+        write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
+        parser = build_parser(include_plugin_commands=True)
+        args = parser.parse_args(arguments)
+        if plugins_active:
+            mode = (
+                "tui"
+                if args.tui
+                else "cli"
+                if args.cli
+                else "gui"
+                if args.gui or not args.command
+                else "command"
+            )
             manager.events.emit(
                 "LANCTL.Core.Lifecycle.Startup",
                 {"version": __version__, "mode": mode},
             )
-        write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
-        parser=build_parser(include_plugin_commands=True)
-        args=parser.parse_args(arguments)
+        if args.startup_project:
+            from app.projects import activate_project_workspace
+
+            workspace = activate_project_workspace(args.startup_project)
+            manager.events.emit(
+                "LANCTL.Project.File.Open",
+                {
+                    "path": str(workspace.project),
+                    "project_id": workspace.project_id,
+                },
+            )
+            write_log(f"PROJECT USE id={workspace.project_id} path={workspace.project}")
         if args.gui or (not args.command and not args.tui and not args.cli):
             from app.gui import run_gui
+
             return run_gui()
         if args.tui:
             from app.tui import run_tui
+
             return run_tui()
         if args.cli:
             return run_global_cli()
@@ -167,4 +202,5 @@ def main(argv: list[str] | None = None) -> int:
 
 def load_plugin_safe_mode() -> bool:
     from app.core.config import load_config
+
     return bool(load_config().get("pluginSafeMode", False))

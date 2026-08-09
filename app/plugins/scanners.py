@@ -4,9 +4,7 @@ import ipaddress
 from collections.abc import Iterable
 
 
-def run_scanner_extensions(
-    methods: Iterable[str], timeout: float
-) -> dict[str, set[str]]:
+def run_scanner_extensions(methods: Iterable[str], timeout: float) -> dict[str, set[str]]:
     """Ejecuta extensiones scanner activas y normaliza sus resultados."""
     from app.plugins import get_plugin_manager
 
@@ -15,22 +13,20 @@ def run_scanner_extensions(
     manager = get_plugin_manager()
     for extension in manager.extensions.list("scanner"):
         specification = extension.specification
-        supported = {
-            str(method).strip().casefold()
-            for method in specification.get("methods", [])
-        }
+        supported = {str(method).strip().casefold() for method in specification.get("methods", [])}
         selected = sorted(requested & supported)
         function_id = str(specification.get("function", "")).strip()
         if not selected or not function_id:
             continue
         try:
-            result = manager.functions.call(
-                function_id, selected, float(timeout), caller="LANCTL"
-            )
+            result = manager.functions.call(function_id, selected, float(timeout), caller="LANCTL")
         except (OSError, RuntimeError, TypeError, ValueError) as error:
             manager.audit(
-                extension.owner, "SCANNER", extension.extension_id,
-                "ERROR", str(error),
+                extension.owner,
+                "SCANNER",
+                extension.extension_id,
+                "ERROR",
+                str(error),
             )
             continue
         if not result.success or not isinstance(result.data, dict):

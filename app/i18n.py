@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import json
-import locale
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from threading import RLock
 from typing import Any
 
+from app.core.file_transaction import atomic_write_json, locked_file
 from app.core.paths import application_path
 
-
 LANG_SCHEMA_VERSION = 1
-LANGUAGES_DIRECTORY = "data/lc/languajes"  # nombre histórico de languajes conservado
+LANGUAGES_DIRECTORY = "data/lc/languajes"  # grafía histórica conservada por compatibilidad
 LANGUAGES_REGISTRY = "languajes.json"
 KEY_PATTERN = re.compile(r"^[A-Z][A-Z0-9_]*(?:\.[A-Z][A-Z0-9_]*){2,}$")
 
@@ -194,7 +193,9 @@ class LanguageManager:
             raise ValueError(f"Invalid language JSON: {source}") from error
         meta = document.get("meta", {})
         strings = document.get("strings", {})
-        if int(document.get("schemaVersion", 0)) != LANG_SCHEMA_VERSION or not isinstance(strings, dict):
+        if int(document.get("schemaVersion", 0)) != LANG_SCHEMA_VERSION or not isinstance(
+            strings, dict
+        ):
             raise ValueError(f"Invalid language schema: {source}")
         normalized: dict[str, str] = {}
         for key, value in strings.items():
@@ -208,16 +209,23 @@ class LanguageManager:
         if not re.fullmatch(r"[a-z]{2,3}(?:-[a-z0-9]{2,8})?", code):
             raise ValueError(f"Invalid language code: {code}")
         return LanguageCatalog(
-            code, str(meta.get("name") or code), str(meta.get("nativeName") or meta.get("name") or code),
-            str(meta.get("region", "")), str(meta.get("version", "1.0")),
-            str(meta.get("author", "")), source, normalized, owner,
+            code,
+            str(meta.get("name") or code),
+            str(meta.get("nativeName") or meta.get("name") or code),
+            str(meta.get("region", "")),
+            str(meta.get("version", "1.0")),
+            str(meta.get("author", "")),
+            source,
+            normalized,
+            owner,
         )
 
     def install(self, path: str | Path) -> LanguageCatalog:
         catalog = self.load_file(path)
         current = self.catalogs.get(catalog.code)
         destination = (
-            current.path if current and current.path and current.path.parent == self.directory
+            current.path
+            if current and current.path and current.path.parent == self.directory
             else self.directory / f"{_safe_filename(catalog.name)}.lang"
         )
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -250,7 +258,14 @@ class LanguageManager:
 
     def resolve_code(self, language: str) -> str:
         wanted = (language or "en").strip().casefold().replace("_", "-")
-        aliases = {"english": "en", "inglés": "en", "ingles": "en", "spanish": "es", "español": "es", "espanol": "es"}
+        aliases = {
+            "english": "en",
+            "inglés": "en",
+            "ingles": "en",
+            "spanish": "es",
+            "español": "es",
+            "espanol": "es",
+        }
         wanted = aliases.get(wanted, wanted)
         if wanted in self.catalogs:
             return wanted
@@ -271,7 +286,13 @@ class LanguageManager:
         catalog = self.load_file(path)
         total = len(ENGLISH_STRINGS)
         translated = sum(1 for key in ENGLISH_STRINGS if key in catalog.strings)
-        return {"valid": True, "catalog": catalog, "translated": translated, "total": total, "coverage": round(translated * 100 / max(1, total), 1)}
+        return {
+            "valid": True,
+            "catalog": catalog,
+            "translated": translated,
+            "total": total,
+            "coverage": round(translated * 100 / max(1, total), 1),
+        }
 
     def export_template(self, output: str | Path) -> Path:
         destination = Path(output).expanduser().resolve()
@@ -289,7 +310,16 @@ class LanguageManager:
         return self._selected
 
     def _register_builtin(self) -> None:
-        self.catalogs["en"] = LanguageCatalog("en", "English", "English", "International", "1.0", "LANCTL", None, dict(ENGLISH_STRINGS))
+        self.catalogs["en"] = LanguageCatalog(
+            "en",
+            "English",
+            "English",
+            "International",
+            "1.0",
+            "LANCTL",
+            None,
+            dict(ENGLISH_STRINGS),
+        )
 
     def _write_english_if_missing(self) -> None:
         target = self.directory / "english.lang"
@@ -306,27 +336,61 @@ class LanguageManager:
                 legacy.unlink()
 
     def _save_registry(self) -> None:
-        data = {"schemaVersion": 1, "selected": self._selected, "fallback": "en", "languages": [
-            {"code": item.code, "name": item.name, "nativeName": item.native_name,
-             "file": item.path.name if item.path and item.path.parent == self.directory else None,
-             "owner": item.owner, "version": item.version}
-            for item in self.list()
-        ]}
-        temporary = self.registry_path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        temporary.replace(self.registry_path)
+        data = {
+            "schemaVersion": 1,
+            "selected": self._selected,
+            "fallback": "en",
+            "languages": [
+                {
+                    "code": item.code,
+                    "name": item.name,
+                    "nativeName": item.native_name,
+                    "file": item.path.name
+                    if item.path and item.path.parent == self.directory
+                    else None,
+                    "owner": item.owner,
+                    "version": item.version,
+                }
+                for item in self.list()
+            ],
+        }
+        with locked_file(self.registry_path):
+            atomic_write_json(self.registry_path, data)
 
 
 def _english_document() -> dict[str, Any]:
-    return {"schemaVersion": 1, "meta": {"code": "en", "name": "English", "nativeName": "English", "region": "International", "version": "1.0", "author": "LANCTL"}, "strings": ENGLISH_STRINGS}
+    return {
+        "schemaVersion": 1,
+        "meta": {
+            "code": "en",
+            "name": "English",
+            "nativeName": "English",
+            "region": "International",
+            "version": "1.0",
+            "author": "LANCTL",
+        },
+        "strings": ENGLISH_STRINGS,
+    }
 
 
 def spanish_document() -> dict[str, Any]:
-    return {"schemaVersion": 1, "meta": {"code": "es", "name": "Spanish", "nativeName": "Español", "region": "España", "version": "1.0", "author": "LANCTL"}, "strings": SPANISH_STRINGS}
+    return {
+        "schemaVersion": 1,
+        "meta": {
+            "code": "es",
+            "name": "Spanish",
+            "nativeName": "Español",
+            "region": "España",
+            "version": "1.0",
+            "author": "LANCTL",
+        },
+        "strings": SPANISH_STRINGS,
+    }
 
 
 def _write_catalog(path: Path, document: dict) -> None:
-    path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    with locked_file(path):
+        atomic_write_json(path, document)
 
 
 def _safe_filename(value: str) -> str:
@@ -358,6 +422,7 @@ def initialize_language(selected: str | None = None) -> LanguageManager:
     if selected is None:
         try:
             from app.core.config import load_config
+
             selected = str(load_config().get("language", "en"))
         except (OSError, ValueError):
             selected = "en"

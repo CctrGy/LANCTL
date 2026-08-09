@@ -8,6 +8,9 @@ Type=simple
 User=lanctl
 Group=lanctl
 WorkingDirectory=/var/lib/lanctl
+Environment=LANCTL_DATA_SCOPE=service
+Environment=LANCTL_DATA_DIR=/var/lib/lanctl
+Environment=LANCTL_SECRET_DIR=/etc/lanctl/access
 ExecStart=/usr/bin/lanctl monitor foreground
 Restart=on-failure
 RestartSec=5

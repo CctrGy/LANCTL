@@ -5,13 +5,15 @@ from typing import Any
 
 from app.models import Device
 
-
 TerminalHandler = Callable[[Device, dict[str, str], dict[str, Any]], int]
 
 
 def _ssh_terminal(device: Device, credential: dict[str, str], config: dict[str, Any]) -> int:
     from app.protocols.ssh import (
-        SshProfile, open_colored_interactive, open_interactive, verify_pinned_host,
+        SshProfile,
+        open_colored_interactive,
+        open_interactive,
+        verify_pinned_host,
     )
     from app.terminals.ssh_color import terminal_theme
 
@@ -19,7 +21,8 @@ def _ssh_terminal(device: Device, credential: dict[str, str], config: dict[str, 
     native = bool(config.get("nativeTerminal"))
     legacy = (
         verify_pinned_host(device.ip, profile)
-        if native else bool(profile.host_key_algorithms or profile.kex_algorithms)
+        if native
+        else bool(profile.host_key_algorithms or profile.kex_algorithms)
     )
     if legacy:
         print("[ADVERTENCIA] LEGACY SSH limitado a este dispositivo")

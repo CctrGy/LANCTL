@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from threading import RLock
-from typing import Callable
 
 from app.plugins.contracts import EventContract, EventMetadata, construct_contract
 from app.plugins.models import EVENT_ID
@@ -29,7 +29,15 @@ class EventRegistry:
     def __init__(self) -> None:
         self._definitions: dict[tuple[str, int], EventDefinition] = {}
 
-    def register(self, event_id: str, contract: type[EventContract], *, owner: str, version: int = 1, cancelable: bool = False) -> None:
+    def register(
+        self,
+        event_id: str,
+        contract: type[EventContract],
+        *,
+        owner: str,
+        version: int = 1,
+        cancelable: bool = False,
+    ) -> None:
         if not EVENT_ID.fullmatch(event_id):
             raise ValueError(f"identificador de evento no válido: {event_id}")
         if event_id.startswith("LANCTL.") and owner != "LANCTL":
@@ -48,7 +56,9 @@ class EventRegistry:
     def remove_owner(self, owner: str) -> None:
         if owner == "LANCTL":
             raise PermissionError("no se puede retirar el registro de eventos del core")
-        self._definitions = {key: value for key, value in self._definitions.items() if value.owner != owner}
+        self._definitions = {
+            key: value for key, value in self._definitions.items() if value.owner != owner
+        }
 
 
 class EventBus:
@@ -58,7 +68,15 @@ class EventBus:
         self._subscriptions: dict[tuple[str, int], list[tuple[int, str, Callable]]] = {}
         self._lock = RLock()
 
-    def subscribe(self, event_id: str, handler: Callable, *, plugin_id: str, version: int = 1, priority: int = 100) -> None:
+    def subscribe(
+        self,
+        event_id: str,
+        handler: Callable,
+        *,
+        plugin_id: str,
+        version: int = 1,
+        priority: int = 100,
+    ) -> None:
         self.registry.get(event_id, version)
         with self._lock:
             target = self._subscriptions.setdefault((event_id.casefold(), version), [])
@@ -68,20 +86,38 @@ class EventBus:
     def unsubscribe_plugin(self, plugin_id: str) -> None:
         with self._lock:
             for key in tuple(self._subscriptions):
-                self._subscriptions[key] = [v for v in self._subscriptions[key] if v[1] != plugin_id]
+                self._subscriptions[key] = [
+                    v for v in self._subscriptions[key] if v[1] != plugin_id
+                ]
 
-    def emit(self, event_id: str, values: dict, *, source: str = "LANCTL", version: int = 1, correlation_id: str | None = None):
+    def emit(
+        self,
+        event_id: str,
+        values: dict,
+        *,
+        source: str = "LANCTL",
+        version: int = 1,
+        correlation_id: str | None = None,
+    ):
         definition = self.registry.get(event_id, version)
-        metadata = EventMetadata(event_id, version, source, datetime.now().astimezone(), correlation_id or str(uuid.uuid4()))
+        metadata = EventMetadata(
+            event_id,
+            version,
+            source,
+            datetime.now().astimezone(),
+            correlation_id or str(uuid.uuid4()),
+        )
         event = construct_contract(definition.contract, {"metadata": metadata, **values})
         decisions: list[HookDecision] = []
-        for _, plugin_id, handler in tuple(self._subscriptions.get((event_id.casefold(), version), [])):
+        for _, plugin_id, handler in tuple(
+            self._subscriptions.get((event_id.casefold(), version), [])
+        ):
             try:
                 result = handler(event)
                 if isinstance(result, HookDecision):
                     decisions.append(result)
                 self.audit(plugin_id, "EVENT HANDLE", event_id, "OK")
-            except Exception as error:  # aislamiento lógico: un plugin no tumba el core
+            except Exception as error:  # noqa: BLE001 - aislamiento de plugins
                 self.audit(plugin_id, "EVENT HANDLE", event_id, "ERROR", str(error))
         if definition.cancelable:
             denied = next((item for item in decisions if not item.allowed), None)

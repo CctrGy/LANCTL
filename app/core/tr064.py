@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from io import BytesIO
 from urllib.error import HTTPError, URLError
@@ -10,8 +11,9 @@ from urllib.request import (
     Request,
     build_opener,
 )
-import xml.etree.ElementTree as ET
 
+from defusedxml import ElementTree as SAFE_ET
+from defusedxml.common import DefusedXmlException
 
 SOAP_ENV = "http://schemas.xmlsoap.org/soap/envelope/"
 
@@ -51,9 +53,7 @@ class Tr064Client:
                 return response.read()
         except HTTPError as error:
             if error.code in (401, 403):
-                raise ValueError(
-                    "TR-064 rechazó las credenciales del GATEWAY"
-                ) from error
+                raise ValueError("TR-064 rechazó las credenciales del GATEWAY") from error
             detail = error.read().decode("utf-8", errors="replace")
             raise OSError(f"TR-064 respondió HTTP {error.code}: {detail[:160]}") from error
         except URLError as error:
@@ -64,18 +64,15 @@ class Tr064Client:
             return self._services
         raw = self._open(urljoin(self.base_url, "tr64desc.xml"))
         try:
-            root = ET.fromstring(raw)
-        except ET.ParseError as error:
+            root = SAFE_ET.fromstring(raw)
+        except (ET.ParseError, DefusedXmlException) as error:
             raise ValueError("TR-064 devolvió una descripción XML inválida") from error
 
         services: list[Tr064Service] = []
         for node in root.iter():
             if node.tag.rsplit("}", 1)[-1] != "service":
                 continue
-            fields = {
-                child.tag.rsplit("}", 1)[-1]: (child.text or "").strip()
-                for child in node
-            }
+            fields = {child.tag.rsplit("}", 1)[-1]: (child.text or "").strip() for child in node}
             if fields.get("serviceType") and fields.get("controlURL"):
                 services.append(
                     Tr064Service(
@@ -126,8 +123,8 @@ class Tr064Client:
         )
         raw = self._open(request)
         try:
-            root = ET.parse(BytesIO(raw)).getroot()
-        except ET.ParseError as error:
+            root = SAFE_ET.parse(BytesIO(raw)).getroot()
+        except (ET.ParseError, DefusedXmlException) as error:
             raise ValueError("TR-064 devolvió una respuesta SOAP inválida") from error
 
         fault = next(
@@ -146,16 +143,9 @@ class Tr064Client:
 
         response_name = f"{action}Response"
         response = next(
-            (
-                node
-                for node in root.iter()
-                if node.tag.rsplit("}", 1)[-1] == response_name
-            ),
+            (node for node in root.iter() if node.tag.rsplit("}", 1)[-1] == response_name),
             None,
         )
         if response is None:
             raise ValueError(f"TR-064 no devolvió {response_name}")
-        return {
-            child.tag.rsplit("}", 1)[-1]: (child.text or "").strip()
-            for child in response
-        }
+        return {child.tag.rsplit("}", 1)[-1]: (child.text or "").strip() for child in response}

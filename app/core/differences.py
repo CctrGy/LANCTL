@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Iterable, Mapping
 
 from app.models import Device
-
 
 SCANNED_FIELDS = ("IP", "MAC")
 PROTECTED_FIELDS = (
@@ -86,9 +85,7 @@ def compare_scan(
             if previous_by_ip is not None and not mac_equal:
                 mac_conflicts += 1
 
-        pending_values += sum(
-            state.get(field) == "red" for field in SCANNED_FIELDS
-        )
+        pending_values += sum(state.get(field) == "red" for field in SCANNED_FIELDS)
         colors.append(state)
 
     return ScanDifferences(

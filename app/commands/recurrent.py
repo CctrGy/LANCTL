@@ -5,7 +5,6 @@ import argparse
 from app.core.output import write_records
 from app.core.recurrent_elements import RecurrentElementDatabase
 
-
 RECURRENT_COLUMNS = (
     "cnf",
     "alias",

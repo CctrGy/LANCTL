@@ -6,7 +6,6 @@ import json
 from app.core.config import load_config
 from app.core.database import DeviceDatabase
 
-
 FIELDS = {
     "ip": "IP",
     "cnf": "cnf",
@@ -59,7 +58,9 @@ def register_call_command(commands: argparse._SubParsersAction) -> None:
         action="store_true",
         help="Devuelve el registro completo como JSON.",
     )
-    command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
+    command.add_argument(
+        "--database", default=config["database"], help="Archivo JSON de elementos."
+    )
     command.set_defaults(handler=run_call)
 
 

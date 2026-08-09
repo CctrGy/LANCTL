@@ -22,7 +22,9 @@ def register_cnf_command(commands: argparse._SubParsersAction) -> None:
             "F (FIXED). Sin valor libera F y restaura O."
         ),
     )
-    command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
+    command.add_argument(
+        "--database", default=config["database"], help="Archivo JSON de elementos."
+    )
     command.set_defaults(handler=run_cnf)
 
 
@@ -37,8 +39,6 @@ def run_cnf(args: argparse.Namespace) -> int:
             )
             return 0
         value = "O"
-    device = DeviceDatabase(args.database).edit_device(
-        args.selector, "cnf", value
-    )
+    device = DeviceDatabase(args.database).edit_device(args.selector, "cnf", value)
     ok("ACTUALIZADO", f"{device.alias or device.ip} | cnf = {device.cnf}")
     return 0

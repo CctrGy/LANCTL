@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import base64
 import hashlib
+import hmac
 import logging
-import socket
-import subprocess
 import re
 import shutil
+import socket
+import subprocess
 import sys
 import time
-from typing import Callable
-
+from collections.abc import Callable
+from dataclasses import dataclass
 
 LEGACY_HOST_KEYS = {"ssh-rsa"}
 LEGACY_KEX = {"diffie-hellman-group14-sha1"}
@@ -46,7 +46,7 @@ class SshProfile:
     fingerprint: str = ""
 
     @classmethod
-    def from_options(cls, options: dict) -> "SshProfile":
+    def from_options(cls, options: dict) -> SshProfile:
         profile = cls(
             port=int(options.get("port", 22)),
             driver=str(options.get("driver", "autodetect")),
@@ -72,6 +72,17 @@ class SshProfile:
         return arguments
 
 
+def disabled_algorithms(profile: SshProfile) -> dict[str, list[str]]:
+    """Bloquea SHA-1 salvo que un perfil heredado lo solicite expresamente."""
+    return {
+        "keys": sorted(LEGACY_HOST_KEYS - set(profile.host_key_algorithms)),
+        # Estas operaciones usan contraseña; no necesitan firmas RSA/SHA-1 para
+        # autenticar al usuario.
+        "pubkeys": ["ssh-rsa", "ssh-dss"],
+        "kex": sorted(LEGACY_KEX - set(profile.kex_algorithms)),
+    }
+
+
 def tcp_available(host: str, port: int, timeout: float = 2.0) -> bool:
     try:
         with socket.create_connection((host, port), timeout=timeout):
@@ -84,7 +95,11 @@ def arp_mac(host: str) -> str:
     """Devuelve la MAC observada en ARP sin alterar la identidad almacenada."""
     try:
         result = subprocess.run(
-            ["arp", "-a", host], capture_output=True, text=True, timeout=3
+            ["arp", "-a", host],
+            capture_output=True,
+            text=True,
+            timeout=3,
+            check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return ""
@@ -93,7 +108,7 @@ def arp_mac(host: str) -> str:
 
 
 def host_fingerprint(host: str, profile: SshProfile, timeout: float = 5.0) -> tuple[str, bool]:
-    """Obtiene la huella; prueba algoritmos modernos antes del fallback legacy."""
+    """Obtiene la huella; prueba algoritmos modernos antes del modo heredado."""
     try:
         import paramiko
     except ImportError as error:
@@ -105,10 +120,14 @@ def host_fingerprint(host: str, profile: SshProfile, timeout: float = 5.0) -> tu
         transport.banner_timeout = timeout
         security = transport.get_security_options()
         if legacy:
-            security.key_types = tuple(dict.fromkeys((*profile.host_key_algorithms, *security.key_types)))
+            security.key_types = tuple(
+                dict.fromkeys((*profile.host_key_algorithms, *security.key_types))
+            )
             security.kex = tuple(dict.fromkeys((*profile.kex_algorithms, *security.kex)))
         else:
-            security.key_types = tuple(item for item in security.key_types if item not in LEGACY_HOST_KEYS)
+            security.key_types = tuple(
+                item for item in security.key_types if item not in LEGACY_HOST_KEYS
+            )
             security.kex = tuple(item for item in security.kex if item not in LEGACY_KEX)
         try:
             transport.start_client(timeout=timeout)
@@ -120,8 +139,9 @@ def host_fingerprint(host: str, profile: SshProfile, timeout: float = 5.0) -> tu
     transport_logger = logging.getLogger("paramiko.transport")
     previous_level = transport_logger.level
     try:
-        # El fallo moderno es una rama esperada para perfiles legacy; Paramiko
-        # lo registra desde su hilo interno aunque después hagamos fallback.
+        # El rechazo de algoritmos modernos es una rama esperada para perfiles
+        # heredados. Paramiko lo registra desde su hilo interno aunque después
+        # se pruebe el modo alternativo.
         transport_logger.setLevel(logging.CRITICAL)
         try:
             key = negotiate(False)
@@ -181,15 +201,79 @@ def run_show_command(
         "port": profile.port,
         "username": username,
         "password": password,
-        # Paramiko conserva estos algoritmos en su catálogo. No se modifica
-        # ninguna configuración global de OpenSSH ni del sistema.
-        "disabled_algorithms": {},
+        # Un perfil heredado puede retirar una entrada concreta de esta lista;
+        # la excepción queda acotada a esta conexión y a una huella fijada.
+        "disabled_algorithms": disabled_algorithms(profile),
     }
     connection = connector(**parameters)
     try:
         return str(connection.send_command(command))
     finally:
         connection.disconnect()
+
+
+def run_remote_command(
+    host: str,
+    username: str,
+    password: str,
+    profile: SshProfile,
+    command: str,
+    *,
+    timeout: float = 15.0,
+    transport_factory=None,
+) -> tuple[int, str, str]:
+    """Ejecuta un comando explícito tras verificar la host key fijada.
+
+    No abre una shell ni acepta algoritmos heredados fuera del perfil del
+    dispositivo. El llamador sigue siendo responsable de permitir únicamente
+    comandos previamente construidos o configurados por un administrador.
+    """
+
+    if not profile.fingerprint:
+        raise ValueError("la huella SSH debe estar fijada antes de operar")
+    try:
+        import paramiko
+    except ImportError as error:
+        raise OSError("falta Paramiko para ejecutar la operación SSH") from error
+
+    connection = socket.create_connection((host, profile.port), timeout=timeout)
+    transport = (
+        transport_factory(connection)
+        if transport_factory is not None
+        else paramiko.Transport(connection, disabled_algorithms=disabled_algorithms(profile))
+    )
+    security = transport.get_security_options()
+    if profile.host_key_algorithms:
+        security.key_types = tuple(
+            dict.fromkeys((*profile.host_key_algorithms, *security.key_types))
+        )
+    if profile.kex_algorithms:
+        security.kex = tuple(dict.fromkeys((*profile.kex_algorithms, *security.kex)))
+    try:
+        transport.start_client(timeout=timeout)
+        presented = _key_fingerprint(transport.get_remote_server_key())
+        if not hmac.compare_digest(presented, profile.fingerprint):
+            raise ValueError(
+                "ALERTA: la huella SSH ha cambiado "
+                f"(esperada {profile.fingerprint}, actual {presented})"
+            )
+        transport.auth_password(username, password)
+        channel = transport.open_session(timeout=timeout)
+        channel.settimeout(timeout)
+        # El comando procede exclusivamente de plantillas configuradas por un
+        # administrador; nunca se concatena entrada libre del usuario remoto.
+        channel.exec_command(command)  # nosec B601
+        stdout = channel.makefile("r", -1).read()
+        stderr = channel.makefile_stderr("r", -1).read()
+
+        def decode(value):
+            return (
+                value.decode("utf-8", errors="replace") if isinstance(value, bytes) else str(value)
+            )
+
+        return channel.recv_exit_status(), decode(stdout), decode(stderr)
+    finally:
+        transport.close()
 
 
 def open_interactive(host: str, username: str, profile: SshProfile) -> int:
@@ -208,9 +292,7 @@ def open_colored_interactive(
 ) -> int:
     """Terminal SSH lineal cuyo flujo de salida puede decorar LANCTL."""
     if not profile.fingerprint:
-        raise ValueError(
-            "la huella SSH no está fijada; usa primero ssh ELEMENTO fingerprint/trust"
-        )
+        raise ValueError("la huella SSH no está fijada; usa primero ssh ELEMENTO fingerprint/trust")
     try:
         import paramiko
     except ImportError as error:
@@ -220,9 +302,9 @@ def open_colored_interactive(
     transport = paramiko.Transport(connection)
     security = transport.get_security_options()
     if profile.host_key_algorithms:
-        security.key_types = tuple(dict.fromkeys(
-            (*profile.host_key_algorithms, *security.key_types)
-        ))
+        security.key_types = tuple(
+            dict.fromkeys((*profile.host_key_algorithms, *security.key_types))
+        )
     if profile.kex_algorithms:
         security.kex = tuple(dict.fromkeys((*profile.kex_algorithms, *security.kex)))
     try:
@@ -276,5 +358,6 @@ def _write_colored(value: str, theme: str) -> None:
     if not value:
         return
     from app.terminals.ssh_color import colorize_ssh_output
+
     sys.stdout.write(colorize_ssh_output(value, theme))
     sys.stdout.flush()

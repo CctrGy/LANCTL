@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from app.core.config import load_config
 from app.core.paths import application_path
-
-
-LOG_DATE_FORMAT = "%d-%m-%Y"
 
 
 @dataclass(frozen=True)
@@ -28,7 +25,7 @@ def cleanup_old_logs(
     if retention_days < 1:
         raise ValueError("la retención de logs debe ser de al menos 1 día")
 
-    current_day = today or date.today()
+    current_day = today or datetime.now(timezone.utc).astimezone().date()
     oldest_allowed = current_day - timedelta(days=retention_days)
     log_directory = application_path(directory)
     if not log_directory.is_dir():
@@ -39,7 +36,8 @@ def cleanup_old_logs(
         if not path.is_file() or path.suffix.casefold() != ".log":
             continue
         try:
-            log_day = datetime.strptime(path.stem, LOG_DATE_FORMAT).date()
+            day, month, year = map(int, path.stem.split("-"))
+            log_day = date(year, month, day)
         except ValueError:
             continue
         if log_day < oldest_allowed and log_day != current_day:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from collections.abc import Callable
 from typing import Any
 
 
@@ -37,7 +37,8 @@ class SwitchProfile:
     def resolve_port(self, reference: str) -> PortProfile:
         wanted = reference.strip().casefold()
         matches = [
-            port for port in self.ports
+            port
+            for port in self.ports
             if wanted and any(wanted == value.casefold() for value in port.references() if value)
         ]
         if not matches:

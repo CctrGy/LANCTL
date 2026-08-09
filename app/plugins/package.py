@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import hashlib
 import base64
+import hashlib
 import json
 import shutil
 import tempfile
@@ -10,7 +10,6 @@ from datetime import datetime
 from pathlib import Path, PurePosixPath
 
 from app.plugins.models import PluginManifest
-
 
 MAX_ENTRY_SIZE = 64 * 1024 * 1024
 MAX_TOTAL_SIZE = 256 * 1024 * 1024
@@ -37,7 +36,14 @@ def verify_package(path: str | Path) -> dict:
         signature = "UNSIGNED"
         if "meta/signature" in names:
             signature = _verify_signature(archive, actual, names)
-        return {"valid": True, "path": str(source), "manifest": manifest, "checksum": actual, "signature": signature, "entries": len(names)}
+        return {
+            "valid": True,
+            "path": str(source),
+            "manifest": manifest,
+            "checksum": actual,
+            "signature": signature,
+            "entries": len(names),
+        }
 
 
 def install_package(path: str | Path, destination_root: Path) -> tuple[PluginManifest, Path, dict]:
@@ -90,7 +96,9 @@ def build_package(source: str | Path, output: str | Path, *, overwrite: bool = F
         meta.mkdir(parents=True, exist_ok=True)
         (meta / "version").write_text(str(manifest.schema_version) + "\n", encoding="ascii")
         if not (meta / "created").exists():
-            (meta / "created").write_text(datetime.now().astimezone().isoformat(timespec="seconds") + "\n", encoding="utf-8")
+            (meta / "created").write_text(
+                datetime.now().astimezone().isoformat(timespec="seconds") + "\n", encoding="utf-8"
+            )
         checksum = directory_hash(staging, {"meta/checksum", "meta/signature"})
         (meta / "checksum").write_text(checksum + "\n", encoding="ascii")
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -107,7 +115,11 @@ def build_package(source: str | Path, output: str | Path, *, overwrite: bool = F
 
 def archive_hash(archive: zipfile.ZipFile, excluded: set[str]) -> str:
     digest = hashlib.sha256()
-    for name in sorted(item.filename for item in archive.infolist() if not item.is_dir() and item.filename not in excluded):
+    for name in sorted(
+        item.filename
+        for item in archive.infolist()
+        if not item.is_dir() and item.filename not in excluded
+    ):
         data = archive.read(name)
         digest.update(name.encode("utf-8") + b"\0" + len(data).to_bytes(8, "big") + data)
     return digest.hexdigest()
@@ -126,10 +138,14 @@ def _verify_signature(archive: zipfile.ZipFile, checksum: str, names: set[str]) 
         public_key = serialization.load_pem_public_key(archive.read("meta/public-key.pem"))
         if not isinstance(public_key, Ed25519PublicKey):
             raise ValueError("la clave de firma LCP no es Ed25519")
-        public_key.verify(base64.b64decode(document["value"], validate=True), checksum.encode("ascii"))
-        fingerprint = hashlib.sha256(public_key.public_bytes(
-            serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
-        )).hexdigest()
+        public_key.verify(
+            base64.b64decode(document["value"], validate=True), checksum.encode("ascii")
+        )
+        fingerprint = hashlib.sha256(
+            public_key.public_bytes(
+                serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+            )
+        ).hexdigest()
         return f"VALID_ED25519:{fingerprint}"
     except Exception as error:
         raise ValueError(f"firma LCP no válida: {error}") from error
@@ -160,7 +176,13 @@ def safe_package(path: str | Path):
         for item in archive.infolist():
             name = item.filename
             pure = PurePosixPath(name)
-            if not name or name.startswith(("/", "\\")) or "\\" in name or ".." in pure.parts or pure.is_absolute():
+            if (
+                not name
+                or name.startswith(("/", "\\"))
+                or "\\" in name
+                or ".." in pure.parts
+                or pure.is_absolute()
+            ):
                 raise ValueError(f"ruta no segura dentro del LCP: {name}")
             folded = name.casefold()
             if folded in seen:

@@ -7,8 +7,8 @@ from app.core.output import render_records
 from app.core.progress import ScanProgress
 from app.core.query import matches_query
 from app.models import Device
-from app.services.network_discovery import discovery_probe
 from app.services.lan_scanner import LanScanner
+from app.services.network_discovery import discovery_probe
 from app.services.scan_profiles import apply_profile
 
 
@@ -36,9 +36,7 @@ class ExtensionTests(unittest.TestCase):
     def test_scan_options_are_available_from_cli(self):
         from app.cli import build_parser
 
-        args = build_parser().parse_args([
-            "list", "--scan-order", "random", "--timeout", "1.25"
-        ])
+        args = build_parser().parse_args(["list", "--scan-order", "random", "--timeout", "1.25"])
         self.assertEqual(args.scan_order, "random")
         self.assertEqual(args.timeout, 1.25)
 
@@ -100,8 +98,11 @@ class ExtensionTests(unittest.TestCase):
 
     def test_expressive_queries_are_combined_without_eval(self):
         device = Device(
-            ip="192.168.1.18", mac="10:20:30:40:50:60", cnf="O",
-            groups=["IOT"], manufacturer="Hunan Fn-Link",
+            ip="192.168.1.18",
+            mac="10:20:30:40:50:60",
+            cnf="O",
+            groups=["IOT"],
+            manufacturer="Hunan Fn-Link",
         )
         self.assertTrue(matches_query(device, True, "active and group=IOT and vendor~fn-link"))
         self.assertFalse(matches_query(device, False, "active and group=IOT"))
@@ -116,8 +117,12 @@ class ExtensionTests(unittest.TestCase):
         self.assertIn("A&amp;B", xml)
 
     def test_connection_targets_are_protocol_consistent(self):
-        self.assertEqual(connection_target("192.168.1.10", "https", 8443), "https://192.168.1.10:8443/")
-        self.assertEqual(connection_target("192.168.1.11", "smb", path="share"), r"\\192.168.1.11\share")
+        self.assertEqual(
+            connection_target("192.168.1.10", "https", 8443), "https://192.168.1.10:8443/"
+        )
+        self.assertEqual(
+            connection_target("192.168.1.11", "smb", path="share"), r"\\192.168.1.11\share"
+        )
         self.assertEqual(connection_target("192.168.1.31", "rdp"), "192.168.1.31:3389")
 
 

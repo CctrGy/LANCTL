@@ -7,13 +7,13 @@ from dataclasses import dataclass
 
 from colorama import Fore, Style
 
-from app.core.parser import colorize_help
 from app.core.config import load_config
-from app.core.console import error as print_error, ok
+from app.core.console import error as print_error
+from app.core.console import ok
 from app.core.database import DeviceDatabase
 from app.core.layout import fit_text, terminal_columns
+from app.core.parser import colorize_help
 from app.i18n import t
-
 
 GLOBAL_HELP = """CLI interactiva de LANCTL
 
@@ -36,8 +36,19 @@ Cuando hay un elemento seleccionado puedes omitirlo, por ejemplo:
 """
 
 CONTEXTUAL_COMMANDS = {
-    "alias", "call", "cnf", "credential", "element", "name", "protocol",
-    "ping", "scan", "search", "ssh", "switch", "terminal",
+    "alias",
+    "call",
+    "cnf",
+    "credential",
+    "element",
+    "name",
+    "protocol",
+    "ping",
+    "scan",
+    "search",
+    "ssh",
+    "switch",
+    "terminal",
 }
 
 
@@ -53,7 +64,9 @@ def _clear_screen(stream=None) -> None:
     stream.flush()
 
 
-def _selected_command(parts: list[str], selection: CliSelection, database: DeviceDatabase) -> list[str]:
+def _selected_command(
+    parts: list[str], selection: CliSelection, database: DeviceDatabase
+) -> list[str]:
     """Inyecta la selección solamente si el comando no trae otro elemento válido."""
     if not selection.selector or not parts or parts[0].casefold() not in CONTEXTUAL_COMMANDS:
         return parts
@@ -115,6 +128,7 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             continue
         if command == "version":
             from app import __version__
+
             print(f"LANCTL {__version__}")
             continue
         if command == "select":
@@ -137,7 +151,10 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             # La MAC sigue identificando el elemento aunque su IP cambie.
             selection.selector = device.mac or device.alias or device.ip
             selection.label = device.alias or device.name or device.ip or device.mac
-            ok(t("LANCTL.CLI.STATUS.SELECTED"), f"{selection.label} | {device.ip or '-'} | {device.mac or '-'}")
+            ok(
+                t("LANCTL.CLI.STATUS.SELECTED"),
+                f"{selection.label} | {device.ip or '-'} | {device.mac or '-'}",
+            )
             continue
         if command in ("info", "selected"):
             if not selection.selector:

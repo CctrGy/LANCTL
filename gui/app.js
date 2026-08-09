@@ -53,10 +53,41 @@ $("#device-details").addEventListener("click",event=>{if(event.target===$("#devi
 $("#open-terminal").addEventListener("click",async()=>{if(!state.selectedId)return message("Selecciona un elemento",true);try{const payload=await call("open_terminal",state.selectedId);message(payload.message)}catch(error){message(error.message,true)}});
 $("#wake-device").addEventListener("click",async()=>{if(!state.selectedId)return message("Selecciona un elemento",true);setBusy(true,"Enviando señal de encendido…");try{message("Esperando a que el equipo responda…");const payload=await call("wake_device",state.selectedId,{});message(payload.message,payload.result?.status==="timeout")}catch(error){message(error.message,true)}finally{setBusy(false)}});
 $("#open-device").addEventListener("click",async()=>{if(!state.selectedId)return message("Selecciona un elemento",true);const device=state.devices.find(item=>item.id===state.selectedId);const protocol=device.protocols.includes("https")?"https":device.protocols.includes("http")?"http":"auto";try{const payload=await call("open_device",state.selectedId,protocol);message(payload.message)}catch(error){message(error.message,true)}});
-$("#project-select").addEventListener("change",async event=>{if(!event.target.value)return;setBusy(true,"Cargando proyecto…");try{const payload=await call("use_project",event.target.value);renderProjects(payload);message(payload.message)}catch(error){message(error.message,true)}finally{setBusy(false)}});
-$("#project-open").addEventListener("click",async()=>{try{const selected=await call("select_project_file");if(!selected.path)return;setBusy(true,"Cargando proyecto…");const payload=await call("use_project",selected.path);renderProjects(payload);message(payload.message)}catch(error){message(error.message,true)}finally{setBusy(false)}});
+$("#project-select").addEventListener("change",async event=>{if(!event.target.value)return;setBusy(true,"Cargando proyecto…");try{const payload=await call("use_project",event.target.value);renderProjects(payload);renderInventory(payload);message(payload.message)}catch(error){message(error.message,true)}finally{setBusy(false)}});
+$("#project-open").addEventListener("click",async()=>{try{const selected=await call("select_project_file");if(!selected.path)return;setBusy(true,"Cargando proyecto…");const payload=await call("use_project",selected.path);renderProjects(payload);renderInventory(payload);message(payload.message)}catch(error){message(error.message,true)}finally{setBusy(false)}});
 $("#activity-refresh").addEventListener("click",showActivity);
-$("#project-save").addEventListener("click",async()=>{setBusy(true,"Guardando proyecto…");try{const payload=await call("save_project");renderProjects(payload);message(payload.message)}catch(error){message(error.message,true)}finally{setBusy(false)}});
-$("#project-new").addEventListener("click",async()=>{const name=prompt("Nombre del nuevo proyecto:");if(!name)return;try{const selected=await call("select_project_directory");if(!selected.path)return;setBusy(true,"Creando proyecto…");const payload=await call("create_project",name,selected.path);renderProjects(payload);message(payload.message)}catch(error){message(error.message,true)}finally{setBusy(false)}});
+$("#project-save").addEventListener("click",async()=>{setBusy(true,"Guardando proyecto…");try{const payload=await call("save_project");renderProjects(payload);renderInventory(payload);message(payload.message)}catch(error){message(error.message,true)}finally{setBusy(false)}});
+$("#project-new").addEventListener("click",async()=>{const name=prompt("Nombre del nuevo proyecto:");if(!name)return;try{const selected=await call("select_project_directory");if(!selected.path)return;setBusy(true,"Creando proyecto…");const payload=await call("create_project",name,selected.path);renderProjects(payload);renderInventory(payload);message(payload.message)}catch(error){message(error.message,true)}finally{setBusy(false)}});
 document.addEventListener("keydown",event=>{if(!["ArrowUp","ArrowDown"].includes(event.key)||["INPUT","SELECT","TEXTAREA"].includes(document.activeElement?.tagName))return;if(!state.devices.length)return;event.preventDefault();const current=Math.max(0,state.devices.findIndex(device=>device.id===state.selectedId));const next=event.key==="ArrowDown"?Math.min(state.devices.length-1,current+1):Math.max(0,current-1);selectDevice(state.devices[next].id);document.querySelector(`tr[data-device-id="${state.devices[next].id}"]`)?.scrollIntoView({block:"nearest"})});
-window.addEventListener("pywebviewready",bootstrap);
+let remoteCsrf="";
+const localBridgeCall=call;
+call=async function(method,...args){
+  if(window.pywebview?.api)return localBridgeCall(method,...args);
+  const response=await fetch("/api/rpc",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-CSRF-Token":remoteCsrf},body:JSON.stringify({method,args})});
+  const payload=await response.json();
+  if(!response.ok||!payload.ok)throw new Error(payload.error||"Acceso remoto rechazado");
+  return payload;
+};
+const localBootstrap=bootstrap;
+bootstrap=async function(){
+  await localBootstrap();
+  if(!window.pywebview?.api){document.body.classList.add("remote-mode");["#project-open","#project-new","#open-terminal","#open-device","#show-shares"].forEach(id=>{const element=$(id);if(element)element.hidden=true})}
+};
+function remoteLogin(){
+  const overlay=document.createElement("div");overlay.className="remote-login";
+  overlay.innerHTML='<form><h1>LANCTL remoto</h1><p>Acceso restringido a esta red LAN</p><label>Usuario<input name="username" autocomplete="username" required></label><label>Contrasena<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">Entrar</button><output></output></form>';
+  document.body.append(overlay);const form=overlay.querySelector("form");
+  form.addEventListener("submit",async event=>{event.preventDefault();const output=form.querySelector("output"),button=form.querySelector("button");button.disabled=true;output.textContent="";try{const response=await fetch("/api/login",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:form.username.value,password:form.password.value})});const payload=await response.json();if(!response.ok)throw new Error(payload.error||"Autenticacion rechazada");remoteCsrf=payload.csrfToken;overlay.remove();await bootstrap()}catch(error){output.textContent=error.message}finally{button.disabled=false}});
+}
+function isRemoteClient(){
+  // La GUI local usa file:// y recibe la API de pywebview unos instantes
+  // después de cargar el DOM. Solo el frontend servido por HTTPS/HTTP debe
+  // mostrar autenticación; la ausencia temporal del puente no implica remoto.
+  return window.location.protocol==="https:"||window.location.protocol==="http:";
+}
+window.addEventListener("pywebviewready",()=>{
+  document.querySelector(".remote-login")?.remove();
+  document.body.classList.remove("remote-mode");
+  bootstrap();
+});
+window.addEventListener("DOMContentLoaded",()=>{if(isRemoteClient())remoteLogin()});

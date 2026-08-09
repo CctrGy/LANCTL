@@ -67,12 +67,14 @@ with tarfile.open(sys.argv[1],'r:gz') as archive:
 PY
   staging="$(mktemp -d -p "$tmp" staging.XXXXXXXX)"; tar -xzf "$tmp/$artifact" -C "$staging"
   target="/opt/lanctl-$resolved"; [[ ! -e "$target" ]] || { echo "$target already exists" >&2; exit 1; }
-  sudo install -d -m 0755 "$target"; sudo cp -a "$staging"/. "$target"/; sudo ln -sfn "$target/LANCTL/LANCTL" /usr/local/bin/lanctl
+  sudo install -d -m 0755 "$target"; sudo cp -a "$staging"/. "$target"/; sudo ln -sfn "$target/LANCTL/lanctl" /usr/local/bin/lanctl
 else
   sudo apt-get install -y "$tmp/$artifact"
 fi
 if [[ "$MODE" == monitor ]]; then echo 'Monitor components installed. Attach a project before enabling lanctl-monitor.service.'; fi
 if ((CONFIGURE_ACCESS)); then
   if ((ASSUME_YES)); then echo 'Remote access was not enabled: setup-wizard requires an interactive terminal.' >&2
-  else sudo lanctl access setup-wizard; fi
+  elif [[ "$MODE" == monitor ]]; then sudo lanctl access setup-wizard --scope service
+  elif [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != root ]]; then sudo -u "$SUDO_USER" lanctl access setup-wizard --scope user
+  else lanctl access setup-wizard --scope user; fi
 fi

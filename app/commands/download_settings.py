@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
 import ipaddress
+from datetime import datetime
 
-from app.core.config import load_config, normalize_dhcp_range, save_config
+from app.core.config import CONFIG_PATH, load_config, normalize_dhcp_range, save_config
 from app.core.console import ok
 from app.core.credentials import CredentialStore
 from app.core.database import DeviceDatabase
+from app.core.file_transaction import transactional_file
 from app.core.tr064 import Tr064Client
 
 
@@ -117,6 +118,7 @@ def lan_settings(info: dict[str, str], gateway_ip: str, port: int) -> dict:
     return result
 
 
+@transactional_file(CONFIG_PATH)
 def run_download_settings(args: argparse.Namespace) -> int:
     config = load_config()
     device = DeviceDatabase(args.database).resolve(args.gateway)

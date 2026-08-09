@@ -6,8 +6,13 @@ import zipfile
 from pathlib import Path
 
 from app.projects.vlf import (
-    REQUIRED_ENTRIES, _normalized_log_name, append_database_log, create_project,
-    inspect_project, update_project, verify_project,
+    REQUIRED_ENTRIES,
+    _normalized_log_name,
+    append_database_log,
+    create_project,
+    inspect_project,
+    update_project,
+    verify_project,
 )
 
 
@@ -22,29 +27,53 @@ class VlfProjectTests(unittest.TestCase):
         self.database_logs = self.root / "db-logs"
         self.logs.mkdir()
         self.database_logs.mkdir()
-        self.devices.write_text(json.dumps([
-            {
-                "IP": "192.168.50.10", "MAC": "AA:BB:CC:DD:EE:FF",
-                "cnf": "O", "ALIAS": "NAS", "NAME": "Storage",
-                "defaultName": "nas.local", "GROUP": ["ASSETS"],
-                "description": "Almacenamiento", "protocols": ["ssh"],
-                "discoveryMethods": ["ICMP", "ARP"],
-            }
-        ]), encoding="utf-8")
-        self.groups.write_text(json.dumps([
-            {"name": "ASSETS", "description": "-", "members": ["AA:BB:CC:DD:EE:FF"], "editable": True}
-        ]), encoding="utf-8")
+        self.devices.write_text(
+            json.dumps(
+                [
+                    {
+                        "IP": "192.168.50.10",
+                        "MAC": "AA:BB:CC:DD:EE:FF",
+                        "cnf": "O",
+                        "ALIAS": "NAS",
+                        "NAME": "Storage",
+                        "defaultName": "nas.local",
+                        "GROUP": ["ASSETS"],
+                        "description": "Almacenamiento",
+                        "protocols": ["ssh"],
+                        "discoveryMethods": ["ICMP", "ARP"],
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        self.groups.write_text(
+            json.dumps(
+                [
+                    {
+                        "name": "ASSETS",
+                        "description": "-",
+                        "members": ["AA:BB:CC:DD:EE:FF"],
+                        "editable": True,
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
         self.credentials.write_bytes(b"opaque-encrypted-credentials")
         (self.logs / "2807-2026.log").write_text("20:00:00 TEST\n", encoding="utf-8")
         (self.database_logs / "2807-2026.log").write_text(
             "20:00:00 CAMBIO TEST\n", encoding="utf-8"
         )
         self.config = {
-            "database": str(self.devices), "groups": str(self.groups),
+            "database": str(self.devices),
+            "groups": str(self.groups),
             "credentials": str(self.credentials),
-            "programLog": str(self.logs), "databaseLog": str(self.database_logs),
-            "range": "192.168.50.0/24", "dhcpRange": "192.168.50.20-192.168.50.100",
-            "discovery": "hybrid", "scanProfile": "normal",
+            "programLog": str(self.logs),
+            "databaseLog": str(self.database_logs),
+            "range": "192.168.50.0/24",
+            "dhcpRange": "192.168.50.20-192.168.50.100",
+            "discovery": "hybrid",
+            "scanProfile": "normal",
             "scanOrder": "descending",
         }
 
@@ -58,7 +87,7 @@ class VlfProjectTests(unittest.TestCase):
         self.assertEqual(inspect_project(project)["devices"], 1)
         with zipfile.ZipFile(project) as archive:
             names = set(archive.namelist())
-            self.assertTrue(REQUIRED_ENTRIES <= names)
+            self.assertTrue(names >= REQUIRED_ENTRIES)
             self.assertIn("plugins/registry.json", names)
             self.assertIn("auth/keys/ssh/", names)
             self.assertIn("logs/28-07-2026.log", names)
@@ -97,7 +126,9 @@ class VlfProjectTests(unittest.TestCase):
         current = sqlite3.connect(current_db)
         backup = sqlite3.connect(backup_db)
         try:
-            self.assertEqual(current.execute("SELECT name FROM devices").fetchone()[0], "Storage Updated")
+            self.assertEqual(
+                current.execute("SELECT name FROM devices").fetchone()[0], "Storage Updated"
+            )
             self.assertEqual(backup.execute("SELECT name FROM devices").fetchone()[0], "Storage")
         finally:
             current.close()
@@ -121,7 +152,11 @@ class VlfProjectTests(unittest.TestCase):
 
         self.assertTrue(verify_project(project)["valid"])
         with zipfile.ZipFile(project) as archive:
-            daily_logs = [name for name in archive.namelist() if name.startswith("logs/") and name.endswith(".log")]
+            daily_logs = [
+                name
+                for name in archive.namelist()
+                if name.startswith("logs/") and name.endswith(".log")
+            ]
             content = b"\n".join(archive.read(name) for name in daily_logs)
         self.assertIn(b"CAMBIO device:test ALIAS:A=>B", content)
 

@@ -50,8 +50,12 @@ class ElementScannerTests(unittest.TestCase):
             return sock
 
         findings = scan_tcp_ports(
-            "192.168.1.10", [22, 80], timeout=0.1, workers=2,
-            banners=True, connector=connector,
+            "192.168.1.10",
+            [22, 80],
+            timeout=0.1,
+            workers=2,
+            banners=True,
+            connector=connector,
         )
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0].port, 22)
@@ -62,7 +66,9 @@ class ElementScannerTests(unittest.TestCase):
     def test_rtsp_is_identified_by_response_instead_of_port_number(self):
         sock = _FakeSocket(b"RTSP/1.0 200 OK\r\nServer: CameraOS\r\n\r\n")
         finding = identify_tcp_service(
-            "192.168.1.18", 443, 0.1,
+            "192.168.1.18",
+            443,
+            0.1,
             connector=lambda _address, timeout: sock,
         )
         self.assertEqual(finding.service, "rtsp")
@@ -71,7 +77,9 @@ class ElementScannerTests(unittest.TestCase):
 
     def test_http_is_identified_from_status_line_and_server_header(self):
         finding = identify_tcp_service(
-            "192.168.1.20", 8080, 0.1,
+            "192.168.1.20",
+            8080,
+            0.1,
             connector=lambda _address, timeout: _FakeSocket(
                 b"HTTP/1.1 400 Bad Request\r\nServer: nginx\r\n\r\n"
             ),
@@ -81,7 +89,9 @@ class ElementScannerTests(unittest.TestCase):
 
     def test_device_identification_reports_evidence_and_confidence(self):
         finding = identify_tcp_service(
-            "192.168.1.18", 443, 0.1,
+            "192.168.1.18",
+            443,
+            0.1,
             connector=lambda _address, timeout: _FakeSocket(b"RTSP/1.0 200 OK\r\n"),
         )
         identified = identify_device([finding], "Hunan Fn-Link")

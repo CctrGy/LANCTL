@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import json
 import ipaddress
-from pathlib import Path
-from typing import Iterable, Mapping
+import json
+from collections.abc import Iterable, Mapping
 from datetime import datetime
 
-from app.models import Device, normalize_cnf, normalize_mac
-from app.core.paths import application_path
 from app.core.config import load_config
+from app.core.file_transaction import atomic_write_json, transactional_method
 from app.core.logger import write_database_log
+from app.core.paths import application_path
 from app.core.recurrent_elements import RecurrentElementDatabase
+from app.models import Device, normalize_cnf, normalize_mac
 
 
 class DeviceDatabase:
@@ -25,8 +25,16 @@ class DeviceDatabase:
         try:
             value = json.loads(self.path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as error:
-            raise ValueError(f"la base de datos no contiene JSON válido: {self.path}") from error
+            raise ValueError(
+                "la base de datos no contiene JSON válido "
+                f"(línea {error.lineno}, columna {error.colno}): {self.path}"
+            ) from error
+        except UnicodeDecodeError as error:
+            raise ValueError(
+                f"la base de datos no está codificada como UTF-8: {self.path}"
+            ) from error
         if not isinstance(value, list):
+            # Es contenido externo inválido, no un uso incorrecto de la API.
             raise ValueError(f"la base de datos debe contener una lista: {self.path}")
 
         devices: list[Device] = []
@@ -38,49 +46,49 @@ class DeviceDatabase:
             devices.append(Device.from_dict(item))
         return devices
 
-    def upsert(
-        self, records: Iterable[Mapping[str, str] | Device]
-    ) -> list[Device]:
-        devices = self.preview(records)
-        self._write(devices)
+    @transactional_method
+    def upsert(self, records: Iterable[Mapping[str, str] | Device]) -> list[Device]:
+        # La misma instantánea sirve para fusionar y para generar la auditoría;
+        # así evitamos leer y convertir dos veces el JSON en cada escaneo.
+        before = self.load()
+        devices = self.preview(records, _devices=before)
+        self._write(devices, before=before)
         return devices
 
     def preview(
-        self, records: Iterable[Mapping[str, str] | Device]
+        self,
+        records: Iterable[Mapping[str, str] | Device],
+        *,
+        _devices: list[Device] | None = None,
     ) -> list[Device]:
         """Fusiona resultados sin modificar todavía la base de datos."""
-        devices = self.load()
+        devices = list(_devices) if _devices is not None else self.load()
         recurrent_elements = RecurrentElementDatabase()
+        # La fusión se ejecuta por cada host descubierto. Estos índices evitan
+        # recorrer el inventario completo para localizar cada identidad.
+        mac_indexes = {
+            device.mac.upper(): index for index, device in enumerate(devices) if device.mac
+        }
+        ip_indexes = {device.ip: index for index, device in enumerate(devices)}
         for record in records:
             record = recurrent_elements.enrich(record)
             ip = str(record["IP"])
             mac = str(record.get("MAC", "")).upper()
 
             # La MAC identifica al dispositivo aunque DHCP le asigne otra IP.
-            previous = next(
-                (
-                    device
-                    for device in devices
-                    if mac and device["MAC"].upper() == mac
-                ),
-                None,
-            )
+            previous_index = mac_indexes.get(mac) if mac else None
             # Sin MAC solo puede utilizarse la IP como identidad provisional.
             # Una MAC nueva nunca sustituye otra MAC por compartir la misma IP.
-            if previous is None and not mac:
-                previous = next(
-                    (device for device in devices if device["IP"] == ip),
-                    None,
-                )
+            if previous_index is None and not mac:
+                previous_index = ip_indexes.get(ip)
+            previous = devices[previous_index] if previous_index is not None else None
 
             incoming = Device.from_dict(
                 {
                     "IP": ip,
                     "cnf": normalize_cnf(record.get("cnf", False)),
                     "ALIAS": str(record.get("ALIAS", "")),
-                    "defaultAlias": str(
-                        record.get("defaultAlias", record.get("ALIAS", ""))
-                    ),
+                    "defaultAlias": str(record.get("defaultAlias", record.get("ALIAS", ""))),
                     "MAC": mac,
                     "NAME": str(record.get("NAME", "")),
                     "GROUP": list(record.get("GROUP", [])),
@@ -101,21 +109,19 @@ class DeviceDatabase:
             )
             if previous:
                 incoming["cnf"] = previous["cnf"]
-                incoming["GROUP"] = list(
-                    dict.fromkeys([*previous["GROUP"], *incoming["GROUP"]])
-                )
+                incoming["GROUP"] = list(dict.fromkeys([*previous["GROUP"], *incoming["GROUP"]]))
                 if previous["description"] != "-":
                     incoming["description"] = previous["description"]
                 # Un escaneo incompleto no elimina datos ya vinculados.
                 for field in ("MAC", "manufacturer", "defaultName", "defaultAlias"):
                     if not incoming[field]:
                         incoming[field] = previous[field]
-                # NAME se asigna una sola vez. Si ya existe, sea automático o
-                # editado por el usuario, ningún escaneo vuelve a escribirlo.
+                # NAME se asigna una sola vez. Si ya existe, tanto si es
+                # automático como si lo editó el usuario, ningún escaneo vuelve
+                # a escribirlo.
                 incoming["nameDeleted"] = previous["nameDeleted"]
                 incoming["NAME"] = (
-                    "" if previous["nameDeleted"]
-                    else previous["NAME"] or incoming["defaultName"]
+                    "" if previous["nameDeleted"] else previous["NAME"] or incoming["defaultName"]
                 )
                 incoming["aliasDeleted"] = previous["aliasDeleted"]
                 incoming.device_id = previous.device_id
@@ -125,9 +131,9 @@ class DeviceDatabase:
                     protocol: dict(options)
                     for protocol, options in previous.protocol_options.items()
                 }
-                incoming.discovery_methods = list(dict.fromkeys([
-                    *previous.discovery_methods, *incoming.discovery_methods
-                ]))
+                incoming.discovery_methods = list(
+                    dict.fromkeys([*previous.discovery_methods, *incoming.discovery_methods])
+                )
                 if not incoming.last_discovery:
                     incoming.last_discovery = previous.last_discovery
                 if not incoming.last_seen:
@@ -142,9 +148,16 @@ class DeviceDatabase:
                 # como etiqueta inicial y luego queda protegido.
                 incoming["NAME"] = incoming["defaultName"]
             if previous:
-                devices[devices.index(previous)] = incoming
+                devices[previous_index] = incoming
             else:
+                previous_index = len(devices)
                 devices.append(incoming)
+
+            # Un host puede adquirir MAC o cambiar de IP durante el proceso de
+            # identificación; el índice debe reflejar el registro fusionado.
+            if incoming.mac:
+                mac_indexes[incoming.mac.upper()] = previous_index
+            ip_indexes[incoming.ip] = previous_index
 
         def address_key(device: Device) -> tuple[int, int]:
             try:
@@ -154,38 +167,28 @@ class DeviceDatabase:
 
         return sorted(devices, key=address_key)
 
+    @transactional_method
     def record_detection(
         self, selector: str, methods: Iterable[str], seen_at: str | None = None
     ) -> Device:
         """Añade evidencia de descubrimiento sin alterar identidad ni etiquetas."""
         devices, device = self._find(selector)
-        normalized = list(dict.fromkeys(
-            str(method).strip().upper() for method in methods if str(method).strip()
-        ))
+        normalized = list(
+            dict.fromkeys(str(method).strip().upper() for method in methods if str(method).strip())
+        )
         if not normalized:
             return device.copy()
-        device.discovery_methods = list(dict.fromkeys([
-            *device.discovery_methods, *normalized
-        ]))
+        device.discovery_methods = list(dict.fromkeys([*device.discovery_methods, *normalized]))
         device.last_discovery = "+".join(normalized)
         device.last_seen = seen_at or datetime.now().astimezone().isoformat(timespec="seconds")
         self._write(devices)
         return device.copy()
 
-    def _write(self, devices: list[Device]) -> None:
-        before = self.load() if self.path.exists() else []
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
-        temporary.write_text(
-            json.dumps(
-                [device.to_dict() for device in devices],
-                indent=2,
-                ensure_ascii=False,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-        temporary.replace(self.path)
+    @transactional_method
+    def _write(self, devices: list[Device], *, before: list[Device] | None = None) -> None:
+        if before is None:
+            before = self.load() if self.path.exists() else []
+        atomic_write_json(self.path, [device.to_dict() for device in devices])
         self._audit_changes(before, devices)
 
     def _audit_changes(self, before: list[Device], after: list[Device]) -> None:
@@ -215,7 +218,8 @@ class DeviceDatabase:
             )
         for identity in sorted(previous.keys() & current.keys()):
             changed = [
-                field for field in sorted(current[identity])
+                field
+                for field in sorted(current[identity])
                 if previous[identity].get(field) != current[identity].get(field)
             ]
             if changed:
@@ -225,11 +229,13 @@ class DeviceDatabase:
                         old_value = new_value = "[OCULTO]"
                     else:
                         old_value = json.dumps(
-                            previous[identity].get(field), ensure_ascii=False,
+                            previous[identity].get(field),
+                            ensure_ascii=False,
                             separators=(",", ":"),
                         )
                         new_value = json.dumps(
-                            current[identity].get(field), ensure_ascii=False,
+                            current[identity].get(field),
+                            ensure_ascii=False,
                             separators=(",", ":"),
                         )
                     details.append(f"{field}:{old_value}=>{new_value}")
@@ -239,31 +245,97 @@ class DeviceDatabase:
             write_database_log(entry)
         try:
             from app.core.history import DeviceSnapshot, HistoryEvent, HistoryService
+
             service = HistoryService()
+
             def snapshot(value):
-                return DeviceSnapshot(str(value.get("deviceId", "")), str(value.get("MAC", "")), str(value.get("IP", "")), str(value.get("ALIAS") or value.get("NAME") or value.get("IP") or ""))
+                return DeviceSnapshot(
+                    str(value.get("deviceId", "")),
+                    str(value.get("MAC", "")),
+                    str(value.get("IP", "")),
+                    str(value.get("ALIAS") or value.get("NAME") or value.get("IP") or ""),
+                )
+
             for identity in sorted(current.keys() - previous.keys()):
-                service.write(HistoryEvent("device.created","lanctl.database","local","success","Dispositivo añadido al inventario",device=snapshot(current[identity]),operationId="database.device.update"))
+                service.write(
+                    HistoryEvent(
+                        "device.created",
+                        "lanctl.database",
+                        "local",
+                        "success",
+                        "Dispositivo añadido al inventario",
+                        device=snapshot(current[identity]),
+                        operationId="database.device.update",
+                    )
+                )
             for identity in sorted(previous.keys() - current.keys()):
-                service.write(HistoryEvent("device.deleted","lanctl.database","local","success","Dispositivo eliminado del inventario",device=snapshot(previous[identity]),operationId="database.device.update"))
-            type_by_field={"IP":"device.ip.changed","MAC":"device.mac.changed","NAME":"device.name.changed","ALIAS":"device.alias.changed","protocols":"device.protocol.configured","credentials":"device.credential.bound"}
+                service.write(
+                    HistoryEvent(
+                        "device.deleted",
+                        "lanctl.database",
+                        "local",
+                        "success",
+                        "Dispositivo eliminado del inventario",
+                        device=snapshot(previous[identity]),
+                        operationId="database.device.update",
+                    )
+                )
+            type_by_field = {
+                "IP": "device.ip.changed",
+                "MAC": "device.mac.changed",
+                "NAME": "device.name.changed",
+                "ALIAS": "device.alias.changed",
+                "protocols": "device.protocol.configured",
+                "credentials": "device.credential.bound",
+            }
             for identity in sorted(previous.keys() & current.keys()):
-                changes=[]
+                changes = []
                 for field_name in sorted(current[identity]):
-                    if previous[identity].get(field_name)!=current[identity].get(field_name):
-                        hidden=field_name.casefold()=="credentials"
-                        changes.append({"field":field_name,"before":"[OCULTO]" if hidden else previous[identity].get(field_name),"after":"[OCULTO]" if hidden else current[identity].get(field_name)})
+                    if previous[identity].get(field_name) != current[identity].get(field_name):
+                        hidden = field_name.casefold() == "credentials"
+                        changes.append(
+                            {
+                                "field": field_name,
+                                "before": "[OCULTO]"
+                                if hidden
+                                else previous[identity].get(field_name),
+                                "after": "[OCULTO]"
+                                if hidden
+                                else current[identity].get(field_name),
+                            }
+                        )
                 if changes:
-                    event_type=type_by_field.get(changes[0]["field"],"device.updated") if len(changes)==1 else "device.updated"
-                    service.write(HistoryEvent(event_type,"lanctl.database","local","success","Inventario del dispositivo actualizado",device=snapshot(current[identity]),changes=tuple(changes),operationId="database.device.update"))
+                    event_type = (
+                        type_by_field.get(changes[0]["field"], "device.updated")
+                        if len(changes) == 1
+                        else "device.updated"
+                    )
+                    service.write(
+                        HistoryEvent(
+                            event_type,
+                            "lanctl.database",
+                            "local",
+                            "success",
+                            "Inventario del dispositivo actualizado",
+                            device=snapshot(current[identity]),
+                            changes=tuple(changes),
+                            operationId="database.device.update",
+                        )
+                    )
         except (ValueError, OSError):
             pass
 
+    @transactional_method
     def save_devices(self, devices: list[Device]) -> None:
         self._write(devices)
 
-    def _find(self, selector: str) -> tuple[list[Device], Device]:
-        devices = self.load()
+    def _find(
+        self,
+        selector: str,
+        *,
+        devices: list[Device] | None = None,
+    ) -> tuple[list[Device], Device]:
+        devices = self.load() if devices is None else devices
         candidate = selector.replace("-", ":").upper()
         try:
             normalized = normalize_mac(candidate)
@@ -283,9 +355,14 @@ class DeviceDatabase:
             raise ValueError(f"el selector coincide con varios dispositivos: {selector}")
         return devices, matches[0]
 
-    def resolve(self, selector: str) -> Device:
+    def resolve(
+        self,
+        selector: str,
+        *,
+        devices: list[Device] | None = None,
+    ) -> Device:
         """Alias Call: resuelve MAC, IP o ALIAS al registro completo."""
-        _, device = self._find(selector)
+        _, device = self._find(selector, devices=devices)
         return device.copy()
 
     def search(self, selector: str) -> list[Device]:
@@ -310,9 +387,8 @@ class DeviceDatabase:
             raise ValueError(f"no se encontró ningún dispositivo para: {selector}")
         return matches
 
-    def set_value(
-        self, selector: str, field: str, mode: str, value: str = ""
-    ) -> Device:
+    @transactional_method
+    def set_value(self, selector: str, field: str, mode: str, value: str = "") -> Device:
         devices, device = self._find(selector)
         if field == "NAME":
             default_field, deleted_field = "defaultName", "nameDeleted"
@@ -320,7 +396,7 @@ class DeviceDatabase:
             default_field, deleted_field = "defaultAlias", "aliasDeleted"
             if device["defaultAlias"] in ("GATEWAY", "BRODCAST"):
                 raise ValueError(
-                    f'el alias reservado {device["defaultAlias"]} no se puede modificar'
+                    f"el alias reservado {device['defaultAlias']} no se puede modificar"
                 )
 
         if mode == "default":
@@ -335,15 +411,12 @@ class DeviceDatabase:
                     (
                         item
                         for item in devices
-                        if item is not device
-                        and item["ALIAS"].casefold() == value.casefold()
+                        if item is not device and item["ALIAS"].casefold() == value.casefold()
                     ),
                     None,
                 )
                 if duplicate:
-                    raise ValueError(
-                        f'el alias "{value}" ya pertenece a {duplicate["MAC"]}'
-                    )
+                    raise ValueError(f'el alias "{value}" ya pertenece a {duplicate["MAC"]}')
             device[field] = value
             device[deleted_field] = False
 
@@ -360,6 +433,7 @@ class DeviceDatabase:
     def set_alias(self, selector: str, alias: str) -> Device:
         return self.set_value(selector, "ALIAS", "value", alias)
 
+    @transactional_method
     def edit_device(self, selector: str, field: str, value: str) -> Device:
         if field in ("name", "alias"):
             return self.set_value(
@@ -386,6 +460,7 @@ class DeviceDatabase:
         self._write(devices)
         return device
 
+    @transactional_method
     def add_device(
         self,
         mac: str,
@@ -402,9 +477,7 @@ class DeviceDatabase:
         devices = self.load()
         if any(device.mac == normalized_mac for device in devices):
             raise ValueError(f"ya existe un elemento con la MAC {normalized_mac}")
-        if alias and any(
-            device.alias.casefold() == alias.casefold() for device in devices
-        ):
+        if alias and any(device.alias.casefold() == alias.casefold() for device in devices):
             raise ValueError(f"el alias {alias} ya está en uso")
 
         device = Device(
@@ -419,9 +492,8 @@ class DeviceDatabase:
         self._write(devices)
         return device
 
-    def bind_credential(
-        self, selector: str, protocol: str, credential_id: str
-    ) -> Device:
+    @transactional_method
+    def bind_credential(self, selector: str, protocol: str, credential_id: str) -> Device:
         from app.models import normalize_protocol
 
         devices, device = self._find(selector)
@@ -432,6 +504,7 @@ class DeviceDatabase:
         self._write(devices)
         return device.copy()
 
+    @transactional_method
     def unbind_credential(self, selector: str, protocol: str) -> Device:
         from app.models import normalize_protocol
 
@@ -441,9 +514,8 @@ class DeviceDatabase:
         self._write(devices)
         return device.copy()
 
-    def set_protocol(
-        self, selector: str, protocol: str, enabled: bool
-    ) -> Device:
+    @transactional_method
+    def set_protocol(self, selector: str, protocol: str, enabled: bool) -> Device:
         from app.models import normalize_protocol
 
         devices, device = self._find(selector)
@@ -454,12 +526,12 @@ class DeviceDatabase:
             device.protocols = [item for item in device.protocols if item != normalized]
             if normalized in device.credentials:
                 raise ValueError(
-                    f"el protocolo {normalized} tiene una credencial asociada; "
-                    "elimínala primero"
+                    f"el protocolo {normalized} tiene una credencial asociada; elimínala primero"
                 )
         self._write(devices)
         return device.copy()
 
+    @transactional_method
     def configure_protocol(
         self, selector: str, protocol: str, options: Mapping[str, object]
     ) -> Device:

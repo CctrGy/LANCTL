@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import ctypes
+import os
 import shutil
 import sys
 import textwrap
-import ctypes
-import os
-from typing import Iterable
+from collections.abc import Iterable
 
 
 def terminal_columns(stream=None, fallback: int = 120) -> int | None:
@@ -14,21 +14,25 @@ def terminal_columns(stream=None, fallback: int = 120) -> int | None:
     if not getattr(stream, "isatty", lambda: False)():
         return None
     if os.name == "nt":
-        # En Windows shutil puede devolver el ancho del buffer desplazable.
-        # srWindow representa los caracteres que el usuario ve realmente.
+        # En Windows `shutil` puede devolver el ancho del búfer desplazable.
+        # `srWindow` representa los caracteres que el usuario ve realmente.
         class _Coord(ctypes.Structure):
             _fields_ = (("x", ctypes.c_short), ("y", ctypes.c_short))
 
         class _SmallRect(ctypes.Structure):
             _fields_ = (
-                ("left", ctypes.c_short), ("top", ctypes.c_short),
-                ("right", ctypes.c_short), ("bottom", ctypes.c_short),
+                ("left", ctypes.c_short),
+                ("top", ctypes.c_short),
+                ("right", ctypes.c_short),
+                ("bottom", ctypes.c_short),
             )
 
         class _ConsoleInfo(ctypes.Structure):
             _fields_ = (
-                ("size", _Coord), ("cursor", _Coord),
-                ("attributes", ctypes.c_ushort), ("window", _SmallRect),
+                ("size", _Coord),
+                ("cursor", _Coord),
+                ("attributes", ctypes.c_ushort),
+                ("window", _SmallRect),
                 ("maximum", _Coord),
             )
 
@@ -36,9 +40,7 @@ def terminal_columns(stream=None, fallback: int = 120) -> int | None:
             handle_id = -12 if stream is sys.stderr else -11
             handle = ctypes.windll.kernel32.GetStdHandle(handle_id)
             info = _ConsoleInfo()
-            if ctypes.windll.kernel32.GetConsoleScreenBufferInfo(
-                handle, ctypes.byref(info)
-            ):
+            if ctypes.windll.kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(info)):
                 return max(20, info.window.right - info.window.left + 1)
         except (AttributeError, OSError, ValueError):
             pass

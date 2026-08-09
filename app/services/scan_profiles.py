@@ -17,9 +17,7 @@ class ScanProfile:
 SCAN_PROFILES = {
     "fast": ScanProfile("fast", "arp", 0.4, 2.0, 1, False, ()),
     "normal": ScanProfile("normal", "hybrid", 1.0, 1.0, 1, False, ("mdns", "ssdp")),
-    "accurate": ScanProfile(
-        "accurate", "hybrid", 1.75, 0.75, 2, True, ("mdns", "ssdp", "wsd")
-    ),
+    "accurate": ScanProfile("accurate", "hybrid", 1.75, 0.75, 2, True, ("mdns", "ssdp", "wsd")),
 }
 
 

@@ -10,7 +10,8 @@ def fake_jpeg(width: int, height: int) -> bytes:
     # Contenedor estructural mínimo suficiente para probar el lector SOF.
     return (
         b"\xff\xd8\xff\xc0\x00\x0b\x08"
-        + height.to_bytes(2, "big") + width.to_bytes(2, "big")
+        + height.to_bytes(2, "big")
+        + width.to_bytes(2, "big")
         + b"\x01\x01\x11\x00\xff\xd9"
     )
 
@@ -21,7 +22,9 @@ class IconTests(unittest.TestCase):
             manager = IconManager(temporary)
             manager.initialize()
             registry = json.loads((Path(temporary) / "icons.json").read_text(encoding="utf-8"))
-            self.assertEqual(registry["format"], {"mime": "image/jpeg", "width": 125, "height": 125})
+            self.assertEqual(
+                registry["format"], {"mime": "image/jpeg", "width": 125, "height": 125}
+            )
             self.assertEqual(registry["icons"], [])
 
     def test_registers_and_resolves_125_square_jpeg(self):

@@ -21,8 +21,12 @@ Nunca se usa `0.0.0.0` por defecto. Cada petición/conexión se valida contra el
 CIDR gestionado. No hay UPnP, NAT automático, CORS wildcard, shell del sistema,
 SFTP/SCP ni forwarding SSH. Las reglas de firewall no se modifican por defecto.
 
-`lanctl access setup-wizard` configura ambos autenticadores desde una consola
-local. Puede crear reglas `netsh`/`ufw` únicamente tras confirmación; cada regla
+`lanctl access setup-wizard --scope user` configura ambos autenticadores para
+una ejecución interactiva. En un nodo MONITOR permanente se usa
+`--scope service`: Windows conserva los secretos en
+`ProgramData\LANCTL\access` y Linux en `/etc/lanctl/access`. El supervisor del
+backend activa o detiene los listeners habilitados y los recupera tras un
+reinicio. Puede crear reglas `netsh`/`ufw` únicamente tras confirmación; cada regla
 queda limitada a la IP LAN, puerto TCP y CIDR indicados. Si una etapa falla, se
 detienen los procesos iniciados, se eliminan las reglas creadas y SSH/HTTPS
 vuelven a quedar apagados.

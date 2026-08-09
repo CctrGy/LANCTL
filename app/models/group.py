@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Any
 
 from app.models.device import normalize_mac
 
@@ -20,12 +21,10 @@ class Group:
         self.description = self.description or "-"
         if len(self.description) > 42:
             raise ValueError("la descripción de un grupo no puede superar 42 caracteres")
-        self.members = list(
-            dict.fromkeys(normalize_mac(mac) for mac in self.members)
-        )
+        self.members = list(dict.fromkeys(normalize_mac(mac) for mac in self.members))
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, Any]) -> "Group":
+    def from_dict(cls, value: Mapping[str, Any]) -> Group:
         return cls(
             name=str(value["name"]),
             description=str(value.get("description", "-")),

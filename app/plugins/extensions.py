@@ -3,12 +3,26 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-
 EXTENSION_TYPES = {
-    "command", "theme", "language", "settings", "automation", "network",
-    "analysis", "ui-panel", "ui-action", "security", "config", "protocol",
-    "scanner", "device-adapter", "parser", "exporter", "project-handler",
-    "physical-model", "icon",
+    "command",
+    "theme",
+    "language",
+    "settings",
+    "automation",
+    "network",
+    "analysis",
+    "ui-panel",
+    "ui-action",
+    "security",
+    "config",
+    "protocol",
+    "scanner",
+    "device-adapter",
+    "parser",
+    "exporter",
+    "project-handler",
+    "physical-model",
+    "icon",
 }
 
 
@@ -26,7 +40,9 @@ class ExtensionRegistry:
     def __init__(self) -> None:
         self._items: dict[str, Extension] = {}
 
-    def register(self, extension_id: str, extension_type: str, owner: str, specification: dict | None = None) -> Extension:
+    def register(
+        self, extension_id: str, extension_type: str, owner: str, specification: dict | None = None
+    ) -> Extension:
         kind = extension_type.casefold()
         if kind not in EXTENSION_TYPES:
             raise ValueError(f"tipo de extensión desconocido: {extension_type}")

@@ -9,8 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from threading import RLock
 
+from app.core.file_transaction import atomic_write_json, locked_file
 from app.core.paths import application_path
-
 
 ICON_WIDTH = 125
 ICON_HEIGHT = 125
@@ -35,10 +35,16 @@ class IconEntry:
 
     def to_registry(self) -> dict:
         return {
-            "id": self.icon_id, "name": self.name, "file": self.filename,
-            "width": self.width, "height": self.height,
-            "checksum": self.checksum, "category": self.category,
-            "tags": list(self.tags), "owner": self.owner, "created": self.created,
+            "id": self.icon_id,
+            "name": self.name,
+            "file": self.filename,
+            "width": self.width,
+            "height": self.height,
+            "checksum": self.checksum,
+            "category": self.category,
+            "tags": list(self.tags),
+            "owner": self.owner,
+            "created": self.created,
         }
 
 
@@ -68,10 +74,12 @@ class IconManager:
                 try:
                     _validate_id(icon_id)
                     entry = self._entry_from_file(
-                        path, icon_id=icon_id,
+                        path,
+                        icon_id=icon_id,
                         name=str(saved.get("name") or path.stem),
                         category=str(saved.get("category") or "general"),
-                        tags=tuple(saved.get("tags", [])), owner="LANCTL",
+                        tags=tuple(saved.get("tags", [])),
+                        owner="LANCTL",
                         created=str(saved.get("created") or _now()),
                     )
                     self._add(entry)
@@ -81,8 +89,14 @@ class IconManager:
             self.initialized = True
 
     def register(
-        self, source: str | Path, *, icon_id: str | None = None,
-        name: str = "", category: str = "general", tags=(), owner: str = "LANCTL",
+        self,
+        source: str | Path,
+        *,
+        icon_id: str | None = None,
+        name: str = "",
+        category: str = "general",
+        tags=(),
+        owner: str = "LANCTL",
         overwrite: bool = False,
     ) -> IconEntry:
         self.initialize()
@@ -101,16 +115,27 @@ class IconManager:
         shutil.copyfile(source_path, temporary)
         temporary.replace(destination)
         entry = self._entry_from_file(
-            destination, icon_id=wanted, name=name or wanted,
-            category=category, tags=tuple(tags), owner=owner, created=_now(),
+            destination,
+            icon_id=wanted,
+            name=name or wanted,
+            category=category,
+            tags=tuple(tags),
+            owner=owner,
+            created=_now(),
         )
         self.icons[wanted] = entry
         self._save_registry()
         return entry
 
     def add_provider(
-        self, owner: str, source: str | Path, *, icon_id: str,
-        name: str = "", category: str = "general", tags=(),
+        self,
+        owner: str,
+        source: str | Path,
+        *,
+        icon_id: str,
+        name: str = "",
+        category: str = "general",
+        tags=(),
     ) -> IconEntry:
         self.initialize()
         wanted = icon_id.casefold()
@@ -121,8 +146,13 @@ class IconManager:
         width, height = jpeg_dimensions(path)
         _validate_dimensions(width, height)
         entry = self._entry_from_file(
-            path, icon_id=wanted, name=name or wanted, category=category,
-            tags=tuple(tags), owner=owner, created=_now(),
+            path,
+            icon_id=wanted,
+            name=name or wanted,
+            category=category,
+            tags=tuple(tags),
+            owner=owner,
+            created=_now(),
         )
         self._add(entry)
         self.providers.setdefault(owner, set()).add(wanted)
@@ -163,8 +193,12 @@ class IconManager:
         width, height = jpeg_dimensions(path)
         _validate_dimensions(width, height)
         return IconEntry(
-            width=width, height=height, checksum=_sha256(path),
-            filename=path.name, path=path.resolve(), **metadata,
+            width=width,
+            height=height,
+            checksum=_sha256(path),
+            filename=path.name,
+            path=path.resolve(),
+            **metadata,
         )
 
     def _add(self, entry: IconEntry) -> None:
@@ -184,7 +218,11 @@ class IconManager:
     def _save_registry(self) -> None:
         entries = sorted(
             self.icons.values(),
-            key=lambda item: (item.owner != "LANCTL", item.category.casefold(), item.name.casefold()),
+            key=lambda item: (
+                item.owner != "LANCTL",
+                item.category.casefold(),
+                item.name.casefold(),
+            ),
         )
         document = {
             "schemaVersion": 1,
@@ -192,9 +230,8 @@ class IconManager:
             "icons": [item.to_registry() for item in entries],
             "errors": list(self.errors),
         }
-        temporary = self.registry_path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        temporary.replace(self.registry_path)
+        with locked_file(self.registry_path):
+            atomic_write_json(self.registry_path, document)
 
 
 def jpeg_dimensions(path: str | Path) -> tuple[int, int]:
@@ -218,14 +255,14 @@ def jpeg_dimensions(path: str | Path) -> tuple[int, int]:
             continue
         if index + 2 > len(data):
             break
-        length = int.from_bytes(data[index:index + 2], "big")
+        length = int.from_bytes(data[index : index + 2], "big")
         if length < 2 or index + length > len(data):
             raise ValueError("segmento JPEG truncado")
         if marker in sof_markers:
             if length < 7:
                 raise ValueError("cabecera SOF JPEG no válida")
-            height = int.from_bytes(data[index + 3:index + 5], "big")
-            width = int.from_bytes(data[index + 5:index + 7], "big")
+            height = int.from_bytes(data[index + 3 : index + 5], "big")
+            width = int.from_bytes(data[index + 5 : index + 7], "big")
             return width, height
         index += length
     raise ValueError("el JPEG no contiene dimensiones SOF")
@@ -238,7 +275,9 @@ def _validate_id(value: str) -> None:
 
 def _validate_dimensions(width: int, height: int) -> None:
     if (width, height) != (ICON_WIDTH, ICON_HEIGHT):
-        raise ValueError(f"el icono debe medir {ICON_WIDTH}x{ICON_HEIGHT}; recibido {width}x{height}")
+        raise ValueError(
+            f"el icono debe medir {ICON_WIDTH}x{ICON_HEIGHT}; recibido {width}x{height}"
+        )
 
 
 def _sha256(path: Path) -> str:

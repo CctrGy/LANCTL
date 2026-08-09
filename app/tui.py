@@ -20,10 +20,13 @@ from app.core.config import load_config
 from app.core.database import DeviceDatabase
 from app.core.layout import fit_text, shrink_widths, terminal_columns
 from app.core.output import (
-    CNF_COLORS, DARK_CNF_COLORS, DARK_FIELD_COLORS, FIELD_COLORS,
+    CNF_COLORS,
+    DARK_CNF_COLORS,
+    DARK_FIELD_COLORS,
+    FIELD_COLORS,
 )
+from app.projects import active_project_info
 from app.services.lan_scanner import local_ipv4
-
 
 RESET = Style.RESET_ALL
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
@@ -61,6 +64,33 @@ TUI_ELEMENT_SUGGESTIONS = (
 )
 
 
+def _inventory_cell(
+    field: str,
+    values: dict[str, str],
+    widths: dict[str, int],
+    *,
+    active: bool,
+    selected: bool,
+) -> str:
+    """Formatea una celda sin crear una función por cada fila renderizada."""
+
+    value = fit_text(values[field], widths[field])
+    value = (
+        value.rjust(widths[field])
+        if field == "responseMs"
+        else value.center(widths[field])
+        if field == "cnf"
+        else value.ljust(widths[field])
+    )
+    palette = FIELD_COLORS if active else DARK_FIELD_COLORS
+    color = palette[field]
+    if field == "cnf":
+        color = (CNF_COLORS if active else DARK_CNF_COLORS).get(values[field], color)
+    intensity = Style.BRIGHT if active else Style.DIM
+    background = Back.LIGHTBLACK_EX if selected else ""
+    return f"{background}{intensity}{color}{value}{RESET}"
+
+
 class LanctlTui:
     """TUI de pantalla completa basada en el inventario persistente de LANCTL."""
 
@@ -68,6 +98,7 @@ class LanctlTui:
         config = load_config()
         self.screen = sys.stdout
         self.database = DeviceDatabase(config["database"])
+        self.project_info = active_project_info(config)
         self.dhcp_range = config.get("dhcpRange")
         self.local_ip = str(local_ipv4())
         self.all_devices = []
@@ -110,6 +141,12 @@ class LanctlTui:
 
     def reload(self) -> None:
         identity = self.selected.mac if self.selected else ""
+        # `project use` puede cambiar el JSON que respalda el inventario.
+        # Reconstruir el acceso evita conservar en memoria el proyecto anterior.
+        config = load_config()
+        self.database = DeviceDatabase(config["database"])
+        self.project_info = active_project_info(config)
+        self.dhcp_range = config.get("dhcpRange")
         self.all_devices = self.database.load()
         self.devices = self._filtered_devices()
         if identity:
@@ -126,17 +163,29 @@ class LanctlTui:
         source = self.all_devices
         if self.scanning:
             source = [
-                device for device in source
+                device
+                for device in source
                 if _device_key(device.mac, device.ip) in self.scan_visible_devices
             ]
         if mode == "connected":
-            return [device for device in source if _device_key(device.mac, device.ip) in self.active_devices]
+            return [
+                device
+                for device in source
+                if _device_key(device.mac, device.ip) in self.active_devices
+            ]
         if mode == "disconnected":
-            return [device for device in source if _device_key(device.mac, device.ip) not in self.active_devices]
+            return [
+                device
+                for device in source
+                if _device_key(device.mac, device.ip) not in self.active_devices
+            ]
         if mode == "group":
-            return [device for device in source if value.upper() in device.groups]
+            return [device for device in source if device.in_group(value)]
         if mode in ("dhcp", "statics"):
-            in_dhcp = lambda device: _ip_in_range(device.ip, self.dhcp_range)
+
+            def in_dhcp(device):
+                return _ip_in_range(device.ip, self.dhcp_range)
+
             return [device for device in source if in_dhcp(device) == (mode == "dhcp")]
         return list(source)
 
@@ -169,9 +218,7 @@ class LanctlTui:
         return terminal_columns(self.screen) or size.columns, max(12, size.lines)
 
     def _inventory_lines(self, width: int, height: int) -> list[str]:
-        first_dhcp, last_dhcp = _dhcp_boundary_indexes(
-            self.devices, self.dhcp_range
-        )
+        first_dhcp, last_dhcp = _dhcp_boundary_indexes(self.devices, self.dhcp_range)
         # Reserva espacio para delimitar el bloque DHCP sin desplazar el panel.
         reserved = (2 if first_dhcp is not None else 0) + (1 if self.scan_total else 0)
         rows = max(1, height - reserved)
@@ -190,29 +237,66 @@ class LanctlTui:
             fields.append("protocols")
         fields = tuple(fields)
         labels = {
-            "IP": "IP", "responseMs": "ms", "cnf": "cnf", "ALIAS": "ALIAS",
-            "MAC": "MAC", "NAME": "NAME", "GROUP": "GROUP",
+            "IP": "IP",
+            "responseMs": "ms",
+            "cnf": "cnf",
+            "ALIAS": "ALIAS",
+            "MAC": "MAC",
+            "NAME": "NAME",
+            "GROUP": "GROUP",
             "description": "DESCRIPTION",
-            "discoveryMethods": "DETECTION", "lastSeen": "LAST SEEN",
-            "manufacturer": "MANUFACTURER", "protocols": "PROTOCOLS",
+            "discoveryMethods": "DETECTION",
+            "lastSeen": "LAST SEEN",
+            "manufacturer": "MANUFACTURER",
+            "protocols": "PROTOCOLS",
         }
         widths = {
-            "IP": 15, "responseMs": 6, "cnf": 3, "ALIAS": 13,
-            "MAC": 17, "NAME": 15, "GROUP": 8, "description": 42,
-            "discoveryMethods": 16, "lastSeen": 19,
-            "manufacturer": 18, "protocols": 12,
+            "IP": 15,
+            "responseMs": 6,
+            "cnf": 3,
+            "ALIAS": 13,
+            "MAC": 17,
+            "NAME": 15,
+            "GROUP": 8,
+            "description": 42,
+            "discoveryMethods": 16,
+            "lastSeen": 19,
+            "manufacturer": 18,
+            "protocols": 12,
         }
         widths = {field: widths[field] for field in fields}
         gap = 1 if width < 100 else 2
         widths, too_narrow = shrink_widths(
             widths,
-            {"IP": 7, "responseMs": 4, "cnf": 3, "ALIAS": 4, "MAC": 8,
-             "NAME": 4, "GROUP": 4, "description": 4,
-             "discoveryMethods": 8, "lastSeen": 12,
-             "manufacturer": 8, "protocols": 7},
-            fields, max(20, width - 2),
-            ("description", "manufacturer", "NAME", "ALIAS", "GROUP",
-             "lastSeen", "discoveryMethods", "protocols", "MAC", "IP", "responseMs"),
+            {
+                "IP": 7,
+                "responseMs": 4,
+                "cnf": 3,
+                "ALIAS": 4,
+                "MAC": 8,
+                "NAME": 4,
+                "GROUP": 4,
+                "description": 4,
+                "discoveryMethods": 8,
+                "lastSeen": 12,
+                "manufacturer": 8,
+                "protocols": 7,
+            },
+            fields,
+            max(20, width - 2),
+            (
+                "description",
+                "manufacturer",
+                "NAME",
+                "ALIAS",
+                "GROUP",
+                "lastSeen",
+                "discoveryMethods",
+                "protocols",
+                "MAC",
+                "IP",
+                "responseMs",
+            ),
             gap=gap,
         )
         if too_narrow:
@@ -220,10 +304,22 @@ class LanctlTui:
             widths, _ = shrink_widths(
                 widths,
                 {field: 1 for field in fields},
-                fields, max(20, width - 2),
-                ("description", "manufacturer", "lastSeen", "discoveryMethods",
-                 "protocols", "NAME", "ALIAS", "GROUP", "MAC", "IP",
-                 "responseMs", "cnf"),
+                fields,
+                max(20, width - 2),
+                (
+                    "description",
+                    "manufacturer",
+                    "lastSeen",
+                    "discoveryMethods",
+                    "protocols",
+                    "NAME",
+                    "ALIAS",
+                    "GROUP",
+                    "MAC",
+                    "IP",
+                    "responseMs",
+                    "cnf",
+                ),
                 gap=gap,
             )
         _expand_tui_widths(widths, fields, width - 2, gap)
@@ -241,7 +337,7 @@ class LanctlTui:
         separator = "  " + joiner.join("─" * widths[field] for field in fields)
         output = [header, f"{Style.DIM}{Fore.CYAN}{separator}{RESET}"]
         dhcp_separator = "  " + "-" * max(5, width - 2)
-        visible = self.devices[self.scroll:self.scroll + rows]
+        visible = self.devices[self.scroll : self.scroll + rows]
         for offset, device in enumerate(visible):
             absolute = self.scroll + offset
             if absolute == first_dhcp:
@@ -258,29 +354,28 @@ class LanctlTui:
                 "NAME": device.name or "-",
                 "GROUP": ",".join(device.groups) or "-",
                 "description": device.description or "-",
-                "discoveryMethods": "+".join(device.discovery_methods) or device.last_discovery or "-",
+                "discoveryMethods": "+".join(device.discovery_methods)
+                or device.last_discovery
+                or "-",
                 "lastSeen": _compact_timestamp(device.last_seen),
                 "manufacturer": device.manufacturer or "-",
                 "protocols": ",".join(device.protocols) or "-",
             }
 
-            def body_cell(field: str) -> str:
-                value = fit_text(values[field], widths[field])
-                value = (
-                    value.rjust(widths[field]) if field == "responseMs"
-                    else value.center(widths[field]) if field == "cnf"
-                    else value.ljust(widths[field])
-                )
-                palette = FIELD_COLORS if active else DARK_FIELD_COLORS
-                color = palette[field]
-                if field == "cnf":
-                    color = (CNF_COLORS if active else DARK_CNF_COLORS).get(values[field], color)
-                intensity = Style.BRIGHT if active else Style.DIM
-                background = Back.LIGHTBLACK_EX if selected else ""
-                return f"{background}{intensity}{color}{value}{RESET}"
-
             marker = f"{Style.BRIGHT}{Fore.WHITE}{'▶' if selected else ' '}{RESET} "
-            output.append(marker + joiner.join(body_cell(field) for field in fields))
+            output.append(
+                marker
+                + joiner.join(
+                    _inventory_cell(
+                        field,
+                        values,
+                        widths,
+                        active=active,
+                        selected=selected,
+                    )
+                    for field in fields
+                )
+            )
             if absolute == last_dhcp:
                 output.append(f"{Style.DIM}{Fore.YELLOW}{dhcp_separator}{RESET}")
         if self.scan_total:
@@ -313,26 +408,48 @@ class LanctlTui:
         return device.mac or device.ip or "-"
 
     def _status_lines(self, width: int) -> list[str]:
+        project_info = getattr(self, "project_info", None)
+        project_name = project_info["name"] if project_info else "Sin proyecto"
+        project_line = (
+            f"{Style.BRIGHT}{Fore.CYAN} PROYECTO {RESET} {Fore.WHITE}{project_name}{RESET}"
+        )
         if self.scanning:
             return [
-                f"{Style.BRIGHT}{Fore.YELLOW} ESCANEANDO {RESET} "
-                f"{Fore.WHITE}Elementos encontrados: {len(self.scan_visible_devices)}{RESET}",
+                project_line,
+                (
+                    f"{Style.BRIGHT}{Fore.YELLOW} ESCANEANDO {RESET} "
+                    f"{Fore.WHITE}Elementos encontrados: "
+                    f"{len(self.scan_visible_devices)}{RESET}"
+                ),
                 f"{Fore.LIGHTBLACK_EX}La lista se completa en tiempo real.{RESET}",
             ]
         summary = self.scan_summary
         if not summary:
             return [
+                project_line,
                 f"{Style.BRIGHT}{Fore.CYAN} RED {RESET} Sin escaneo en esta sesión",
                 f"{Fore.LIGHTBLACK_EX}Pulsa F5 para actualizar.{RESET}",
             ]
         return [
-            f"{Style.BRIGHT}{Fore.CYAN} PERFIL {RESET} {Fore.WHITE}{summary['profile']}{RESET}  "
-            f"{Style.BRIGHT}{Fore.CYAN} MÉTODO {RESET} {Fore.WHITE}{summary['discovery']}{RESET}  "
-            f"{Style.BRIGHT}{Fore.GREEN} ACTIVOS {RESET} {summary['active']}/{summary['total']}",
-            f"{Style.BRIGHT}{Fore.LIGHTBLUE_EX} ICMP {RESET} {summary['icmp']}  "
-            f"{Style.BRIGHT}{Fore.LIGHTMAGENTA_EX} ARP {RESET} {summary['arp']}  "
-            f"{Style.BRIGHT}{Fore.YELLOW} CACHE {RESET} {summary['cache']}  "
-            f"{Style.BRIGHT}{Fore.CYAN} MOSTRADOS {RESET} {summary['shown']}",
+            project_line,
+            (
+                f"{Style.BRIGHT}{Fore.CYAN} PERFIL {RESET} "
+                f"{Fore.WHITE}{summary['profile']}{RESET}  "
+                f"{Style.BRIGHT}{Fore.CYAN} MÉTODO {RESET} "
+                f"{Fore.WHITE}{summary['discovery']}{RESET}  "
+                f"{Style.BRIGHT}{Fore.GREEN} ACTIVOS {RESET} "
+                f"{summary['active']}/{summary['total']}"
+            ),
+            (
+                f"{Style.BRIGHT}{Fore.LIGHTBLUE_EX} ICMP {RESET} "
+                f"{summary['icmp']}  "
+                f"{Style.BRIGHT}{Fore.LIGHTMAGENTA_EX} ARP {RESET} "
+                f"{summary['arp']}  "
+                f"{Style.BRIGHT}{Fore.YELLOW} CACHE {RESET} "
+                f"{summary['cache']}  "
+                f"{Style.BRIGHT}{Fore.CYAN} MOSTRADOS {RESET} "
+                f"{summary['shown']}"
+            ),
         ]
 
     def render(self) -> None:
@@ -342,7 +459,7 @@ class LanctlTui:
             self._render_detail(width, height)
             return
         compact = height < 20 or width < 70
-        message_rows = 11 if not compact else 6
+        message_rows = 12 if not compact else 7
         list_height = max(3, height - message_rows - 8)
         title = f" LANCTL TUI {__version__} "
         mode, value = self.list_filter
@@ -352,7 +469,9 @@ class LanctlTui:
         elif self.view_state == "command-history":
             counter = f" [commands] {self.command_history_index + 1 if self.command_history else 0}/{len(self.command_history)} "
         else:
-            counter = f" [{filter_name}] {self.index + 1 if self.devices else 0}/{len(self.devices)} "
+            counter = (
+                f" [{filter_name}] {self.index + 1 if self.devices else 0}/{len(self.devices)} "
+            )
         title_space = max(0, width - len(title) - len(counter))
         title_content = (
             f"{title}{'─' * title_space}{counter}"
@@ -377,9 +496,7 @@ class LanctlTui:
                 self.output_scroll = selected_line
             elif selected_line >= self.output_scroll + message_rows:
                 self.output_scroll = selected_line - message_rows + 1
-            visible_output = self.messages[
-                self.output_scroll:self.output_scroll + message_rows
-            ]
+            visible_output = self.messages[self.output_scroll : self.output_scroll + message_rows]
             for offset, message in enumerate(visible_output):
                 absolute = self.output_scroll + offset
                 selected = absolute == selected_line
@@ -387,13 +504,13 @@ class LanctlTui:
                 background = Back.LIGHTBLACK_EX if selected else ""
                 intensity = Style.BRIGHT if selected else ""
                 lines.append(
-                    f"{background}{intensity}{Fore.WHITE}"
-                    f"{fit_text(marker + message, width)}{RESET}"
+                    f"{background}{intensity}{Fore.WHITE}{fit_text(marker + message, width)}{RESET}"
                 )
         elif self.command_suggestions:
             selected_line = (
                 self.command_suggestions[self.suggestion_index][0]
-                if self.suggestion_index >= 0 else -1
+                if self.suggestion_index >= 0
+                else -1
             )
             start = 0
             if selected_line >= message_rows:
@@ -407,8 +524,7 @@ class LanctlTui:
                 background = Back.LIGHTBLACK_EX if selected else ""
                 intensity = Style.BRIGHT if selected else ""
                 wrapped.append(
-                    f"{background}{intensity}{Fore.WHITE}"
-                    f"{fit_text(marker + message, width)}{RESET}"
+                    f"{background}{intensity}{Fore.WHITE}{fit_text(marker + message, width)}{RESET}"
                 )
             lines.extend(wrapped[-message_rows:])
         else:
@@ -420,8 +536,11 @@ class LanctlTui:
         while len(lines) < height - 2:
             lines.append("")
         prompt_label = (
-            _spinner_character(self.spinner_index) if self.scanning
-            else "CONFIRM" if self.pending_confirmation else self._selection_label()
+            _spinner_character(self.spinner_index)
+            if self.scanning
+            else "CONFIRM"
+            if self.pending_confirmation
+            else self._selection_label()
         )
         prompt_prefix = f"LANCTL[{prompt_label}]> "
         prompt_text = fit_text(f"{prompt_prefix}{self.command}", width)
@@ -430,27 +549,41 @@ class LanctlTui:
         lines.append(keys)
         cursor_column = min(width, len(prompt_prefix) + self.cursor + 1)
         self.screen.write(
-            "\x1b[?25h\x1b[2J\x1b[H" + "\n".join(lines[:height])
+            "\x1b[?25h\x1b[2J\x1b[H"
+            + "\n".join(lines[:height])
             + f"\x1b[{height - 1};{cursor_column}H"
         )
         self.screen.flush()
 
     def show_history(self, selector: str | None = None) -> None:
         from app.core.history import HistoryService
-        target = selector or ((self.selected.device_id or self.selected.mac or self.selected.ip) if self.selected else None)
+
+        target = selector or (
+            (self.selected.device_id or self.selected.mac or self.selected.ip)
+            if self.selected
+            else None
+        )
         try:
-            self.history_events = HistoryService().query(None if target == "all" else target, limit=1000, reverse=True)
-            self.history_index = 0; self.view_state = "history"
-            self.messages = [f"Historial: {len(self.history_events)} eventos | Enter detalle | Esc inventario"]
-        except ValueError as error: self.messages = [str(error)]
+            self.history_events = HistoryService().query(
+                None if target == "all" else target, limit=1000, reverse=True
+            )
+            self.history_index = 0
+            self.view_state = "history"
+            self.messages = [
+                f"Historial: {len(self.history_events)} eventos | Enter detalle | Esc inventario"
+            ]
+        except ValueError as error:
+            self.messages = [str(error)]
 
     def show_command_history(self) -> None:
         self.view_state = "command-history"
         self.command_history_index = max(0, len(self.command_history) - 1)
         self.command_history_scroll = max(0, self.command_history_index)
         self.messages = [
-            f"Historial de comandos: {len(self.command_history)} | "
-            "Flechas seleccionan | Enter recupera | Esc inventario"
+            (
+                f"Historial de comandos: {len(self.command_history)} | "
+                "Flechas seleccionan | Enter recupera | Esc inventario"
+            )
         ]
 
     def _command_history_lines(self, width: int, height: int) -> list[str]:
@@ -471,24 +604,48 @@ class LanctlTui:
         return [fit_text(row, width) for row in rows]
 
     def _history_lines(self, width: int, height: int) -> list[str]:
-        rows=[]
-        for index,event in enumerate(self.history_events[:height]):
-            marker="▶" if index==self.history_index else " "
-            label=event.device.label if event.device else "LAN"
-            rows.append(f"{marker} {event.timestamp[:19]} | {label} | {event.type} | {event.summary}")
-        return [fit_text(line,width) for line in rows] or [" Sin eventos"]
+        rows = []
+        for index, event in enumerate(self.history_events[:height]):
+            marker = "▶" if index == self.history_index else " "
+            label = event.device.label if event.device else "LAN"
+            rows.append(
+                f"{marker} {event.timestamp[:19]} | {label} | {event.type} | {event.summary}"
+            )
+        return [fit_text(line, width) for line in rows] or [" Sin eventos"]
 
     def show_history_detail(self) -> None:
-        if not self.history_events: return
-        event=self.history_events[self.history_index]; device=event.device
-        self.detail_lines=[f"Tipo: {event.type}",f"Fecha: {event.timestamp}",f"Elemento: {device.label if device else '-'}",f"Source: {event.source}",f"Resultado: {event.result}",f"CorrelationId: {event.correlationId or '-'}",f"RunId: {event.runId or '-'}",f"TaskId: {event.taskId or '-'}",f"OperationId: {event.operationId or '-'}",f"Resumen: {event.summary}","Cambios:",* [f"  {x.get('field')}: {x.get('before')} => {x.get('after')}" for x in event.changes]]
-        if event.error:self.detail_lines.extend((f"Error: {event.error.get('code','-')}",f"Origen: {event.error.get('origin','-')}",f"Mensaje: {event.error.get('message','-')}"))
+        if not self.history_events:
+            return
+        event = self.history_events[self.history_index]
+        device = event.device
+        self.detail_lines = [
+            f"Tipo: {event.type}",
+            f"Fecha: {event.timestamp}",
+            f"Elemento: {device.label if device else '-'}",
+            f"Source: {event.source}",
+            f"Resultado: {event.result}",
+            f"CorrelationId: {event.correlationId or '-'}",
+            f"RunId: {event.runId or '-'}",
+            f"TaskId: {event.taskId or '-'}",
+            f"OperationId: {event.operationId or '-'}",
+            f"Resumen: {event.summary}",
+            "Cambios:",
+            *[f"  {x.get('field')}: {x.get('before')} => {x.get('after')}" for x in event.changes],
+        ]
+        if event.error:
+            self.detail_lines.extend(
+                (
+                    f"Error: {event.error.get('code', '-')}",
+                    f"Origen: {event.error.get('origin', '-')}",
+                    f"Mensaje: {event.error.get('message', '-')}",
+                )
+            )
 
     def _render_detail(self, width: int, height: int) -> None:
         rows = max(1, height - 4)
         maximum = max(0, len(self.detail_lines) - rows)
         self.detail_scroll = max(0, min(self.detail_scroll, maximum))
-        visible = self.detail_lines[self.detail_scroll:self.detail_scroll + rows]
+        visible = self.detail_lines[self.detail_scroll : self.detail_scroll + rows]
         title = " INFORMACION COMPLETA DEL ELEMENTO "
         lines = [f"{Style.BRIGHT}{Fore.CYAN}{fit_text(title + '-' * width, width)}{RESET}"]
         lines.extend(f" {fit_text(line, width - 1)}" for line in visible)
@@ -501,7 +658,9 @@ class LanctlTui:
         )
         lines.append(f"{Fore.CYAN}{fit_text(position, width)}{RESET}")
         footer = " Flechas/RePag/AvPag  Desplazar    F2/Esc  Volver "
-        lines.append(f"{Style.BRIGHT}{Back.WHITE}{Fore.BLACK}{fit_text(footer, width):<{width}}{RESET}")
+        lines.append(
+            f"{Style.BRIGHT}{Back.WHITE}{Fore.BLACK}{fit_text(footer, width):<{width}}{RESET}"
+        )
         self.screen.write("\x1b[?25l\x1b[2J\x1b[H" + "\n".join(lines[:height]))
         self.screen.flush()
 
@@ -517,6 +676,7 @@ class LanctlTui:
 
     def _capture(self, argv: list[str]) -> tuple[int, str]:
         from app.cli import main
+
         output = io.StringIO()
         try:
             with redirect_stdout(output), redirect_stderr(output):
@@ -538,14 +698,17 @@ class LanctlTui:
         self.messages = ["Buscando dispositivos en la LAN…"]
         self.render()
         from app.cli import build_parser
+
         captured_rows: list[dict] = []
         captured_activity: list[bool] = []
         output_buffer = io.StringIO()
         try:
             args = build_parser().parse_args(["list", "--no-progress"])
+
             def collect_result(rows, activity) -> None:
                 captured_rows.extend(rows)
                 captured_activity.extend(activity)
+
             args.result_callback = collect_result
             args.progress_instance = _TuiScanProgress(self)
             args.scan_summary_callback = self.scan_summary.update
@@ -561,27 +724,21 @@ class LanctlTui:
         output = output_buffer.getvalue().strip()
         self.response_ms = {
             str(row.get("MAC") or row.get("IP")): float(row["responseMs"])
-            for row in captured_rows if row.get("responseMs") is not None
+            for row in captured_rows
+            if row.get("responseMs") is not None
         }
         self.active_devices = {
             _device_key(str(row.get("MAC", "")), str(row.get("IP", "")))
-            for row, active in zip(captured_rows, captured_activity) if active
+            for row, active in zip(captured_rows, captured_activity)
+            if active
         }
         self.reload()
         summary = _last_meaningful_line(output)
         self.messages = (
             ["Escaneo completado. Pulsa F5 para actualizar de nuevo."]
-            if result == 0 else [summary or "Error al actualizar la LAN."]
+            if result == 0
+            else [summary or "Error al actualizar la LAN."]
         )
-
-    def _show_info_legacy(self) -> None:
-        if not self.selected:
-            self.messages = ["No hay ningún elemento seleccionado."]
-            return
-        result, output = self._capture([
-            "element", self.selected.mac or self.selected.ip
-        ])
-        self._set_command_output(output, result)
 
     def show_info(self) -> None:
         device = self.selected
@@ -590,10 +747,15 @@ class LanctlTui:
             return
         self.messages = ["Obteniendo informacion completa del elemento..."]
         self.render()
-        result, output = self._capture([
-            "scan", device.mac or device.ip,
-            "--identify", "--banners", "--json",
-        ])
+        result, output = self._capture(
+            [
+                "scan",
+                device.mac or device.ip,
+                "--identify",
+                "--banners",
+                "--json",
+            ]
+        )
         try:
             payload = json.loads(output)
         except (json.JSONDecodeError, TypeError):
@@ -652,18 +814,14 @@ class LanctlTui:
         if not device:
             self.messages = ["No hay ningún elemento seleccionado para comprobar."]
             return
-        result, output = self._capture([
-            "ping", device.mac or device.ip
-        ])
+        result, output = self._capture(["ping", device.mac or device.ip])
         if result == 0:
             self.active_devices.add(_device_key(device.mac, device.ip))
         self.reload()
         if output:
             self._set_command_output(output, result)
         else:
-            self.messages = [
-                "Ping completado." if result == 0 else "El elemento no ha respondido."
-            ]
+            self.messages = ["Ping completado." if result == 0 else "El elemento no ha respondido."]
 
     def _set_command_output(self, output: str, result: int) -> None:
         self.messages = _clean_tui_output(output) if output else [f"Código de salida: {result}"]
@@ -750,6 +908,7 @@ class LanctlTui:
             else:
                 self.messages = [
                     "TUI: list --all | --connected | --disconnected | -group NOMBRE | -dhcp | -statics",
+                    'Proyecto: project | project status | project use "RUTA.vlf" | help project.',
                     "Contexto: info, select ELEMENTO, clear, reload; group NOMBRE -add/-remove usa la selección.",
                     "Edición rápida: element -name|-alias|-description|-group|-cnf|-delete. Usa element /? a modo de ayuda.",
                 ]
@@ -761,10 +920,7 @@ class LanctlTui:
             ]
             return
         if command == "list":
-            if any(
-                part.casefold() in ("-recurrent", "--recurrent")
-                for part in parts[1:]
-            ):
+            if any(part.casefold() in ("-recurrent", "--recurrent") for part in parts[1:]):
                 result, output = self._capture(parts)
                 self._set_command_output(output, result)
                 return
@@ -778,7 +934,7 @@ class LanctlTui:
             self.show_info()
             return
         if command == "history":
-            self.show_history(parts[1] if len(parts)>1 else None)
+            self.show_history(parts[1] if len(parts) > 1 else None)
             return
         if command == "select" and len(parts) == 2:
             try:
@@ -786,7 +942,9 @@ class LanctlTui:
                 if not any(item.mac == wanted.mac for item in self.devices):
                     self.list_filter = ("all", "")
                     self.reload()
-                self.index = next(i for i, item in enumerate(self.devices) if item.mac == wanted.mac)
+                self.index = next(
+                    i for i, item in enumerate(self.devices) if item.mac == wanted.mac
+                )
                 self.messages = [f"Seleccionado: {wanted.alias or wanted.ip}"]
             except (ValueError, StopIteration) as error:
                 self.messages = [str(error)]
@@ -810,7 +968,9 @@ class LanctlTui:
                 self.pending_confirmation = [*contextual, "--yes"]
                 target = contextual[1]
                 if self.selected and target in (
-                    self.selected.mac, self.selected.ip, self.selected.alias
+                    self.selected.mac,
+                    self.selected.ip,
+                    self.selected.alias,
                 ):
                     target = self.selected.alias or self.selected.ip or self.selected.mac
                 self.messages = [
@@ -823,8 +983,19 @@ class LanctlTui:
                 contextual, self.selected.mac or self.selected.ip
             )
         if self.selected and command in {
-            "alias", "call", "cnf", "credential", "name", "open",
-            "ping", "protocol", "scan", "search", "ssh", "switch", "terminal",
+            "alias",
+            "call",
+            "cnf",
+            "credential",
+            "name",
+            "open",
+            "ping",
+            "protocol",
+            "scan",
+            "search",
+            "ssh",
+            "switch",
+            "terminal",
         }:
             contextual.insert(1, self.selected.mac or self.selected.ip)
         result, output = self._capture(contextual)
@@ -846,11 +1017,22 @@ class LanctlTui:
                 self.detail_scroll = 0
             return
         if getattr(self, "view_state", "inventory") == "history":
-            if key in ("UP","PGUP"): self.history_index=max(0,self.history_index-(10 if key=="PGUP" else 1))
-            elif key in ("DOWN","PGDN"): self.history_index=min(max(0,len(self.history_events)-1),self.history_index+(10 if key=="PGDN" else 1))
-            elif key == "ENTER": self.show_history_detail()
-            elif key == "F5": self.show_history("all" if self.history_events and not self.history_events[0].device else None)
-            elif key == "ESC": self.view_state="inventory"; self.messages=["Inventario restaurado"]
+            if key in ("UP", "PGUP"):
+                self.history_index = max(0, self.history_index - (10 if key == "PGUP" else 1))
+            elif key in ("DOWN", "PGDN"):
+                self.history_index = min(
+                    max(0, len(self.history_events) - 1),
+                    self.history_index + (10 if key == "PGDN" else 1),
+                )
+            elif key == "ENTER":
+                self.show_history_detail()
+            elif key == "F5":
+                self.show_history(
+                    "all" if self.history_events and not self.history_events[0].device else None
+                )
+            elif key == "ESC":
+                self.view_state = "inventory"
+                self.messages = ["Inventario restaurado"]
             return
         if getattr(self, "view_state", "inventory") == "command-history":
             if key in ("UP", "PGUP"):
@@ -908,6 +1090,7 @@ class LanctlTui:
             self.messages = [
                 "F1 ayuda | F2 información | F3 ping | F5 escaneo | Ctrl+H comandos | flechas selección | Esc salir",
                 "TUI: reload recarga el inventario sin escanear la red.",
+                'Proyecto: project muestra el activo | project use "RUTA.vlf" lo cambia.',
                 "Filtros: list --all|--connected|--disconnected|-group NOMBRE|-dhcp|-statics",
             ]
         elif key == "F2":
@@ -923,11 +1106,11 @@ class LanctlTui:
         elif key == "BACKSPACE":
             self._clear_suggestions()
             if self.cursor:
-                self.command = self.command[:self.cursor - 1] + self.command[self.cursor:]
+                self.command = self.command[: self.cursor - 1] + self.command[self.cursor :]
                 self.cursor -= 1
         elif key == "DELETE":
             self._clear_suggestions()
-            self.command = self.command[:self.cursor] + self.command[self.cursor + 1:]
+            self.command = self.command[: self.cursor] + self.command[self.cursor + 1 :]
         elif key == "LEFT":
             self.cursor = max(0, self.cursor - 1)
         elif key == "RIGHT":
@@ -942,7 +1125,7 @@ class LanctlTui:
             self.running = False
         elif len(key) == 1 and key.isprintable():
             self._clear_suggestions()
-            self.command = self.command[:self.cursor] + key + self.command[self.cursor:]
+            self.command = self.command[: self.cursor] + key + self.command[self.cursor :]
             self.cursor += 1
 
     def run(self) -> int:
@@ -955,6 +1138,7 @@ class LanctlTui:
             )
         just_fix_windows_console()
         from msvcrt import getwch
+
         try:
             # La pantalla alternativa impide que cada repintado pase al
             # historial de la consola. Desactivar el ajuste automático evita
@@ -984,6 +1168,7 @@ def _windows_control_pressed() -> bool:
         return False
     try:
         import ctypes
+
         return bool(ctypes.windll.user32.GetKeyState(0x11) & 0x8000)
     except (AttributeError, OSError):
         return False
@@ -993,16 +1178,28 @@ def _read_windows_key(getwch, control_pressed=None) -> str:
     first = getwch()
     if first in ("\x00", "\xe0"):
         return {
-            "H": "UP", "P": "DOWN", "K": "LEFT", "M": "RIGHT",
-            "I": "PGUP", "Q": "PGDN", "G": "HOME", "O": "END",
-            "S": "DELETE", ";": "F1", "<": "F2", "=": "F3", "?": "F5",
+            "H": "UP",
+            "P": "DOWN",
+            "K": "LEFT",
+            "M": "RIGHT",
+            "I": "PGUP",
+            "Q": "PGDN",
+            "G": "HOME",
+            "O": "END",
+            "S": "DELETE",
+            ";": "F1",
+            "<": "F2",
+            "=": "F3",
+            "?": "F5",
         }.get(getwch(), "UNKNOWN")
     if first == "\x08":
         pressed = control_pressed or _windows_control_pressed
         return "CTRL_H" if pressed() else "BACKSPACE"
     return {
-        "\r": "ENTER", "\n": "ENTER",
-        "\x1b": "ESC", "\x03": "ESC",
+        "\r": "ENTER",
+        "\n": "ENTER",
+        "\x1b": "ESC",
+        "\x03": "ESC",
     }.get(first, first)
 
 
@@ -1035,7 +1232,7 @@ def _fit_ansi(value: str, width: int) -> str:
     visible = 0
     position = 0
     for match in ANSI_ESCAPE.finditer(value):
-        segment = value[position:match.start()]
+        segment = value[position : match.start()]
         take = max(0, min(len(segment), target - visible))
         output.append(segment[:take])
         visible += take
@@ -1044,7 +1241,7 @@ def _fit_ansi(value: str, width: int) -> str:
         output.append(match.group(0))
         position = match.end()
     else:
-        output.append(value[position:position + max(0, target - visible)])
+        output.append(value[position : position + max(0, target - visible)])
     return "".join(output) + "…" + RESET
 
 
@@ -1107,15 +1304,30 @@ def _translate_tui_element(parts: list[str], selected: str) -> list[str]:
         return list(parts)
 
     option_map = {
-        "-name": "name", "--name": "name", "name": "name",
-        "-alias": "alias", "--alias": "alias", "alias": "alias",
-        "-description": "description", "--description": "description",
+        "-name": "name",
+        "--name": "name",
+        "name": "name",
+        "-alias": "alias",
+        "--alias": "alias",
+        "alias": "alias",
+        "-description": "description",
+        "--description": "description",
         "description": "description",
-        "-group": "group", "--group": "group", "group": "group",
-        "-cnf": "cnf", "--cnf": "cnf", "cnf": "cnf",
-        "-protocol": "protocol", "--protocol": "protocol", "protocol": "protocol",
-        "-delete": "delete", "--delete": "delete", "-del": "delete",
-        "-delate": "delete", "delete": "delete", "del": "delete",
+        "-group": "group",
+        "--group": "group",
+        "group": "group",
+        "-cnf": "cnf",
+        "--cnf": "cnf",
+        "cnf": "cnf",
+        "-protocol": "protocol",
+        "--protocol": "protocol",
+        "protocol": "protocol",
+        "-delete": "delete",
+        "--delete": "delete",
+        "-del": "delete",
+        "-delate": "delete",
+        "delete": "delete",
+        "del": "delete",
         "remove": "delete",
     }
     first = parts[1].casefold()
@@ -1130,10 +1342,10 @@ def _translate_tui_element(parts: list[str], selected: str) -> list[str]:
 
     option = parts[option_index].casefold()
     if option not in option_map:
-        # Conserva la sintaxis avanzada anterior: element OBJETIVO edit ...
+        # Conserva la sintaxis avanzada anterior: `element OBJETIVO edit ...`.
         return list(parts)
     action = option_map[option]
-    values = parts[option_index + 1:]
+    values = parts[option_index + 1 :]
     if action == "delete":
         if values and values != ["--yes"]:
             raise ValueError("element -delete no acepta valores")
@@ -1150,13 +1362,24 @@ def _expand_tui_widths(
     used = sum(widths.values()) + gap * max(0, len(fields) - 1)
     surplus = max(0, available - used)
     limits = {
-        "description": 42, "manufacturer": 26, "lastSeen": 25,
-        "discoveryMethods": 22, "protocols": 18, "NAME": 20,
-        "ALIAS": 18, "GROUP": 12,
+        "description": 42,
+        "manufacturer": 26,
+        "lastSeen": 25,
+        "discoveryMethods": 22,
+        "protocols": 18,
+        "NAME": 20,
+        "ALIAS": 18,
+        "GROUP": 12,
     }
     for field in (
-        "description", "manufacturer", "discoveryMethods", "lastSeen",
-        "NAME", "ALIAS", "protocols", "GROUP",
+        "description",
+        "manufacturer",
+        "discoveryMethods",
+        "lastSeen",
+        "NAME",
+        "ALIAS",
+        "protocols",
+        "GROUP",
     ):
         if not surplus or field not in widths:
             continue
@@ -1225,8 +1448,7 @@ class _TuiScanProgress:
 
 def _dhcp_boundary_indexes(devices, configured_range: str | None):
     indexes = [
-        index for index, device in enumerate(devices)
-        if _ip_in_range(device.ip, configured_range)
+        index for index, device in enumerate(devices) if _ip_in_range(device.ip, configured_range)
     ]
     if not indexes:
         return None, None
@@ -1239,7 +1461,11 @@ def _ip_in_range(value: str, configured_range: str | None) -> bool:
     try:
         start_text, end_text = configured_range.split("-", 1)
         address = ipaddress.IPv4Address(value)
-        return ipaddress.IPv4Address(start_text.strip()) <= address <= ipaddress.IPv4Address(end_text.strip())
+        return (
+            ipaddress.IPv4Address(start_text.strip())
+            <= address
+            <= ipaddress.IPv4Address(end_text.strip())
+        )
     except (ValueError, ipaddress.AddressValueError):
         return False
 
@@ -1251,8 +1477,11 @@ def _parse_list_filter(parts: list[str]) -> tuple[str, str]:
     if lowered in (["--connected"], ["-connected"], ["--active"]):
         return "connected", ""
     if lowered in (
-        ["--disconnected"], ["--disconect"], ["-disconnected"],
-        ["-disconect"], ["--offline"],
+        ["--disconnected"],
+        ["--disconect"],
+        ["-disconnected"],
+        ["-disconect"],
+        ["--offline"],
     ):
         return "disconnected", ""
     if lowered in (["-dhcp"], ["--dhcp"]):
@@ -1261,9 +1490,7 @@ def _parse_list_filter(parts: list[str]) -> tuple[str, str]:
         return "statics", ""
     if len(parts) == 2 and lowered[0] in ("-group", "--group"):
         return "group", parts[1].upper()
-    raise ValueError(
-        "usa: list --all|--connected|--disconnected|-group NOMBRE|-dhcp|-statics"
-    )
+    raise ValueError("usa: list --all|--connected|--disconnected|-group NOMBRE|-dhcp|-statics")
 
 
 def _last_meaningful_line(value: str) -> str:
@@ -1272,9 +1499,14 @@ def _last_meaningful_line(value: str) -> str:
 
 def _function_bar(width: int) -> str:
     buttons = (
-        ("F1", "Ayuda"), ("F2", "Info"), ("F3", "Ping"),
-        ("F5", "Actualizar"), ("Ctrl+H", "Comandos"),
-        ("↑↓", "Seleccionar"), ("Enter", "Ejecutar"), ("Esc", "Salir"),
+        ("F1", "Ayuda"),
+        ("F2", "Info"),
+        ("F3", "Ping"),
+        ("F5", "Actualizar"),
+        ("Ctrl+H", "Comandos"),
+        ("↑↓", "Seleccionar"),
+        ("Enter", "Ejecutar"),
+        ("Esc", "Salir"),
     )
     output = ""
     visible = 0
@@ -1283,7 +1515,8 @@ def _function_bar(width: int) -> str:
         plain = f"{spacing} {key}  {label}"
         if visible + len(plain) > width:
             break
-        output += f"{Back.BLACK}{spacing}{RESET}" + (
+        output += (
+            f"{Back.BLACK}{spacing}{RESET}"
             f"{Style.BRIGHT}{Back.WHITE}{Fore.BLACK} {key} {RESET}"
             f"{Back.BLACK}{Fore.WHITE} {label}{RESET}"
         )

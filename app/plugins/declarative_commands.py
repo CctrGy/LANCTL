@@ -7,9 +7,7 @@ from colorama import Fore, Style
 
 from app.core.config import load_config
 from app.core.database import DeviceDatabase
-from app.core.logger import write_log
 from app.plugins.manager import get_plugin_manager
-
 
 SAFE_ACTIONS = {"inventory.summary", "function.call"}
 
@@ -29,7 +27,8 @@ def register_declarative_commands(commands: argparse._SubParsersAction) -> None:
         parser = commands.add_parser(name, aliases=aliases, help=str(spec.get("help") or name))
         if action == "function.call":
             parser.add_argument(
-                "plugin_arguments", nargs=argparse.REMAINDER,
+                "plugin_arguments",
+                nargs=argparse.REMAINDER,
                 help="Argumentos gestionados por el complemento.",
             )
         parser.set_defaults(handler=_run, plugin_extension=extension, plugin_action=action)
@@ -71,10 +70,11 @@ def _inventory_summary() -> int:
     print(f"{Style.BRIGHT}{Fore.CYAN}NETWORK INVENTORY SUMMARY{Style.RESET_ALL}")
     print(f" Devices       : {len(devices)}")
     print(f" With IP / MAC : {with_ip} / {with_mac}")
+    print(f" CNF O/X/S/-/F : {cnf['O']} / {cnf['X']} / {cnf['S']} / {cnf['-']} / {cnf['F']}")
     print(
-        f" CNF O/X/S/-/F : {cnf['O']} / {cnf['X']} / {cnf['S']} / "
-        f"{cnf['-']} / {cnf['F']}"
+        f" Groups        : {', '.join(f'{key}={value}' for key, value in groups.most_common()) or '-'}"
     )
-    print(f" Groups        : {', '.join(f'{key}={value}' for key, value in groups.most_common()) or '-'}")
-    print(f" Protocols     : {', '.join(f'{key}={value}' for key, value in protocols.most_common()) or '-'}")
+    print(
+        f" Protocols     : {', '.join(f'{key}={value}' for key, value in protocols.most_common()) or '-'}"
+    )
     return 0

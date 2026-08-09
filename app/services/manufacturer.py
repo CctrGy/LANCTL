@@ -26,6 +26,7 @@ def detect_manufacturer(mac: str) -> str:
     if not normalized or normalized == "FF:FF:FF:FF:FF:FF":
         return ""
     from app.plugins.device_adapters import resolve_manufacturer_extensions
+
     provided = resolve_manufacturer_extensions(normalized)
     if provided:
         return provided

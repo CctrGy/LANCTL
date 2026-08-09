@@ -19,18 +19,12 @@ class FixedCnfTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "devices.json"
             database = DeviceDatabase(str(path))
-            device = database.add_device(
-                "AA:BB:CC:DD:EE:FF", alias="PORTATIL"
-            )
-            fixed = build_parser().parse_args([
-                "cnf", device.mac, "F", "--database", str(path)
-            ])
+            device = database.add_device("AA:BB:CC:DD:EE:FF", alias="PORTATIL")
+            fixed = build_parser().parse_args(["cnf", device.mac, "F", "--database", str(path)])
             fixed.handler(fixed)
             self.assertEqual(database.resolve(device.mac).cnf, "F")
 
-            released = build_parser().parse_args([
-                "cnf", device.mac, "--database", str(path)
-            ])
+            released = build_parser().parse_args(["cnf", device.mac, "--database", str(path)])
             released.handler(released)
             self.assertEqual(database.resolve(device.mac).cnf, "O")
 
@@ -39,9 +33,7 @@ class FixedCnfTests(unittest.TestCase):
             path = Path(directory) / "devices.json"
             database = DeviceDatabase(str(path))
             device = database.add_device("AA:BB:CC:DD:EE:FF")
-            args = build_parser().parse_args([
-                "cnf", device.mac, "--database", str(path)
-            ])
+            args = build_parser().parse_args(["cnf", device.mac, "--database", str(path)])
             args.handler(args)
             self.assertEqual(database.resolve(device.mac).cnf, "X")
 

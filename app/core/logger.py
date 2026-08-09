@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from app.core.paths import application_path
 
+from app.core.file_transaction import locked_file
+from app.core.paths import application_path
 
 PROGRAM_LOG_DIRECTORY = application_path("data/lc/log")
 _LOCK = Lock()
@@ -12,7 +13,7 @@ _LOCK = Lock()
 
 def write_log(message: str, directory: Path | None = None) -> Path:
     """Añade una línea al log operativo diario del programa."""
-    now = datetime.now()
+    now = datetime.now(timezone.utc).astimezone()
     if directory is None:
         from app.core.config import load_config
 
@@ -25,7 +26,7 @@ def write_log(message: str, directory: Path | None = None) -> Path:
 
 def write_database_log(message: str, directory: Path | None = None) -> Path | None:
     """Añade una entrada al VLF activo o al directorio explícito de pruebas."""
-    now = datetime.now()
+    now = datetime.now(timezone.utc).astimezone()
     if directory is None:
         from app.core.config import load_config
         from app.projects.vlf import append_database_log
@@ -43,7 +44,7 @@ def _append_daily_log(message: str, log_directory: Path, now: datetime) -> Path:
     clean_message = " | ".join(str(message).splitlines()).strip()
     line = f"{now:%H:%M:%S} {clean_message}\n"
 
-    with _LOCK:
+    with _LOCK, locked_file(path):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8", newline="") as log:
             log.write(line)

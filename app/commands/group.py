@@ -32,7 +32,9 @@ def register_group_command(commands: argparse._SubParsersAction) -> None:
         action="store_true",
         help="Lista los elementos que pertenecen al grupo.",
     )
-    command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
+    command.add_argument(
+        "--database", default=config["database"], help="Archivo JSON de elementos."
+    )
     command.add_argument("--groups", default=config["groups"], help="Archivo JSON de grupos.")
     command.set_defaults(handler=run_group)
 
@@ -91,16 +93,26 @@ def run_group(args: argparse.Namespace) -> int:
                 "description": max(42, *(len(group.description) for group in stored)),
             }
             widths, stacked = shrink_widths(
-                widths, {"group": 8, "count": 8, "description": 8}, fields,
-                terminal_columns(), ("description", "group"), gap=2,
+                widths,
+                {"group": 8, "count": 8, "description": 8},
+                fields,
+                terminal_columns(),
+                ("description", "group"),
+                gap=2,
             )
             if stacked:
                 for index, group in enumerate(stored):
                     if index:
                         print(_paint("-" * (terminal_columns() or 40), Style.DIM, use_color))
-                    print(f"{_paint('GROUP', Fore.CYAN, use_color, bright=True)}: {_paint(group.name, Fore.YELLOW, use_color)}")
-                    print(f"{_paint('ELEMENTS', Fore.CYAN, use_color, bright=True)}: {_paint(str(len(group.members)), Fore.GREEN, use_color)}")
-                    print(f"{_paint('DESCRIPTION', Fore.CYAN, use_color, bright=True)}: {_paint(group.description, Fore.WHITE, use_color)}")
+                    print(
+                        f"{_paint('GROUP', Fore.CYAN, use_color, bright=True)}: {_paint(group.name, Fore.YELLOW, use_color)}"
+                    )
+                    print(
+                        f"{_paint('ELEMENTS', Fore.CYAN, use_color, bright=True)}: {_paint(str(len(group.members)), Fore.GREEN, use_color)}"
+                    )
+                    print(
+                        f"{_paint('DESCRIPTION', Fore.CYAN, use_color, bright=True)}: {_paint(group.description, Fore.WHITE, use_color)}"
+                    )
                 return 0
             print(
                 f"{_paint('GROUP'.ljust(widths['group']), Fore.CYAN, use_color, bright=True)}  "
@@ -125,12 +137,24 @@ def _print_group(group, database: DeviceDatabase) -> None:
         f"{_paint(group.description, Fore.WHITE, use_color)}"
     )
     devices = {device.mac: device for device in database.load()}
-    rows = [((devices.get(mac).alias or devices.get(mac).name or "-") if devices.get(mac) else "-",
-             devices.get(mac).ip if devices.get(mac) else "-", mac) for mac in group.members]
+    rows = [
+        (
+            (devices.get(mac).alias or devices.get(mac).name or "-") if devices.get(mac) else "-",
+            devices.get(mac).ip if devices.get(mac) else "-",
+            mac,
+        )
+        for mac in group.members
+    ]
     fields = ("element", "ip", "mac")
     widths = {"element": max(16, *(len(row[0]) for row in rows)), "ip": 15, "mac": 17}
-    widths, stacked = shrink_widths(widths, {"element": 5, "ip": 7, "mac": 17}, fields,
-                                    terminal_columns(), ("element", "ip"), gap=2)
+    widths, stacked = shrink_widths(
+        widths,
+        {"element": 5, "ip": 7, "mac": 17},
+        fields,
+        terminal_columns(),
+        ("element", "ip"),
+        gap=2,
+    )
     if stacked:
         for index, (label, ip, mac) in enumerate(rows):
             if index:

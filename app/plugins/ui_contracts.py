@@ -3,8 +3,15 @@ from __future__ import annotations
 import re
 from copy import deepcopy
 
-
-PANEL_LAYOUTS = {"table", "cards", "master-detail", "resource-browser", "dashboard", "form", "timeline"}
+PANEL_LAYOUTS = {
+    "table",
+    "cards",
+    "master-detail",
+    "resource-browser",
+    "dashboard",
+    "form",
+    "timeline",
+}
 FIELD_TYPES = {"device", "text", "badge", "status", "path", "date"}
 PLACEMENTS = {"panel-toolbar", "item", "detail"}
 FORM_TYPES = {"text", "password", "secret", "checkbox", "select"}
@@ -46,13 +53,20 @@ def validate_ui_action(specification: dict) -> dict:
 
 
 def validate_form_schema(schema: dict) -> dict:
-    form=deepcopy(schema)
-    if not isinstance(form,dict) or not isinstance(form.get("fields"),list): raise ValueError("formulario declarativo no válido")
-    names=set()
+    form = deepcopy(schema)
+    if not isinstance(form, dict) or not isinstance(form.get("fields"), list):
+        raise ValueError("formulario declarativo no válido")
+    names = set()
     for field in form["fields"]:
-        if not isinstance(field,dict) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*",str(field.get("name",""))): raise ValueError("campo de formulario no válido")
-        if field.get("type","text") not in FORM_TYPES or field["name"] in names: raise ValueError("tipo o nombre de formulario no permitido")
+        if not isinstance(field, dict) or not re.fullmatch(
+            r"[A-Za-z][A-Za-z0-9_-]*", str(field.get("name", ""))
+        ):
+            raise ValueError("campo de formulario no válido")
+        if field.get("type", "text") not in FORM_TYPES or field["name"] in names:
+            raise ValueError("tipo o nombre de formulario no permitido")
         names.add(field["name"])
-        if field.get("type") in {"secret","password"} and any(key in field for key in ("default","value","persist")):
+        if field.get("type") in {"secret", "password"} and any(
+            key in field for key in ("default", "value", "persist")
+        ):
             raise ValueError("un secreto no puede declararse persistente ni llevar valor inicial")
     return form

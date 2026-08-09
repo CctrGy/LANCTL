@@ -19,8 +19,11 @@ def classify_channel(version: str) -> str:
 def normalize_architecture(value: str) -> str:
     architecture = value.casefold()
     mapping = {
-        "x86_64": "amd64", "amd64": "amd64", "x64": "amd64",
-        "aarch64": "arm64", "arm64": "arm64",
+        "x86_64": "amd64",
+        "amd64": "amd64",
+        "x64": "amd64",
+        "aarch64": "arm64",
+        "arm64": "arm64",
     }
     if architecture not in mapping:
         raise ValueError(f"arquitectura no soportada: {value}")
@@ -37,5 +40,7 @@ def artifact_name(version: str, system: str, architecture: str, portable: bool =
         suffix = "portable.zip" if portable else "setup.exe"
         return f"LANCTL-{version}-windows-x64-{suffix}"
     if platform == "linux":
-        return f"LANCTL-{version}-linux-{arch}.tar.gz" if portable else f"lanctl_{version}_{arch}.deb"
+        return (
+            f"LANCTL-{version}-linux-{arch}.tar.gz" if portable else f"lanctl_{version}_{arch}.deb"
+        )
     raise ValueError(f"sistema no soportado: {system}")

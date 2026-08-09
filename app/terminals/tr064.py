@@ -4,10 +4,9 @@ import json
 import shlex
 from collections.abc import Callable
 
-from app.core.tr064 import Tr064Client
 from app.core.parser import colorize_help
+from app.core.tr064 import Tr064Client
 from app.models import Device
-
 
 HELP = """Comandos TR-064:
   services
@@ -71,7 +70,11 @@ def run_tr064_terminal(
                 continue
             if command == "call":
                 service, action, arguments = parse_call(parts)
-                print(json.dumps(client.call(service, action, arguments), indent=2, ensure_ascii=False))
+                print(
+                    json.dumps(
+                        client.call(service, action, arguments), indent=2, ensure_ascii=False
+                    )
+                )
                 continue
             print("Comando desconocido. Escribe 'help'.")
         except (OSError, ValueError) as error:

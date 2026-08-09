@@ -21,6 +21,25 @@ monitor session report SESSION --json
 monitor report latest
 ```
 
+## Servicio permanente en Windows
+
+La instalación completa puede registrar `LANCTLMonitor` automáticamente. También
+se puede administrar de forma explícita desde una consola elevada:
+
+```text
+monitor service install --yes
+monitor service status
+monitor service start
+monitor service stop
+monitor service restart
+monitor service uninstall --yes
+```
+
+El servicio ejecuta el mismo motor `foreground` mediante el protocolo nativo del
+Service Control Manager; no es un proceso de consola simulado. Se ejecuta con la
+cuenta restringida `LocalService` y conserva inventario, perfiles, asignaciones,
+métricas e incidencias bajo el directorio común de datos de LANCTL.
+
 Los perfiles integrados están protegidos. Las asignaciones resueltas guardan `deviceId`, por lo que cambiar alias o IP no rompe la referencia.
 
 ## Datos y retención

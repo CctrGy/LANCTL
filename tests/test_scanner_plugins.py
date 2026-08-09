@@ -18,13 +18,15 @@ class ScannerPluginTests(unittest.TestCase):
         )
         manager = SimpleNamespace(
             extensions=SimpleNamespace(list=lambda kind: [extension]),
-            functions=SimpleNamespace(call=lambda *args, **kwargs: FunctionResult(
-                True,
-                data={
-                    "192.168.1.20": ["mdns", "inventado"],
-                    "no-es-ip": ["ssdp"],
-                },
-            )),
+            functions=SimpleNamespace(
+                call=lambda *args, **kwargs: FunctionResult(
+                    True,
+                    data={
+                        "192.168.1.20": ["mdns", "inventado"],
+                        "no-es-ip": ["ssdp"],
+                    },
+                )
+            ),
             audit=lambda *args: None,
         )
         with patch("app.plugins.get_plugin_manager", return_value=manager):

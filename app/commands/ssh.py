@@ -22,10 +22,21 @@ def register_ssh_command(commands: argparse._SubParsersAction) -> None:
         "ssh", help="Abre SSH o ejecuta una consulta show de solo lectura."
     )
     command.add_argument("selector", help="IP, MAC o alias.")
-    command.add_argument("action", choices=("probe", "fingerprint", "trust", "open", "show"), help="Operación SSH.")
-    command.add_argument("remote_command", nargs="*", metavar="COMANDO", help="Huella o comando remoto, según la operación.")
-    command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
-    command.add_argument("--store", default=config["credentials"], help="Almacén cifrado de credenciales.")
+    command.add_argument(
+        "action", choices=("probe", "fingerprint", "trust", "open", "show"), help="Operación SSH."
+    )
+    command.add_argument(
+        "remote_command",
+        nargs="*",
+        metavar="COMANDO",
+        help="Huella o comando remoto, según la operación.",
+    )
+    command.add_argument(
+        "--database", default=config["database"], help="Archivo JSON de elementos."
+    )
+    command.add_argument(
+        "--store", default=config["credentials"], help="Almacén cifrado de credenciales."
+    )
     command.add_argument(
         "--host", help="IP candidata para probe/fingerprint, sin modificar la base de datos."
     )

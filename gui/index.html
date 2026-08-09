@@ -15,7 +15,7 @@
     <div class="avatar">VA</div>
   </header>
 
-  <nav class="main-navigation"><button class="active" data-panel="devices">Dispositivos</button><span id="plugin-navigation"></span><button data-panel="activity">Actividad</button></nav>
+  <nav class="main-navigation"><button class="active" data-panel="devices">Dispositivos</button><span id="plugin-navigation"></span><button data-panel="activity">Historial</button></nav>
   <main id="devices-panel" class="content" data-component-id="lanctl.content">
     <section class="commandbar">
       <button id="scan-network" class="primary" data-component-id="lanctl.primary-action">↻ Escanear red</button>
@@ -79,7 +79,7 @@
     </section>
   </main>
   <main id="plugin-panel" class="plugin-panel" hidden><section class="plugin-toolbar"><div><h1 id="plugin-title">Recursos compartidos</h1><p id="plugin-description"></p></div><div id="plugin-toolbar-actions"></div></section><section id="plugin-metrics" class="plugin-metrics"></section><section class="plugin-browser"><div class="plugin-table"><input id="plugin-search" placeholder="Buscar servidor, carpeta, impresora o grupo de trabajo"><table><thead><tr id="plugin-head"></tr></thead><tbody id="plugin-rows"></tbody></table><div id="plugin-empty" class="empty-state"></div></div><aside id="plugin-detail"><h2>Selecciona un recurso</h2></aside></section></main>
-  <main id="activity-panel" class="plugin-panel" hidden><section class="activity-card"><div class="activity-toolbar"><div><h1>Actividad</h1><p>Eventos estructurados del proyecto activo</p></div><button id="activity-refresh">Actualizar</button></div><div class="table-scroll"><table class="activity-table"><thead><tr><th>Fecha</th><th>Elemento</th><th>Evento</th><th>Resultado</th><th>Resumen</th></tr></thead><tbody id="activity-rows"></tbody></table><div id="activity-empty" class="empty-state">No hay eventos registrados.</div></div></section></main>
+  <main id="activity-panel" class="plugin-panel" hidden><section class="activity-card"><div class="activity-toolbar"><div><h1>Historial del proyecto</h1><p>Cambios y eventos registrados en el proyecto activo</p></div><button id="activity-refresh">Actualizar</button></div><div class="table-scroll"><table class="activity-table"><thead><tr><th>Fecha</th><th>Elemento</th><th>Evento</th><th>Resultado</th><th>Resumen</th></tr></thead><tbody id="activity-rows"></tbody></table><div id="activity-empty" class="empty-state">No hay eventos registrados.</div></div></section></main>
 
   <footer class="statusbar"><span>LANCTL <b id="app-version">—</b></span><span>Vista de inventario lógico</span><span id="row-count">0 filas</span></footer>
 </div>

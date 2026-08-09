@@ -8,7 +8,10 @@ from app.commands.ping import run_ping
 class PingCommandTests(unittest.TestCase):
     def _args(self, method="auto"):
         return SimpleNamespace(
-            selector="ESP", method=method, timeout=0.5, json=False,
+            selector="ESP",
+            method=method,
+            timeout=0.5,
+            json=False,
             database="devices.json",
         )
 

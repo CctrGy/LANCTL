@@ -1,32 +1,109 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
 import platform
 import re
 import socket
 import subprocess
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
+from dataclasses import dataclass, field
 from time import monotonic
-from typing import Callable
-
 
 COMMON_PORTS = (
-    20, 21, 22, 23, 25, 53, 67, 68, 69, 80, 81, 110, 123, 135, 137,
-    138, 139, 143, 161, 162, 389, 443, 445, 465, 500, 515, 548, 554,
-    587, 631, 636, 993, 995, 1433, 1723, 1883, 1900, 2049, 3306, 3389,
-    5000, 5060, 5353, 5432, 5900, 8000, 8080, 8081, 8443, 8883, 9100,
+    20,
+    21,
+    22,
+    23,
+    25,
+    53,
+    67,
+    68,
+    69,
+    80,
+    81,
+    110,
+    123,
+    135,
+    137,
+    138,
+    139,
+    143,
+    161,
+    162,
+    389,
+    443,
+    445,
+    465,
+    500,
+    515,
+    548,
+    554,
+    587,
+    631,
+    636,
+    993,
+    995,
+    1433,
+    1723,
+    1883,
+    1900,
+    2049,
+    3306,
+    3389,
+    5000,
+    5060,
+    5353,
+    5432,
+    5900,
+    8000,
+    8080,
+    8081,
+    8443,
+    8883,
+    9100,
 )
 
 SERVICE_NAMES = {
-    20: "ftp-data", 21: "ftp", 22: "ssh", 23: "telnet", 25: "smtp",
-    53: "dns", 67: "dhcp-server", 68: "dhcp-client", 69: "tftp",
-    80: "http", 110: "pop3", 123: "ntp", 135: "msrpc", 139: "netbios",
-    143: "imap", 161: "snmp", 389: "ldap", 443: "https", 445: "smb",
-    515: "printer", 548: "afp", 554: "rtsp", 631: "ipp", 636: "ldaps",
-    993: "imaps", 995: "pop3s", 1433: "mssql", 1883: "mqtt",
-    2049: "nfs", 3306: "mysql", 3389: "rdp", 5000: "upnp/http",
-    5432: "postgresql", 5900: "vnc", 8000: "http-alt", 8080: "http-proxy",
-    8443: "https-alt", 8883: "mqtts", 9100: "printer-raw",
+    20: "ftp-data",
+    21: "ftp",
+    22: "ssh",
+    23: "telnet",
+    25: "smtp",
+    53: "dns",
+    67: "dhcp-server",
+    68: "dhcp-client",
+    69: "tftp",
+    80: "http",
+    110: "pop3",
+    123: "ntp",
+    135: "msrpc",
+    139: "netbios",
+    143: "imap",
+    161: "snmp",
+    389: "ldap",
+    443: "https",
+    445: "smb",
+    515: "printer",
+    548: "afp",
+    554: "rtsp",
+    631: "ipp",
+    636: "ldaps",
+    993: "imaps",
+    995: "pop3s",
+    1433: "mssql",
+    1883: "mqtt",
+    2049: "nfs",
+    3306: "mysql",
+    3389: "rdp",
+    5000: "upnp/http",
+    5432: "postgresql",
+    5900: "vnc",
+    8000: "http-alt",
+    8080: "http-proxy",
+    8443: "https-alt",
+    8883: "mqtts",
+    9100: "printer-raw",
 }
 
 
@@ -104,7 +181,7 @@ def _sanitize_banner(value: bytes) -> str:
 
 
 def _server_product(text: str) -> str:
-    match = re.search(r"(?:^|\r?\n)Server:\s*([^\r\n]+)", text, re.I)
+    match = re.search(r"(?:^|\r?\n)Server:\s*([^\r\n]+)", text, re.IGNORECASE)
     return match.group(1).strip()[:80] if match else ""
 
 
@@ -121,10 +198,8 @@ def identify_tcp_service(
     connection = connector((host, port), timeout=timeout)
     try:
         connection.settimeout(timeout)
-        try:
+        with suppress(TimeoutError, OSError):
             banner = connection.recv(512)
-        except (OSError, socket.timeout):
-            pass
 
         text = _sanitize_banner(banner)
         upper = text.upper()
@@ -140,19 +215,27 @@ def identify_tcp_service(
             try:
                 connection.sendall(request)
                 response = connection.recv(1024)
-            except (OSError, socket.timeout):
+            except (TimeoutError, OSError):
                 pass
             probe_text = response.decode("utf-8", errors="replace")
             compact = " ".join(probe_text.split())[:120]
             if probe_text.upper().startswith("RTSP/"):
                 return OpenPort(
-                    port, "rtsp", compact, _server_product(probe_text), "high",
+                    port,
+                    "rtsp",
+                    compact,
+                    _server_product(probe_text),
+                    "high",
                     "RTSP status line",
                 )
             if probe_text.upper().startswith("HTTP/"):
                 service = "https" if port in (443, 8443) else "http"
                 return OpenPort(
-                    port, service, compact, _server_product(probe_text), "high",
+                    port,
+                    service,
+                    compact,
+                    _server_product(probe_text),
+                    "high",
                     "HTTP status line",
                 )
 
@@ -165,7 +248,9 @@ def identify_tcp_service(
         connection.close()
 
 
-def identify_device(open_ports: list[OpenPort], manufacturer: str = "", hostname: str = "") -> DeviceIdentification:
+def identify_device(
+    open_ports: list[OpenPort], manufacturer: str = "", hostname: str = ""
+) -> DeviceIdentification:
     services = {item.service for item in open_ports}
     evidence: list[str] = []
     if "rtsp" in services or "onvif" in services:
@@ -204,10 +289,8 @@ def scan_tcp_ports(
                 banner = ""
                 if banners:
                     connection.settimeout(timeout)
-                    try:
+                    with suppress(TimeoutError, OSError):
                         banner = _sanitize_banner(connection.recv(256))
-                    except (OSError, socket.timeout):
-                        pass
                 if identify:
                     try:
                         return identify_tcp_service(host, port, timeout, connector)
@@ -232,13 +315,17 @@ def ping_details(host: str, timeout: float) -> tuple[bool, float | None, int | N
     )
     try:
         result = subprocess.run(
-            command, capture_output=True, text=True, errors="replace",
-            timeout=timeout + 2, check=False,
+            command,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=timeout + 2,
+            check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return False, None, None
-    latency = re.search(r"(?:time|tiempo)[=<]\s*([0-9.]+)\s*ms", result.stdout, re.I)
-    ttl = re.search(r"ttl[= ](\d+)", result.stdout, re.I)
+    latency = re.search(r"(?:time|tiempo)[=<]\s*([0-9.]+)\s*ms", result.stdout, re.IGNORECASE)
+    ttl = re.search(r"ttl[= ](\d+)", result.stdout, re.IGNORECASE)
     return (
         result.returncode == 0,
         float(latency.group(1)) if latency else None,
@@ -249,12 +336,16 @@ def ping_details(host: str, timeout: float) -> tuple[bool, float | None, int | N
 def observed_arp_mac(host: str) -> str:
     try:
         result = subprocess.run(
-            ["arp", "-a", host], capture_output=True, text=True,
-            errors="replace", timeout=3, check=False,
+            ["arp", "-a", host],
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=3,
+            check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return ""
-    match = re.search(r"(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}", result.stdout, re.I)
+    match = re.search(r"(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}", result.stdout, re.IGNORECASE)
     return match.group(0).replace("-", ":").upper() if match else ""
 
 
@@ -265,13 +356,21 @@ def reverse_hostname(host: str, timeout: float) -> str:
         command = ["ping", "-a", "-n", "1", "-w", str(max(1, int(timeout * 1000))), host]
     try:
         result = subprocess.run(
-            command, capture_output=True, text=True, errors="replace",
-            timeout=timeout + 2, check=False,
+            command,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=timeout + 2,
+            check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return ""
     if platform.system() == "Windows":
-        match = re.search(rf"(?:Pinging|ping\s+a)\s+([^\s\[]+)\s+\[{re.escape(host)}\]", result.stdout, re.I)
+        match = re.search(
+            rf"(?:Pinging|ping\s+a)\s+([^\s\[]+)\s+\[{re.escape(host)}\]",
+            result.stdout,
+            re.IGNORECASE,
+        )
         return match.group(1).rstrip(".") if match else ""
     parts = result.stdout.split()
     return parts[1].rstrip(".") if len(parts) >= 2 else ""
@@ -294,9 +393,7 @@ class ElementScanner:
     ) -> ElementScanResult:
         started = monotonic()
         reachable, latency, ttl = ping_details(host, self.timeout)
-        open_ports = scan_tcp_ports(
-            host, ports, self.timeout, self.workers, banners, identify
-        )
+        open_ports = scan_tcp_ports(host, ports, self.timeout, self.workers, banners, identify)
         hostname = reverse_hostname(host, self.timeout)
         return ElementScanResult(
             ip=host,

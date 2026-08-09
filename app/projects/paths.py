@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 from uuid import UUID
 
-
 FOLDERID_DOCUMENTS = UUID("fdd39ad0-238f-46af-adb4-6c85480369c7")
 LEGACY_PROJECTS_DIRECTORY = r"%USERPROFILE%\Documents\LanCTL"
 
@@ -34,13 +33,13 @@ def _known_documents_directory() -> Path | None:
     path = ctypes.c_wchar_p()
     folder_id = _guid(FOLDERID_DOCUMENTS)
     shell32.SHGetKnownFolderPath.argtypes = (
-        ctypes.POINTER(_Guid), ctypes.c_uint32, ctypes.c_void_p,
+        ctypes.POINTER(_Guid),
+        ctypes.c_uint32,
+        ctypes.c_void_p,
         ctypes.POINTER(ctypes.c_wchar_p),
     )
     shell32.SHGetKnownFolderPath.restype = ctypes.c_long
-    result = shell32.SHGetKnownFolderPath(
-        ctypes.byref(folder_id), 0, None, ctypes.byref(path)
-    )
+    result = shell32.SHGetKnownFolderPath(ctypes.byref(folder_id), 0, None, ctypes.byref(path))
     if result != 0 or not path.value:
         return None
     try:
@@ -65,17 +64,14 @@ def default_project_directory() -> Path:
     return windows_documents_directory() / "LanCTL"
 
 
-def resolve_project_path(
-    value: str | Path, configured_directory: str | Path | None = None
-) -> Path:
+def resolve_project_path(value: str | Path, configured_directory: str | Path | None = None) -> Path:
     """Las rutas relativas pertenecen a Documentos/LanCTL."""
     expanded = Path(os.path.expandvars(str(value))).expanduser()
     if not expanded.is_absolute():
         configured = str(configured_directory or "")
         use_known_documents = (
             not configured
-            or configured.replace("/", "\\").casefold()
-            == LEGACY_PROJECTS_DIRECTORY.casefold()
+            or configured.replace("/", "\\").casefold() == LEGACY_PROJECTS_DIRECTORY.casefold()
         )
         root = (
             default_project_directory()

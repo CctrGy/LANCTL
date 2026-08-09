@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterator, MutableMapping
-from dataclasses import dataclass, field
-from typing import Any, Mapping
-import re
 import hashlib
-
+import re
+from collections.abc import Iterator, Mapping, MutableMapping
+from dataclasses import dataclass, field
+from typing import Any, ClassVar
 
 MAC_PATTERN = re.compile(r"^(?:[0-9A-F]{2}:){5}[0-9A-F]{2}$")
 CNF_STATES = ("O", "X", "-", "S", "F")
@@ -15,8 +14,7 @@ def normalize_mac(value: str) -> str:
     normalized = value.strip().replace("-", ":").upper()
     if not MAC_PATTERN.fullmatch(normalized):
         raise ValueError(
-            f"dirección MAC no válida: {value}. "
-            "Usa XX:XX:XX:XX:XX:XX o XX-XX-XX-XX-XX-XX"
+            f"dirección MAC no válida: {value}. Usa XX:XX:XX:XX:XX:XX o XX-XX-XX-XX-XX-XX"
         )
     return normalized
 
@@ -39,19 +37,35 @@ def normalize_cnf(value: Any) -> str:
     if isinstance(value, bool):
         return "O" if value else "X"
     aliases = {
-        "o": "O", "ok": "O", "true": "O", "1": "O", "yes": "O",
-        "si": "O", "sí": "O",
-        "x": "X", "unknown": "X", "uknow": "X", "false": "X",
-        "0": "X", "no": "X",
-        "-": "-", "unrecognized": "-", "unrecognised": "-",
-        "s": "S", "marked": "S", "marqued": "S", "marcado": "S",
-        "f": "F", "fixed": "F", "fijo": "F", "fijado": "F",
+        "o": "O",
+        "ok": "O",
+        "true": "O",
+        "1": "O",
+        "yes": "O",
+        "si": "O",
+        "sí": "O",
+        "x": "X",
+        "unknown": "X",
+        "uknow": "X",
+        "false": "X",
+        "0": "X",
+        "no": "X",
+        "-": "-",
+        "unrecognized": "-",
+        "unrecognised": "-",
+        "s": "S",
+        "marked": "S",
+        "marqued": "S",
+        "marcado": "S",
+        "f": "F",
+        "fixed": "F",
+        "fijo": "F",
+        "fijado": "F",
     }
     normalized = aliases.get(str(value).strip().casefold())
     if normalized is None:
         raise ValueError(
-            "cnf debe ser O (OK), X (UNKNOWN), - (UNRECOGNIZED), "
-            "S (MARKED) o F (FIXED)"
+            "cnf debe ser O (OK), X (UNKNOWN), - (UNRECOGNIZED), S (MARKED) o F (FIXED)"
         )
     return normalized
 
@@ -81,7 +95,7 @@ class Device(MutableMapping[str, Any]):
     last_seen: str = ""
     icon_id: str = ""
 
-    JSON_FIELDS = {
+    JSON_FIELDS: ClassVar[dict[str, str]] = {
         "IP": "ip",
         "cnf": "cnf",
         "ALIAS": "alias",
@@ -105,7 +119,7 @@ class Device(MutableMapping[str, Any]):
     }
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, Any]) -> "Device":
+    def from_dict(cls, value: Mapping[str, Any]) -> Device:
         has_default_name = "defaultName" in value
         alias = str(value.get("ALIAS", ""))
         raw_groups = value.get("GROUP", value.get("group", []))
@@ -117,11 +131,7 @@ class Device(MutableMapping[str, Any]):
         return cls(
             ip=str(value["IP"]),
             cnf=normalize_cnf(value.get("cnf", False)),
-            mac=(
-                normalize_mac(str(value.get("MAC", "")))
-                if value.get("MAC")
-                else ""
-            ),
+            mac=(normalize_mac(str(value.get("MAC", ""))) if value.get("MAC") else ""),
             name=str(value.get("NAME", "")) if has_default_name else "",
             default_name=str(value.get("defaultName", value.get("NAME", ""))),
             alias=alias,
@@ -159,8 +169,7 @@ class Device(MutableMapping[str, Any]):
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            json_name: getattr(self, attribute)
-            for json_name, attribute in self.JSON_FIELDS.items()
+            json_name: getattr(self, attribute) for json_name, attribute in self.JSON_FIELDS.items()
         }
 
     def __post_init__(self) -> None:
@@ -171,9 +180,7 @@ class Device(MutableMapping[str, Any]):
             raise ValueError("la descripción de un elemento no puede superar 42 caracteres")
         self.groups = list(dict.fromkeys(group.upper() for group in self.groups))
         self.device_id = self.device_id or device_identifier(self.mac, self.ip)
-        self.protocols = list(
-            dict.fromkeys(normalize_protocol(item) for item in self.protocols)
-        )
+        self.protocols = list(dict.fromkeys(normalize_protocol(item) for item in self.protocols))
         self.credentials = {
             normalize_protocol(protocol): str(reference)
             for protocol, reference in self.credentials.items()
@@ -182,9 +189,11 @@ class Device(MutableMapping[str, Any]):
             normalize_protocol(protocol): dict(options)
             for protocol, options in self.protocol_options.items()
         }
-        self.discovery_methods = list(dict.fromkeys(
-            method.strip().upper() for method in self.discovery_methods if method.strip()
-        ))
+        self.discovery_methods = list(
+            dict.fromkeys(
+                method.strip().upper() for method in self.discovery_methods if method.strip()
+            )
+        )
 
     def __getitem__(self, key: str) -> Any:
         try:
@@ -208,5 +217,10 @@ class Device(MutableMapping[str, Any]):
     def __len__(self) -> int:
         return len(self.JSON_FIELDS)
 
-    def copy(self) -> "Device":
+    def copy(self) -> Device:
         return Device.from_dict(self.to_dict())
+
+    def in_group(self, name: str) -> bool:
+        """Comprueba pertenencia usando la normalización propia del modelo."""
+
+        return name.strip().upper() in self.groups

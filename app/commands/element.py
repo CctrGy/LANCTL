@@ -8,7 +8,6 @@ from app.core.database import DeviceDatabase
 from app.core.group_database import GroupDatabase
 from app.core.output import write_records
 
-
 FIELDS = ("cnf", "name", "description", "alias", "group", "protocol")
 DELETE_ACTIONS = ("delete", "del", "remove")
 
@@ -39,7 +38,9 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
         dest="new_description",
         help="Descripción inicial opcional (máximo 42 caracteres).",
     )
-    command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
+    command.add_argument(
+        "--database", default=config["database"], help="Archivo JSON de elementos."
+    )
     command.add_argument("--groups", default=config["groups"], help="Archivo JSON de grupos.")
     command.add_argument(
         "--yes",
@@ -54,8 +55,7 @@ def run_element(args: argparse.Namespace) -> int:
     if args.add:
         if args.selector or args.action or args.values:
             raise ValueError(
-                "usa: element -add MAC [-name NAME] [-alias ALIAS] "
-                "[-description DESCRIPTION]"
+                "usa: element -add MAC [-name NAME] [-alias ALIAS] [-description DESCRIPTION]"
             )
         device = database.add_device(
             args.add,
@@ -77,9 +77,17 @@ def run_element(args: argparse.Namespace) -> int:
             [device],
             output_format="table",
             columns=(
-                "ip", "cnf", "alias", "mac", "name", "group",
-                "description", "manufacturer", "detected-by",
-                "last-discovery", "last-seen",
+                "ip",
+                "cnf",
+                "alias",
+                "mac",
+                "name",
+                "group",
+                "description",
+                "manufacturer",
+                "detected-by",
+                "last-discovery",
+                "last-seen",
             ),
         )
         return 0
@@ -90,9 +98,7 @@ def run_element(args: argparse.Namespace) -> int:
         device = database.resolve(args.selector)
         label = device.alias or device.name or device.ip
         if not args.yes:
-            answer = input(
-                f"Eliminar completamente {label} ({device.mac})? [s/N]: "
-            )
+            answer = input(f"Eliminar completamente {label} ({device.mac})? [s/N]: ")
             if answer.strip().casefold() not in ("s", "si", "sí", "y", "yes"):
                 ok("CANCELADO", "No se ha eliminado ningún elemento.")
                 return 1

@@ -29,9 +29,7 @@ def colorize_help(text: str, stream=None) -> str:
         if line.startswith(t("LANCTL.PARSER.SECTION.USAGE")):
             line = f"{Style.BRIGHT}{Fore.CYAN}{line}{Style.RESET_ALL}"
             colored.append(line)
-            colored.append(
-                f"{Style.DIM}{Fore.CYAN}{'─' * rule_width}{Style.RESET_ALL}"
-            )
+            colored.append(f"{Style.DIM}{Fore.CYAN}{'─' * rule_width}{Style.RESET_ALL}")
             continue
         elif stripped.endswith(":") and not line.startswith(" "):
             line = f"{Style.BRIGHT}{Fore.YELLOW}{line}{Style.RESET_ALL}"
@@ -92,7 +90,7 @@ class LANCTLArgumentParser(argparse.ArgumentParser):
             if replacement:
                 line = replacement
             elif line.startswith("usage:"):
-                line = t("LANCTL.PARSER.SECTION.USAGE") + line[len("usage:"):]
+                line = t("LANCTL.PARSER.SECTION.USAGE") + line[len("usage:") :]
             normalized.append(line)
         text = "\n".join(normalized) + "\n"
         return colorize_help(text, sys.stdout)

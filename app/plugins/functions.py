@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import is_dataclass
-from typing import Callable
 
 from app.plugins.contracts import FunctionResult
 
@@ -13,7 +13,14 @@ class FunctionRegistry:
         self._items: dict[str, tuple[str, Callable, type]] = {}
         self.audit = audit or (lambda *args, **kwargs: None)
 
-    def register(self, function_id: str, handler: Callable, return_contract: type = FunctionResult, *, owner: str) -> None:
+    def register(
+        self,
+        function_id: str,
+        handler: Callable,
+        return_contract: type = FunctionResult,
+        *,
+        owner: str,
+    ) -> None:
         key = function_id.casefold()
         if key in self._items:
             raise ValueError(f"función ya registrada: {function_id}")
@@ -37,8 +44,10 @@ class FunctionRegistry:
             raise
 
     def owner(self, function_id: str) -> str:
-        try: return self._items[function_id.casefold()][0]
-        except KeyError as error: raise ValueError(f"función no registrada: {function_id}") from error
+        try:
+            return self._items[function_id.casefold()][0]
+        except KeyError as error:
+            raise ValueError(f"función no registrada: {function_id}") from error
 
     def remove_owner(self, owner: str) -> None:
         self._items = {key: value for key, value in self._items.items() if value[0] != owner}

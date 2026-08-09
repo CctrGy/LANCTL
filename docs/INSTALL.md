@@ -45,6 +45,11 @@ runner ARM nativo. El tarball es una alternativa portable explícita mediante
 `--tarball` y no instala systemd. El DEB usa `/opt/lanctl`, `/usr/bin/lanctl`,
 `/etc/lanctl` y `/var/lib/lanctl`, y crea un usuario `lanctl` sin shell. El modo
 Monitor instala la unidad, pero no la inicia hasta que exista un proyecto activo.
+La CLI ejecutada por un usuario normal guarda configuración e inventario bajo
+`XDG_DATA_HOME/lanctl` (o `~/.local/share/lanctl`) y secretos bajo
+`XDG_CONFIG_HOME/lanctl/access`. La unidad systemd fija `LANCTL_DATA_DIR` a
+`/var/lib/lanctl` y `LANCTL_SECRET_DIR` a `/etc/lanctl/access`, evitando mezclar
+datos interactivos y datos del servicio.
 
 ## Datos, actualización y rollback
 
@@ -72,7 +77,9 @@ SSH y HTTPS siempre quedan apagados, incluso con `--mode monitor`. La opción
 `--configure-access` ejecuta al final `lanctl access setup-wizard` en un terminal
 local. El asistente pide credenciales mediante entrada segura, valida bind,
 CIDR y puertos, genera claves/certificado y vuelve a apagar ambos servicios si
-falla. `--yes` nunca habilita acceso remoto.
+falla. En modo estándar usa datos de usuario; en modo Monitor usa el almacén de
+servicio y los listeners quedan supervisados por el backend permanente.
+`--yes` nunca habilita acceso remoto.
 
 ## Publicación
 

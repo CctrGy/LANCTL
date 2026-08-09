@@ -18,7 +18,12 @@ class RecurrentCommandTests(unittest.TestCase):
             json.dumps(
                 [
                     {"cnf": "S", "ALIAS": "VM1", "MAC": "5E:8C:B3:08:05:D4", "NAME": "VM1"},
-                    {"cnf": "S", "ALIAS": "LV1", "MAC": "AA:BB:CC:DD:EE:FF", "NAME": "LaptopVictor1"},
+                    {
+                        "cnf": "S",
+                        "ALIAS": "LV1",
+                        "MAC": "AA:BB:CC:DD:EE:FF",
+                        "NAME": "LaptopVictor1",
+                    },
                 ]
             ),
             encoding="utf-8",

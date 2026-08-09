@@ -121,7 +121,13 @@ try {
     }
     if ($ConfigureAccess) {
         if ($Yes) { Write-Warning 'Remote access cannot be enabled with -Yes; run lanctl access setup-wizard interactively.' }
-        else { & lanctl access setup-wizard }
+        elseif ($Mode -eq 'monitor' -and -not $Portable) {
+            $lanctlExecutable = Join-Path $env:ProgramFiles 'LANCTL\LANCTL.exe'
+            $wizard = Start-Process -FilePath $lanctlExecutable -ArgumentList @('access','setup-wizard','--scope','service') -Verb RunAs -Wait -PassThru
+            if ($wizard.ExitCode -ne 0) { throw "Remote access wizard failed with exit code $($wizard.ExitCode)" }
+        } elseif ($Portable) {
+            & (Join-Path $destination 'LANCTL.exe') access setup-wizard --scope user
+        } else { & lanctl access setup-wizard --scope user }
     }
 } finally {
     if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Recurse -Force }

@@ -4,17 +4,22 @@ import argparse
 import ipaddress
 from datetime import datetime
 
+from app.commands.recurrent import run_recurrent
 from app.core.config import load_config
 from app.core.console import ok
 from app.core.database import DeviceDatabase
 from app.core.group_database import GroupDatabase
 from app.core.output import write_records
-from app.services.lan_scanner import LanScanner, local_ipv4, resolve_network
-from app.services.lan_scanner import DISCOVERY_MODES, SCAN_ORDERS
-from app.services.scan_profiles import SCAN_PROFILES, apply_profile
 from app.core.progress import ScanProgress
 from app.core.query import matches_query
-from app.commands.recurrent import run_recurrent
+from app.services.lan_scanner import (
+    DISCOVERY_MODES,
+    SCAN_ORDERS,
+    LanScanner,
+    local_ipv4,
+    resolve_network,
+)
+from app.services.scan_profiles import SCAN_PROFILES, apply_profile
 
 
 def register_list_command(commands: argparse._SubParsersAction) -> None:
@@ -32,7 +37,9 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
         default=config["range"],
         help="Red CIDR. Por defecto detecta la LAN como /24.",
     )
-    command.add_argument("--database", default=config["database"], help="Archivo JSON de elementos.")
+    command.add_argument(
+        "--database", default=config["database"], help="Archivo JSON de elementos."
+    )
     command.add_argument("--groups", default=config["groups"], help="Archivo JSON de grupos.")
     command.add_argument(
         "-f",
@@ -92,9 +99,7 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
         "--discovery",
         choices=DISCOVERY_MODES,
         default=None,
-        help=(
-            "Método: icmp, arp activo o hybrid (por defecto según settings)."
-        ),
+        help=("Método: icmp, arp activo o hybrid (por defecto según settings)."),
     )
     profiles = command.add_mutually_exclusive_group()
     profiles.add_argument(
@@ -103,12 +108,30 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
         default=None,
         help="Perfil completo de escaneo: fast, normal o accurate.",
     )
-    profiles.add_argument("--fast", dest="profile", action="store_const", const="fast", help="Escaneo ARP rápido.")
-    profiles.add_argument("--normal", dest="profile", action="store_const", const="normal", help="Escaneo híbrido equilibrado.")
-    profiles.add_argument("--accurate", dest="profile", action="store_const", const="accurate", help="Escaneo profundo con varios métodos.")
+    profiles.add_argument(
+        "--fast", dest="profile", action="store_const", const="fast", help="Escaneo ARP rápido."
+    )
+    profiles.add_argument(
+        "--normal",
+        dest="profile",
+        action="store_const",
+        const="normal",
+        help="Escaneo híbrido equilibrado.",
+    )
+    profiles.add_argument(
+        "--accurate",
+        dest="profile",
+        action="store_const",
+        const="accurate",
+        help="Escaneo profundo con varios métodos.",
+    )
     progress_options = command.add_mutually_exclusive_group()
-    progress_options.add_argument("--progress", dest="progress", action="store_true", help="Muestra el progreso interactivo.")
-    progress_options.add_argument("--no-progress", dest="progress", action="store_false", help="Oculta el progreso.")
+    progress_options.add_argument(
+        "--progress", dest="progress", action="store_true", help="Muestra el progreso interactivo."
+    )
+    progress_options.add_argument(
+        "--no-progress", dest="progress", action="store_false", help="Oculta el progreso."
+    )
     command.add_argument(
         "--show-discovery",
         action="store_true",
@@ -117,10 +140,7 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument(
         "--include-arp-cache",
         action="store_true",
-        help=(
-            "Importa vecinos ARP en caché como CACHE no verificada; "
-            "no cuentan como activos."
-        ),
+        help=("Importa vecinos ARP en caché como CACHE no verificada; no cuentan como activos."),
     )
     command.add_argument(
         "--show-detection",
@@ -186,9 +206,7 @@ def active_flags(devices, records, scanner=None) -> list[bool]:
     active_macs = {record.mac for record in records if record.mac}
     active_ips_without_mac = {record.ip for record in records if not record.mac}
     return [
-        device.mac in active_macs
-        if device.mac
-        else device.ip in active_ips_without_mac
+        device.mac in active_macs if device.mac else device.ip in active_ips_without_mac
         for device in devices
     ]
 
@@ -250,9 +268,7 @@ def run_list(args: argparse.Namespace) -> int:
     profile, effective_timeout, effective_workers = apply_profile(
         profile_name, args.timeout, args.workers
     )
-    discovery = args.discovery or (
-        profile.discovery if args.profile else args.configured_discovery
-    )
+    discovery = args.discovery or (profile.discovery if args.profile else args.configured_discovery)
     database = DeviceDatabase(args.database)
     registered_devices = database.load()
     registered_total = len(registered_devices)
@@ -289,9 +305,7 @@ def run_list(args: argparse.Namespace) -> int:
     for record in records:
         methods = scanner.discovery_for(record).split("+")
         # CACHE es información histórica, no una confirmación de presencia.
-        confirmed_methods = [
-            method for method in methods if method not in ("-", "CACHE", "BASIC")
-        ]
+        confirmed_methods = [method for method in methods if method not in ("-", "CACHE", "BASIC")]
         if scanner.is_confirmed(record) and confirmed_methods:
             record.discovery_methods = confirmed_methods
             record.last_discovery = "+".join(confirmed_methods)
@@ -299,15 +313,14 @@ def run_list(args: argparse.Namespace) -> int:
 
     devices = database.upsert(records)
     GroupDatabase(args.groups, database).ensure_basic(devices)
-    # ensure_basic puede reescribir la base; se vuelve a cargar su resultado.
+    # El ajuste de grupos básicos puede reescribir la base; se vuelve a cargar
+    # el resultado antes de filtrar y presentar el inventario.
     devices = database.load()
     activity = active_flags(devices, records, scanner)
     selected = filter_rows(devices, activity, args)
     visible_devices = [device for device, _ in selected]
     visible_activity = [active for _, active in selected]
-    columns = list(
-        ("ip", "alias", "description") if args.basic else args.display_columns
-    )
+    columns = list(("ip", "alias", "description") if args.basic else args.display_columns)
     if args.format == "table" and not args.basic and "ms" not in columns:
         ip_index = columns.index("ip") + 1 if "ip" in columns else 0
         columns.insert(ip_index, "ms")
@@ -320,13 +333,13 @@ def run_list(args: argparse.Namespace) -> int:
     display_rows = []
     for device in visible_devices:
         row = device.to_dict()
-        # Indicador efímero: identifica el equipo que está ejecutando LANCTL.
-        # No modifica el estado CNF almacenado en la base de datos.
+        # El CNF «@» solo identifica el equipo local en la fila de salida; no
+        # modifica el estado almacenado en la base de datos.
         if device.ip == current_host_ip:
             row["cnf"] = "@"
         row["discovery"] = scanner.discovery_for(device)
-        # Dato efimero de esta ejecucion: nunca se copia al modelo Device ni
-        # llega al archivo de base de datos.
+        # La latencia también es efímera: no se copia al modelo `Device` ni se
+        # persiste en la base de datos.
         row["responseMs"] = scanner.response_time_for(device)
         display_rows.append(row)
 
@@ -343,27 +356,23 @@ def run_list(args: argparse.Namespace) -> int:
         section_ip_range=args.dhcp_range,
     )
     active_count = sum(visible_activity)
-    icmp_count = sum(
-        "ICMP" in scanner.discovery_for(record).split("+") for record in records
-    )
-    arp_count = sum(
-        "ARP" in scanner.discovery_for(record).split("+") for record in records
-    )
-    cache_count = sum(
-        "CACHE" in scanner.discovery_for(record).split("+") for record in records
-    )
+    icmp_count = sum("ICMP" in scanner.discovery_for(record).split("+") for record in records)
+    arp_count = sum("ARP" in scanner.discovery_for(record).split("+") for record in records)
+    cache_count = sum("CACHE" in scanner.discovery_for(record).split("+") for record in records)
     scan_summary_callback = getattr(args, "scan_summary_callback", None)
     if scan_summary_callback is not None:
-        scan_summary_callback({
-            "profile": profile.name,
-            "discovery": discovery,
-            "shown": len(visible_devices),
-            "total": len(devices),
-            "active": active_count,
-            "icmp": icmp_count,
-            "arp": arp_count,
-            "cache": cache_count,
-        })
+        scan_summary_callback(
+            {
+                "profile": profile.name,
+                "discovery": discovery,
+                "shown": len(visible_devices),
+                "total": len(devices),
+                "active": active_count,
+                "icmp": icmp_count,
+                "arp": arp_count,
+                "cache": cache_count,
+            }
+        )
     ok(
         "LISTADO",
         f"Mostrados: {len(visible_devices)} | Activos: {active_count} | "
