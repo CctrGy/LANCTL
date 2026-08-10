@@ -1,5 +1,5 @@
 [CmdletBinding()] param(
-    [string]$Version = '0.3.0-beta.4',
+    [string]$Version = '0.3.0-beta.10',
     [switch]$SkipInstaller
 )
 $ErrorActionPreference='Stop'

@@ -7,7 +7,11 @@ el acceso mediante protocolos de administración y la auditoría de cambios.
 Incluye CLI, consola persistente, TUI, interfaz gráfica para Windows, proyectos
 portables `.vlf` y un sistema extensible de complementos `.lcp`.
 
-> **Versión actual — `0.3.0-beta.4`**
+> **Versión actual — `0.3.0-beta.10`**
+
+Esta beta consolida el árbol más moderno del proyecto: GUI para Windows, CLI y
+TUI, proyectos VLF, plugins LCP, monitorización, historial, acceso remoto
+controlado, automatización WoL y el nuevo arranque limpio autocontenido.
 
 ## Instalación online
 
