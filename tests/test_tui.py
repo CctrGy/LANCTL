@@ -1,9 +1,8 @@
 import io
 import json
-import os
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from app.cli import build_parser
 from app.tui import (
@@ -282,7 +281,6 @@ class TuiTests(unittest.TestCase):
         self.assertIn("\x1b[?7h", TUI_LEAVE_SCREEN)
         self.assertTrue(TUI_LEAVE_SCREEN.endswith("\x1b[?1049l"))
 
-    @unittest.skipUnless(os.name == "nt", "msvcrt solo está disponible en Windows")
     def test_secret_input_uses_the_tui_prompt_and_never_echoes_characters(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.secret_prompt = ""
@@ -291,7 +289,14 @@ class TuiTests(unittest.TestCase):
 
         with (
             patch("app.tui.os.name", "nt"),
-            patch("msvcrt.getwch", side_effect=["s", "e", "x", "\x08", "c", "\r"]),
+            patch.dict(
+                "sys.modules",
+                {
+                    "msvcrt": SimpleNamespace(
+                        getwch=Mock(side_effect=["s", "e", "x", "\x08", "c", "\r"])
+                    )
+                },
+            ),
         ):
             secret = tui._read_secret("Contraseña (no se mostrará): ")
 
