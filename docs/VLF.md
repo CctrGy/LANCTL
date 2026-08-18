@@ -22,10 +22,29 @@ estructura fija. No debe confundirse la compresión ZIP con cifrado.
 ```text
 project create ARCHIVO.vlf [metadatos]
 project update ARCHIVO.vlf
+project save
 project info ARCHIVO.vlf [--json]
 project verify ARCHIVO.vlf [--json]
 project list ARCHIVO.vlf
 ```
+
+## SaveMode
+
+`project save` sincroniza explícitamente el proyecto activo. La opción global
+`settings --save-mode MODO` permite elegir:
+
+- `manual`: solo `project save` o `project update`.
+- `manual.inCloseConsult`: pregunta al cerrar si el workspace tiene cambios.
+- `automatic.toClose`: al cerrar la invocación principal, CLI, TUI o GUI.
+- `automatic.toScan`: después de cada escaneo de red.
+- `automatic.timeToSave`: guardado periódico; el intervalo se configura con
+  `settings --save-interval MINUTOS` y vale 5 minutos por defecto.
+- `automatic.allChanges`: después de cualquier cambio confirmado.
+
+La variante histórica `automatic..allChanges` se acepta y se normaliza a un
+solo punto. Todos los modos comprueban el hash del workspace antes de escribir.
+Un plugin puede aportar opciones mediante `project-save-mode`, declarando los
+disparadores `change`, `scan`, `close` o `timer`.
 
 ## Carpeta predeterminada
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 import tempfile
@@ -26,6 +27,14 @@ class ProjectWorkspace:
     groups: Path
     metadata: Path
     content_hash: str
+
+
+def _workspace_hash(database: Path, groups: Path) -> str:
+    digest = hashlib.sha256()
+    for path in (database, groups):
+        digest.update(path.name.encode("utf-8"))
+        digest.update(hashlib.sha256(path.read_bytes()).hexdigest().encode("ascii"))
+    return digest.hexdigest()
 
 
 def _inventory_documents(project: Path) -> tuple[list[dict], list[dict]]:
@@ -125,6 +134,7 @@ def prepare_project_workspace(
                     "project": str(source),
                     "projectId": project_id,
                     "contentHash": content_hash,
+                    "workspaceHash": _workspace_hash(database, groups),
                 },
             )
 
@@ -171,6 +181,7 @@ def activate_project_workspace(
                 "projectId": workspace.project_id,
                 "database": str(workspace.database),
                 "groups": str(workspace.groups),
+                "metadata": str(workspace.metadata),
                 "contentHash": workspace.content_hash,
             },
         )

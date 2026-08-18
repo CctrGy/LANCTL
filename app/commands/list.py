@@ -316,6 +316,9 @@ def run_list(args: argparse.Namespace) -> int:
     # El ajuste de grupos básicos puede reescribir la base; se vuelve a cargar
     # el resultado antes de filtrar y presentar el inventario.
     devices = database.load()
+    from app.projects.save_policy import SaveTrigger, save_active_project
+
+    save_active_project(SaveTrigger.SCAN)
     activity = active_flags(devices, records, scanner)
     selected = filter_rows(devices, activity, args)
     visible_devices = [device for device, _ in selected]

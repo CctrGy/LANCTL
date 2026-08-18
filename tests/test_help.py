@@ -1,5 +1,6 @@
 import argparse
 import io
+import os
 import unittest
 from unittest.mock import patch
 
@@ -53,8 +54,13 @@ class HelpTests(unittest.TestCase):
 
     def test_tty_help_uses_the_common_palette(self):
         stream = TtyBuffer()
-        with patch("app.core.parser.sys.stdout", stream):
-            help_text = build_parser().format_help()
+        # El entorno del desarrollador/CI puede definir NO_COLOR. Este test
+        # verifica específicamente la rama visual con color, mientras que el
+        # respeto de NO_COLOR sigue siendo responsabilidad del renderizador.
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("NO_COLOR", None)
+            with patch("app.core.parser.sys.stdout", stream):
+                help_text = build_parser().format_help()
         self.assertIn(Style.BRIGHT + Fore.CYAN + t("LANCTL.PARSER.SECTION.USAGE"), help_text)
         self.assertIn(Style.BRIGHT + Fore.YELLOW + t("LANCTL.PARSER.SECTION.ARGUMENTS"), help_text)
         self.assertIn(Fore.CYAN + "-h,", help_text)

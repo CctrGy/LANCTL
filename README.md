@@ -1,13 +1,14 @@
 # LANCTL
 
-**Administración, inventario y diagnóstico de infraestructuras LAN desde Windows.**
+**Administración, inventario y diagnóstico de infraestructuras LAN desde
+Windows, Linux y Raspberry Pi OS.**
 
 LANCTL centraliza el descubrimiento de red, la identificación de dispositivos,
 el acceso mediante protocolos de administración y la auditoría de cambios.
 Incluye CLI, consola persistente, TUI, interfaz gráfica para Windows, proyectos
 portables `.vlf` y un sistema extensible de complementos `.lcp`.
 
-> **Versión actual — `0.3.0-beta.10`**
+> **Versión actual — `0.3.0-beta.20`**
 
 Esta beta consolida el árbol más moderno del proyecto: GUI para Windows, CLI y
 TUI, proyectos VLF, plugins LCP, monitorización, historial, acceso remoto
@@ -21,12 +22,13 @@ usan `install.sh`. Ambos permiten canal `stable|beta`, versión fija, modo
 Standard o Monitor y desinstalación conservando los datos.
 
 ```powershell
-irm https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.ps1 -OutFile install.ps1
+.\install.ps1 -Channel beta
 ```
 
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSLo install.sh https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh
-sudo bash install.sh --channel stable
+sudo bash install.sh --channel beta
 ```
 
 Descargar el script y su checksum por separado es el procedimiento recomendado.
@@ -34,10 +36,8 @@ SSH y HTTPS permanecen apagados en todas las modalidades; `--configure-access`
 solo abre el asistente local e interactivo. Consulta [la guía completa](docs/INSTALL.md)
 para instalación verificable, portable/offline, actualizaciones, ARM64,
 desinstalación y advertencias de SmartScreen.
->
-> Primera beta de LANCTL. Esta versión incorpora la GUI para Windows, los
-> contratos VLF/LCP, los elementos recurrentes, los plugins de descubrimiento
-> externos y la preparación de la distribución para Windows.
+> `0.3.0-beta.20` es una versión de prueba. Revisa los cambios y conserva una
+> copia de seguridad de tus proyectos antes de actualizar una instalación en uso.
 
 ## Capacidades
 
@@ -67,6 +67,12 @@ Los iconos JPEG de `125×125` utilizados por la GUI se catalogan en
 `data/lc/icons/icons.json`. Consulta [docs/ICONS.md](docs/ICONS.md).
 
 ## Estado y alcance
+
+La beta.20 reúne las interfaces CLI, TUI y GUI con un mismo inventario, añade
+políticas de guardado para proyectos VLF y mantiene el acceso remoto desactivado
+hasta que el administrador lo configure expresamente. LANCTL administra el
+modelo lógico de la red y sus protocolos; el mapa físico de cableado permanece
+fuera del alcance actual.
 
 ## Historial estructurado del proyecto
 
@@ -99,9 +105,6 @@ LANCTL; HTTPS exige TLS, CSRF, cookies seguras y origen explícito.
 Los eventos se guardan dentro del VLF activo en
 `logs/events/YYYY-MM-DD.jsonl`. Los logs humanos `logs/dd-mm-yyyy.log` siguen
 siendo compatibles y se leen en modo best-effort como eventos legacy.
-
-LANCTL administra el modelo lógico de la red y los protocolos asociados a sus
-elementos. El mapa físico de cableado no forma parte del alcance actual.
 
 El repositorio contiene además `RackFimeware2`, un firmware experimental para
 el monitor y gestor de rack basado en STM32F411. El firmware se mantiene como
@@ -215,12 +218,39 @@ lanctl open NAS ssh --dry-run
 para SSH, Telnet, HTTP, HTTPS, FTP, RDP, RTSP o SMB. La opción `--dry-run`
 permite revisar el destino antes de iniciar una aplicación externa.
 
+### Guardar y verificar un acceso SSH
+
+Dentro de la CLI o del TUI puede seleccionarse primero un elemento. Los comandos
+siguientes configuran SSH, guardan sus credenciales cifradas, comprueban el
+servicio y fijan la huella presentada por el dispositivo:
+
+```text
+protocol configure ssh --port 22
+credential set ssh --username USUARIO
+Contraseña (no se mostrará):
+ssh probe
+ssh fingerprint
+ssh trust SHA256:AbCdEf...
+ssh open
+```
+
+`open` es un alias corto de `ssh open` cuando el elemento seleccionado ya tiene
+SSH configurado. Para consultar las credenciales asociadas sin mostrar sus
+contraseñas:
+
+```text
+credential list
+```
+
 ### Interfaces interactivas
 
 ```powershell
 lanctl --gui
 lanctl --cli
 lanctl -tui
+lanctl --tui PLUGINS
+lanctl --tui PROJECTS
+lanctl --tui SETTINGS
 lanctl --project "C:\Users\Victor\Desktop\Casa.vlf"
 lanctl --tui --project "C:\Users\Victor\Desktop\Casa.vlf"
 ```
@@ -233,10 +263,30 @@ nativo correspondiente utilizando la IP y el puerto detectados.
 
 La tabla gráfica ajusta sus columnas al ancho disponible y conserva únicamente
 el desplazamiento vertical. La CLI persistente permite seleccionar un elemento
-y reutilizarlo en comandos posteriores. La TUI ofrece inventario, detalle y
-acciones contextuales a pantalla completa.
+y reutilizarlo en comandos posteriores. La TUI ofrece inventario y acciones
+contextuales a pantalla completa. Sus ventanas se muestran como overlays
+modales sobre una captura congelada de la pantalla principal:
+
+- `F1`: árbol de comandos y teclas.
+- `F2`: información del elemento en pestañas de identidad, clasificación, red,
+  accesos y puertos.
+- `F7`: plugins instalados, estado e información del manifiesto.
+- `F9`: proyectos creados o cargados; `Enter` activa el seleccionado.
+- `F12`: editor de configuración; `←/→` cambia de menú, `↑/↓` cambia de
+  variable, `Tab` entra o sale de su edición y `Ctrl+S` valida y guarda.
+- `Ctrl+H`: historial de comandos recuperable con `Enter`.
+
+Dentro de un overlay, `←/→` cambia de sección, `↑/↓` desplaza o selecciona y
+`Esc` lo cierra sin modificar la selección ni el contenido del fondo.
+El compositor reemplaza únicamente el rectángulo ocupado por la ventana y
+mantiene visibles los segmentos congelados situados a izquierda y derecha.
+Durante el descubrimiento, la barra de progreso ocupa el 90 % del ancho de la
+terminal y permanece centrada.
 
 `--project` (también `-project`) activa el VLF antes de construir la interfaz.
+Los accesos `--tui PLUGINS`, `--tui PROJECTS` y `--tui SETTINGS` abren
+directamente el overlay interactivo correspondiente sin esperar un escaneo de
+red. Desde la carpeta del proyecto se pueden usar igual con `run.cmd --tui ...`.
 Dentro del TUI, `project` o `project status` muestran el proyecto seleccionado;
 `project use "RUTA.vlf"` cambia de proyecto y sustituye inmediatamente el
 inventario visible. `help project` muestra el resto de operaciones disponibles.
@@ -322,6 +372,7 @@ lanctl project verify Casa.vlf
 lanctl project list Casa.vlf
 lanctl project update Casa.vlf
 lanctl project use Casa.vlf
+lanctl project save
 ```
 
 Los nombres relativos se resuelven en la carpeta Documentos conocida por
@@ -342,6 +393,23 @@ El contenedor utiliza una estructura ZIP fija e incluye:
 `project create`, `project update` y `project use` seleccionan el VLF activo.
 Cada entrada de auditoría renueva los hashes para conservar la validez del
 contenedor. El contrato técnico se encuentra en [docs/VLF.md](docs/VLF.md).
+
+La política `SaveMode` controla cuándo se sincroniza el workspace con el VLF:
+
+```powershell
+lanctl settings --save-mode manual
+lanctl settings --save-mode manual.inCloseConsult
+lanctl settings --save-mode automatic.toClose
+lanctl settings --save-mode automatic.toScan
+lanctl settings --save-mode automatic.timeToSave
+lanctl settings --save-interval 5
+lanctl settings --save-mode automatic.allChanges
+lanctl settings --save-mode list
+```
+
+Los modos automáticos comparan hashes del workspace y no reescriben el proyecto
+si no hay cambios. Los plugins pueden registrar modos adicionales mediante una
+extensión declarativa `project-save-mode`.
 
 ## Registros y auditoría
 
@@ -389,7 +457,13 @@ encuentran:
 
 - `lanctl.discovery.mdns-ssdp`: descubrimiento multicast mDNS y SSDP.
 - `lanctl.analysis.mac-vendor`: enriquecimiento de fabricantes a partir de MAC.
+- `lanctl.discovery.windows-smb`: detección y acceso controlado a recursos SMB.
+- `lanctl.network.wol`: Wake-on-LAN y secuencias de encendido seguras.
 - `lanctl.theme.default`: tema gráfico incluido con la aplicación.
+
+Los paquetes SMB, WoL y el tema predeterminado se incluyen en `bundled/`. Los
+plugins mDNS/SSDP y de fabricantes se mantienen como fuentes separadas en
+`plugins-src/` para que su instalación y permisos sean explícitos.
 
 Los paquetes pueden verificarse, instalarse y activarse explícitamente:
 
@@ -489,11 +563,7 @@ packaging/     Metadatos de distribución
 RackFimeware2/ Firmware experimental del rack
 ```
 
-## Licencia
-
-Este repositorio todavía no incluye un archivo de licencia. Mientras no se
-publique una licencia explícita, se mantienen todos los derechos sobre el código.
-# Radmin Viewer
+## Radmin Viewer
 
 La integración abre Radmin Viewer mediante sus switches documentados y admite
 los modos `control`, `view`, `file`, `shutdown`, `chat`, `voice`, `message` y
@@ -502,7 +572,7 @@ frecuencia de actualización y phonebooks `.rpb`. Radmin no ofrece switches
 documentados para usuario/contraseña: LANCTL no coloca secretos en argumentos de
 proceso; la autenticación automática debe gestionarse en el phonebook de Radmin.
 
-# Wake-on-LAN (`wol`)
+## Wake-on-LAN (`wol`)
 
 El complemento trusted `lanctl.network.wol` emite únicamente paquetes mágicos
 UDP mediante una fachada de red limitada. El núcleo resuelve el inventario,
@@ -533,7 +603,7 @@ administradas se registran con `--power-command ACCIÓN=COMANDO`.
 La salida `--json` contiene `runId`, `taskId`, `operationId`, timestamps,
 duración, estado y errores estructurados. Las secuencias se guardan mediante
 reemplazo transaccional en `data/lc/wol-sequences.json` y rechazan ciclos.
-# SMB Discovery
+## SMB Discovery
 
 LANCTL incluye el paquete instalable `bundled/lanctl.discovery.windows-smb.lcp`. Instálalo y habilítalo con confianza explícita para aportar la vista **Recursos compartidos**. La CLI admite `smb scan`, `smb NAS`, `smb NAS shares`, `smb NAS open Public --dry-run`, `smb printers`, `smb NAS printers`, `smb workgroups`, `smb NAS connect|disconnect|status` y `smb NAS printer HP open|queue|connect --yes`.
 
@@ -542,3 +612,8 @@ La detección usa TCP/445 y APIs modernas de Windows; en Linux/Raspberry Pi usa
 No activa SMB1 ni expone contraseñas en la línea de procesos. Las observaciones
 viven en almacenamiento transaccional y las credenciales permanecen en
 `CredentialStore`.
+
+## Licencia
+
+Este repositorio todavía no incluye un archivo de licencia. Mientras no se
+publique una licencia explícita, se mantienen todos los derechos sobre el código.

@@ -258,6 +258,7 @@ class SshAccessServer:
                 channel.sendall(
                     b"Comandos remotos: list, search, ping, history, smb, monitor, "
                     b"scan, wol, project y comandos de configuracion segun el rol.\r\n"
+                    b"Control raiz: root status | root refresh | root forced-view VIEW.\r\n"
                 )
                 continue
             code, output = self._execute(user, line)

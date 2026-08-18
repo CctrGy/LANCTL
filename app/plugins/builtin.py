@@ -94,14 +94,14 @@ Runtimes:
 Capacidades reconocidas:
 `plugin`, `theme`, `language`, `settings`, `automation`, `network`, `analysis`,
 `ui`, `security`, `config`, `commands`, `protocol`, `scanner`,
-`device-adapter`, `parser`, `exporter`, `project-handler`, `physical-model`, `icon`.
+`device-adapter`, `parser`, `exporter`, `project-handler`, `project-save-mode`, `physical-model`, `icon`.
 
 ## Extensiones api/api.map
 
 Cada elemento tiene `id`, `type` y `specification`. Tipos del registro común:
 `command`, `theme`, `language`, `settings`, `automation`, `network`, `analysis`,
 `ui-panel`, `ui-action`, `security`, `config`, `protocol`, `scanner`,
-`device-adapter`, `parser`, `exporter`, `project-handler`, `physical-model`, `icon`.
+`device-adapter`, `parser`, `exporter`, `project-handler`, `project-save-mode`, `physical-model`, `icon`.
 
 Comando declarativo seguro:
 ```json
@@ -123,7 +123,7 @@ Idioma:
 `analysis.register`, `ui-panel.register`, `ui-action.register`,
 `security.register`, `config.register`, `protocol.register`, `scanner.register`,
 `device-adapter.register`, `parser.register`, `exporter.register`,
-`project-handler.register`, `physical-model.register`, `icon.register`.
+`project-handler.register`, `project-save-mode.register`, `physical-model.register`, `icon.register`.
 
 El acceso a red, credenciales, proyectos o dispositivos debe solicitar además
 el permiso específico definido por la API que lo exponga. Las contraseñas no

@@ -32,6 +32,7 @@ DEFAULT_CONFIG = {
         "privateKey": None,
     },
     "firewall": {"managed": False},
+    "control": {"forcedView": "off"},
 }
 
 
@@ -64,6 +65,7 @@ class AccessService:
             **value,
             "ssh": {**defaults["ssh"], **value.get("ssh", {})},
             "https": {**defaults["https"], **value.get("https", {})},
+            "control": {**defaults["control"], **value.get("control", {})},
         }
 
     def config(self):

@@ -13,7 +13,9 @@ class DataMigrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "lanctl-data"
             with (
-                patch("app.core.data_migration.application_directory", return_value=Path(temporary)),
+                patch(
+                    "app.core.data_migration.application_directory", return_value=Path(temporary)
+                ),
                 patch.dict("os.environ", {"LANCTL_DATA_DIR": str(root)}, clear=False),
             ):
                 current = ensure_data_layout()
@@ -53,11 +55,11 @@ class DataMigrationTests(unittest.TestCase):
             root = Path(temporary) / "lanctl-data"
             database = root / "database/devices.json"
             database.parent.mkdir(parents=True)
-            database.write_text(
-                '[{"IP":"192.0.2.1","MAC":"00:11:22:33:44:55"}]', encoding="utf-8"
-            )
+            database.write_text('[{"IP":"192.0.2.1","MAC":"00:11:22:33:44:55"}]', encoding="utf-8")
             with (
-                patch("app.core.data_migration.application_directory", return_value=Path(temporary)),
+                patch(
+                    "app.core.data_migration.application_directory", return_value=Path(temporary)
+                ),
                 patch.dict("os.environ", {"LANCTL_DATA_DIR": str(root)}, clear=False),
             ):
                 ensure_data_layout()

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import argparse
-import getpass
 import json
 
 from app.core.config import load_config
 from app.core.console import ok
 from app.core.credentials import CredentialStore
 from app.core.database import DeviceDatabase
+from app.core.secret_input import read_secret
 from app.models import normalize_protocol
 
 
@@ -79,10 +79,10 @@ def run_credential(args: argparse.Namespace) -> int:
     if args.action == "set":
         if not args.username:
             raise ValueError("indica el usuario con -user USUARIO")
-        password = getpass.getpass("Contraseña (no se mostrará): ")
+        password = read_secret("Contraseña (no se mostrará): ")
         if not password:
             raise ValueError("la contraseña no puede estar vacía")
-        confirmation = getpass.getpass("Repite la contraseña: ")
+        confirmation = read_secret("Repite la contraseña: ")
         if password != confirmation:
             raise ValueError("las contraseñas no coinciden")
         credential_id = store.set(device.device_id, protocol, args.username, password)

@@ -83,6 +83,18 @@
 
   <footer class="statusbar"><span>LANCTL <b id="app-version">—</b></span><span>Vista de inventario lógico</span><span id="row-count">0 filas</span></footer>
 </div>
+<div id="device-context-menu" class="context-menu" role="menu" hidden>
+  <button type="button" role="menuitem" data-context-action="select">Seleccionar</button>
+  <button type="button" role="menuitem" data-context-action="details">Ver detalles</button>
+  <button type="button" role="menuitem" data-context-action="reload">Recargar inventario</button>
+  <button type="button" role="menuitem" data-context-action="diagnose">Diagnosticar</button>
+  <div class="context-separator" role="separator"></div>
+  <button type="button" role="menuitem" data-context-action="open" class="local-only">Abrir conexión</button>
+  <button type="button" role="menuitem" data-context-action="terminal" class="local-only">Abrir terminal</button>
+  <button type="button" role="menuitem" data-context-action="wake">Encender por WOL</button>
+  <div class="context-separator" role="separator"></div>
+  <button type="button" role="menuitem" data-context-action="delete" class="danger-item">Eliminar elemento…</button>
+</div>
 <dialog id="device-details" aria-labelledby="details-title">
   <div class="details-header">
     <div><small>Detalle completo del elemento</small><h2 id="details-title">Elemento</h2></div>

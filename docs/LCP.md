@@ -17,7 +17,7 @@
 LANCTL utiliza `.lcp` como contenedor ZIP seguro para todos sus complementos.
 Un mismo paquete puede aportar capacidades `plugin`, `theme`, `language`,
 `settings`, `automation`, `network`, `analysis`, `ui`, `security`, `protocol`,
-`scanner`, `parser`, `exporter` o `project-handler`. CLI, TUI y la futura GUI
+`scanner`, `parser`, `exporter`, `project-handler` o `project-save-mode`. CLI, TUI y la futura GUI
 consumen el mismo registro de extensiones.
 
 Los plugins también pueden aportar recursos gráficos `icon` de 125×125 para
@@ -75,6 +75,26 @@ El core valida nombres, valores e identificadores antes de registrarlos. Los
 colores solo admiten hexadecimal y las medidas admiten `px` o `rem`, evitando
 la inyección de CSS arbitrario. El HTML enlaza el mismo contrato mediante
 `data-component-id="lanctl.*"`.
+
+### Modos de guardado de proyectos
+
+Un plugin puede añadir una política `SaveMode` declarativa con el permiso
+`project-save-mode.register`:
+
+```json
+{
+  "id": "example.save.after-scan-or-close",
+  "type": "project-save-mode",
+  "specification": {
+    "mode": "example.afterScanOrClose",
+    "triggers": ["scan", "close"],
+    "description": "Guarda tras escanear o cerrar"
+  }
+}
+```
+
+Los únicos disparadores admitidos son `change`, `scan`, `close` y `timer`; el guardado
+continúa ejecutándose de forma transaccional por el núcleo.
 
 ## Runtimes y confianza
 

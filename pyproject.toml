@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lanctl"
-version = "0.3.0-beta.10"
+version = "0.3.0-beta.20"
 description = "CLI de control lógico y físico de infraestructuras LAN"
 requires-python = ">=3.10"
 dependencies = [
@@ -16,6 +16,7 @@ dependencies = [
     "pyserial>=3.5,<4",
     "pywebview>=6.2.1,<7",
     "defusedxml>=0.7.1,<1",
+    "rich>=14.1,<15",
 ]
 
 [project.scripts]

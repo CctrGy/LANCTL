@@ -26,6 +26,7 @@ CAPABILITIES = {
     "parser",
     "exporter",
     "project-handler",
+    "project-save-mode",
     "physical-model",
     "icon",
 }

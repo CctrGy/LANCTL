@@ -52,6 +52,9 @@ def register_project_command(commands: argparse._SubParsersAction) -> None:
     update.add_argument("file", help="Proyecto VLF existente.")
     update.set_defaults(project_handler=_update)
 
+    save = actions.add_parser("save", help="Guarda manualmente el proyecto VLF activo.")
+    save.set_defaults(project_handler=_save)
+
     info = actions.add_parser("info", help="Muestra los metadatos del proyecto.")
     info.add_argument("file", help="Proyecto VLF.")
     info.add_argument("--json", action="store_true", help="Devuelve JSON.")
@@ -89,6 +92,10 @@ def _status(args) -> int:
     print(f" Archivo : {info['path']}")
     if info["id"]:
         print(f" UUID    : {info['id']}")
+    settings = load_config()
+    print(f" SaveMode: {settings.get('projectSaveMode', 'manual')}")
+    if str(settings.get("projectSaveMode", "")).casefold() == "automatic.timetosave":
+        print(f" Intervalo: {settings.get('projectSaveIntervalMinutes', 5)} minutos")
     return 0
 
 
@@ -139,6 +146,16 @@ def _update(args) -> int:
     ok("ACTUALIZADO", result["path"])
     print(f" Backup  : {result['backup']}")
     print(f" SHA-256 : {result['checksum']}")
+    return 0
+
+
+def _save(args) -> int:
+    from app.projects.save_policy import save_active_project
+
+    result = save_active_project(force=True)
+    if not result.saved:
+        raise ValueError("no hay un proyecto activo que guardar")
+    ok("GUARDADO", f"{result.path} | SaveMode {result.mode}")
     return 0
 
 

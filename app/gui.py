@@ -18,6 +18,7 @@ from app.assets.icons import get_icon_manager
 from app.commands.open import run_open
 from app.core.config import load_config
 from app.core.database import DeviceDatabase
+from app.core.group_database import GroupDatabase
 from app.core.logger import write_log
 from app.core.resources import bundled_path
 from app.gui_theme import resolve_theme
@@ -30,7 +31,6 @@ from app.projects import (
     ensure_active_project_workspace,
     inspect_project,
     resolve_project_path,
-    update_project,
 )
 from app.services.element_scanner import ElementScanner, parse_ports
 from app.services.lan_scanner import local_ipv4
@@ -232,6 +232,25 @@ class GuiApi:
 
         return self._respond(operation)
 
+    def delete_device(self, selector: str, confirmed: bool = False) -> dict:
+        """Elimina un elemento desde la GUI conservando las protecciones del núcleo."""
+
+        def operation() -> dict:
+            if confirmed is not True:
+                raise PermissionError("la eliminación requiere confirmación explícita")
+            config = load_config()
+            database = DeviceDatabase(config["database"])
+            deleted = GroupDatabase(config["groups"], database).delete_device(selector)
+            label = deleted.alias or deleted.name or deleted.ip or deleted.mac
+            write_log(f"GUI DELETE element={deleted.device_id} mac={deleted.mac} label={label}")
+            return {
+                **self._inventory_payload(),
+                "deletedId": deleted.device_id,
+                "message": f"Elemento eliminado: {label}",
+            }
+
+        return self._respond(operation)
+
     def scan_network(self, profile: str = "normal") -> dict:
         def operation() -> dict:
             if profile not in {"fast", "normal", "accurate"}:
@@ -264,6 +283,9 @@ class GuiApi:
                 result = args.handler(args)
             if result:
                 raise RuntimeError("el escaneo de red no pudo completarse")
+            from app.projects.save_policy import SaveTrigger, save_active_project
+
+            save_active_project(SaveTrigger.SCAN)
             return {**self._inventory_payload(), "message": "Escaneo de red completado"}
 
         return self._respond(operation)
@@ -337,15 +359,15 @@ class GuiApi:
 
     def save_project(self) -> dict:
         def operation() -> dict:
-            active = load_config().get("activeProject")
-            if not active:
+            from app.projects.save_policy import save_active_project
+
+            result = save_active_project(force=True)
+            if not result.saved:
                 raise ValueError("no hay un proyecto activo que guardar")
-            result = update_project(active)
-            activate_project_workspace(result["path"])
             return {
                 **self._projects_payload(),
                 **self._inventory_payload(),
-                "message": f"Proyecto guardado: {Path(result['path']).stem}",
+                "message": f"Proyecto guardado: {Path(result.path).stem}",
             }
 
         return self._respond(operation)
@@ -503,7 +525,11 @@ class GuiApi:
     def _respond(self, operation) -> dict:
         try:
             with self._lock:
-                return {"ok": True, **operation()}
+                result = operation()
+                from app.projects.save_policy import SaveTrigger, save_active_project
+
+                save_active_project(SaveTrigger.CHANGE)
+                return {"ok": True, **result}
         except Exception as error:  # noqa: BLE001 - frontera RPC de la GUI
             write_log(
                 f"GUI ERROR action={getattr(operation, '__name__', 'request')} detail={error}"
@@ -778,5 +804,20 @@ def run_gui() -> int:
         background_color="#071522",
     )
     api.attach_window(window)
-    webview.start(debug=False)
+    from app.access.root_control import RootInterfaceAgent
+
+    def remote_action(command):
+        action = command.get("action")
+        if action == "refresh":
+            window.evaluate_js("refresh(document.querySelector('#device-search').value)")
+        elif action == "view" and command.get("value") == "gui":
+            with contextlib.suppress(Exception):
+                window.restore()
+                window.show()
+
+    agent = RootInterfaceAgent("gui", remote_action).start()
+    try:
+        webview.start(debug=False)
+    finally:
+        agent.stop()
     return 0

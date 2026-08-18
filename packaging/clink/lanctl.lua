@@ -95,9 +95,20 @@ local settings = clink.argmatcher()
         "--max-hosts" .. history_value("Máximo"), "--database" .. file_arg,
         "--groups" .. file_arg, "--log" .. dir_arg,
         "--projects-directory" .. dir_arg,
+        "-save-mode" .. values({ "list", "manual", "manual.inCloseConsult", "automatic.toClose", "automatic.toScan", "automatic.timeToSave", "automatic.allChanges" }),
+        "--save-mode" .. values({ "list", "manual", "manual.inCloseConsult", "automatic.toClose", "automatic.toScan", "automatic.timeToSave", "automatic.allChanges" }),
+        "-save-interval" .. history_value("Minutos"),
+        "--save-interval" .. history_value("Minutos"),
         "-log-cleanup" .. on_off, "--log-cleanup" .. on_off,
         "-log-retention-days" .. history_value("Días"),
-        "--log-retention-days" .. history_value("Días")
+        "--log-retention-days" .. history_value("Días"),
+        "--remote-access" .. on_off,
+        "--remote-bind" .. history_value("IPv4 local"),
+        "--remote-cidr" .. history_value("Red CIDR"),
+        "--remote-port" .. history_value("Puerto SSH"),
+        "--remote-password-auth" .. on_off,
+        "--remote-backend" .. values({ "service", "user" }),
+        "--remote-forced-view" .. values({ "off", "gui", "tui", "plugins", "projects", "settings" })
     }):nofiles()
 
 local call = clink.argmatcher()
@@ -336,7 +347,8 @@ local project = clink.argmatcher():addarg({
     }),
     "update" .. project_action(), "info" .. project_action({ "-h", "--help", "/?", "--json" }),
     "verify" .. project_action({ "-h", "--help", "/?", "--json" }),
-    "use" .. project_action(), "list" .. project_action()
+    "use" .. project_action(), "list" .. project_action(),
+    "save" .. clink.argmatcher():addflags(help_flags):nofiles()
 }):addflags(help_flags):nofiles()
 
 local plugin_id = history_value("ID del plugin")

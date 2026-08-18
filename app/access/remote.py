@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import subprocess
@@ -55,6 +56,15 @@ def required_permission(arguments: list[str]) -> str:
     if not arguments:
         raise ValueError("indica un comando LANCTL")
     command = arguments[0].casefold()
+    if command == "root":
+        action = arguments[1].casefold() if len(arguments) > 1 else "status"
+        if action == "status":
+            return "monitor.read"
+        if action == "refresh":
+            return "scan.run"
+        if action == "forced-view":
+            return "system.configure"
+        raise PermissionError(f"acción raíz remota no disponible: {action}")
     if command in READ_COMMANDS:
         return READ_COMMANDS[command]
     if command in WRITE_COMMANDS:
@@ -120,6 +130,8 @@ class LanctlCommandAdapter:
         arguments = parse_remote_command(command)
         permission = required_permission(arguments)
         self.authorization.require(user, permission)
+        if arguments[0].casefold() == "root":
+            return self._root(arguments[1:])
         environment = dict(os.environ)
         environment.update(PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
         try:
@@ -142,6 +154,32 @@ class LanctlCommandAdapter:
             output += "\n[Salida truncada]"
         return int(completed.returncode), output.rstrip() or f"Resultado: {completed.returncode}"
 
+    @staticmethod
+    def _root(arguments: list[str]) -> tuple[int, str]:
+        from app.access.root_control import enqueue, forced_view, root_status
+
+        action = arguments[0].casefold() if arguments else "status"
+        if action == "status" and len(arguments) <= 1:
+            payload = root_status()
+        elif action == "refresh" and len(arguments) == 1:
+            payload = enqueue("refresh")
+        elif action == "forced-view" and len(arguments) in (1, 2):
+            if len(arguments) == 2:
+                view = arguments[1]
+            else:
+                from app.access.root_control import default_forced_view
+
+                view = default_forced_view()
+                if view == "off":
+                    raise ValueError("no hay una vista forzada predeterminada configurada")
+            payload = forced_view(view)
+        else:
+            raise ValueError(
+                "usa root status | root refresh | root forced-view "
+                "gui|tui|plugins|projects|settings"
+            )
+        return 0, json.dumps(payload, indent=2, ensure_ascii=False)
+
 
 class RemoteGuiApi:
     """Puente RPC con lista blanca y permisos para la interfaz HTTPS."""
@@ -158,6 +196,7 @@ class RemoteGuiApi:
         "get_device_details": ("scan.run", "get_device_details"),
         "wake_device": ("wol.send", "wake_device"),
         "update_device": ("system.configure", "update_device"),
+        "delete_device": ("system.configure", "delete_device"),
         "use_project": ("project.manage", "use_project"),
         "save_project": ("project.manage", "save_project"),
         "create_project": ("project.manage", "create_project"),

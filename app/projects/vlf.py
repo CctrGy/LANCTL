@@ -458,6 +458,8 @@ def _network_document(config: Mapping, devices) -> dict:
         "discovery": config.get("discovery"),
         "scanProfile": config.get("scanProfile"),
         "scanOrder": config.get("scanOrder", "ascending"),
+        "saveMode": config.get("projectSaveMode", "manual"),
+        "saveIntervalMinutes": config.get("projectSaveIntervalMinutes", 5),
     }
 
 

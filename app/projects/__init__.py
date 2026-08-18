@@ -17,6 +17,13 @@ _EXPORTS = {
     "list_project_entries": ("app.projects.vlf", "list_project_entries"),
     "prepare_project_workspace": ("app.projects.workspace", "prepare_project_workspace"),
     "resolve_project_path": ("app.projects.paths", "resolve_project_path"),
+    "SaveMode": ("app.projects.save_policy", "SaveMode"),
+    "SaveTrigger": ("app.projects.save_policy", "SaveTrigger"),
+    "available_save_modes": ("app.projects.save_policy", "available_save_modes"),
+    "close_active_project": ("app.projects.save_policy", "close_active_project"),
+    "normalize_save_mode": ("app.projects.save_policy", "normalize_save_mode"),
+    "save_active_project": ("app.projects.save_policy", "save_active_project"),
+    "start_autosave_scheduler": ("app.projects.save_policy", "start_autosave_scheduler"),
     "update_project": ("app.projects.vlf", "update_project"),
     "verify_project": ("app.projects.vlf", "verify_project"),
 }

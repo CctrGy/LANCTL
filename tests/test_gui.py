@@ -75,6 +75,26 @@ class GuiIntegrationTests(unittest.TestCase):
         self.assertIn('id="project-open"', html)
         self.assertNotIn("background:#fff", css)
 
+    def test_inventory_rows_expose_a_device_context_menu(self):
+        html = (ROOT / "gui/index.html").read_text(encoding="utf-8")
+        javascript = (ROOT / "gui/app.js").read_text(encoding="utf-8")
+        css = (ROOT / "gui/styles.css").read_text(encoding="utf-8")
+        self.assertIn('id="device-context-menu"', html)
+        for action in (
+            "select",
+            "details",
+            "reload",
+            "diagnose",
+            "open",
+            "terminal",
+            "wake",
+            "delete",
+        ):
+            self.assertIn(f'data-context-action="{action}"', html)
+        self.assertIn('addEventListener("contextmenu"', javascript)
+        self.assertIn('call("delete_device",device.id,true)', javascript)
+        self.assertIn(".context-menu", css)
+
     def test_local_gui_never_requests_remote_credentials(self):
         javascript = (ROOT / "gui/app.js").read_text(encoding="utf-8")
         self.assertIn(
@@ -178,6 +198,35 @@ class GuiIntegrationTests(unittest.TestCase):
                 self.assertEqual(
                     (saved.alias, saved.name, saved.description), ("SW-GUI", "Core", "Desde GUI")
                 )
+
+    def test_gui_delete_requires_confirmation_and_removes_group_references(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            database_path = str(root / "devices.json")
+            groups_path = root / "groups.json"
+            database = DeviceDatabase(database_path)
+            device = database.add_device("AA:BB:CC:DD:EE:FE", name="Cámara", alias="CAM-GUI")
+            groups_path.write_text(
+                '[{"name":"IOT","description":"-","members":'
+                '["AA:BB:CC:DD:EE:FE"],"editable":true}]',
+                encoding="utf-8",
+            )
+            config = {
+                "database": database_path,
+                "groups": str(groups_path),
+                "timeout": 0.1,
+                "workers": 1,
+                "credentials": str(root / "credentials"),
+            }
+            with patch("app.gui.load_config", return_value=config):
+                api = GuiApi()
+                rejected = api.delete_device(device.device_id, False)
+                deleted = api.delete_device(device.device_id, True)
+
+            self.assertFalse(rejected["ok"])
+            self.assertTrue(deleted["ok"], deleted.get("error"))
+            self.assertEqual(database.load(), [])
+            self.assertNotIn("AA:BB:CC:DD:EE:FE", groups_path.read_text(encoding="utf-8"))
 
     def test_gui_exposes_local_host_as_ephemeral_at_cnf(self):
         with tempfile.TemporaryDirectory() as temporary:

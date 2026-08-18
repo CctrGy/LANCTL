@@ -109,6 +109,14 @@ tbody tr.selected { background:#124a6c; outline:1px solid #2189c0; outline-offse
 .no-services { padding:18px; border:1px dashed var(--color-border); text-align:center; color:var(--color-text-muted); }
 #diagnostic-output { grid-column:1/-1; max-height:120px; overflow:auto; margin:0; padding:8px; border:1px solid var(--color-border); background:#06111b; color:var(--color-text); font:11px Consolas,monospace; }
 .contract-only { display:none; }
+.context-menu { position:fixed; z-index:1000; min-width:205px; padding:5px; border:1px solid var(--color-border); border-radius:7px; background:#0d2030; box-shadow:0 12px 34px #000b; }
+.context-menu[hidden] { display:none; }
+.context-menu button { display:block; width:100%; padding:7px 10px; border:0; background:transparent; text-align:left; }
+.context-menu button:hover,.context-menu button:focus-visible { outline:0; background:#17405a; }
+.context-menu .danger-item { color:var(--color-danger); }
+.context-menu .danger-item:hover,.context-menu .danger-item:focus-visible { background:#512426; color:#fff; }
+.context-separator { height:1px; margin:5px 4px; background:var(--color-border); }
+.remote-mode .context-menu .local-only { display:none; }
 .statusbar { display:grid; grid-template-columns:minmax(120px,1fr) minmax(160px,2fr) minmax(80px,1fr); align-items:center; gap:10px; min-width:0; padding:0 10px; border-top:1px solid var(--color-border); background:#081722; color:var(--color-text-muted); font-size:11px; }
 .statusbar span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .statusbar span:nth-child(2) { text-align:center; }

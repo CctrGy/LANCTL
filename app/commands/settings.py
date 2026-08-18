@@ -87,6 +87,22 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         help="Carpeta predeterminada para nombres de proyecto VLF relativos.",
     )
     command.add_argument(
+        "-save-mode",
+        "--save-mode",
+        metavar="MODO",
+        help=(
+            "Política de guardado VLF. Usa 'list' para consultar las opciones integradas "
+            "y las aportadas por plugins."
+        ),
+    )
+    command.add_argument(
+        "-save-interval",
+        "--save-interval",
+        type=float,
+        metavar="MINUTOS",
+        help="Intervalo de automatic.timeToSave en minutos (mínimo 0.1).",
+    )
+    command.add_argument(
         "-log-cleanup",
         "--log-cleanup",
         choices=("on", "off"),
@@ -98,6 +114,27 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         type=int,
         metavar="DÍAS",
         help="Días durante los que se conservan los archivos de log.",
+    )
+    command.add_argument(
+        "--remote-access", choices=("on", "off"), help="Activa el acceso SSH restringido."
+    )
+    command.add_argument("--remote-bind", metavar="IP", help="IPv4 local de escucha SSH.")
+    command.add_argument("--remote-cidr", metavar="CIDR", help="Red de origen autorizada.")
+    command.add_argument("--remote-port", type=int, help="Puerto del servidor SSH remoto.")
+    command.add_argument(
+        "--remote-password-auth",
+        choices=("on", "off"),
+        help="Permite o bloquea autenticación SSH mediante contraseña.",
+    )
+    command.add_argument(
+        "--remote-backend",
+        choices=("service", "user"),
+        help="Ejecuta el backend como servicio persistente o proceso de usuario.",
+    )
+    command.add_argument(
+        "--remote-forced-view",
+        choices=("off", "gui", "tui", "plugins", "projects", "settings"),
+        help="Vista predeterminada para root forced-view.",
     )
     command.set_defaults(handler=run_settings)
 
@@ -122,14 +159,43 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.groups is None
         and args.log is None
         and args.projects_directory is None
+        and args.save_mode is None
+        and args.save_interval is None
         and args.log_cleanup is None
         and args.log_retention_days is None
+        and args.remote_access is None
+        and args.remote_bind is None
+        and args.remote_cidr is None
+        and args.remote_port is None
+        and args.remote_password_auth is None
+        and args.remote_backend is None
+        and args.remote_forced_view is None
     ):
         print(json.dumps(config, indent=2, ensure_ascii=False))
         print(f"\nArchivo: {CONFIG_PATH.resolve()}")
         return 0
 
     changes: list[str] = []
+    if args.save_mode is not None:
+        from app.projects.save_policy import available_save_modes, normalize_save_mode
+
+        if args.save_mode.casefold() == "list":
+            for definition in available_save_modes():
+                triggers = ",".join(sorted(definition.triggers)) or "manual"
+                if definition.mode == "manual.inCloseConsult":
+                    triggers = "close?"
+                print(
+                    f"{definition.mode:<28} {triggers:<20} "
+                    f"{definition.owner} {definition.description}"
+                )
+            return 0
+        config["projectSaveMode"] = normalize_save_mode(args.save_mode)
+        changes.append(f"SaveMode: {config['projectSaveMode']}")
+    if args.save_interval is not None:
+        if args.save_interval < 0.1:
+            raise ValueError("save-interval debe ser de al menos 0.1 minutos")
+        config["projectSaveIntervalMinutes"] = args.save_interval
+        changes.append(f"Intervalo de guardado: {args.save_interval:g} minutos")
     if args.network_range is not None:
         try:
             network = ipaddress.ip_network(args.network_range, strict=False)
@@ -207,6 +273,89 @@ def run_settings(args: argparse.Namespace) -> int:
         config["logRetentionDays"] = args.log_retention_days
         changes.append(f"Retención de logs: {args.log_retention_days} días")
 
+    remote_values = {
+        "remoteAccessEnabled": args.remote_access == "on" if args.remote_access else None,
+        "remoteAccessBind": args.remote_bind,
+        "remoteAccessCidr": args.remote_cidr,
+        "remoteAccessPort": args.remote_port,
+        "remoteAccessPasswordAuthentication": (
+            args.remote_password_auth == "on" if args.remote_password_auth else None
+        ),
+        "remoteAccessBackend": args.remote_backend,
+        "remoteAccessForcedView": args.remote_forced_view,
+    }
+    if any(value is not None for value in remote_values.values()):
+        for key, value in remote_values.items():
+            if value is not None:
+                config[key] = value
+        bind = str(config["remoteAccessBind"]).strip()
+        cidr = str(config["remoteAccessCidr"]).strip()
+        port = int(config["remoteAccessPort"])
+        if not (1 <= port <= 65535):
+            raise ValueError("remote-port debe estar entre 1 y 65535")
+        if config["remoteAccessEnabled"] and (not bind or not cidr):
+            raise ValueError("Remote Access requiere IP de enlace y CIDR permitido")
+        _configure_remote_access(config, bind, cidr, port)
+        changes.append(
+            "Remote Access: " + ("activado" if config["remoteAccessEnabled"] else "desactivado")
+        )
+
     path = save_config(config)
     ok("CONFIGURADO", "\n".join((*changes, f"Archivo: {path}")))
     return 0
+
+
+def _configure_remote_access(config: dict, bind: str, cidr: str, port: int) -> None:
+    import os
+    import signal
+    from contextlib import suppress
+
+    from app.access.keys import generate_host_key
+    from app.access.service import AccessService, access_process_running
+    from app.core.paths import application_path
+
+    previous_scope = os.environ.get("LANCTL_DATA_SCOPE")
+    os.environ["LANCTL_DATA_SCOPE"] = config["remoteAccessBackend"]
+    try:
+        access = AccessService(
+            application_path(config["accessConfig"]),
+            application_path(config["accessUsers"]),
+        )
+        access.initialize()
+        was_enabled = bool(access.config()["ssh"].get("enabled"))
+        if bind and cidr:
+            access.configure(
+                "ssh",
+                bind=bind,
+                cidr=cidr,
+                port=port,
+                password_authentication=config["remoteAccessPasswordAuthentication"],
+            )
+        access_config = access.config()
+        access_config["control"]["forcedView"] = config["remoteAccessForcedView"]
+        if config["remoteAccessEnabled"] and not access_config["ssh"].get("hostKey"):
+            access_config["ssh"]["hostKey"] = generate_host_key(
+                application_path("data/lc/access/ssh_host_ed25519_key")
+            )
+        access.save_config(access_config)
+        if config["remoteAccessEnabled"]:
+            if not was_enabled:
+                access.enable("ssh")
+            if config["remoteAccessBackend"] == "user" and not access_process_running(
+                access.config()["ssh"]
+            ):
+                from app.commands.access import _start_service_process
+
+                _start_service_process(access, "ssh")
+        else:
+            current = access.config()["ssh"]
+            pid = current.get("processId")
+            if pid and access_process_running(current):
+                with suppress(OSError):
+                    os.kill(int(pid), signal.SIGTERM)
+            access.disable("ssh")
+    finally:
+        if previous_scope is None:
+            os.environ.pop("LANCTL_DATA_SCOPE", None)
+        else:
+            os.environ["LANCTL_DATA_SCOPE"] = previous_scope

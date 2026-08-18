@@ -231,6 +231,24 @@ class AccessTests(unittest.TestCase):
                 parse_remote_command('lanctl search "core switch"'), ["search", "core switch"]
             )
 
+    def test_remote_root_commands_are_internal_and_permission_checked(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            store = AccessStore(Path(temporary) / "users.json")
+            auth = AuthenticationService(store)
+            viewer = auth.add_user("viewer", ["viewer"], "another-strong-password")
+            admin = auth.add_user("admin", ["administrator"], "another-strong-password")
+            adapter = LanctlCommandAdapter(AuthorizationService(store))
+            with patch("app.access.root_control.root_status", return_value={"state": "BACKEND"}):
+                code, output = adapter.execute(viewer, "root status")
+            self.assertEqual(code, 0)
+            self.assertIn("BACKEND", output)
+            with self.assertRaises(PermissionError):
+                adapter.execute(viewer, "root refresh")
+            with patch("app.access.root_control.forced_view", return_value={"launched": True}):
+                code, output = adapter.execute(admin, "root forced-view settings")
+            self.assertEqual(code, 0)
+            self.assertIn("launched", output)
+
     def test_remote_gui_rpc_enforces_permissions(self):
         class FakeApi:
             def list_devices(self, query=""):

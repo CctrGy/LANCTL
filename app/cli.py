@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 from contextlib import suppress
+from contextvars import ContextVar
 from importlib import import_module
 
 from app import __version__
@@ -44,6 +45,7 @@ _COMMAND_REGISTRARS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("app.commands.plugin", ("register_plugin_command",)),
     ("app.commands.language", ("register_language_command",)),
 )
+_MAIN_DEPTH: ContextVar[int] = ContextVar("lanctl_main_depth", default=0)
 
 
 def configure_utf8_stdio() -> None:
@@ -114,8 +116,16 @@ def build_parser(include_plugin_commands: bool = False) -> argparse.ArgumentPars
     parser.add_argument(
         "-tui",
         "--tui",
-        action="store_true",
-        help=t("LANCTL.CORE.APP.TUI_HELP"),
+        nargs="?",
+        const="inventory",
+        default=None,
+        type=str.casefold,
+        choices=("inventory", "plugins", "projects", "settings"),
+        metavar="VENTANA",
+        help=(
+            f"{t('LANCTL.CORE.APP.TUI_HELP')} "
+            "Puede abrir directamente PLUGINS, PROJECTS o SETTINGS."
+        ),
     )
     parser.add_argument(
         "-project",
@@ -137,6 +147,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(0)
     if any(value in arguments for value in ("-h", "--help", "/?")):
         return build_parser(include_plugin_commands=False).parse_args(arguments)
+    depth = _MAIN_DEPTH.get()
+    depth_token = _MAIN_DEPTH.set(depth + 1)
+    autosave_scheduler = None
     try:
         from app.core.data_migration import ensure_data_layout
 
@@ -181,6 +194,10 @@ def main(argv: list[str] | None = None) -> int:
                 },
             )
             write_log(f"PROJECT USE id={workspace.project_id} path={workspace.project}")
+        if depth == 0:
+            from app.projects.save_policy import start_autosave_scheduler
+
+            autosave_scheduler = start_autosave_scheduler()
         if args.gui or (not args.command and not args.tui and not args.cli):
             from app.gui import run_gui
 
@@ -188,16 +205,31 @@ def main(argv: list[str] | None = None) -> int:
         if args.tui:
             from app.tui import run_tui
 
-            return run_tui()
+            return run_tui(None if args.tui == "inventory" else args.tui)
         if args.cli:
             return run_global_cli()
-        return args.handler(args)
+        result = args.handler(args)
+        from app.projects.save_policy import SaveTrigger, save_active_project
+
+        save_active_project(SaveTrigger.CHANGE)
+        return result
     except KeyboardInterrupt:
         print_error(t("LANCTL.CORE.APP.CANCELLED"))
         return 130
     except (OSError, RuntimeError, ValueError) as error:
         print_error(str(error))
         return 2
+    finally:
+        _MAIN_DEPTH.reset(depth_token)
+        if depth == 0:
+            try:
+                if autosave_scheduler is not None:
+                    autosave_scheduler.stop()
+                from app.projects.save_policy import close_active_project
+
+                close_active_project()
+            except Exception as error:  # noqa: BLE001 - el cierre no debe ocultar el resultado
+                write_log(f"PROJECT AUTOSAVE CLOSE ERROR detail={error}")
 
 
 def load_plugin_safe_mode() -> bool:

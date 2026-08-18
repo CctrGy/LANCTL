@@ -6,6 +6,10 @@ from unittest.mock import patch
 
 from app.cli import build_parser
 from app.tui import (
+    CLI_PANEL,
+    LIST_ELEMENT_PANEL,
+    TUI_ELEMENT_HELP,
+    TUI_ELEMENT_SUGGESTIONS,
     TUI_ENTER_SCREEN,
     TUI_LEAVE_SCREEN,
     LanctlTui,
@@ -25,6 +29,7 @@ from app.tui import (
     _spinner_character,
     _translate_tui_element,
 )
+from app.tui_modal import ModalState, SettingField
 
 
 class TuiTests(unittest.TestCase):
@@ -85,7 +90,112 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(_read_windows_key(lambda: next(keys), lambda: True), "CTRL_H")
         self.assertEqual(_read_windows_key(lambda: next(keys), lambda: False), "BACKSPACE")
 
-    def test_command_history_replaces_inventory_and_recovers_selection(self):
+    def test_ctrl_r_has_a_dedicated_key_code(self):
+        self.assertEqual(_read_windows_key(lambda: "\x12"), "CTRL_R")
+
+    def test_settings_navigation_and_control_keys(self):
+        extended = iter(["\x00", "\x86", "\x00", "\x0f"])
+        self.assertEqual(_read_windows_key(lambda: next(extended)), "F12")
+        self.assertEqual(_read_windows_key(lambda: next(extended)), "SHIFT_TAB")
+        self.assertEqual(_read_windows_key(lambda: "\t"), "TAB")
+        self.assertEqual(_read_windows_key(lambda: "\x13"), "CTRL_S")
+
+    def test_settings_tab_edits_and_saves_through_the_settings_command(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        fields = [
+            SettingField("workers", "Workers", "--workers", "64", "64", "entero"),
+            SettingField("timeout", "Timeout", "--timeout", "0.8", "0.8", "segundos"),
+        ]
+        tui.modal = ModalState("settings", "SETTINGS", ["Configuración"], [[]], items=fields)
+        captured = []
+        tui._capture = lambda argv: captured.append(argv) or (0, "guardado")
+        tui.reload = lambda: None
+        tui._set_command_output = lambda output, result: None
+
+        tui.handle_key("TAB")
+        tui.handle_key("1")
+        tui.handle_key("2")
+        tui.handle_key("8")
+        tui.handle_key("TAB")
+        tui.handle_key("CTRL_S")
+
+        self.assertEqual(captured, [["settings", "--workers", "128"]])
+        self.assertIsNone(tui.modal)
+
+    def test_settings_tab_separates_navigation_from_choice_editing(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        fields = [
+            SettingField(
+                "discovery",
+                "Descubrimiento",
+                "--discovery",
+                "hybrid",
+                "hybrid",
+                "icmp | arp | hybrid",
+                "RED",
+                choices=("icmp", "arp", "hybrid"),
+            ),
+            SettingField(
+                "range", "Rango", "-range", "192.168.1.0/24", "192.168.1.0/24", section="RED"
+            ),
+        ]
+        tui.modal = ModalState("settings", "SETTINGS", ["RED", "PROYECTOS"], [[], []], items=fields)
+
+        tui._handle_settings_key(tui.modal, "TAB")
+        self.assertTrue(tui.modal.editing)
+        tui._handle_settings_key(tui.modal, "RIGHT")
+        self.assertEqual(tui.modal.items[0].value, "icmp")
+        self.assertEqual(tui.modal.tab_index, 0)
+        tui._handle_settings_key(tui.modal, "TAB")
+        self.assertFalse(tui.modal.editing)
+        tui._handle_settings_key(tui.modal, "DOWN")
+        self.assertEqual(tui.modal.selected, 1)
+
+    def test_settings_escape_cancels_only_the_active_field_edit(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        field = SettingField("workers", "Workers", "--workers", "64", "64")
+        tui.modal = ModalState("settings", "SETTINGS", ["GENERAL"], [[]], items=[field])
+
+        tui._handle_settings_key(tui.modal, "TAB")
+        tui._handle_settings_key(tui.modal, "1")
+        self.assertEqual(field.value, "1")
+        tui._handle_settings_key(tui.modal, "ESC")
+
+        self.assertEqual(field.value, "64")
+        self.assertFalse(tui.modal.editing)
+
+    def test_settings_uses_category_menus_and_contextual_descriptions(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui._last_screen_lines = []
+        tui.modal = None
+
+        tui.show_settings()
+
+        self.assertEqual(
+            tui.modal.tabs,
+            [
+                "GENERAL",
+                "RED",
+                "ESCANEO",
+                "PROYECTOS",
+                "ALMACENAMIENTO",
+                "LOGS",
+                "REMOTE ACCESS",
+            ],
+        )
+        general_page = "\n".join(tui._modal_page(tui.modal))
+        self.assertIn("DESCRIPCIÓN", general_page)
+        self.assertIn("Define qué columnas", general_page)
+
+        tui._handle_settings_key(tui.modal, "RIGHT")
+        self.assertEqual(tui.modal.tabs[tui.modal.tab_index], "RED")
+        selected = tui.modal.items[tui.modal.selected]
+        self.assertEqual(selected.section, "RED")
+        first_key = selected.key
+        tui._handle_settings_key(tui.modal, "DOWN")
+        self.assertNotEqual(tui.modal.items[tui.modal.selected].key, first_key)
+
+    def test_command_history_opens_modal_and_recovers_selection(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.detail_lines = []
         tui.view_state = "inventory"
@@ -97,15 +207,17 @@ class TuiTests(unittest.TestCase):
         tui.command_history = ["list --all", "scan", "monitor status"]
         tui.command_history_index = 0
         tui.command_history_scroll = 0
+        tui.modal = None
+        tui._last_screen_lines = ["INVENTARIO"]
 
         tui.handle_key("CTRL_H")
-        self.assertEqual(tui.view_state, "command-history")
-        self.assertEqual(tui.command_history_index, 2)
+        self.assertEqual(tui.modal.kind, "commands")
+        self.assertEqual(tui.modal.selected, 2)
         tui.handle_key("UP")
-        self.assertEqual(tui.command_history_index, 1)
+        self.assertEqual(tui.modal.selected, 1)
         tui.handle_key("ENTER")
 
-        self.assertEqual(tui.view_state, "inventory")
+        self.assertIsNone(tui.modal)
         self.assertEqual(tui.command, "scan")
         self.assertEqual(tui.cursor, 4)
 
@@ -169,6 +281,23 @@ class TuiTests(unittest.TestCase):
         self.assertIn("\x1b[?7h", TUI_LEAVE_SCREEN)
         self.assertTrue(TUI_LEAVE_SCREEN.endswith("\x1b[?1049l"))
 
+    def test_secret_input_uses_the_tui_prompt_and_never_echoes_characters(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.secret_prompt = ""
+        observed_prompts = []
+        tui.render = lambda: observed_prompts.append(tui.secret_prompt)
+
+        with (
+            patch("app.tui.os.name", "nt"),
+            patch("msvcrt.getwch", side_effect=["s", "e", "x", "\x08", "c", "\r"]),
+        ):
+            secret = tui._read_secret("Contraseña (no se mostrará): ")
+
+        self.assertEqual(secret, "sec")
+        self.assertEqual(observed_prompts[0], "Contraseña (no se mostrará):")
+        self.assertEqual(observed_prompts[-1], "")
+        self.assertNotIn("sec", "".join(observed_prompts))
+
     def test_command_output_is_safe_for_terminal_panel(self):
         self.assertEqual(
             _clean_tui_output("\x1b[31mERROR\x1b[0m\r\nvalor\t2\x07"),
@@ -211,7 +340,7 @@ class TuiTests(unittest.TestCase):
         ]
         self.assertEqual(_selectable_output_indexes(lines), [2, 3])
 
-    def test_f2_detail_reports_port_count_without_listing_ports(self):
+    def test_f2_modal_splits_information_and_lists_ports(self):
         from app.tui import LanctlTui
 
         tui = LanctlTui.__new__(LanctlTui)
@@ -240,6 +369,7 @@ class TuiTests(unittest.TestCase):
         tui.messages = []
         tui.detail_lines = []
         tui.detail_scroll = 0
+        tui._last_screen_lines = ["INVENTARIO"]
         tui.render = lambda: None
         payload = {
             "element": {"manufacturer": "Cisco"},
@@ -264,10 +394,23 @@ class TuiTests(unittest.TestCase):
 
         tui.show_info()
 
-        detail = "\n".join(tui.detail_lines)
-        self.assertIn("Puertos abiertos: 2", detail)
-        self.assertNotIn("443", detail)
-        self.assertNotIn("22", detail)
+        self.assertEqual(tui.modal.kind, "info")
+        self.assertEqual(len(tui.modal.tabs), 5)
+        ports = "\n".join(tui.modal.pages[4])
+        self.assertIn("Puertos abiertos: 2", ports)
+        self.assertIn("443", ports)
+        self.assertIn("22", ports)
+
+    def test_modal_freezes_background_and_consumes_navigation(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui._last_screen_lines = ["PANTALLA PRINCIPAL"]
+        tui.modal = None
+        tui._open_modal(ModalState("help", "HELP", ["A", "B"], [["uno"], ["dos"]]))
+
+        tui.handle_key("RIGHT")
+
+        self.assertEqual(tui.modal.tab_index, 1)
+        self.assertEqual(tui.modal.background, ["PANTALLA PRINCIPAL"])
 
     def test_reload_is_an_internal_tui_command(self):
         tui = object.__new__(LanctlTui)
@@ -354,8 +497,26 @@ class TuiTests(unittest.TestCase):
 
     def test_tui_flag_is_registered(self):
         args = build_parser().parse_args(["-tui"])
-        self.assertTrue(args.tui)
+        self.assertEqual(args.tui, "inventory")
         self.assertIsNone(args.command)
+
+    def test_tui_flag_accepts_direct_modal_shortcuts_case_insensitively(self):
+        for value in ("PLUGINS", "projects", "Settings"):
+            args = build_parser().parse_args(["--tui", value])
+            self.assertEqual(args.tui, value.casefold())
+
+    def test_startup_modal_dispatches_to_the_requested_window(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        calls = []
+        tui.show_plugin_manager = lambda: calls.append("plugins")
+        tui.show_project_manager = lambda: calls.append("projects")
+        tui.show_settings = lambda: calls.append("settings")
+
+        for modal in ("plugins", "projects", "settings"):
+            tui.startup_modal = modal
+            tui._open_startup_modal()
+
+        self.assertEqual(calls, ["plugins", "projects", "settings"])
 
     def test_project_can_be_selected_before_opening_the_tui(self):
         path = "C:/Users/Victor/Desktop/Casa.vlf"
@@ -404,7 +565,7 @@ class TuiTests(unittest.TestCase):
         values = iter(["\x00", "="])
         self.assertEqual(_read_windows_key(lambda: next(values)), "F3")
 
-    def test_element_help_suggestions_cycle_with_lateral_arrows(self):
+    def test_element_help_suggestions_take_vertical_focus_from_inventory(self):
         tui = object.__new__(LanctlTui)
         tui.command = ""
         tui.cursor = 0
@@ -412,14 +573,70 @@ class TuiTests(unittest.TestCase):
         tui.suggestion_index = -1
         tui.output_focus = False
         tui.detail_lines = []
+        tui.move = lambda _delta: self.fail("las flechas movieron el inventario superior")
 
-        tui.handle_key("RIGHT")
+        tui.handle_key("DOWN")
         self.assertEqual(tui.command, "element ")
         self.assertEqual(tui.cursor, len("element "))
-        tui.handle_key("RIGHT")
+        tui.handle_key("DOWN")
         self.assertEqual(tui.command, "element -add ")
-        tui.handle_key("LEFT")
+        tui.handle_key("UP")
         self.assertEqual(tui.command, "element ")
+
+    def test_full_suggestion_panel_keeps_cursor_on_the_prompt_row(self):
+        tui = object.__new__(LanctlTui)
+        tui.screen = io.StringIO()
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.list_filter = ("all", "")
+        tui.devices = []
+        tui.index = 0
+        tui.messages = list(TUI_ELEMENT_HELP)
+        tui.command_suggestions = list(TUI_ELEMENT_SUGGESTIONS)
+        tui.suggestion_index = -1
+        tui.output_focus = False
+        tui.output_selectable = []
+        tui.scanning = False
+        tui.pending_confirmation = None
+        tui.secret_prompt = ""
+        tui.command = ""
+        tui.cursor = 0
+        tui._dimensions = lambda: (100, 30)
+        tui._inventory_lines = lambda _width, height: ["INVENTORY"] * (height + 2)
+        tui._status_lines = lambda _width: ["STATUS"] * 3
+        tui._selection_label = lambda: "-"
+
+        tui.render()
+
+        rendered, cursor = tui.screen.getvalue().rsplit("\x1b[", 1)
+        rows = rendered.splitlines()
+        self.assertEqual(len(rows), 30)
+        self.assertIn(LIST_ELEMENT_PANEL, rendered)
+        self.assertIn(CLI_PANEL, rendered)
+        self.assertIn("LANCTL[-]>", rows[28])
+        self.assertIn("F1", rows[29])
+        self.assertTrue(cursor.startswith("29;"))
+
+    def test_scan_progress_uses_last_list_element_row(self):
+        tui = object.__new__(LanctlTui)
+        tui.devices = []
+        tui.dhcp_range = None
+        tui.scan_total = 100
+        tui.scan_current = 25
+        tui.scan_visible_devices = set()
+        tui.scanning = True
+        tui.index = 0
+        tui.scroll = 0
+        tui.output_focus = False
+        tui.active_devices = set()
+        tui.response_ms = {}
+        tui._progress_line = lambda _width: "SCAN-PROGRESS"
+
+        lines = tui._inventory_lines(100, 10)
+
+        self.assertEqual(len(lines), 12)
+        self.assertEqual(lines[-1], "SCAN-PROGRESS")
+        self.assertTrue(all(not line for line in lines[2:-1]))
 
     def test_typing_after_suggestion_returns_arrows_to_cursor_control(self):
         tui = object.__new__(LanctlTui)
@@ -446,6 +663,17 @@ class TuiTests(unittest.TestCase):
         self.assertIn(Back.WHITE + Fore.BLACK + " F1 ", rendered)
         self.assertIn(Back.WHITE + Fore.BLACK + " F3 ", rendered)
         self.assertIn(Back.BLACK + Fore.WHITE + " Ayuda", rendered)
+
+    def test_function_bar_resizes_and_distributes_shortcuts(self):
+        from rich.text import Text
+
+        for width in (40, 80, 120, 210):
+            rendered = _function_bar(width)
+            self.assertEqual(Text.from_ansi(rendered).cell_len, width)
+            self.assertIn("F1", Text.from_ansi(rendered).plain)
+            self.assertIn("Esc", Text.from_ansi(rendered).plain)
+        wide = Text.from_ansi(_function_bar(210)).plain
+        self.assertGreater(wide.index("F2") - wide.index("Ayuda"), 5)
 
     def test_scan_spinner_uses_requested_sequence(self):
         self.assertEqual(

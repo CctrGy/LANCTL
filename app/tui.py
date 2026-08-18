@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import argparse
 import io
 import ipaddress
 import json
 import os
+import queue
 import re
 import shlex
 import shutil
@@ -12,13 +14,14 @@ import textwrap
 import time
 from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime
+from pathlib import Path
 
 from colorama import Back, Fore, Style, just_fix_windows_console
 
 from app import __version__
 from app.core.config import load_config
 from app.core.database import DeviceDatabase
-from app.core.layout import fit_text, shrink_widths, terminal_columns
+from app.core.layout import fit_text, shrink_widths, terminal_columns, terminal_rows
 from app.core.output import (
     CNF_COLORS,
     DARK_CNF_COLORS,
@@ -27,12 +30,16 @@ from app.core.output import (
 )
 from app.projects import active_project_info
 from app.services.lan_scanner import local_ipv4
+from app.tui_modal import ModalState, SettingField
+from app.tui_render import RichTuiRenderer
 
 RESET = Style.RESET_ALL
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 TUI_ENTER_SCREEN = "\x1b[?1049h\x1b[?7l\x1b[2J\x1b[H"
 TUI_LEAVE_SCREEN = "\x1b[?25h\x1b[?7h\x1b[?1049l"
+LIST_ELEMENT_PANEL = "ListElement"
+CLI_PANEL = "CLI"
 
 TUI_ELEMENT_HELP = (
     "ELEMENT · gestión simplificada dentro del TUI",
@@ -46,7 +53,7 @@ TUI_ELEMENT_HELP = (
     "  element -cnf O|X|-|S|F          F fija la selección en el TUI",
     "  element -delete                 Elimina tras confirmación",
     "Puedes escribir OBJETIVO antes de cualquier opción para no usar la fila resaltada.",
-    "Usa ←/→ para elegir una opción y completa sus argumentos en el prompt.",
+    "Usa ↑/↓ para elegir una opción y completa sus argumentos en el prompt.",
 )
 
 # La cadena insertada evita copiar los marcadores descriptivos (OBJETIVO,
@@ -94,9 +101,10 @@ def _inventory_cell(
 class LanctlTui:
     """TUI de pantalla completa basada en el inventario persistente de LANCTL."""
 
-    def __init__(self) -> None:
+    def __init__(self, startup_modal: str | None = None) -> None:
         config = load_config()
         self.screen = sys.stdout
+        self.renderer = RichTuiRenderer(self.screen)
         self.database = DeviceDatabase(config["database"])
         self.project_info = active_project_info(config)
         self.dhcp_range = config.get("dhcpRange")
@@ -133,6 +141,11 @@ class LanctlTui:
         self.command_history: list[str] = []
         self.command_history_index = 0
         self.command_history_scroll = 0
+        self.secret_prompt = ""
+        self.modal: ModalState | None = None
+        self._last_screen_lines: list[str] = []
+        self.startup_modal = startup_modal.casefold() if startup_modal else None
+        self.remote_actions = queue.Queue()
         self.reload()
 
     @property
@@ -215,7 +228,10 @@ class LanctlTui:
 
     def _dimensions(self) -> tuple[int, int]:
         size = shutil.get_terminal_size(fallback=(120, 30))
-        return terminal_columns(self.screen) or size.columns, max(12, size.lines)
+        return (
+            terminal_columns(self.screen) or size.columns,
+            max(12, terminal_rows(self.screen) or size.lines),
+        )
 
     def _inventory_lines(self, width: int, height: int) -> list[str]:
         first_dhcp, last_dhcp = _dhcp_boundary_indexes(self.devices, self.dhcp_range)
@@ -378,24 +394,29 @@ class LanctlTui:
             )
             if absolute == last_dhcp:
                 output.append(f"{Style.DIM}{Fore.YELLOW}{dhcp_separator}{RESET}")
-        if self.scan_total:
-            output.append(self._progress_line(width))
-        while len(output) < height + 2:
+        # ``height`` representa las filas de datos; cabecera y subrayado
+        # completan el tamaño real del panel ListElement. Si hay un escaneo,
+        # su progreso ocupa siempre la última fila interna, no la primera fila
+        # libre situada justo después del último dispositivo encontrado.
+        panel_height = height + 2
+        progress = self._progress_line(width) if self.scan_total else None
+        content_height = panel_height - (1 if progress else 0)
+        if len(output) > content_height:
+            output = output[:content_height]
+        while len(output) < content_height:
             output.append("")
+        if progress:
+            output.append(progress)
         return output
 
     def _progress_line(self, width: int) -> str:
-        ratio = min(1.0, self.scan_current / max(1, self.scan_total))
-        bar_width = max(8, min(36, width - 51))
-        filled = round(bar_width * ratio)
-        bar = "█" * filled + "─" * (bar_width - filled)
-        state = "ESCANEO" if self.scanning else "COMPLETADO"
-        color = Fore.YELLOW if self.scanning else Fore.GREEN
-        line = (
-            f"  {state} [{bar}] {ratio:6.1%} "
-            f"{self.scan_current}/{self.scan_total} | encontrados {len(self.scan_visible_devices)}"
+        return RichTuiRenderer.progress_line(
+            width=width,
+            current=self.scan_current,
+            total=self.scan_total,
+            found=len(self.scan_visible_devices),
+            scanning=self.scanning,
         )
-        return f"{Style.BRIGHT}{color}{fit_text(line, width)}{RESET}"
 
     def _selection_label(self) -> str:
         device = self.selected
@@ -455,22 +476,30 @@ class LanctlTui:
     def render(self) -> None:
         width, height = self._dimensions()
         width = max(20, width)
+        if getattr(self, "modal", None):
+            self._render_modal(width, height)
+            return
         if self.detail_lines:
             self._render_detail(width, height)
             return
         compact = height < 20 or width < 70
         message_rows = 12 if not compact else 7
-        list_height = max(3, height - message_rows - 8)
+        # Además del título, separador y estado, se reservan exactamente las
+        # dos filas finales para el prompt y la barra de teclas. Con el panel
+        # de ayuda lleno, una fila menos hacía que el prompt quedara debajo de
+        # la posición ANSI calculada para el cursor.
+        list_height = max(3, height - message_rows - 9)
         title = f" LANCTL TUI {__version__} "
         mode, value = self.list_filter
         filter_name = f"{mode}:{value}" if value else mode
         if self.view_state == "history":
-            counter = f" [history] {self.history_index + 1 if self.history_events else 0}/{len(self.history_events)} "
+            counter = f" {LIST_ELEMENT_PANEL} [history] {self.history_index + 1 if self.history_events else 0}/{len(self.history_events)} "
         elif self.view_state == "command-history":
-            counter = f" [commands] {self.command_history_index + 1 if self.command_history else 0}/{len(self.command_history)} "
+            counter = f" {LIST_ELEMENT_PANEL} [commands] {self.command_history_index + 1 if self.command_history else 0}/{len(self.command_history)} "
         else:
             counter = (
-                f" [{filter_name}] {self.index + 1 if self.devices else 0}/{len(self.devices)} "
+                f" {LIST_ELEMENT_PANEL} [{filter_name}] "
+                f"{self.index + 1 if self.devices else 0}/{len(self.devices)} "
             )
         title_space = max(0, width - len(title) - len(counter))
         title_content = (
@@ -487,7 +516,7 @@ class LanctlTui:
                 if self.view_state == "command-history"
                 else self._inventory_lines(width, list_height)
             ),
-            f"{Fore.CYAN}{'─' * width}{RESET}",
+            f"{Fore.CYAN} {CLI_PANEL} {'─' * max(0, width - len(CLI_PANEL) - 2)}{RESET}",
             *(_fit_ansi(line, width) for line in self._status_lines(width)),
         ]
         if self.output_focus and self.output_selectable:
@@ -535,25 +564,120 @@ class LanctlTui:
                 lines.append(f" {fit_text(message, width - 1)}")
         while len(lines) < height - 2:
             lines.append("")
+        secret_prompt = getattr(self, "secret_prompt", "")
         prompt_label = (
-            _spinner_character(self.spinner_index)
+            "SECRETO"
+            if secret_prompt
+            else _spinner_character(self.spinner_index)
             if self.scanning
             else "CONFIRM"
             if self.pending_confirmation
             else self._selection_label()
         )
         prompt_prefix = f"LANCTL[{prompt_label}]> "
-        prompt_text = fit_text(f"{prompt_prefix}{self.command}", width)
+        prompt_value = secret_prompt if secret_prompt else self.command
+        prompt_text = fit_text(f"{prompt_prefix}{prompt_value}", width)
         lines.append(f"{Fore.LIGHTGREEN_EX}{prompt_text}{RESET}")
         keys = _function_bar(width)
         lines.append(keys)
-        cursor_column = min(width, len(prompt_prefix) + self.cursor + 1)
-        self.screen.write(
-            "\x1b[?25h\x1b[2J\x1b[H"
-            + "\n".join(lines[:height])
-            + f"\x1b[{height - 1};{cursor_column}H"
+        cursor_offset = len(prompt_value) if self.secret_prompt else self.cursor
+        cursor_column = min(width, len(prompt_prefix) + cursor_offset + 1)
+        renderer = getattr(self, "renderer", None) or RichTuiRenderer(self.screen)
+        self._last_screen_lines = list(lines[:height])
+        renderer.render_screen(
+            lines,
+            width=width,
+            height=height,
+            cursor_row=height - 1,
+            cursor_column=cursor_column,
         )
-        self.screen.flush()
+
+    def _open_modal(self, modal: ModalState) -> None:
+        modal.background = list(getattr(self, "_last_screen_lines", []))
+        self.modal = modal
+
+    def _render_modal(self, width: int, height: int) -> None:
+        modal = self.modal
+        if not modal:
+            return
+        body_rows = max(1, min(height - 9, 24))
+        page = self._modal_page(modal)
+        maximum = max(0, len(page) - body_rows)
+        modal.scroll = max(0, min(modal.scroll, maximum))
+        visible = page[modal.scroll : modal.scroll + body_rows]
+        self.renderer.render_modal(
+            modal.background,
+            title=(
+                f"{modal.title} / MENU[{modal.tabs[modal.tab_index]}]"
+                f"{' / EDITANDO' if modal.editing else ''}"
+                if modal.kind == "settings" and modal.tabs
+                else modal.title
+            ),
+            tabs=modal.tabs,
+            selected_tab=modal.tab_index,
+            body=visible,
+            footer=modal.footer,
+            width=width,
+            height=height,
+            max_width=130 if modal.kind == "settings" else 100,
+            max_height=36 if modal.kind == "settings" else 30,
+        )
+
+    def _modal_page(self, modal: ModalState) -> list[str]:
+        if modal.kind == "settings":
+            rows = [
+                "  CAMPO                      VALOR                         FORMATO",
+                "  ─────────────────────────  ─────────────────────────────  ─────────────────────────",
+            ]
+            visible_indices = set(self._settings_field_indices(modal))
+            for index, field in enumerate(modal.items):
+                if index not in visible_indices:
+                    continue
+                marker = (
+                    "◆"
+                    if index == modal.selected and modal.editing
+                    else "▶"
+                    if index == modal.selected
+                    else " "
+                )
+                changed = "*" if field.value != field.original else " "
+                value = field.value or "(vacío)"
+                rows.append(
+                    f"{marker}{changed} {field.label:<25} {fit_text(value, 29):<29} {field.hint}"
+                )
+            selected = modal.items[modal.selected]
+            description_width = 106
+            rows.extend(("", "  DESCRIPCIÓN"))
+            rows.extend(
+                "  " + line
+                for line in textwrap.wrap(
+                    selected.description,
+                    width=description_width,
+                    break_long_words=False,
+                    break_on_hyphens=False,
+                )
+            )
+            state = (
+                "edición activa"
+                if modal.editing
+                else "modificado, pendiente de guardar"
+                if selected.value != selected.original
+                else "sin cambios"
+            )
+            rows.extend(
+                (
+                    f"  Clave: {selected.key}  ·  Opción CLI: {selected.option}  ·  Estado: {state}",
+                    "",
+                    "* cambio pendiente · Ctrl+S valida y guarda todos los cambios",
+                )
+            )
+            return rows
+        if modal.kind in {"plugins", "projects", "commands"} and modal.tab_index == 0:
+            lines = []
+            for index, line in enumerate(modal.page):
+                lines.append(("▶ " if index == modal.selected else "  ") + line)
+            return lines
+        return modal.page
 
     def show_history(self, selector: str | None = None) -> None:
         from app.core.history import HistoryService
@@ -576,15 +700,357 @@ class LanctlTui:
             self.messages = [str(error)]
 
     def show_command_history(self) -> None:
-        self.view_state = "command-history"
-        self.command_history_index = max(0, len(self.command_history) - 1)
-        self.command_history_scroll = max(0, self.command_history_index)
-        self.messages = [
-            (
-                f"Historial de comandos: {len(self.command_history)} | "
-                "Flechas seleccionan | Enter recupera | Esc inventario"
+        entries = self.command_history or ["(No hay comandos en esta sesión)"]
+        self._open_modal(
+            ModalState(
+                kind="commands",
+                title="COMANDOS",
+                tabs=["Historial"],
+                pages=[list(entries)],
+                selected=max(0, len(entries) - 1),
+                footer="↑/↓ seleccionar  Enter recuperar  Esc cerrar",
             )
+        )
+
+    def show_help_modal(self) -> None:
+        self._open_modal(
+            ModalState(
+                kind="help",
+                title="HELP",
+                tabs=["Comandos", "Teclas"],
+                pages=[
+                    _command_tree_lines(),
+                    [
+                        "F1       Ayuda de comandos",
+                        "F2       Información completa del elemento",
+                        "F3       Ping del elemento seleccionado",
+                        "F5       Actualizar y descubrir la red",
+                        "F7       Gestor de plugins",
+                        "F9       Gestor de proyectos",
+                        "F12      Editor de configuración",
+                        "Ctrl+H   Historial de comandos",
+                        "↑/↓      Seleccionar o desplazar",
+                        "Esc      Cerrar ventana / salir del TUI",
+                    ],
+                ],
+            )
+        )
+
+    def show_plugin_manager(self) -> None:
+        try:
+            from app.plugins.manager import get_plugin_manager
+
+            plugins = get_plugin_manager().list()
+            listing = [
+                f"{item.manifest.name:<24} {item.manifest.version:<12} {item.state.value}"
+                for item in plugins
+            ] or ["(No hay plugins instalados)"]
+            details = [_plugin_detail(item) for item in plugins]
+            self._open_modal(
+                ModalState(
+                    kind="plugins",
+                    title="PLUGIN",
+                    tabs=["Plugins", "Información"],
+                    pages=[listing, details[0] if details else ["No hay información disponible."]],
+                    items=plugins,
+                    footer="↑/↓ seleccionar  → información  Ctrl+R recargar  Esc cerrar",
+                )
+            )
+        except (OSError, ValueError) as error:
+            self.messages = [f"No se pudo cargar el gestor de plugins: {error}"]
+
+    def show_project_manager(self) -> None:
+        config = load_config()
+        from app.projects.paths import default_project_directory
+
+        configured = config.get("projectsDirectory")
+        root = (
+            Path(os.path.expandvars(str(configured))).expanduser()
+            if configured
+            else default_project_directory()
+        )
+        projects = (
+            sorted(root.glob("*.vlf"), key=lambda item: item.name.casefold())
+            if root.exists()
+            else []
+        )
+        active = self.project_info.get("path", "") if self.project_info else ""
+        active_path = Path(active) if active else None
+        if (
+            active_path
+            and active_path.is_file()
+            and all(path.resolve() != active_path.resolve() for path in projects)
+        ):
+            projects.insert(0, active_path)
+        listing = [
+            f"{'*' if str(path.resolve()).casefold() == str(active).casefold() else ' '} {path.stem:<28} {path}"
+            for path in projects
+        ] or [f"(No hay proyectos en {root})"]
+        details = [_project_detail(path, active) for path in projects]
+        self._open_modal(
+            ModalState(
+                kind="projects",
+                title="PROJECT MANAGER",
+                tabs=["Proyectos", "Información"],
+                pages=[listing, details[0] if details else ["No hay información disponible."]],
+                items=projects,
+                footer="↑/↓ seleccionar  → información  Enter activar  Ctrl+R recargar  Esc cerrar",
+            )
+        )
+
+    def show_settings(self) -> None:
+        config = load_config()
+
+        def text(key: str, fallback="") -> str:
+            value = config.get(key, fallback)
+            if isinstance(value, bool):
+                return "on" if value else "off"
+            if isinstance(value, list):
+                return ",".join(str(item) for item in value)
+            return "" if value is None else str(value)
+
+        definitions = (
+            (
+                "GENERAL",
+                "listColumns",
+                "Columnas de lista",
+                "--list-fields",
+                "separadas por comas",
+                "Define qué columnas aparecen en la lista normal y en el inventario del TUI, respetando el orden indicado.",
+            ),
+            (
+                "RED",
+                "range",
+                "Rango de red",
+                "-range",
+                "CIDR o vacío",
+                "Red IPv4 que LANCTL analizará por defecto. Déjalo vacío para detectar la red desde la interfaz local.",
+            ),
+            (
+                "RED",
+                "dhcpRange",
+                "Rango DHCP",
+                "--dhcp-range",
+                "INICIO-FIN u off",
+                "Límites de direcciones entregadas dinámicamente por el servidor DHCP. Se usan para separar visualmente el inventario.",
+            ),
+            (
+                "RED",
+                "discovery",
+                "Descubrimiento",
+                "--discovery",
+                "icmp | arp | hybrid",
+                "Método base de descubrimiento: ICMP prueba respuesta, ARP consulta vecinos y hybrid combina ambos.",
+            ),
+            (
+                "ESCANEO",
+                "scanProfile",
+                "Perfil de escaneo",
+                "--scan-profile",
+                "fast | normal | accurate",
+                "Equilibra velocidad y profundidad. Accurate realiza más comprobaciones y puede tardar bastante más.",
+            ),
+            (
+                "ESCANEO",
+                "scanOrder",
+                "Orden de escaneo",
+                "--scan-order",
+                "ascending | descending | random",
+                "Orden en el que se prueban las direcciones del rango durante el descubrimiento.",
+            ),
+            (
+                "ESCANEO",
+                "workers",
+                "Workers",
+                "--workers",
+                "entero positivo",
+                "Número máximo de operaciones concurrentes. Un valor alto acelera el escaneo, pero consume más recursos.",
+            ),
+            (
+                "ESCANEO",
+                "timeout",
+                "Timeout",
+                "--timeout",
+                "segundos",
+                "Tiempo máximo de espera para cada operación de red antes de considerarla sin respuesta.",
+            ),
+            (
+                "ESCANEO",
+                "maxHosts",
+                "Máximo de hosts",
+                "--max-hosts",
+                "entero positivo",
+                "Límite de seguridad para impedir el escaneo accidental de redes excesivamente grandes.",
+            ),
+            (
+                "ESCANEO",
+                "progress",
+                "Mostrar progreso",
+                "--progress",
+                "on | off",
+                "Muestra u oculta la barra de progreso durante los escaneos interactivos.",
+            ),
+            (
+                "ESCANEO",
+                "serviceIdentification",
+                "Identificar servicios",
+                "--service-identification",
+                "on | off",
+                "Intenta reconocer servicios y protocolos expuestos por los dispositivos encontrados.",
+            ),
+            (
+                "PROYECTOS",
+                "projectsDirectory",
+                "Directorio de proyectos",
+                "--projects-directory",
+                "ruta | auto",
+                "Carpeta predeterminada para proyectos VLF. Auto utiliza Documents\\LanCTL del usuario actual.",
+            ),
+            (
+                "PROYECTOS",
+                "projectSaveMode",
+                "Modo de guardado",
+                "--save-mode",
+                "SaveMode | list",
+                "Política que decide cuándo se sincroniza el workspace activo con su archivo de proyecto VLF.",
+            ),
+            (
+                "PROYECTOS",
+                "projectSaveIntervalMinutes",
+                "Intervalo de guardado",
+                "--save-interval",
+                "minutos",
+                "Minutos entre guardados cuando SaveMode está configurado como automatic.timeToSave.",
+            ),
+            (
+                "ALMACENAMIENTO",
+                "database",
+                "Base de elementos",
+                "--database",
+                "ruta",
+                "Archivo JSON que conserva el inventario de dispositivos, identidades, estados y datos descubiertos.",
+            ),
+            (
+                "ALMACENAMIENTO",
+                "groups",
+                "Base de grupos",
+                "--groups",
+                "ruta",
+                "Archivo que contiene los grupos y las relaciones entre estos y los elementos del inventario.",
+            ),
+            (
+                "LOGS",
+                "log",
+                "Directorio de logs",
+                "--log",
+                "ruta",
+                "Directorio donde LANCTL registra comandos, escaneos, cambios, plugins, resultados y errores.",
+            ),
+            (
+                "LOGS",
+                "logCleanupEnabled",
+                "Limpieza de logs",
+                "--log-cleanup",
+                "on | off",
+                "Activa la eliminación automática de registros que superen el periodo de retención configurado.",
+            ),
+            (
+                "LOGS",
+                "logRetentionDays",
+                "Retención de logs",
+                "--log-retention-days",
+                "días",
+                "Cantidad de días durante los que se conservarán los archivos de registro antes de poder eliminarlos.",
+            ),
+            (
+                "REMOTE ACCESS",
+                "remoteAccessEnabled",
+                "Acceso SSH remoto",
+                "--remote-access",
+                "on | off",
+                "Activa el backend SSH restringido de LANCTL. No concede una shell del sistema operativo.",
+            ),
+            (
+                "REMOTE ACCESS",
+                "remoteAccessBind",
+                "IP de enlace",
+                "--remote-bind",
+                "IPv4 local",
+                "Dirección de la interfaz LAN en la que escuchará el servidor SSH remoto.",
+            ),
+            (
+                "REMOTE ACCESS",
+                "remoteAccessCidr",
+                "Red permitida",
+                "--remote-cidr",
+                "CIDR",
+                "Única red de origen autorizada para establecer conexiones con el backend.",
+            ),
+            (
+                "REMOTE ACCESS",
+                "remoteAccessPort",
+                "Puerto SSH",
+                "--remote-port",
+                "1-65535",
+                "Puerto TCP del servidor SSH restringido. El valor recomendado es 2222 para no colisionar con OpenSSH.",
+            ),
+            (
+                "REMOTE ACCESS",
+                "remoteAccessPasswordAuthentication",
+                "Autenticación por contraseña",
+                "--remote-password-auth",
+                "on | off",
+                "Permite contraseñas además de claves públicas. Por seguridad se recomienda mantenerla desactivada.",
+            ),
+            (
+                "REMOTE ACCESS",
+                "remoteAccessBackend",
+                "Backend persistente",
+                "--remote-backend",
+                "service | user",
+                "Service permanece activo sin abrir LANCTL; user permite lanzar ventanas visibles en la sesión del administrador.",
+            ),
+            (
+                "REMOTE ACCESS",
+                "remoteAccessForcedView",
+                "Vista forzada predeterminada",
+                "--remote-forced-view",
+                "off | GUI | TUI | menú",
+                "Vista que podrá solicitar el administrador remoto mediante root forced-view.",
+            ),
+        )
+        fields = [
+            SettingField(key, label, option, text(key), text(key), hint, section, description)
+            for section, key, label, option, hint, description in definitions
         ]
+        from app.projects.save_policy import available_save_modes
+
+        choices = {
+            "discovery": ("icmp", "arp", "hybrid"),
+            "scanProfile": ("fast", "normal", "accurate"),
+            "scanOrder": ("ascending", "descending", "random"),
+            "progress": ("on", "off"),
+            "serviceIdentification": ("on", "off"),
+            "projectSaveMode": tuple(item.mode for item in available_save_modes()),
+            "logCleanupEnabled": ("on", "off"),
+            "remoteAccessEnabled": ("on", "off"),
+            "remoteAccessPasswordAuthentication": ("on", "off"),
+            "remoteAccessBackend": ("service", "user"),
+            "remoteAccessForcedView": ("off", "gui", "tui", "plugins", "projects", "settings"),
+        }
+        for field in fields:
+            field.choices = choices.get(field.key, ())
+        tabs = ["GENERAL", "RED", "ESCANEO", "PROYECTOS", "ALMACENAMIENTO", "LOGS", "REMOTE ACCESS"]
+        self._open_modal(
+            ModalState(
+                kind="settings",
+                title="SETTINGS",
+                tabs=tabs,
+                pages=[[] for _ in tabs],
+                items=fields,
+                footer="←/→ menú  ↑/↓ variable  Tab editar  Ctrl+S guardar  Esc cerrar",
+            )
+        )
 
     def _command_history_lines(self, width: int, height: int) -> list[str]:
         if not self.command_history:
@@ -661,8 +1127,8 @@ class LanctlTui:
         lines.append(
             f"{Style.BRIGHT}{Back.WHITE}{Fore.BLACK}{fit_text(footer, width):<{width}}{RESET}"
         )
-        self.screen.write("\x1b[?25l\x1b[2J\x1b[H" + "\n".join(lines[:height]))
-        self.screen.flush()
+        renderer = getattr(self, "renderer", None) or RichTuiRenderer(self.screen)
+        renderer.render_screen(lines, width=width, height=height)
 
     def discovery_found(self, keys: tuple[str, ...]) -> None:
         normalized = {str(key).strip().casefold() for key in keys if key}
@@ -676,14 +1142,49 @@ class LanctlTui:
 
     def _capture(self, argv: list[str]) -> tuple[int, str]:
         from app.cli import main
+        from app.core.secret_input import use_secret_reader
 
         output = io.StringIO()
         try:
-            with redirect_stdout(output), redirect_stderr(output):
+            with (
+                use_secret_reader(self._read_secret),
+                redirect_stdout(output),
+                redirect_stderr(output),
+            ):
                 result = main(argv)
         except SystemExit as error:
             result = int(error.code or 0)
         return result, output.getvalue().strip()
+
+    def _read_secret(self, prompt: str) -> str:
+        """Solicita un secreto dentro de la fila de entrada reservada por el TUI."""
+
+        if os.name != "nt":
+            raise OSError("la entrada secreta del TUI solo está disponible en Windows")
+        from msvcrt import getwch
+
+        self.secret_prompt = prompt.strip()
+        self.render()
+        characters: list[str] = []
+        try:
+            while True:
+                key = getwch()
+                if key in ("\r", "\n"):
+                    return "".join(characters)
+                if key == "\x03":
+                    raise KeyboardInterrupt
+                if key == "\x08":
+                    if characters:
+                        characters.pop()
+                    continue
+                if key in ("\x00", "\xe0"):
+                    getwch()
+                    continue
+                if key.isprintable():
+                    characters.append(key)
+        finally:
+            self.secret_prompt = ""
+            self.render()
 
     def refresh(self) -> None:
         self.scanning = True
@@ -768,8 +1269,7 @@ class LanctlTui:
         def shown(value) -> str:
             return "-" if value in (None, "", [], {}) else str(value)
 
-        self.detail_lines = [
-            "IDENTIDAD",
+        identity = [
             f"  Estado: {'ACTIVO' if observation.get('reachable') else 'NO DETECTADO'}",
             f"  ID estable: {shown(device.device_id)}",
             f"  CNF: {shown(device.cnf)}",
@@ -777,8 +1277,8 @@ class LanctlTui:
             f"  MAC registrada: {shown(device.mac)}",
             f"  MAC observada: {shown(observation.get('observed_mac'))}",
             f"  Coincidencia: {'Si' if match is True else 'NO' if match is False else '-'}",
-            "",
-            "NOMBRES Y CLASIFICACION",
+        ]
+        classification = [
             f"  Alias: {shown(device.alias)}",
             f"  Alias detectado: {shown(device.default_alias)}",
             f"  Nombre: {shown(device.name)}",
@@ -789,25 +1289,45 @@ class LanctlTui:
             f"  Confianza: {shown(identification.get('confidence'))}",
             f"  Evidencias: {shown('; '.join(identification.get('evidence', [])))}",
             f"  Grupos: {shown(', '.join(device.groups))}",
-            "",
-            "RED Y DETECCION",
+        ]
+        network = [
             f"  Latencia: {shown(observation.get('latency_ms'))} ms",
             f"  TTL: {shown(observation.get('ttl'))}",
             f"  Detectado por: {shown('+'.join(device.discovery_methods) or device.last_discovery)}",
             f"  Ultima deteccion: {shown(device.last_discovery)}",
             f"  Ultima vez visto: {shown(device.last_seen)}",
-            "",
-            "ACCESO Y CONFIGURACION",
+        ]
+        access = [
             f"  Protocolos: {shown(', '.join(device.protocols))}",
             f"  Credenciales referenciadas: {shown(', '.join(f'{key}={value}' for key, value in device.credentials.items()))}",
             f"  Opciones de protocolo: {shown(json.dumps(device.protocol_options, ensure_ascii=False, sort_keys=True))}",
-            "",
-            "PUERTOS TCP (CONJUNTO HABITUAL)",
+        ]
+        open_ports = observation.get("open_ports", []) or []
+        ports = [
             f"  Puertos abiertos: {len(observation.get('open_ports', []))}",
             f"  Puertos examinados: {shown(observation.get('scanned_ports'))}",
             f"  Duracion del analisis: {shown(observation.get('duration'))} s",
         ]
-        self.detail_scroll = 0
+        if open_ports:
+            ports.extend(["", "  PUERTO  SERVICIO       PRODUCTO / BANNER"])
+            for item in open_ports:
+                if isinstance(item, dict):
+                    port = shown(item.get("port"))
+                    service = shown(item.get("service"))
+                    product = shown(item.get("product") or item.get("banner"))
+                else:
+                    port, service, product = shown(item), "-", "-"
+                ports.append(f"  {port:<7} {service:<14} {product}")
+        else:
+            ports.extend(["", "  Ningún puerto abierto detectado."])
+        self._open_modal(
+            ModalState(
+                kind="info",
+                title=f"INFO · {device.alias or device.name or device.ip or device.mac}",
+                tabs=["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
+                pages=[identity, classification, network, access, ports],
+            )
+        )
 
     def ping_selected(self) -> None:
         device = self.selected
@@ -1003,6 +1523,9 @@ class LanctlTui:
         self._set_command_output(output, result)
 
     def handle_key(self, key: str) -> None:
+        if getattr(self, "modal", None):
+            self._handle_modal_key(key)
+            return
         if self.detail_lines:
             if key == "UP":
                 self.detail_scroll -= 1
@@ -1075,8 +1598,10 @@ class LanctlTui:
                 self.output_scroll = 0
                 return
             self.output_focus = False
-        if key in ("LEFT", "RIGHT") and getattr(self, "command_suggestions", []):
-            self._move_suggestion(-1 if key == "LEFT" else 1)
+        # La ayuda interactiva toma el foco vertical completo: mientras sus
+        # sugerencias estén visibles, la selección superior no debe moverse.
+        if key in ("UP", "DOWN") and getattr(self, "command_suggestions", []):
+            self._move_suggestion(-1 if key == "UP" else 1)
             return
         if key == "UP":
             self.move(-1)
@@ -1087,18 +1612,19 @@ class LanctlTui:
         elif key == "PGDN":
             self.move(10)
         elif key == "F1":
-            self.messages = [
-                "F1 ayuda | F2 información | F3 ping | F5 escaneo | Ctrl+H comandos | flechas selección | Esc salir",
-                "TUI: reload recarga el inventario sin escanear la red.",
-                'Proyecto: project muestra el activo | project use "RUTA.vlf" lo cambia.',
-                "Filtros: list --all|--connected|--disconnected|-group NOMBRE|-dhcp|-statics",
-            ]
+            self.show_help_modal()
         elif key == "F2":
             self.show_info()
         elif key == "F3":
             self.ping_selected()
         elif key == "F5":
             self.refresh()
+        elif key == "F7":
+            self.show_plugin_manager()
+        elif key == "F9":
+            self.show_project_manager()
+        elif key == "F12":
+            self.show_settings()
         elif key == "CTRL_H":
             self.show_command_history()
         elif key == "ENTER":
@@ -1128,6 +1654,170 @@ class LanctlTui:
             self.command = self.command[: self.cursor] + key + self.command[self.cursor :]
             self.cursor += 1
 
+    def _handle_modal_key(self, key: str) -> None:
+        modal = self.modal
+        if not modal:
+            return
+        if modal.kind == "settings":
+            self._handle_settings_key(modal, key)
+            return
+        if key in ("ESC", "F1") and not (key == "F1" and modal.kind != "help"):
+            self.modal = None
+            return
+        if key == "F2" and modal.kind == "info":
+            self.modal = None
+            return
+        if key == "LEFT":
+            modal.change_tab(-1)
+        elif key == "RIGHT":
+            modal.change_tab(1)
+        elif (
+            key in ("UP", "DOWN")
+            and modal.kind in {"plugins", "projects", "commands"}
+            and modal.tab_index == 0
+        ):
+            delta = -1 if key == "UP" else 1
+            modal.selected = max(0, min(len(modal.page) - 1, modal.selected + delta))
+            self._update_manager_detail(modal)
+            modal.scroll = max(0, modal.selected - 4)
+        elif key == "UP":
+            modal.scroll -= 1
+        elif key == "DOWN":
+            modal.scroll += 1
+        elif key == "PGUP":
+            modal.scroll -= 10
+        elif key == "PGDN":
+            modal.scroll += 10
+        elif key == "ENTER" and modal.kind == "commands" and self.command_history:
+            self.command = self.command_history[modal.selected]
+            self.cursor = len(self.command)
+            self.modal = None
+            self.messages = ["Comando recuperado; pulsa Enter para ejecutarlo."]
+        elif key == "ENTER" and modal.kind == "projects" and modal.items:
+            path = modal.items[modal.selected]
+            result, output = self._capture(["project", "use", str(path)])
+            self.modal = None
+            self.reload()
+            self._set_command_output(output, result)
+        elif key == "CTRL_R":
+            if modal.kind == "plugins":
+                self.show_plugin_manager()
+            elif modal.kind == "projects":
+                self.show_project_manager()
+
+    def _handle_settings_key(self, modal: ModalState, key: str) -> None:
+        if not modal.items:
+            return
+        field = modal.items[modal.selected]
+        if key in ("TAB", "SHIFT_TAB"):
+            if modal.editing:
+                modal.editing = False
+                modal.editor_fresh = True
+                modal.footer = "←/→ menú  ↑/↓ variable  Tab editar  Ctrl+S guardar  Esc cerrar"
+            else:
+                modal.editing = True
+                modal.edit_snapshot = field.value
+                modal.editor_fresh = True
+                modal.footer = (
+                    "←/→ cambiar valor  ↑/↓ cambiar valor  escribir reemplazar  "
+                    "Tab aceptar  Esc cancelar"
+                    if field.choices
+                    else "escribir reemplazar  Backspace/Delete editar  Tab aceptar  Esc cancelar"
+                )
+            return
+        if key == "ESC":
+            if modal.editing:
+                field.value = modal.edit_snapshot
+                modal.editing = False
+                modal.editor_fresh = True
+                modal.footer = "←/→ menú  ↑/↓ variable  Tab editar  Ctrl+S guardar  Esc cerrar"
+            else:
+                self.modal = None
+            return
+        if key == "CTRL_S":
+            modal.editing = False
+            self._save_settings(modal)
+            return
+        if modal.editing:
+            if field.choices and key in ("LEFT", "UP", "RIGHT", "DOWN"):
+                try:
+                    current = field.choices.index(field.value)
+                except ValueError:
+                    current = -1 if key in ("RIGHT", "DOWN") else 0
+                delta = -1 if key in ("LEFT", "UP") else 1
+                field.value = field.choices[(current + delta) % len(field.choices)]
+                modal.editor_fresh = False
+            elif key == "BACKSPACE":
+                field.value = field.value[:-1]
+                modal.editor_fresh = False
+            elif key == "DELETE":
+                field.value = ""
+                modal.editor_fresh = False
+            elif len(key) == 1 and key.isprintable() and not field.choices:
+                field.value = key if modal.editor_fresh else field.value + key
+                modal.editor_fresh = False
+            return
+        if key in ("LEFT", "RIGHT"):
+            modal.tab_selections[modal.tab_index] = modal.selected
+            modal.change_tab(-1 if key == "LEFT" else 1)
+            indices = self._settings_field_indices(modal)
+            remembered = modal.tab_selections.get(modal.tab_index)
+            modal.selected = remembered if remembered in indices else indices[0]
+            modal.editor_fresh = True
+            modal.scroll = 0
+            return
+        if key in ("UP", "DOWN"):
+            indices = self._settings_field_indices(modal)
+            current = indices.index(modal.selected) if modal.selected in indices else 0
+            delta = -1 if key == "UP" else 1
+            modal.selected = indices[(current + delta) % len(indices)]
+            modal.editor_fresh = True
+            modal.scroll = max(0, indices.index(modal.selected) - 5)
+
+    @staticmethod
+    def _settings_field_indices(modal: ModalState) -> list[int]:
+        section = modal.tabs[modal.tab_index] if modal.tabs else "GENERAL"
+        indices = [index for index, field in enumerate(modal.items) if field.section == section]
+        # Compatibilidad con extensiones y estados antiguos que aportaban una
+        # única pestaña con un nombre libre, sin clasificar cada campo.
+        return indices or list(range(len(modal.items)))
+
+    def _save_settings(self, modal: ModalState) -> None:
+        changed = [field for field in modal.items if field.value != field.original]
+        if not changed:
+            self.modal = None
+            self.messages = ["SETTINGS: no había cambios pendientes."]
+            return
+        argv = ["settings"]
+        for field in changed:
+            value = field.value.strip()
+            if field.key == "dhcpRange" and not value:
+                value = "off"
+            elif field.key == "projectsDirectory" and not value:
+                value = "auto"
+            elif not value:
+                modal.footer = f"ERROR: {field.label} no puede quedar vacío · Esc cancelar"
+                return
+            argv.extend((field.option, value))
+        result, output = self._capture(argv)
+        if result == 0:
+            self.modal = None
+            self.reload()
+            self._set_command_output(output, result)
+        else:
+            cleaned = _clean_tui_output(output)
+            modal.footer = f"ERROR: {cleaned[-1]} · Ctrl+S reintentar · Esc cancelar"
+
+    def _update_manager_detail(self, modal: ModalState) -> None:
+        if not modal.items:
+            return
+        item = modal.items[modal.selected]
+        if modal.kind == "plugins":
+            modal.pages[1] = _plugin_detail(item)
+        elif modal.kind == "projects":
+            active = self.project_info.get("path", "") if self.project_info else ""
+            modal.pages[1] = _project_detail(item, active)
+
     def run(self) -> int:
         if os.name != "nt":
             raise OSError("LANCTL TUI utiliza actualmente la entrada de teclado de Windows")
@@ -1137,7 +1827,11 @@ class LanctlTui:
                 "normal cuando la entrada o la salida estén redirigidas"
             )
         just_fix_windows_console()
-        from msvcrt import getwch
+        from msvcrt import getwch, kbhit
+
+        from app.access.root_control import RootInterfaceAgent
+
+        agent = RootInterfaceAgent("tui", self.remote_actions.put).start()
 
         try:
             # La pantalla alternativa impide que cada repintado pase al
@@ -1145,14 +1839,57 @@ class LanctlTui:
             # filas fantasma cuando una línea ocupa exactamente todo el ancho.
             self.screen.write(TUI_ENTER_SCREEN)
             self.screen.flush()
-            self.refresh()
-            while self.running:
+            if self.startup_modal:
+                # Construye primero el fondo congelado sin forzar un escaneo:
+                # los gestores no necesitan esperar a la detección de red.
                 self.render()
-                self.handle_key(_read_windows_key(getwch))
+                self._open_startup_modal()
+            else:
+                self.refresh()
+            self.render()
+            while self.running:
+                if not self.remote_actions.empty():
+                    self._apply_remote_action(self.remote_actions.get_nowait())
+                    self.render()
+                elif kbhit():
+                    self.handle_key(_read_windows_key(getwch))
+                    self.render()
+                else:
+                    time.sleep(0.08)
         finally:
+            agent.stop()
             self.screen.write(TUI_LEAVE_SCREEN)
             self.screen.flush()
         return 0
+
+    def _apply_remote_action(self, command: dict) -> None:
+        action = command.get("action")
+        if action == "refresh":
+            self.reload()
+            self.messages = ["Inventario actualizado por una sesión SSH remota."]
+            return
+        if action != "view":
+            return
+        view = str(command.get("value", "tui")).casefold()
+        if view == "tui":
+            self.modal = None
+        elif view == "plugins":
+            self.show_plugin_manager()
+        elif view == "projects":
+            self.show_project_manager()
+        elif view == "settings":
+            self.show_settings()
+
+    def _open_startup_modal(self) -> None:
+        actions = {
+            "plugins": self.show_plugin_manager,
+            "projects": self.show_project_manager,
+            "settings": self.show_settings,
+        }
+        try:
+            actions[self.startup_modal]()
+        except KeyError as error:
+            raise ValueError(f"ventana TUI desconocida: {self.startup_modal}") from error
 
 
 def _is_interactive_terminal(stream) -> bool:
@@ -1191,10 +1928,20 @@ def _read_windows_key(getwch, control_pressed=None) -> str:
             "<": "F2",
             "=": "F3",
             "?": "F5",
+            "A": "F7",
+            "C": "F9",
+            "\x86": "F12",
+            "\x0f": "SHIFT_TAB",
         }.get(getwch(), "UNKNOWN")
     if first == "\x08":
         pressed = control_pressed or _windows_control_pressed
         return "CTRL_H" if pressed() else "BACKSPACE"
+    if first == "\x12":
+        return "CTRL_R"
+    if first == "\x13":
+        return "CTRL_S"
+    if first == "\t":
+        return "TAB"
     return {
         "\r": "ENTER",
         "\n": "ENTER",
@@ -1497,32 +2244,142 @@ def _last_meaningful_line(value: str) -> str:
     return next((line.strip() for line in reversed(value.splitlines()) if line.strip()), "")
 
 
+def _command_tree_lines() -> list[str]:
+    """Genera el árbol desde argparse para que F1 no quede desactualizado."""
+    from app.cli import build_parser
+
+    root = build_parser(include_plugin_commands=True)
+    command_action = next(
+        (action for action in root._actions if isinstance(action, argparse._SubParsersAction)),
+        None,
+    )
+    if not command_action:
+        return ["LANCTL", "└── (sin comandos registrados)"]
+    unique: list[tuple[str, argparse.ArgumentParser]] = []
+    seen: set[int] = set()
+    for name, parser in command_action.choices.items():
+        if id(parser) not in seen:
+            seen.add(id(parser))
+            unique.append((name, parser))
+    lines = ["LANCTL"]
+    for index, (name, parser) in enumerate(unique):
+        last = index == len(unique) - 1
+        lines.append(f"{'└──' if last else '├──'} {name}")
+        nested = next(
+            (
+                action
+                for action in parser._actions
+                if isinstance(action, argparse._SubParsersAction)
+            ),
+            None,
+        )
+        if nested:
+            names, nested_seen = [], set()
+            for child, child_parser in nested.choices.items():
+                if id(child_parser) not in nested_seen:
+                    nested_seen.add(id(child_parser))
+                    names.append(child)
+            branch = "    " if last else "│   "
+            for child_index, child in enumerate(names):
+                lines.append(f"{branch}{'└──' if child_index == len(names) - 1 else '├──'} {child}")
+    return lines
+
+
+def _plugin_detail(plugin) -> list[str]:
+    manifest = plugin.manifest
+    return [
+        f"Nombre       : {manifest.name}",
+        f"ID           : {manifest.plugin_id}",
+        f"Versión      : {manifest.version}",
+        f"Estado       : {plugin.state.value}",
+        f"Autor        : {manifest.author or '-'}",
+        f"Runtime      : {manifest.runtime}",
+        f"Descripción  : {manifest.description or '-'}",
+        f"Capacidades  : {', '.join(manifest.capabilities) or '-'}",
+        f"Permisos     : {', '.join(manifest.permissions) or '-'}",
+        f"Concedidos   : {', '.join(sorted(plugin.granted)) or '-'}",
+        f"Ruta         : {plugin.path}",
+        f"Error        : {plugin.error or '-'}",
+    ]
+
+
+def _project_detail(path: Path, active: str) -> list[str]:
+    try:
+        from app.projects.vlf import inspect_project
+
+        info = inspect_project(path)
+        return [
+            f"Nombre       : {info.get('name') or path.stem}",
+            f"Activo       : {'Sí' if str(path.resolve()).casefold() == str(active).casefold() else 'No'}",
+            f"UUID         : {info.get('id') or '-'}",
+            f"Descripción  : {info.get('description') or '-'}",
+            f"Autor        : {info.get('author') or '-'}",
+            f"LANCTL       : {info.get('lanctlVersion') or '-'}",
+            f"Actualizado  : {info.get('updated') or '-'}",
+            f"Dispositivos : {info.get('devices', '-')}",
+            f"Grupos       : {info.get('groups', '-')}",
+            f"Ruta         : {path}",
+        ]
+    except (OSError, ValueError) as error:
+        return [f"Proyecto: {path.stem}", f"Ruta: {path}", f"Error: {error}"]
+
+
 def _function_bar(width: int) -> str:
-    buttons = (
+    buttons = [
         ("F1", "Ayuda"),
         ("F2", "Info"),
         ("F3", "Ping"),
         ("F5", "Actualizar"),
+        ("F7", "Plugin"),
+        ("F9", "Proyectos"),
+        ("F12", "Settings"),
         ("Ctrl+H", "Comandos"),
         ("↑↓", "Seleccionar"),
         ("Enter", "Ejecutar"),
         ("Esc", "Salir"),
-    )
+    ]
+    compact_labels = {
+        "Actualizar": "Act.",
+        "Proyectos": "Proy.",
+        "Settings": "Config.",
+        "Comandos": "Cmd.",
+        "Seleccionar": "Selec.",
+        "Ejecutar": "Ej.",
+    }
+
+    def button_width(item: tuple[str, str]) -> int:
+        key, label = item
+        return len(key) + len(label) + 3
+
+    # Primero se compactan las etiquetas; si aún no caben, se eliminan de
+    # forma ordenada las acciones menos esenciales. Ayuda, selección, ejecutar
+    # y salir permanecen disponibles incluso en terminales estrechas.
+    if sum(map(button_width, buttons)) + len(buttons) - 1 > width:
+        buttons = [(key, compact_labels.get(label, label)) for key, label in buttons]
+    removable = ("F7", "F9", "Ctrl+H", "F3", "F2", "F12", "F5")
+    for key in removable:
+        if sum(map(button_width, buttons)) + max(0, len(buttons) - 1) <= width:
+            break
+        buttons = [item for item in buttons if item[0] != key]
+    while buttons and sum(map(button_width, buttons)) + max(0, len(buttons) - 1) > width:
+        buttons.pop(-2 if len(buttons) > 1 else -1)
+
+    content = sum(map(button_width, buttons))
+    gaps = max(0, len(buttons) - 1)
+    free = max(0, width - content)
+    gap_width, extra = divmod(free, gaps) if gaps else (0, 0)
     output = ""
     visible = 0
     for index, (key, label) in enumerate(buttons):
-        spacing = "   " if index else ""
-        plain = f"{spacing} {key}  {label}"
-        if visible + len(plain) > width:
-            break
+        spacing = "" if index == 0 else " " * (gap_width + (1 if index <= extra else 0))
         output += (
             f"{Back.BLACK}{spacing}{RESET}"
             f"{Style.BRIGHT}{Back.WHITE}{Fore.BLACK} {key} {RESET}"
             f"{Back.BLACK}{Fore.WHITE} {label}{RESET}"
         )
-        visible += len(plain)
+        visible += len(spacing) + button_width((key, label))
     return output + f"{Back.BLACK}{' ' * max(0, width - visible)}{RESET}"
 
 
-def run_tui() -> int:
-    return LanctlTui().run()
+def run_tui(startup_modal: str | None = None) -> int:
+    return LanctlTui(startup_modal=startup_modal).run()

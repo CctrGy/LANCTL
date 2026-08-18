@@ -18,6 +18,8 @@ DEFAULTS = {
     "log": "data/lc/log",
     "programLog": "data/lc/log",
     "activeProject": None,
+    "projectSaveMode": "manual",
+    "projectSaveIntervalMinutes": 5,
     # `None` conserva una ruta portable y evita vincular la configuración al
     # usuario que la creó.
     "projectsDirectory": None,
@@ -41,6 +43,13 @@ DEFAULTS = {
     "monitorLock": "data/lc/monitor.lock",
     "accessConfig": "data/lc/access/config.json",
     "accessUsers": "data/lc/access/users.json",
+    "remoteAccessEnabled": False,
+    "remoteAccessBind": "",
+    "remoteAccessCidr": "",
+    "remoteAccessPort": 2222,
+    "remoteAccessPasswordAuthentication": False,
+    "remoteAccessBackend": "service",
+    "remoteAccessForcedView": "off",
     "monitorDatabase": "data/lc/monitor.db",
     "monitorProfiles": "data/lc/monitor-profiles.json",
     "monitorAssignments": "data/lc/monitor-assignments.json",
@@ -126,6 +135,8 @@ def load_config() -> dict:
     # Migración de la clave usada por versiones anteriores.
     if "network" in stored and "range" not in stored:
         stored["range"] = stored.pop("network")
+    if "SaveMode" in stored and "projectSaveMode" not in stored:
+        stored["projectSaveMode"] = stored.pop("SaveMode")
     if "log" in stored:
         log_root = str(stored["log"]).rstrip("/\\")
         stored.setdefault("programLog", log_root)
