@@ -117,7 +117,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: {path: dist/release, merge-multiple: true}
+        with: {name: windows-x64, path: dist/release}
+      - uses: actions/download-artifact@v4
+        with: {name: linux-amd64, path: dist/release}
+      - uses: actions/download-artifact@v4
+        with: {name: linux-arm64, path: dist/release}
       - run: cp install.ps1 install.sh dist/release/
       - run: python scripts/release-metadata.py "${GITHUB_REF_NAME#v}" "$GITHUB_SHA" dist/release
       - run: python scripts/verify-release.py dist/release
