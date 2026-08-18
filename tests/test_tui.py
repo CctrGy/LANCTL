@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -281,6 +282,7 @@ class TuiTests(unittest.TestCase):
         self.assertIn("\x1b[?7h", TUI_LEAVE_SCREEN)
         self.assertTrue(TUI_LEAVE_SCREEN.endswith("\x1b[?1049l"))
 
+    @unittest.skipUnless(os.name == "nt", "msvcrt solo está disponible en Windows")
     def test_secret_input_uses_the_tui_prompt_and_never_echoes_characters(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.secret_prompt = ""
