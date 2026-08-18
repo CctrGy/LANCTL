@@ -29,10 +29,11 @@ jobs:
           python -m pip install -e . coverage==7.10.6 ruff==0.16.2
           bandit==1.8.6 pip-audit==2.9.0
       - run: python -m pip check
-      - name: Integration tests and branch coverage
+      - name: Integration tests
+        run: python -m coverage run --branch --source=app -m unittest discover -s tests
+      - name: Branch coverage gate
         run: |
-          python -m coverage run --branch --source=app -m unittest discover -s tests
-          python -m coverage report --fail-under=60
+          python -m coverage report --precision=4 --fail-under=60
           python -m coverage xml -o coverage.xml
       - name: Static correctness
         run: python -m ruff check app tests
