@@ -22,8 +22,15 @@ try {
     Set-Content -LiteralPath (Join-Path $portable 'LANCTL.portable') -Value 'LANCTL-PORTABLE-V1' -Encoding ascii
     Compress-Archive -Path "$portable\*" -DestinationPath "dist\release\LANCTL-$Version-windows-x64-portable.zip" -Force
     if ($SkipInstaller) { return }
-    $iscc=(Get-Command iscc.exe -ErrorAction SilentlyContinue)
+    $iscc=(Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+    if (-not $iscc) {
+        $iscc = @(
+            "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+        ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+    }
     if (-not $iscc) { throw 'Inno Setup compiler (iscc.exe) is required' }
-    & $iscc.Source "/DMyAppVersion=$Version" "/DBuildRoot=$Root\dist" packaging\inno\LANCTL.iss
+    & $iscc "/DMyAppVersion=$Version" "/DBuildRoot=$Root\dist" packaging\inno\LANCTL.iss
     if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed' }
 } finally { Pop-Location }

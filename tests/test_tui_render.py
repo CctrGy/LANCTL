@@ -39,6 +39,18 @@ class RichTuiRendererTests(unittest.TestCase):
         self.assertIn("encontrados 12", output)
         self.assertEqual(Text.from_ansi(output).cell_len, 100)
 
+    def test_progress_has_a_compact_fallback_for_narrow_terminals(self):
+        output = RichTuiRenderer.progress_line(
+            width=40,
+            current=2,
+            total=10,
+            found=1,
+            scanning=True,
+        )
+
+        self.assertIn("20%", output)
+        self.assertEqual(Text.from_ansi(output).cell_len, 40)
+
     def test_modal_renderer_overlays_panel_and_hides_cursor(self):
         stream = io.StringIO()
         renderer = RichTuiRenderer(stream)

@@ -192,8 +192,12 @@ class RichTuiRenderer:
         right_margin = max(0, width - content_width - left_margin)
         state = "ESCANEO" if scanning else "COMPLETADO"
         state_style = "bold yellow" if scanning else "bold green"
-        metrics = f"{ratio:6.1%} {current}/{total} | encontrados {found}"
-        bar_width = max(8, content_width - len(state) - len(metrics) - 4)
+        metrics = (
+            f"{ratio:6.1%} {current}/{total} | encontrados {found}"
+            if content_width >= 60
+            else f"{ratio:.0%} {current}/{total} | {found}"
+        )
+        bar_width = max(1, content_width - len(state) - len(metrics) - 3)
 
         bar_buffer = io.StringIO()
         bar_console = cls._console(bar_buffer, bar_width)
@@ -208,7 +212,15 @@ class RichTuiRenderer:
             ),
             end="",
         )
-        bar_line = bar_buffer.getvalue().splitlines()[0]
+        rendered_bar = bar_buffer.getvalue().splitlines()
+        if rendered_bar:
+            bar_line = rendered_bar[0]
+        else:
+            # Rich omite ProgressBar cuando la consola es más estrecha que su
+            # ancho mínimo. El TUI debe seguir funcionando en 80 columnas y
+            # sesiones SSH, por lo que se usa una barra compacta equivalente.
+            completed = max(0, min(bar_width, round(bar_width * ratio)))
+            bar_line = "█" * completed + "─" * (bar_width - completed)
         missing_bar_cells = bar_width - Text.from_ansi(bar_line).cell_len
         if missing_bar_cells > 0:
             bar_line += " " * missing_bar_cells

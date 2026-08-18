@@ -51,11 +51,13 @@ Source: "..\..\docs\INSTALL.md"; DestDir: "{app}"; Flags: ignoreversion; Compone
 Source: "..\..\docs\ACCESS.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 
 [Icons]
-Name: "{group}\LANCTL"; Filename: "{app}\LANCTL-GUI.exe"
-Name: "{autodesktop}\LANCTL"; Filename: "{app}\LANCTL-GUI.exe"; Tasks: desktopicon
+Name: "{group}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"
+Name: "{group}\LANCTL CLI"; Filename: "{app}\LANCTL.exe"; Parameters: "--cli"; WorkingDir: "{app}"
+Name: "{group}\LANCTL GUI"; Filename: "{app}\LANCTL-GUI.exe"; WorkingDir: "{app}"
+Name: "{autodesktop}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Tasks]
-Name: desktopicon; Description: "Crear acceso directo en el escritorio"; Flags: unchecked
+Name: desktopicon; Description: "Crear acceso directo de LANCTL TUI en el escritorio"; Flags: unchecked
 
 [Registry]
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: NeedsAddPath('{app}'); Components: path

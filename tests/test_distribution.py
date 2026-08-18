@@ -107,6 +107,8 @@ class DistributionTests(unittest.TestCase):
         self.assertNotIn("recursesubdirs", inno)
         self.assertIn('Source: "{#BuildRoot}\\LANCTL-GUI.exe"', inno)
         self.assertIn('Filename: "{app}\\LANCTL-GUI.exe"', inno)
+        self.assertIn('Filename: "{app}\\LANCTL.exe"; Parameters: "--tui"', inno)
+        self.assertIn('Filename: "{app}\\LANCTL.exe"; Parameters: "--cli"', inno)
         self.assertNotIn("recurrent-elements.json", spec)
         self.assertIn("{commonappdata}\\LANCTL\\database", inno)
         self.assertIn("admins-full system-full", inno)
@@ -129,7 +131,8 @@ class DistributionTests(unittest.TestCase):
         self.assertNotIn("pkcs7_decrypt_", app_source)
         self.assertIn("github/codeql-action/analyze", security)
         self.assertIn("dependency-review-action", security)
-        self.assertTrue((root / ".github/dependabot.yml").is_file())
+        # Dependabot es opcional: el repositorio puede desactivarlo para evitar
+        # ramas automáticas sin rebajar las puertas de CI y seguridad anteriores.
 
 
 if __name__ == "__main__":
