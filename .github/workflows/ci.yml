@@ -35,7 +35,7 @@ jobs:
           python -m coverage run --branch --source=app -m unittest discover -s tests 2>&1 | tee test-output.log
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
-            tail -10 test-output.log | while IFS= read -r line; do
+            grep -E 'FAIL:|ERROR:|FAILED|AssertionError|ModuleNotFoundError|AttributeError|OSError|Ran [0-9]+ tests' test-output.log | tail -10 | while IFS= read -r line; do
               echo "::error title=Test output::$line"
             done
           fi
