@@ -30,7 +30,16 @@ jobs:
           bandit==1.8.6 pip-audit==2.9.0
       - run: python -m pip check
       - name: Integration tests
-        run: python -m coverage run --branch --source=app -m unittest discover -s tests
+        run: |
+          set +e
+          python -m coverage run --branch --source=app -m unittest discover -s tests 2>&1 | tee test-output.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            tail -40 test-output.log | while IFS= read -r line; do
+              echo "::error title=Test output::$line"
+            done
+          fi
+          exit "$status"
       - name: Branch coverage gate
         run: |
           python -m coverage report --precision=4 --fail-under=60

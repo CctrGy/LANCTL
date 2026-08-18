@@ -27,7 +27,16 @@ jobs:
       - run: python -m pip install -e . pyinstaller==6.21.0 coverage==7.10.6 ruff==0.16.2 bandit==1.8.6 pip-audit==2.9.0
       - run: python -m pip check
       - name: Tests
-        run: python -m coverage run --branch --source=app -m unittest discover -s tests
+        run: |
+          set +e
+          python -m coverage run --branch --source=app -m unittest discover -s tests 2>&1 | tee test-output.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            tail -40 test-output.log | while IFS= read -r line; do
+              echo "::error title=Test output::$line"
+            done
+          fi
+          exit "$status"
       - name: Coverage gate
         run: |
           python -m coverage report --precision=4 --fail-under=60
