@@ -19,7 +19,7 @@ local function integer_range(first, last)
 end
 
 local help_flags = { "-h", "--help", "/?" }
-local formats = values({ "table", "json", "csv", "html", "xml" })
+local formats = values({ "table", "json", "csv", "html", "xml", "yaml" })
 local discovery = values({ "icmp", "arp", "hybrid" })
 local profiles = values({ "fast", "normal", "accurate" })
 local scan_orders = values({ "ascending", "descending", "random" })

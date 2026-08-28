@@ -117,6 +117,17 @@ class ExtensionTests(unittest.TestCase):
         self.assertIn("A&amp;B", html)
         self.assertIn("A&amp;B", xml)
 
+    def test_yaml_export_is_machine_readable_and_quotes_text(self):
+        rendered = render_records(
+            [{"IP": "192.168.1.1", "ALIAS": "router: main", "GROUP": ["LAN", "CORE"]}],
+            "yaml",
+            columns=["ip", "alias", "group"],
+        )
+        self.assertEqual(
+            rendered,
+            '- IP: "192.168.1.1"\n  ALIAS: "router: main"\n  GROUP: ["LAN", "CORE"]\n',
+        )
+
     def test_connection_targets_are_protocol_consistent(self):
         self.assertEqual(
             connection_target("192.168.1.10", "https", 8443), "https://192.168.1.10:8443/"

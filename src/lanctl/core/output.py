@@ -169,6 +169,41 @@ def _render_json(rows, fields):
     return json.dumps(output_rows, indent=2, ensure_ascii=False) + "\n"
 
 
+def _yaml_scalar(value) -> str:
+    if value is None:
+        return "null"
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    return json.dumps(str(value), ensure_ascii=False)
+
+
+def _render_yaml(rows, fields):
+    output_rows = (
+        [{field: row.get(field, "") for field in fields} for row in rows]
+        if fields is not None
+        else rows
+    )
+    lines: list[str] = []
+    for row in output_rows:
+        if not row:
+            lines.append("- {}")
+            continue
+        for index, (key, value) in enumerate(row.items()):
+            prefix = "- " if index == 0 else "  "
+            if isinstance(value, list):
+                rendered = "[" + ", ".join(_yaml_scalar(item) for item in value) + "]"
+            elif isinstance(value, dict):
+                rendered = json.dumps(value, ensure_ascii=False, separators=(", ", ": "))
+            else:
+                rendered = _yaml_scalar(value)
+            lines.append(f"{prefix}{key}: {rendered}")
+    return "\n".join(lines) + ("\n" if lines else "[]\n")
+
+
 def _render_csv(rows, fields):
     buffer = io.StringIO(newline="")
     writer = csv.DictWriter(
@@ -380,6 +415,9 @@ def render_records(
     if output_format == "csv":
         return _render_csv(rows, selected_fields)
 
+    if output_format in ("yaml", "yml"):
+        return _render_yaml(rows, selected_fields)
+
     if output_format in ("html", "xml"):
         export_fields = selected_fields or list(FIELDS)
         return (
@@ -443,7 +481,11 @@ def write_records(
         else None,
     )
     if destination:
-        Path(destination).expanduser().write_text(content, encoding="utf-8")
+        from lanctl.core.file_transaction import atomic_write_text, locked_file
+
+        target = Path(destination).expanduser()
+        with locked_file(target):
+            atomic_write_text(target, content)
     else:
         print(content, end="", flush=True)
 

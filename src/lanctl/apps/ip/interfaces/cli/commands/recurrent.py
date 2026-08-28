@@ -36,7 +36,7 @@ def register_recurrent_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument(
         "-f",
         "--format",
-        choices=("table", "json", "csv", "html", "xml"),
+        choices=("table", "json", "csv", "html", "xml", "yaml"),
         default="table",
         help="Formato de salida (por defecto: table).",
     )
