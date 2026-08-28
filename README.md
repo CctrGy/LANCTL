@@ -50,7 +50,7 @@ desinstalación y advertencias de SmartScreen.
 | Administración | SSH, TR-064, Telnet, HTTP(S), FTP, RDP, RTSP y SMB |
 | Switching | Planificación y ejecución controlada de operaciones sobre switches Cisco |
 | Seguridad | Credenciales protegidas con DPAPI y confirmación de operaciones sensibles |
-| Presentación | GUI, CLI, consola interactiva, TUI y exportación a tabla, JSON, CSV, HTML o XML |
+| Presentación | GUI, CLI, consola interactiva, TUI y exportación a tabla, JSON, CSV, HTML, XML o YAML |
 | Proyectos | Contenedores `.vlf` verificables con inventario SQLite, configuración y auditoría |
 | Infraestructura física | LANWIRE integrado para armarios, cableado, puertos y conexiones físicas |
 | Extensiones | Complementos `.lcp` con permisos, eventos y ámbitos definidos |
@@ -128,10 +128,6 @@ LANCTL; HTTPS exige TLS, CSRF, cookies seguras y origen explícito.
 Los eventos se guardan dentro del VLF activo en
 `logs/events/YYYY-MM-DD.jsonl`. Los logs humanos `logs/dd-mm-yyyy.log` siguen
 siendo compatibles y se leen en modo best-effort como eventos legacy.
-
-El repositorio contiene además `RackFimeware2`, un firmware experimental para
-el monitor y gestor de rack basado en STM32F411. El firmware se mantiene como
-componente independiente de la aplicación principal.
 
 ## Requisitos
 
@@ -324,6 +320,12 @@ Dentro del TUI, `project` o `project status` muestran el proyecto seleccionado;
 inventario visible. `help project` muestra el resto de operaciones disponibles.
 
 Todos los comandos admiten `-h`, `--help` y `/?`.
+
+Referencias operativas: [manual del TUI](docs/TUI.md),
+[CLI y códigos de salida](docs/CLI.md),
+[persistencia y recuperación](docs/STORAGE.md),
+[solución de problemas](docs/TROUBLESHOOTING.md),
+[acceso remoto](docs/ACCESS.md) y [plugins LCP](docs/LCP.md).
 
 ## Configuración persistente
 
@@ -567,22 +569,6 @@ usuario:
 PyInstaller genera el ejecutable; la creación del instalador de Windows es una
 fase de empaquetado posterior y no la realiza directamente el compilador de
 Python.
-
-## Firmware del rack
-
-El proyecto de PlatformIO se encuentra en [`RackFimeware2`](RackFimeware2).
-Incluye soporte para STM32F411CE Black Pill, Ethernet ENC28J60, sensores
-DS18B20, relés, NeoPixel, consola USB y SSH.
-
-Antes de instalarlo en una red real, sustituye las credenciales SSH de
-desarrollo definidas en `RackFimeware2/platformio.ini`.
-
-```powershell
-cd RackFimeware2
-pio run -e blackpill_f411ce
-pio run -e blackpill_f411ce --target upload
-pio device monitor -p COM50 -b 115200
-```
 
 ## Estructura del repositorio
 

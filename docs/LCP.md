@@ -195,6 +195,18 @@ El código no se incrusta en el VLF. El proyecto incorpora
 
 La configuración `pluginSafeMode: true` impide activar complementos durante
 el arranque para permitir recuperación ante fallos.
+
+Los paquetes pueden firmarse y verificarse con Ed25519:
+
+```text
+lanctl plugin pack DIRECTORIO salida.lcp --signing-key publisher.pem
+lanctl plugin verify salida.lcp
+```
+
+La huella de la clave pública aparece como `VALID_ED25519:...`. La firma prueba
+integridad y posesión de la clave, pero la confianza en el editor debe
+establecerse por un canal independiente. `lanctl plugin revoke ID [PERMISOS]`
+desactiva el plugin antes de retirar permisos y confianza.
 # Fachada Wake-on-LAN
 
 Los plugins trusted pueden solicitar `network.udp` y usar exclusivamente

@@ -91,3 +91,8 @@ Por aislamiento de Windows, un servicio que corre en Session 0 no puede dibujar
 una ventana sobre el escritorio del usuario: para esa acción usa backend
 `user`, o mantén una TUI/GUI agente abierta. Las operaciones de consulta,
 inventario y escaneo siguen disponibles desde el backend `service`.
+
+Las eliminaciones remotas de elementos, grupos y proyectos requieren el permiso
+adicional `system.destructive`, reservado al rol `administrator`. Los roles
+`operator` y `manager` no reciben ese permiso aunque puedan modificar otros
+datos de su ámbito.
