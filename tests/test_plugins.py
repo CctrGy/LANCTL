@@ -4,6 +4,9 @@ import unittest
 from dataclasses import dataclass
 from pathlib import Path
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
 from lanctl.core.plugins.contracts import EventContract, FunctionResult
 from lanctl.core.plugins.events import EventBus, EventRegistry
 from lanctl.core.plugins.functions import FunctionRegistry
@@ -105,6 +108,30 @@ class PluginTests(unittest.TestCase):
             self.assertEqual(manager.extensions.list("theme")[0].extension_id, "demo.theme.dark")
             manager.disable(plugin.manifest.plugin_id)
             self.assertEqual(manager.extensions.list(), [])
+
+    def test_signed_package_and_permission_revocation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            key = root / "publisher.pem"
+            key.write_bytes(
+                Ed25519PrivateKey.generate().private_bytes(
+                    serialization.Encoding.PEM,
+                    serialization.PrivateFormat.PKCS8,
+                    serialization.NoEncryption(),
+                )
+            )
+            package = root / "signed.lcp"
+            result = build_package(self._source(root), package, signing_key=key)
+            self.assertTrue(result["signature"].startswith("VALID_ED25519:"))
+
+            manager = PluginManager(root / "installed", root / "registry.json")
+            manager.install(package)
+            manager.enable("demo.network-tools", grant={"theme.register"})
+            plugin = manager.revoke("demo.network-tools", {"theme.register"})
+            self.assertEqual(plugin.state, PluginState.DISABLED)
+            self.assertEqual(plugin.granted, set())
+            with self.assertRaises(PermissionError):
+                manager.enable("demo.network-tools")
 
     def test_trusted_runtime_requires_explicit_trust(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -78,7 +78,13 @@ def install_package(path: str | Path, destination_root: Path) -> tuple[PluginMan
     return manifest, destination, result
 
 
-def build_package(source: str | Path, output: str | Path, *, overwrite: bool = False) -> dict:
+def build_package(
+    source: str | Path,
+    output: str | Path,
+    *,
+    overwrite: bool = False,
+    signing_key: str | Path | None = None,
+) -> dict:
     root = Path(source).expanduser().resolve()
     destination = Path(output).expanduser().resolve()
     if destination.suffix.casefold() != ".lcp":
@@ -99,8 +105,30 @@ def build_package(source: str | Path, output: str | Path, *, overwrite: bool = F
             (meta / "created").write_text(
                 datetime.now().astimezone().isoformat(timespec="seconds") + "\n", encoding="utf-8"
             )
+        private_key = None
+        if signing_key:
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+            private_key = serialization.load_pem_private_key(
+                Path(signing_key).read_bytes(), password=None
+            )
+            if not isinstance(private_key, Ed25519PrivateKey):
+                raise ValueError("la clave de firma LCP debe ser Ed25519")
+            (meta / "public-key.pem").write_bytes(
+                private_key.public_key().public_bytes(
+                    serialization.Encoding.PEM,
+                    serialization.PublicFormat.SubjectPublicKeyInfo,
+                )
+            )
         checksum = directory_hash(staging, {"meta/checksum", "meta/signature"})
         (meta / "checksum").write_text(checksum + "\n", encoding="ascii")
+        if private_key is not None:
+            signature = base64.b64encode(private_key.sign(checksum.encode("ascii"))).decode("ascii")
+            (meta / "signature").write_text(
+                json.dumps({"algorithm": "ed25519", "value": signature}, indent=2) + "\n",
+                encoding="utf-8",
+            )
         destination.parent.mkdir(parents=True, exist_ok=True)
         temporary_zip = destination.with_suffix(destination.suffix + ".tmp")
         with zipfile.ZipFile(temporary_zip, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:

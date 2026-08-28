@@ -59,6 +59,12 @@ def register_plugin_command(commands: argparse._SubParsersAction) -> None:
     )
     permissions.add_argument("plugin_id", help="Identificador del complemento instalado.")
     permissions.set_defaults(plugin_handler=_permissions)
+    revoke = actions.add_parser("revoke", help="Revoca permisos y confianza de un complemento.")
+    revoke.add_argument("plugin_id", help="Identificador del complemento instalado.")
+    revoke.add_argument(
+        "permissions", nargs="*", metavar="PERMISO", help="Vacío revoca todos los permisos."
+    )
+    revoke.set_defaults(plugin_handler=_revoke)
     extensions = actions.add_parser(
         "extensions", help="Lista extensiones para CLI, TUI y futura GUI."
     )
@@ -70,6 +76,7 @@ def register_plugin_command(commands: argparse._SubParsersAction) -> None:
     pack.add_argument(
         "--force", action="store_true", help="Sobrescribe el paquete de salida existente."
     )
+    pack.add_argument("--signing-key", help="Clave privada Ed25519 PEM para firmar el LCP.")
     pack.set_defaults(plugin_handler=_pack)
     command.set_defaults(handler=lambda args: args.plugin_handler(args))
 
@@ -162,6 +169,13 @@ def _permissions(args) -> int:
     return 0
 
 
+def _revoke(args) -> int:
+    permissions = set(args.permissions) if args.permissions else None
+    get_plugin_manager().revoke(args.plugin_id, permissions)
+    ok("PERMISOS REVOCADOS", args.plugin_id)
+    return 0
+
+
 def _extensions(args) -> int:
     values = get_plugin_manager().extensions.list(args.type)
     print(f"{'TYPE':<20} {'ID':<36} OWNER")
@@ -172,7 +186,10 @@ def _extensions(args) -> int:
 
 
 def _pack(args) -> int:
-    result = build_package(args.directory, args.output, overwrite=args.force)
+    result = build_package(
+        args.directory, args.output, overwrite=args.force, signing_key=args.signing_key
+    )
     ok("LCP CREADO", result["path"])
     print(f" SHA-256 : {result['checksum']}")
+    print(f" Firma   : {result['signature']}")
     return 0

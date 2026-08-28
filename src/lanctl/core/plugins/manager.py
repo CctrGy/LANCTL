@@ -283,6 +283,34 @@ class PluginManager:
         self.disable(plugin_id)
         return self.enable(plugin_id, grant=granted, trusted=trusted)
 
+    def revoke(self, plugin_id: str, permissions: set[str] | None = None) -> InstalledPlugin:
+        """Revoca permisos y desactiva el plugin si deja de cumplir su manifiesto."""
+
+        plugin = self.get(plugin_id)
+        revoked = (
+            set(plugin.granted)
+            if permissions is None
+            else {item.casefold() for item in permissions}
+        )
+        unknown = revoked - set(plugin.granted)
+        if unknown:
+            raise ValueError(f"permisos no concedidos: {', '.join(sorted(unknown))}")
+        if plugin.state == PluginState.ENABLED:
+            self.disable(plugin_id)
+        plugin.granted.difference_update(revoked)
+        plugin.trusted = False
+        plugin.error = (
+            f"permisos revocados: {', '.join(sorted(revoked))}" if revoked else "confianza revocada"
+        )
+        self._save_registry()
+        self.audit(
+            plugin.manifest.plugin_id,
+            "REVOKE",
+            ",".join(sorted(revoked)) or "trust",
+            "OK",
+        )
+        return plugin
+
     def verify(self, plugin_id_or_file: str) -> dict:
         path = Path(plugin_id_or_file)
         if path.suffix.casefold() == ".lcp" or path.exists():
