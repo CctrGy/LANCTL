@@ -77,11 +77,26 @@ jobs:
       - run: python -m pip install -e . pyinstaller==6.21.0
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
+      - name: Import required Authenticode certificate
+        shell: pwsh
+        env:
+          WINDOWS_SIGNING_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_BASE64 }}
+          WINDOWS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_SIGNING_CERTIFICATE_BASE64 -or -not $env:WINDOWS_SIGNING_CERTIFICATE_PASSWORD) {
+            throw 'Windows release signing secrets are required'
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP 'lanctl-signing.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_SIGNING_CERTIFICATE_BASE64))
+          $password = ConvertTo-SecureString $env:WINDOWS_SIGNING_CERTIFICATE_PASSWORD -AsPlainText -Force
+          $certificate = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          Remove-Item -LiteralPath $pfx -Force
+          "LANCTL_SIGNING_CERTIFICATE_THUMBPRINT=$($certificate.Thumbprint)" >> $env:GITHUB_ENV
       - name: Build
         shell: pwsh
         run: |
           $version = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { '${{ inputs.version }}' } else { '${{ github.ref_name }}'.TrimStart('v') }
-          ./scripts/build-windows.ps1 -Version $version
+          ./scripts/build-windows.ps1 -Version $version -SigningCertificateThumbprint $env:LANCTL_SIGNING_CERTIFICATE_THUMBPRINT -RequireSignature
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64

@@ -1,13 +1,45 @@
 [CmdletBinding()] param(
     [string]$Version = '0.3.0-beta.20',
     [switch]$SkipInstaller,
-    [switch]$AllowDirty
+    [switch]$AllowDirty,
+    [string]$SigningCertificateThumbprint = '',
+    [string]$TimestampUrl = 'http://timestamp.digicert.com',
+    [switch]$RequireSignature
 )
 $ErrorActionPreference='Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$') { throw 'Invalid version' }
 $Root=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Push-Location $Root
 try {
+    if ($RequireSignature -and -not $SigningCertificateThumbprint) {
+        throw 'Authenticode signing is required but no certificate thumbprint was provided'
+    }
+    function Get-SignTool {
+        $command = Get-Command signtool.exe -ErrorAction SilentlyContinue
+        if ($command) { return $command.Source }
+        $kits = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
+        if (Test-Path -LiteralPath $kits) {
+            return Get-ChildItem -LiteralPath $kits -Filter signtool.exe -Recurse -File |
+                Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+                Sort-Object FullName -Descending |
+                Select-Object -First 1 -ExpandProperty FullName
+        }
+        return $null
+    }
+    function Sign-And-Verify([string]$Path) {
+        if (-not $SigningCertificateThumbprint) {
+            if ($RequireSignature) { throw "Authenticode signing is required: $Path" }
+            return
+        }
+        $signTool = Get-SignTool
+        if (-not $signTool) { throw 'signtool.exe is required for Authenticode signing' }
+        & $signTool sign /sha1 $SigningCertificateThumbprint /fd SHA256 /tr $TimestampUrl /td SHA256 $Path
+        if ($LASTEXITCODE -ne 0) { throw "Authenticode signing failed: $Path" }
+        $signature = Get-AuthenticodeSignature -LiteralPath $Path
+        if ($signature.Status -ne 'Valid') {
+            throw "Authenticode verification failed ($($signature.Status)): $Path"
+        }
+    }
     if (-not $AllowDirty) {
         $Dirty = & git status --porcelain
         if ($LASTEXITCODE -ne 0) { throw 'Git status failed' }
@@ -29,6 +61,9 @@ try {
     }
     if (-not (Test-Path -LiteralPath 'dist\lanwire.exe')) {
         throw 'The unified PyInstaller build did not produce dist\lanwire.exe'
+    }
+    foreach ($binary in @('dist\LANCTL.exe','dist\LANCTL-GUI.exe','dist\lanip.exe','dist\lanwire.exe')) {
+        Sign-And-Verify (Resolve-Path -LiteralPath $binary).Path
     }
     $release = Join-Path $Root 'dist\release'
     if (Test-Path -LiteralPath $release) {
@@ -57,6 +92,7 @@ try {
         if (-not $iscc) { throw 'Inno Setup compiler (iscc.exe) is required' }
         & $iscc "/DMyAppVersion=$Version" "/DBuildRoot=$Root\dist" packaging\inno\LANCTL.iss
         if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed' }
+        Sign-And-Verify (Resolve-Path -LiteralPath "dist\release\LANCTL-$Version-windows-x64-setup.exe").Path
     }
     & $Python scripts/release-metadata.py $Version $Revision dist/release
     if ($LASTEXITCODE -ne 0) { throw 'Release metadata failed' }

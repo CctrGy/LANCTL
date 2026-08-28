@@ -204,6 +204,8 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("git rev-parse HEAD", build)
         self.assertIn("scripts/generate-hashes.py", build)
         self.assertIn("scripts/verify-release.py", build)
+        self.assertIn("Sign-And-Verify", build)
+        self.assertIn("Get-AuthenticodeSignature", build)
 
     def test_windows_version_metadata_contains_exact_git_revision(self):
         root = Path(__file__).resolve().parents[1]
@@ -228,6 +230,13 @@ class DistributionTests(unittest.TestCase):
         build = (root / "scripts/build-windows.ps1").read_text(encoding="utf-8")
         self.assertIn("LANCTL_VERSION_INFO", spec)
         self.assertIn("generate-windows-version-info.py", build)
+
+    def test_official_windows_release_requires_authenticode_secrets(self):
+        root = Path(__file__).resolve().parents[1]
+        release = (root / ".github/workflows/release.yml").read_text(encoding="utf-8")
+        self.assertIn("WINDOWS_SIGNING_CERTIFICATE_BASE64", release)
+        self.assertIn("WINDOWS_SIGNING_CERTIFICATE_PASSWORD", release)
+        self.assertIn("-RequireSignature", release)
 
 
 if __name__ == "__main__":
