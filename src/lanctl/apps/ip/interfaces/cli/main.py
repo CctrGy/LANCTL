@@ -46,6 +46,7 @@ _COMMAND_REGISTRARS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("lanctl.apps.ip.interfaces.cli.commands.plugin", ("register_plugin_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.language", ("register_language_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.error", ("register_error_command",)),
+    ("lanctl.apps.ip.interfaces.cli.commands.database", ("register_database_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.lanwire", ("register_lanwire_command",)),
 )
 _MAIN_DEPTH: ContextVar[int] = ContextVar("lanctl_main_depth", default=0)

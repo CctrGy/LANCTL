@@ -5,7 +5,7 @@ import shutil
 from copy import deepcopy
 from pathlib import Path
 
-from lanctl.core.file_transaction import atomic_write_json
+from lanctl.core.file_transaction import atomic_write_json, atomic_write_text, locked_file
 from lanctl.core.paths import (
     application_directory,
     application_path,
@@ -64,10 +64,12 @@ def ensure_data_layout() -> Path:
         joined = ", ".join(str(path) for path in conflicts[:5])
         raise ValueError(f"migración detenida por conflictos de datos legacy: {joined}")
     _create_initial_files()
+    from lanctl.core.persistence import migrate_schema
+
+    migrate_schema(root / "config" / "storage-schema.json")
     if not marker.exists():
-        temporary = marker.with_suffix(".tmp")
-        temporary.write_text("LANCTL-DATA-V2\n", encoding="ascii")
-        temporary.replace(marker)
+        with locked_file(marker):
+            atomic_write_text(marker, "LANCTL-DATA-V2\n", encoding="ascii")
     return root.resolve()
 
 

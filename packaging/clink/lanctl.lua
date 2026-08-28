@@ -395,6 +395,12 @@ local error_lookup = clink.argmatcher()
     :addflags({ "-h", "--help", "/?", "--json" })
     :nofiles()
 
+local database = clink.argmatcher()
+    :addflags({
+        "-h", "--help", "/?", "--diagnose",
+        "--export" .. file_arg, "--verify" .. file_arg, "--json"
+    })
+
 local root_commands = {
     "list" .. list, "recurrent" .. recurrent, "ping" .. ping,
     "open" .. open, "connect" .. open,
@@ -414,6 +420,7 @@ local root_commands = {
     "plugins" .. plugin, "addon" .. plugin, "addons" .. plugin,
     "language" .. language, "languages" .. language, "lang" .. language,
     "error" .. error_lookup, "errors" .. error_lookup,
+    "database" .. database, "db" .. database,
     "lanwire" .. lanwire, "wire" .. lanwire
 }
 
