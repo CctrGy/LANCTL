@@ -365,6 +365,7 @@ local project = clink.argmatcher():addarg({
 local plugin_id = history_value("ID del plugin")
 local plugin = clink.argmatcher():addarg({
     "list" .. clink.argmatcher():addflags(help_flags):nofiles(),
+    "catalog" .. clink.argmatcher():addflags(help_flags):nofiles(),
     "info" .. clink.argmatcher():addarg({ fromhistory = true }):addflags(help_flags):nofiles(),
     "install" .. project_action(),
     "enable" .. clink.argmatcher():addarg({ fromhistory = true }):addflags({ "-h", "--help", "/?", "--grant" .. history_value("Permiso"), "--grant-all", "--trust" }):nofiles(),
@@ -398,7 +399,8 @@ local error_lookup = clink.argmatcher()
 local database = clink.argmatcher()
     :addflags({
         "-h", "--help", "/?", "--diagnose",
-        "--export" .. file_arg, "--verify" .. file_arg, "--json"
+        "--export" .. file_arg, "--verify" .. file_arg,
+        "--import" .. file_arg, "--yes", "--json"
     })
 
 local root_commands = {

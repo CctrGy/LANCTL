@@ -10,6 +10,7 @@ from lanctl.core.persistence import (
     create_backup,
     diagnose_storage,
     export_storage,
+    import_storage,
     migrate_schema,
     restore_backup,
     schema_document,
@@ -52,6 +53,25 @@ def test_verified_export_detects_tampering(tmp_path: Path) -> None:
             output.writestr(name, payload)
     with pytest.raises(ValueError, match="hash incorrecto"):
         verify_export(corrupted)
+
+
+def test_verified_import_replaces_files_and_creates_backups(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    devices = source_root / "database/devices.json"
+    groups = source_root / "database/groups.json"
+    devices.parent.mkdir(parents=True)
+    devices.write_text('[{"IP":"192.0.2.8"}]', encoding="utf-8")
+    groups.write_text("[]", encoding="utf-8")
+    archive = export_storage([devices, groups], tmp_path / "export.zip")
+
+    destination = tmp_path / "destination"
+    old = destination / "devices.json"
+    old.parent.mkdir(parents=True)
+    old.write_text("[]", encoding="utf-8")
+    imported = import_storage(archive, destination)
+    assert {item.name for item in imported} == {"devices.json", "groups.json"}
+    assert "192.0.2.8" in (destination / "devices.json").read_text(encoding="utf-8")
+    assert list((destination / "import-backups").glob("devices.json.*.bak"))
 
 
 def test_diagnosis_and_schema_document(tmp_path: Path) -> None:

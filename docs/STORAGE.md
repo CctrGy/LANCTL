@@ -19,8 +19,10 @@ lanctl database --diagnose
 lanctl database --diagnose --json
 lanctl database --export LANCTL-data.zip
 lanctl database --verify LANCTL-data.zip
+lanctl database --import LANCTL-data.zip --yes
 ```
 
 La exportación contiene un manifiesto y un SHA-256 por archivo. Verificar no
-importa ni modifica datos. Antes de una reparación manual, detén otras
-instancias y conserva la carpeta completa de datos.
+importa ni modifica datos. La importación vuelve a verificar, rechaza rutas que
+salgan de la raíz, crea backups y revierte todos los destinos si una escritura
+falla. Antes de importar, detén otras instancias y conserva una copia externa.

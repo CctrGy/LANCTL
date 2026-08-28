@@ -6,7 +6,13 @@ from pathlib import Path
 
 from lanctl.core.config import load_config
 from lanctl.core.paths import application_path, data_root
-from lanctl.core.persistence import checks_as_dict, diagnose_storage, export_storage, verify_export
+from lanctl.core.persistence import (
+    checks_as_dict,
+    diagnose_storage,
+    export_storage,
+    import_storage,
+    verify_export,
+)
 
 
 def register_database_command(commands: argparse._SubParsersAction) -> None:
@@ -21,6 +27,10 @@ def register_database_command(commands: argparse._SubParsersAction) -> None:
     actions.add_argument(
         "--verify", metavar="ARCHIVO.zip", help="Verifica una exportación sin importarla."
     )
+    actions.add_argument(
+        "--import", dest="import_file", metavar="ARCHIVO.zip", help="Importa datos verificados."
+    )
+    command.add_argument("--yes", action="store_true", help="Confirma la sustitución de datos.")
     command.add_argument("--json", action="store_true", help="Emite el diagnóstico como JSON.")
     command.set_defaults(handler=run_database)
 
@@ -40,6 +50,12 @@ def run_database(args: argparse.Namespace) -> int:
         return 0
     if args.export:
         print(export_storage(_configured_paths(), args.export))
+        return 0
+    if args.import_file:
+        if not args.yes:
+            raise ValueError("database --import requiere --yes y una copia externa confirmada")
+        imported = import_storage(args.import_file, data_root())
+        print(f"Importados y verificados: {len(imported)} archivos")
         return 0
     checks = diagnose_storage(_configured_paths())
     if args.json:

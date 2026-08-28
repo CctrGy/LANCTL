@@ -124,6 +124,45 @@ def verify_export(path: str | Path) -> dict[str, Any]:
     return manifest
 
 
+def import_storage(path: str | Path, destination_root: str | Path) -> list[Path]:
+    """Importa una exportación validada con rollback de todos los destinos."""
+
+    source = Path(path)
+    root = Path(destination_root).resolve()
+    manifest = verify_export(source)
+    names = list(manifest.get("files", {}))
+    targets: list[Path] = []
+    for name in names:
+        pure = Path(name)
+        target = (root / pure).resolve()
+        if pure.is_absolute() or ".." in pure.parts or not target.is_relative_to(root):
+            raise ValueError(f"ruta no segura en la importación: {name}")
+        targets.append(target)
+    previous = {target: target.read_bytes() if target.is_file() else None for target in targets}
+    with zipfile.ZipFile(source) as archive, locked_files(tuple(targets)):
+        try:
+            for name, target in zip(names, targets):
+                payload = archive.read(f"data/{name}")
+                if target.suffix.casefold() in {".json", ".registry"}:
+                    json.loads(payload.decode("utf-8"))
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if target.exists():
+                    create_backup(target, directory=root / "import-backups")
+                from lanctl.core.file_transaction import atomic_write_bytes
+
+                atomic_write_bytes(target, payload)
+        except Exception:
+            from lanctl.core.file_transaction import atomic_write_bytes
+
+            for target, payload in previous.items():
+                if payload is None:
+                    target.unlink(missing_ok=True)
+                else:
+                    atomic_write_bytes(target, payload)
+            raise
+    return targets
+
+
 def schema_document() -> dict[str, Any]:
     return {
         "schemaVersion": STORAGE_SCHEMA_VERSION,

@@ -9,6 +9,7 @@ from colorama import Fore, Style
 from lanctl.core.console import ok
 from lanctl.core.plugins.manager import get_plugin_manager
 from lanctl.core.plugins.package import build_package
+from lanctl.core.resources import bundled_path
 
 
 def register_plugin_command(commands: argparse._SubParsersAction) -> None:
@@ -20,6 +21,9 @@ def register_plugin_command(commands: argparse._SubParsersAction) -> None:
     actions = command.add_subparsers(dest="plugin_action", metavar="ACCIÓN", required=True)
     actions.add_parser("list", help="Lista complementos instalados.").set_defaults(
         plugin_handler=_list
+    )
+    actions.add_parser("catalog", help="Muestra el catálogo oficial incluido.").set_defaults(
+        plugin_handler=_catalog
     )
     info = actions.add_parser("info", help="Muestra manifiesto, permisos y estado.")
     info.add_argument("plugin_id", help="Identificador estable del complemento.")
@@ -93,6 +97,12 @@ def _list(args) -> int:
         )
     if not values:
         print("No hay complementos instalados.")
+    return 0
+
+
+def _catalog(args) -> int:
+    document = json.loads(bundled_path("bundled/plugin-catalog.json").read_text(encoding="utf-8"))
+    print(json.dumps(document, ensure_ascii=False, indent=2))
     return 0
 
 

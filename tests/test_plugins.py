@@ -14,6 +14,7 @@ from lanctl.core.plugins.functions import FunctionRegistry
 from lanctl.core.plugins.manager import PluginManager
 from lanctl.core.plugins.models import PluginManifest, PluginState
 from lanctl.core.plugins.package import build_package, verify_package
+from lanctl.core.resources import bundled_path
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,12 +23,30 @@ class DemoEvent(EventContract):
 
 
 class PluginTests(unittest.TestCase):
+    def test_official_catalog_matches_verified_bundled_packages(self):
+        catalog = json.loads(
+            bundled_path("bundled/plugin-catalog.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(catalog["schemaVersion"], 1)
+        for entry in catalog["plugins"]:
+            package = bundled_path("bundled") / entry["package"]
+            result = verify_package(package)
+            self.assertEqual(result["manifest"].plugin_id, entry["id"])
+            self.assertEqual(result["manifest"].version, entry["version"])
+
     def test_builtin_example_and_developer_readme_are_bootstrapped(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             manager = PluginManager(root / "plugins", root / "registry.json")
             example = manager.get("lanctl.example.network-summary")
             self.assertEqual(example.state, PluginState.ENABLED)
+            for plugin_id in (
+                "lanctl.analysis.mac-vendor",
+                "lanctl.discovery.mdns-ssdp",
+                "lanctl.discovery.windows-smb",
+                "lanctl.network.wol",
+            ):
+                self.assertEqual(manager.get(plugin_id).state, PluginState.DISABLED)
             self.assertTrue((root / "plugins/readme.md").is_file())
             readme = (root / "plugins/readme.md").read_text(encoding="utf-8")
             self.assertIn("LANCTL.Network.Scan.Begin", readme)

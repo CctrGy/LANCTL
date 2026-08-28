@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "publisher": "LANCTL",
+  "plugins": [
+    {"id": "lanctl.analysis.mac-vendor", "version": "1.0.0", "package": "lanctl.analysis.mac-vendor.lcp"},
+    {"id": "lanctl.discovery.mdns-ssdp", "version": "1.0.0", "package": "lanctl.discovery.mdns-ssdp.lcp"},
+    {"id": "lanctl.discovery.windows-smb", "version": "1.0.0", "package": "lanctl.discovery.windows-smb.lcp"},
+    {"id": "lanctl.network.wol", "version": "1.0.0", "package": "lanctl.network.wol.lcp"}
+  ]
+}

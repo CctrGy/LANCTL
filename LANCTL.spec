@@ -14,8 +14,11 @@ sys.path.insert(0, str(SOURCE_ROOT))
 datas = collect_data_files("manuf") + [
     ("gui", "gui"),
     ("bundled/lanctl.theme.default.lcp", "bundled"),
+    ("bundled/lanctl.analysis.mac-vendor.lcp", "bundled"),
+    ("bundled/lanctl.discovery.mdns-ssdp.lcp", "bundled"),
     ("bundled/lanctl.discovery.windows-smb.lcp", "bundled"),
     ("bundled/lanctl.network.wol.lcp", "bundled"),
+    ("bundled/plugin-catalog.json", "bundled"),
     ("assets/lanctl-icon-v3.png", "assets"),
     ("assets/device-icons", "assets/device-icons"),
     ("errorList.txt", "."),

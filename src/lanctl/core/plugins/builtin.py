@@ -88,8 +88,8 @@ Campos: `schemaVersion`, `id`, `name`, `version`, `description`, `author`,
 `permissions`, `capabilities` y `depends`.
 
 Runtimes:
-- `isolated`: solo manifiestos y extensiones declarativas; no ejecuta Python.
-- `trusted`: ejecuta `activate(api)` y necesita `--trust`.
+- `isolated`: ejecuta Python en un proceso separado con timeout, memoria y presupuesto de llamadas.
+- `trusted`: ejecuta `activate(api)` dentro del proceso y necesita `--trust`.
 
 Capacidades reconocidas:
 `plugin`, `theme`, `language`, `settings`, `automation`, `network`, `analysis`,
@@ -198,7 +198,13 @@ def bootstrap_builtin_plugins(root: Path) -> None:
     atomic_write_json(info, EXAMPLE_MANIFEST)
     atomic_write_json(api_map, EXAMPLE_API_MAP)
     _install_builtin_theme(root)
-    _install_builtin_package(root, "bundled/lanctl.discovery.windows-smb.lcp")
+    for package in (
+        "lanctl.analysis.mac-vendor.lcp",
+        "lanctl.discovery.mdns-ssdp.lcp",
+        "lanctl.discovery.windows-smb.lcp",
+        "lanctl.network.wol.lcp",
+    ):
+        _install_builtin_package(root, f"bundled/{package}")
 
 
 def _install_builtin_theme(root: Path) -> None:
