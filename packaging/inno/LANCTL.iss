@@ -18,6 +18,7 @@ OutputDir=..\..\dist\release
 OutputBaseFilename=LANCTL-{#MyAppVersion}-windows-x64-setup
 Compression=lzma2/max
 SolidCompression=yes
+SetupIconFile=..\..\assets\lanctl-v3.ico
 PrivilegesRequired=admin
 UninstallDisplayIcon={app}\LANCTL.exe
 ChangesEnvironment=yes
@@ -40,6 +41,7 @@ Name: "{commonappdata}\LANCTL\access"; Permissions: admins-full system-full
 Name: "{commonappdata}\LANCTL\database"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\logs"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\monitoring"; Permissions: users-modify
+Name: "{commonappdata}\LANCTL\physical"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\plugins"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\projects"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\automation"; Permissions: users-modify
@@ -47,6 +49,8 @@ Name: "{commonappdata}\LANCTL\automation"; Permissions: users-modify
 [Files]
 Source: "{#BuildRoot}\LANCTL.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "{#BuildRoot}\LANCTL-GUI.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
+Source: "{#BuildRoot}\lanip.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
+Source: "{#BuildRoot}\lanwire.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "..\..\docs\INSTALL.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "..\..\docs\ACCESS.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 
@@ -54,6 +58,8 @@ Source: "..\..\docs\ACCESS.md"; DestDir: "{app}"; Flags: ignoreversion; Componen
 Name: "{group}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"
 Name: "{group}\LANCTL CLI"; Filename: "{app}\LANCTL.exe"; Parameters: "--cli"; WorkingDir: "{app}"
 Name: "{group}\LANCTL GUI"; Filename: "{app}\LANCTL-GUI.exe"; WorkingDir: "{app}"
+Name: "{group}\LANIP"; Filename: "{app}\lanip.exe"; Parameters: "--tui"; WorkingDir: "{app}"
+Name: "{group}\LANWIRE Physical"; Filename: "{app}\lanwire.exe"; WorkingDir: "{app}"
 Name: "{autodesktop}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Tasks]

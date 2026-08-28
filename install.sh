@@ -67,7 +67,10 @@ with tarfile.open(sys.argv[1],'r:gz') as archive:
 PY
   staging="$(mktemp -d -p "$tmp" staging.XXXXXXXX)"; tar -xzf "$tmp/$artifact" -C "$staging"
   target="/opt/lanctl-$resolved"; [[ ! -e "$target" ]] || { echo "$target already exists" >&2; exit 1; }
-  sudo install -d -m 0755 "$target"; sudo cp -a "$staging"/. "$target"/; sudo ln -sfn "$target/LANCTL/lanctl" /usr/local/bin/lanctl
+  sudo install -d -m 0755 "$target"; sudo cp -a "$staging"/. "$target"/
+  sudo ln -sfn "$target/LANCTL/lanctl" /usr/local/bin/lanctl
+  sudo ln -sfn "$target/LANCTL/lanip" /usr/local/bin/lanip
+  sudo ln -sfn "$target/LANCTL/lanwire" /usr/local/bin/lanwire
 else
   sudo apt-get install -y "$tmp/$artifact"
 fi

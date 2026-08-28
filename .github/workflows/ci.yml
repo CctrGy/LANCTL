@@ -25,14 +25,12 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: >-
-          python -m pip install -e . coverage==7.10.6 ruff==0.16.2
-          bandit==1.8.6 pip-audit==2.9.0
+      - run: python -m pip install -e ".[dev]"
       - run: python -m pip check
       - name: Integration tests
         run: |
           set +e
-          python -m coverage run --branch --source=app -m unittest discover -s tests 2>&1 | tee test-output.log
+          python -m coverage run --branch --source=src -m pytest -p no:cacheprovider 2>&1 | tee test-output.log
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
             grep -E 'FAIL:|ERROR:|FAILED|AssertionError|ModuleNotFoundError|AttributeError|OSError|Ran [0-9]+ tests' test-output.log | tail -10 | while IFS= read -r line; do
@@ -45,11 +43,11 @@ jobs:
           python -m coverage report --precision=4 --fail-under=60
           python -m coverage xml -o coverage.xml
       - name: Static correctness
-        run: python -m ruff check app tests
+        run: python -m ruff check .
       - name: Stable Python formatting
-        run: python -m ruff format --check app tests
+        run: python -m ruff format --check .
       - name: Source security
-        run: python -m bandit -q -r app -ll
+        run: python -m bandit -q -r src -ll
       - name: Dependency vulnerabilities
         # Véase docs/SECURITY.md: una API inaccesible de cryptography y la
         # compatibilidad RSA/SHA-1 desactivada en Paramiko son excepciones
@@ -58,7 +56,7 @@ jobs:
           python -m pip_audit . --strict
           --ignore-vuln PYSEC-2026-3552
           --ignore-vuln PYSEC-2026-2858
-      - run: python -m compileall -q app tests
+      - run: python -m compileall -q src tests
       - run: bash -n install.sh scripts/build-linux.sh
       - run: git diff --check
       - uses: actions/upload-artifact@v4

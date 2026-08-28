@@ -12,12 +12,20 @@ try {
     if (-not (Test-Path -LiteralPath $Python)) { $Python = 'python' }
     & $Python -m PyInstaller --clean --noconfirm LANCTL.spec
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller failed' }
+    if (-not (Test-Path -LiteralPath 'dist\lanip.exe')) {
+        throw 'The unified PyInstaller build did not produce dist\lanip.exe'
+    }
+    if (-not (Test-Path -LiteralPath 'dist\lanwire.exe')) {
+        throw 'The unified PyInstaller build did not produce dist\lanwire.exe'
+    }
     New-Item -ItemType Directory -Force dist\release | Out-Null
     $portable=Join-Path $Root 'dist\portable-staging'
     if(Test-Path -LiteralPath $portable){Remove-Item -LiteralPath $portable -Recurse -Force}
     New-Item -ItemType Directory -Path $portable | Out-Null
     Copy-Item dist\LANCTL.exe (Join-Path $portable 'LANCTL.exe')
     Copy-Item dist\LANCTL-GUI.exe (Join-Path $portable 'LANCTL-GUI.exe')
+    Copy-Item dist\lanip.exe (Join-Path $portable 'lanip.exe')
+    Copy-Item dist\lanwire.exe (Join-Path $portable 'lanwire.exe')
     Copy-Item packaging\portable\README-portable.txt (Join-Path $portable 'README-portable.txt')
     Set-Content -LiteralPath (Join-Path $portable 'LANCTL.portable') -Value 'LANCTL-PORTABLE-V1' -Encoding ascii
     Compress-Archive -Path "$portable\*" -DestinationPath "dist\release\LANCTL-$Version-windows-x64-portable.zip" -Force
