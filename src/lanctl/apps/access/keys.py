@@ -5,6 +5,8 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from lanctl.core.file_transaction import atomic_write_bytes, locked_files
+
 
 def generate_host_key(path):
     try:
@@ -15,15 +17,17 @@ def generate_host_key(path):
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     private = ed25519.Ed25519PrivateKey.generate()
-    target.write_bytes(
-        private.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.OpenSSH,
-            serialization.NoEncryption(),
+    with locked_files([target]):
+        atomic_write_bytes(
+            target,
+            private.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.OpenSSH,
+                serialization.NoEncryption(),
+            ),
         )
-    )
-    if os.name != "nt":
-        target.chmod(0o600)
+        if os.name != "nt":
+            target.chmod(0o600)
     return str(target.resolve())
 
 
@@ -56,15 +60,17 @@ def generate_certificate(certificate, key, common_name, days=365):
     cert_path, key_path = Path(certificate), Path(key)
     cert_path.parent.mkdir(parents=True, exist_ok=True)
     key_path.parent.mkdir(parents=True, exist_ok=True)
-    cert_path.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
-    key_path.write_bytes(
-        private.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.PKCS8,
-            serialization.NoEncryption(),
+    with locked_files([cert_path, key_path]):
+        atomic_write_bytes(cert_path, cert.public_bytes(serialization.Encoding.PEM))
+        atomic_write_bytes(
+            key_path,
+            private.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.PKCS8,
+                serialization.NoEncryption(),
+            ),
         )
-    )
-    if os.name != "nt":
-        cert_path.chmod(0o644)
-        key_path.chmod(0o600)
+        if os.name != "nt":
+            cert_path.chmod(0o644)
+            key_path.chmod(0o600)
     return str(cert_path.resolve()), str(key_path.resolve())

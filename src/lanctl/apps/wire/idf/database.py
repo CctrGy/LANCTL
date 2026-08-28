@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,7 +9,7 @@ from typing import Any
 
 from lanctl.apps.wire.idf import IDF, IDFSize
 from lanctl.apps.wire.path import application_directory, application_path
-from lanctl.apps.wire.xfile import read, update_json, write_json
+from lanctl.apps.wire.xfile import atomic_write_bytes, locked_file, read, update_json, write_json
 
 DATABASE_FORMAT = "LANWRE-IDF-DB"
 DATABASE_VERSION = 1
@@ -37,15 +36,17 @@ class IDFDatabaseManager:
         if requested.is_absolute() or requested.as_posix().casefold() != DEFAULT_DATABASE_PATH:
             return
         legacy = (application_directory() / "data" / "lw" / "idf.db").resolve()
-        if self.path.exists() or not legacy.is_file() or legacy == self.path:
+        if not legacy.is_file() or legacy == self.path:
             return
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(legacy, self.path)
+        with locked_file(self.path):
+            if not self.path.exists():
+                atomic_write_bytes(self.path, legacy.read_bytes())
 
     def create_database(self) -> Path:
         """Crea una base vacía si todavía no existe y valida las existentes."""
-        if not self.path.exists():
-            write_json(self.path, _empty_database())
+        with locked_file(self.path):
+            if not self.path.exists():
+                write_json(self.path, _empty_database())
         self._load()
         return self.path.resolve()
 

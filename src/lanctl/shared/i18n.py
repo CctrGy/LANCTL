@@ -7,7 +7,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any
 
-from lanctl.core.file_transaction import atomic_write_json, locked_file
+from lanctl.core.file_transaction import atomic_write_json, atomic_write_text, locked_file
 from lanctl.core.paths import application_path
 
 LANG_SCHEMA_VERSION = 1
@@ -229,9 +229,8 @@ class LanguageManager:
             else self.directory / f"{_safe_filename(catalog.name)}.lang"
         )
         destination.parent.mkdir(parents=True, exist_ok=True)
-        temporary = destination.with_suffix(".tmp")
-        temporary.write_text(Path(path).read_text(encoding="utf-8"), encoding="utf-8")
-        temporary.replace(destination)
+        with locked_file(destination):
+            atomic_write_text(destination, Path(path).read_text(encoding="utf-8"))
         self.discover()
         self._save_registry()
         return self.catalogs[catalog.code]

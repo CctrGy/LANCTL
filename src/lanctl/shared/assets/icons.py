@@ -3,13 +3,12 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
 
-from lanctl.core.file_transaction import atomic_write_json, locked_file
+from lanctl.core.file_transaction import atomic_write_bytes, atomic_write_json, locked_file
 from lanctl.core.paths import application_path
 
 ICON_WIDTH = 125
@@ -110,10 +109,8 @@ class IconManager:
         if wanted in self.icons and not overwrite:
             raise ValueError(f"ya existe el icono: {wanted}")
         destination = self.directory / f"{wanted}.jpg"
-        temporary = destination.with_suffix(".tmp")
-        temporary.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source_path, temporary)
-        temporary.replace(destination)
+        with locked_file(destination):
+            atomic_write_bytes(destination, source_path.read_bytes())
         entry = self._entry_from_file(
             destination,
             icon_id=wanted,

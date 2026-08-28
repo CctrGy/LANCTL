@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import hashlib
-import shutil
 from copy import deepcopy
 from pathlib import Path
 
-from lanctl.core.file_transaction import atomic_write_json, atomic_write_text, locked_file
+from lanctl.core.file_transaction import (
+    atomic_write_bytes,
+    atomic_write_json,
+    atomic_write_text,
+    locked_file,
+)
 from lanctl.core.paths import (
     application_directory,
     application_path,
@@ -56,19 +60,19 @@ def ensure_data_layout() -> Path:
         (root / name).mkdir(parents=True, exist_ok=True)
     secret_root().mkdir(parents=True, exist_ok=True)
     marker = root / "config" / "migration-v2.complete"
-    sources = [] if marker.exists() else _legacy_sources(root)
-    conflicts = []
-    for source in sources:
-        conflicts.extend(_copy_legacy_tree(source, root))
-    if conflicts:
-        joined = ", ".join(str(path) for path in conflicts[:5])
-        raise ValueError(f"migración detenida por conflictos de datos legacy: {joined}")
-    _create_initial_files()
-    from lanctl.core.persistence import migrate_schema
+    with locked_file(marker):
+        sources = [] if marker.exists() else _legacy_sources(root)
+        conflicts = []
+        for source in sources:
+            conflicts.extend(_copy_legacy_tree(source, root))
+        if conflicts:
+            joined = ", ".join(str(path) for path in conflicts[:5])
+            raise ValueError(f"migración detenida por conflictos de datos legacy: {joined}")
+        _create_initial_files()
+        from lanctl.core.persistence import migrate_schema
 
-    migrate_schema(root / "config" / "storage-schema.json")
-    if not marker.exists():
-        with locked_file(marker):
+        migrate_schema(root / "config" / "storage-schema.json")
+        if not marker.exists():
             atomic_write_text(marker, "LANCTL-DATA-V2\n", encoding="ascii")
     return root.resolve()
 
@@ -82,8 +86,9 @@ def _create_initial_files() -> None:
         (application_path(name), deepcopy(value)) for name, value in INITIAL_JSON_FILES.items()
     )
     for path, value in initial_files.items():
-        if not path.exists():
-            atomic_write_json(path, value)
+        with locked_file(path):
+            if not path.exists():
+                atomic_write_json(path, value)
 
 
 def _legacy_sources(destination: Path) -> list[Path]:
@@ -112,12 +117,12 @@ def _copy_legacy_tree(source: Path, destination_root: Path) -> list[Path]:
         ):
             continue
         destination = application_path(Path("data/lc") / relative)
-        if destination.exists():
-            if not _same_file(item, destination):
-                conflicts.append(relative)
-            continue
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(item, destination)
+        with locked_file(destination):
+            if destination.exists():
+                if not _same_file(item, destination):
+                    conflicts.append(relative)
+                continue
+            atomic_write_bytes(destination, item.read_bytes())
     return conflicts
 
 

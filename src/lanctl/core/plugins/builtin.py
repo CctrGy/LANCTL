@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from lanctl.core.file_transaction import atomic_write_json
+from lanctl.core.file_transaction import atomic_write_json, atomic_write_text, locked_file
 from lanctl.core.plugins.package import inspect_package, install_package
 from lanctl.core.resources import bundled_path
 
@@ -190,7 +190,8 @@ def bootstrap_builtin_plugins(root: Path) -> None:
     root.mkdir(parents=True, exist_ok=True)
     readme = root / "readme.md"
     if not readme.exists() or readme.read_text(encoding="utf-8") != PLUGIN_README:
-        readme.write_text(PLUGIN_README, encoding="utf-8")
+        with locked_file(readme):
+            atomic_write_text(readme, PLUGIN_README)
     plugin = root / EXAMPLE_PLUGIN_ID
     info = plugin / "plugin.info"
     api_map = plugin / "api/api.map"
