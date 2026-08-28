@@ -26,7 +26,11 @@ try {
     if (-not (Test-Path -LiteralPath 'dist\lanwire.exe')) {
         throw 'The unified PyInstaller build did not produce dist\lanwire.exe'
     }
-    New-Item -ItemType Directory -Force dist\release | Out-Null
+    $release = Join-Path $Root 'dist\release'
+    if (Test-Path -LiteralPath $release) {
+        Remove-Item -LiteralPath $release -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $release | Out-Null
     $portable=Join-Path $Root 'dist\portable-staging'
     if(Test-Path -LiteralPath $portable){Remove-Item -LiteralPath $portable -Recurse -Force}
     New-Item -ItemType Directory -Path $portable | Out-Null
