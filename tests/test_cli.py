@@ -836,6 +836,16 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(result.colors[0]["IP"], "blue")
         self.assertEqual(result.colors[0]["MAC"], "red")
 
+    def test_scan_differences_report_disappeared_devices(self):
+        present = Device(ip="192.168.1.10", mac="AA:BB:CC:DD:EE:FF")
+        missing = Device(ip="192.168.1.20", mac="11:22:33:44:55:66")
+        records = [{"IP": present.ip, "MAC": present.mac}]
+        result = compare_scan(records, [present, missing], [present])
+
+        self.assertEqual(result.disappeared_devices, 1)
+        self.assertEqual(result.disappeared_ids, (missing.device_id,))
+        self.assertIn("Desaparecidos: 1", result.summary())
+
     def test_new_mac_on_used_ip_is_added_without_erasing_old_mac(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))

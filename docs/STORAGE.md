@@ -20,6 +20,7 @@ lanctl database --diagnose --json
 lanctl database --export LANCTL-data.zip
 lanctl database --verify LANCTL-data.zip
 lanctl database --import LANCTL-data.zip --yes
+lanctl database --restore devices.json.FECHA.bak --target database --yes
 ```
 
 La exportación contiene un manifiesto y un SHA-256 por archivo. Verificar no

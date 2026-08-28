@@ -11,6 +11,7 @@ from lanctl.core.persistence import (
     diagnose_storage,
     export_storage,
     import_storage,
+    restore_backup,
     verify_export,
 )
 
@@ -29,6 +30,12 @@ def register_database_command(commands: argparse._SubParsersAction) -> None:
     )
     actions.add_argument(
         "--import", dest="import_file", metavar="ARCHIVO.zip", help="Importa datos verificados."
+    )
+    actions.add_argument(
+        "--restore", metavar="ARCHIVO.bak", help="Restaura un backup validado del almacén."
+    )
+    command.add_argument(
+        "--target", choices=("database", "groups", "physical"), help="Almacén que se restaura."
     )
     command.add_argument("--yes", action="store_true", help="Confirma la sustitución de datos.")
     command.add_argument("--json", action="store_true", help="Emite el diagnóstico como JSON.")
@@ -56,6 +63,17 @@ def run_database(args: argparse.Namespace) -> int:
             raise ValueError("database --import requiere --yes y una copia externa confirmada")
         imported = import_storage(args.import_file, data_root())
         print(f"Importados y verificados: {len(imported)} archivos")
+        return 0
+    if args.restore:
+        if not args.yes or not args.target:
+            raise ValueError("database --restore requiere --target y --yes")
+        config = load_config()
+        key = {"database": "database", "groups": "groups", "physical": "physicalDatabase"}[
+            args.target
+        ]
+        target = application_path(config[key])
+        restore_backup(target, args.restore)
+        print(f"Restaurado y validado: {target}")
         return 0
     checks = diagnose_storage(_configured_paths())
     if args.json:

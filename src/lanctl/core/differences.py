@@ -23,16 +23,19 @@ class ScanDifferences:
     new_devices: int = 0
     ip_changes: int = 0
     mac_conflicts: int = 0
+    disappeared_devices: int = 0
+    disappeared_ids: tuple[str, ...] = ()
     pending_values: int = 0
 
     @property
     def changed_devices(self) -> int:
-        return self.new_devices + self.ip_changes + self.mac_conflicts
+        return self.new_devices + self.ip_changes + self.mac_conflicts + self.disappeared_devices
 
     def summary(self) -> str:
         return (
             f"{self.changed_devices} dispositivos con cambios | "
             f"Nuevos: {self.new_devices} | "
+            f"Desaparecidos: {self.disappeared_devices} | "
             f"IP no coincidentes: {self.ip_changes} "
             "(se guardan automáticamente) | "
             f"MAC no coincidentes: {self.mac_conflicts}"
@@ -48,6 +51,7 @@ def compare_scan(
     pending = [dict(record) for record in records]
     saved_devices = list(saved)
     pending_ips = {str(record.get("IP", "")) for record in pending}
+    pending_macs = {str(record.get("MAC", "")).upper() for record in pending if record.get("MAC")}
     rows = [device for device in preview if device.ip in pending_ips]
     records_by_ip = {str(record.get("IP", "")): record for record in pending}
 
@@ -88,11 +92,19 @@ def compare_scan(
         pending_values += sum(state.get(field) == "red" for field in SCANNED_FIELDS)
         colors.append(state)
 
+    disappeared = tuple(
+        device.device_id or device.mac or device.ip
+        for device in saved_devices
+        if (device.mac and device.mac.upper() not in pending_macs)
+        or (not device.mac and device.ip not in pending_ips)
+    )
     return ScanDifferences(
         rows=rows,
         colors=colors,
         new_devices=new_devices,
         ip_changes=ip_changes,
         mac_conflicts=mac_conflicts,
+        disappeared_devices=len(disappeared),
+        disappeared_ids=disappeared,
         pending_values=pending_values,
     )

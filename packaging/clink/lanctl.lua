@@ -400,7 +400,8 @@ local database = clink.argmatcher()
     :addflags({
         "-h", "--help", "/?", "--diagnose",
         "--export" .. file_arg, "--verify" .. file_arg,
-        "--import" .. file_arg, "--yes", "--json"
+        "--import" .. file_arg, "--restore" .. file_arg,
+        "--target" .. values({ "database", "groups", "physical" }), "--yes", "--json"
     })
 
 local root_commands = {

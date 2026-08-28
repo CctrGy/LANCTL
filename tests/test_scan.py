@@ -99,6 +99,35 @@ class ElementScannerTests(unittest.TestCase):
         self.assertEqual(identified.confidence, "high")
         self.assertTrue(identified.evidence)
 
+    def test_custom_identification_rule_has_priority_and_evidence(self):
+        identified = identify_device(
+            [],
+            manufacturer="Acme Sensors",
+            hostname="temperature-kitchen",
+            rules=[
+                {
+                    "id": "temperature-sensor",
+                    "deviceType": "sensor",
+                    "confidence": "high",
+                    "manufacturerRegex": "acme",
+                    "hostnameRegex": "temperature-",
+                    "evidence": ["inventario local"],
+                }
+            ],
+        )
+        self.assertEqual(identified.device_type, "sensor")
+        self.assertEqual(identified.confidence, "high")
+        self.assertEqual(
+            identified.evidence,
+            ("regla personalizada: temperature-sensor", "inventario local"),
+        )
+
+    def test_invalid_custom_identification_rule_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "expresión regular"):
+            identify_device(
+                [], rules=[{"id": "broken", "deviceType": "sensor", "hostnameRegex": "["}]
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

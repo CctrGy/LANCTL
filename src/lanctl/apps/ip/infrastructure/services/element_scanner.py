@@ -4,7 +4,7 @@ import platform
 import re
 import socket
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -249,9 +249,41 @@ def identify_tcp_service(
 
 
 def identify_device(
-    open_ports: list[OpenPort], manufacturer: str = "", hostname: str = ""
+    open_ports: list[OpenPort],
+    manufacturer: str = "",
+    hostname: str = "",
+    rules: Iterable[Mapping[str, object]] = (),
 ) -> DeviceIdentification:
     services = {item.service for item in open_ports}
+    for position, rule in enumerate(rules, 1):
+        rule_id = str(rule.get("id") or f"rule-{position}")
+        device_type = str(rule.get("deviceType") or "").strip()
+        confidence = str(rule.get("confidence") or "medium").casefold()
+        if not device_type or confidence not in {"low", "medium", "high"}:
+            raise ValueError(f"regla de identificación no válida: {rule_id}")
+        any_services = {str(value).casefold() for value in rule.get("servicesAny", ())}
+        all_services = {str(value).casefold() for value in rule.get("servicesAll", ())}
+        manufacturer_pattern = str(rule.get("manufacturerRegex") or "")
+        hostname_pattern = str(rule.get("hostnameRegex") or "")
+        try:
+            matches = (
+                (not any_services or bool(services & any_services))
+                and all_services <= services
+                and (
+                    not manufacturer_pattern
+                    or re.search(manufacturer_pattern, manufacturer, re.IGNORECASE) is not None
+                )
+                and (
+                    not hostname_pattern
+                    or re.search(hostname_pattern, hostname, re.IGNORECASE) is not None
+                )
+            )
+        except re.error as error:
+            raise ValueError(f"expresión regular no válida en {rule_id}: {error}") from error
+        if matches:
+            evidence = [f"regla personalizada: {rule_id}"]
+            evidence.extend(str(value) for value in rule.get("evidence", ()) if str(value))
+            return DeviceIdentification(device_type, confidence, tuple(evidence))
     evidence: list[str] = []
     if "rtsp" in services or "onvif" in services:
         evidence.append("servicio de vídeo RTSP/ONVIF")
@@ -387,11 +419,17 @@ def reverse_hostname(host: str, timeout: float) -> str:
 
 
 class ElementScanner:
-    def __init__(self, timeout: float = 0.5, workers: int = 128):
+    def __init__(
+        self,
+        timeout: float = 0.5,
+        workers: int = 128,
+        identification_rules: Iterable[Mapping[str, object]] = (),
+    ):
         if timeout <= 0 or workers < 1:
             raise ValueError("timeout y workers deben ser mayores que cero")
         self.timeout = timeout
         self.workers = workers
+        self.identification_rules = tuple(identification_rules)
 
     def scan(
         self,
@@ -414,6 +452,8 @@ class ElementScanner:
             observed_mac=observed_arp_mac(host),
             scanned_ports=len(ports),
             open_ports=open_ports,
-            identification=identify_device(open_ports, manufacturer, hostname),
+            identification=identify_device(
+                open_ports, manufacturer, hostname, self.identification_rules
+            ),
             duration=monotonic() - started,
         )
