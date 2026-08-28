@@ -5,7 +5,7 @@ import socket
 import struct
 import time
 
-from app.plugins.contracts import FunctionResult
+from lanctl.core.plugins.contracts import FunctionResult
 
 
 def _dns_name(value: str) -> bytes:

@@ -1,9 +1,9 @@
-from app.core.config import load_config
-from app.core.credentials import CredentialStore
-from app.core.database import DeviceDatabase
-from app.core.plugin_storage import PluginStorage
-from app.plugins.contracts import FunctionResult
-from app.plugins.smb_runtime import SMBError, SMBService
+from lanctl.core.config import load_config
+from lanctl.core.credentials import CredentialStore
+from lanctl.core.database import DeviceDatabase
+from lanctl.core.plugin_storage import PluginStorage
+from lanctl.core.plugins.contracts import FunctionResult
+from lanctl.core.plugins.smb_runtime import SMBError, SMBService
 
 
 PLUGIN_ID = "lanctl.discovery.windows-smb"

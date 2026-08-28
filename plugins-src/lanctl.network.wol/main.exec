@@ -1,4 +1,4 @@
-from app.plugins.contracts import FunctionResult
+from lanctl.core.plugins.contracts import FunctionResult
 
 
 def activate(api):
