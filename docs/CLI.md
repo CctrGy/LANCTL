@@ -21,3 +21,7 @@ código de salida antes de consumir el resultado.
 Las familias principales son `list`, `scan`, `ping`, `element`, `group`,
 `project`, `plugin`, `monitor`, `access`, `history`, `database`, `settings`,
 `credential`, `protocol`, `smb`, `switch`, `wol`, `language` y `error`.
+
+La sintaxis completa de cada comando y subcomando se publica en
+[CLI-REFERENCE.md](CLI-REFERENCE.md). Esa referencia se genera directamente
+desde los parsers y CI rechaza cualquier cambio que la deje desactualizada.

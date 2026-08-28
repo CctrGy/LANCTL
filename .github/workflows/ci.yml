@@ -48,6 +48,8 @@ jobs:
         run: python -m ruff format --check .
       - name: Error catalog is current
         run: python tools/generate_error_catalog.py --check
+      - name: CLI reference is current
+        run: python tools/generate_cli_reference.py --check
       - name: Source security
         run: python -m bandit -q -r src -ll
       - name: Dependency vulnerabilities

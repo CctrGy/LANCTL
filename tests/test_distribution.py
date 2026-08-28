@@ -166,6 +166,8 @@ class DistributionTests(unittest.TestCase):
         self.assertNotIn("pkcs7_decrypt_", app_source)
         self.assertIn("github/codeql-action/analyze", security)
         self.assertIn("dependency-review-action", security)
+        self.assertIn("generate_cli_reference.py --check", ci)
+        self.assertIn("generate_cli_reference.py --check", release)
         # Dependabot es opcional: el repositorio puede desactivarlo para evitar
         # ramas automáticas sin rebajar las puertas de CI y seguridad anteriores.
 
