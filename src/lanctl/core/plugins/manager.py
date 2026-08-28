@@ -45,6 +45,7 @@ class InstalledPlugin:
     trusted: bool = False
     error: str = ""
     module: object | None = None
+    isolated_runtime: object | None = None
 
     def __post_init__(self):
         self.granted = set(self.granted or ())
@@ -241,6 +242,9 @@ class PluginManager:
 
     def disable(self, plugin_id: str) -> InstalledPlugin:
         plugin = self.get(plugin_id)
+        if plugin.isolated_runtime is not None:
+            plugin.isolated_runtime.stop()
+            plugin.isolated_runtime = None
         if plugin.module and hasattr(plugin.module, "deactivate"):
             try:
                 plugin.module.deactivate()
@@ -366,12 +370,23 @@ class PluginManager:
         if not entry.exists():
             return
         if plugin.manifest.runtime == "isolated":
+            from lanctl.core.plugins.isolated_runtime import IsolatedPluginRuntime
+
+            limits = plugin.manifest.raw.get("limits", {})
+            plugin.isolated_runtime = IsolatedPluginRuntime(
+                plugin.manifest.plugin_id,
+                entry,
+                timeout=float(limits.get("timeoutSeconds", 5)),
+                memory_mb=int(limits.get("memoryMb", 128)),
+                max_calls=int(limits.get("maxCalls", 1000)),
+                audit=self.audit,
+            ).start()
             self.audit(
                 plugin.manifest.plugin_id,
                 "LOAD",
                 plugin.manifest.version,
                 "OK",
-                "runtime=isolated declarative",
+                f"runtime=isolated pid={plugin.isolated_runtime.pid}",
             )
             return
         if not plugin.trusted:

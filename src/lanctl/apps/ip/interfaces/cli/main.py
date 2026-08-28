@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import io
 import sys
-from contextlib import suppress
+import time
+from contextlib import redirect_stdout, suppress
 from contextvars import ContextVar
 from importlib import import_module
 
@@ -105,6 +107,13 @@ def build_parser(include_plugin_commands: bool = False) -> argparse.ArgumentPars
         action="version",
         version=f"%(prog)s {__version__}",
         help="Muestra la versión y termina.",
+    )
+    detail = parser.add_mutually_exclusive_group()
+    detail.add_argument(
+        "--quiet", action="store_true", help="Omite la salida correcta; conserva errores."
+    )
+    detail.add_argument(
+        "--verbose", action="store_true", help="Añade diagnóstico de ejecución a stderr."
     )
 
     parser.add_argument(
@@ -212,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
             return run_tui(None if args.tui == "inventory" else args.tui)
         if args.cli:
             return run_global_cli()
-        result = args.handler(args)
+        result = _run_handler(args)
         from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
 
         save_active_project(SaveTrigger.CHANGE)
@@ -257,3 +266,27 @@ def load_plugin_safe_mode() -> bool:
     from lanctl.core.config import load_config
 
     return bool(load_config().get("pluginSafeMode", False))
+
+
+def _run_handler(args: argparse.Namespace) -> int:
+    """Aplica quiet/verbose sin obligar a cada comando a duplicar la política."""
+
+    quiet = bool(getattr(args, "quiet", False))
+    verbose = bool(getattr(args, "verbose", False))
+    started = time.perf_counter()
+    command = str(getattr(args, "command", "") or "-")
+    if verbose:
+        print(f"LANCTL diagnostic: command={command} phase=start", file=sys.stderr)
+    if quiet:
+        with redirect_stdout(io.StringIO()):
+            result = args.handler(args)
+    else:
+        result = args.handler(args)
+    code = int(result or 0)
+    if verbose:
+        elapsed = time.perf_counter() - started
+        print(
+            f"LANCTL diagnostic: command={command} phase=end code={code} elapsed={elapsed:.3f}s",
+            file=sys.stderr,
+        )
+    return code

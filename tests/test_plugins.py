@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from dataclasses import dataclass
@@ -104,7 +105,11 @@ class PluginTests(unittest.TestCase):
             with self.assertRaises(PermissionError):
                 manager.enable(plugin.manifest.plugin_id)
             manager.enable(plugin.manifest.plugin_id, grant={"theme.register"})
-            self.assertEqual(manager.get(plugin.manifest.plugin_id).state, PluginState.ENABLED)
+            active = manager.get(plugin.manifest.plugin_id)
+            self.assertEqual(active.state, PluginState.ENABLED)
+            self.assertIsNotNone(active.isolated_runtime)
+            self.assertNotEqual(active.isolated_runtime.pid, os.getpid())
+            self.assertTrue(active.isolated_runtime.process.is_alive())
             self.assertEqual(manager.extensions.list("theme")[0].extension_id, "demo.theme.dark")
             manager.disable(plugin.manifest.plugin_id)
             self.assertEqual(manager.extensions.list(), [])
@@ -144,6 +149,25 @@ class PluginTests(unittest.TestCase):
                 manager.enable("demo.network-tools", grant={"theme.register"})
             plugin = manager.enable("demo.network-tools", grant={"theme.register"}, trusted=True)
             self.assertIsNotNone(plugin.module)
+
+    def test_isolated_runtime_enforces_call_budget(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self._source(root)
+            manifest = json.loads((source / "plugin.info").read_text(encoding="utf-8"))
+            manifest["limits"] = {"timeoutSeconds": 0.2, "memoryMb": 64, "maxCalls": 1}
+            (source / "plugin.info").write_text(json.dumps(manifest), encoding="utf-8")
+            (source / "main.exec").write_text(
+                "def activate(api):\n    api.log('one')\n    api.log('two')\n",
+                encoding="utf-8",
+            )
+            package = root / "limited.lcp"
+            build_package(source, package)
+            manager = PluginManager(root / "installed", root / "registry.json")
+            manager.install(package)
+            with self.assertRaisesRegex(RuntimeError, "límite de llamadas"):
+                manager.enable("demo.network-tools", grant={"theme.register"})
+            self.assertEqual(manager.get("demo.network-tools").state, PluginState.BLOCKED)
 
     def test_trusted_declared_hook_is_connected_to_event_bus(self):
         with tempfile.TemporaryDirectory() as temporary:

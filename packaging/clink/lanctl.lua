@@ -427,7 +427,7 @@ local root_commands = {
 clink.argmatcher("lanctl", "lanctl.exe", "als", "als.exe")
     :addarg(root_commands)
     :addflags({
-        "-h", "--help", "/?", "--version", "--gui", "--cli", "-tui", "--tui",
+        "-h", "--help", "/?", "--version", "--quiet", "--verbose", "--gui", "--cli", "-tui", "--tui",
         "-project" .. file_arg, "--project" .. file_arg
     })
     :nofiles()

@@ -5,9 +5,10 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from lanctl.apps.ip.interfaces.cli.main import configure_utf8_stdio, main
+from lanctl.apps.ip.interfaces.cli.main import _run_handler, configure_utf8_stdio, main
 
 
 class CliFastPathTests(unittest.TestCase):
@@ -87,6 +88,35 @@ class CliFastPathTests(unittest.TestCase):
                     main(arguments)
                 self.assertEqual(result.exception.code, 0)
                 self.assertFalse(root.exists())
+
+    def test_quiet_suppresses_success_output_but_preserves_exit_code(self):
+        args = SimpleNamespace(
+            quiet=True,
+            verbose=False,
+            command="demo",
+            handler=lambda _args: print("success") or 7,
+        )
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            result = _run_handler(args)
+        self.assertEqual(result, 7)
+        self.assertEqual(output.getvalue(), "")
+
+    def test_verbose_reports_command_code_and_elapsed_without_arguments(self):
+        args = SimpleNamespace(
+            quiet=False,
+            verbose=True,
+            command="demo",
+            secret="must-not-appear",
+            handler=lambda _args: 0,
+        )
+        diagnostics = io.StringIO()
+        with contextlib.redirect_stderr(diagnostics):
+            self.assertEqual(_run_handler(args), 0)
+        value = diagnostics.getvalue()
+        self.assertIn("command=demo phase=start", value)
+        self.assertIn("phase=end code=0 elapsed=", value)
+        self.assertNotIn("must-not-appear", value)
 
 
 if __name__ == "__main__":
