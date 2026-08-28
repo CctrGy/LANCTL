@@ -294,8 +294,18 @@ def scan_tcp_ports(
                 if identify:
                     try:
                         return identify_tcp_service(host, port, timeout, connector)
-                    except OSError:
-                        pass
+                    except OSError as error:
+                        from lanctl.core.errors import errors
+
+                        errors.from_exception(
+                            error,
+                            origin="LANCTL.Scanner.ServiceIdentification",
+                            code="SCANNER.SERVICE_IDENTIFICATION.DEGRADED",
+                            level=14,
+                            details={"host": host, "port": port},
+                            print_output=False,
+                            once_key=f"scanner.service-identification:{port}",
+                        )
                 return OpenPort(port, _service(port), banner)
             finally:
                 connection.close()

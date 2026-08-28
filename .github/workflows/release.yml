@@ -45,6 +45,8 @@ jobs:
         run: python -m ruff check .
       - name: Stable Python formatting gate
         run: python -m ruff format --check .
+      - name: Error catalog gate
+        run: python tools/generate_error_catalog.py --check
       - name: Security source gate
         run: python -m bandit -q -r src -ll -s B104
       - name: Dependency vulnerability gate

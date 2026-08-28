@@ -46,7 +46,18 @@ def multicast_discover(methods: tuple[str, ...], timeout: float) -> dict[str, se
             for sock in readable:
                 try:
                     _payload, address = sock.recvfrom(65535)
-                except OSError:
+                except OSError as error:
+                    from lanctl.core.errors import errors
+
+                    errors.from_exception(
+                        error,
+                        origin="LANCTL.Discovery.Multicast.Receive",
+                        code="DISCOVERY.MULTICAST.RECEIVE.RETRY",
+                        level=12,
+                        details={"method": sockets[sock]},
+                        print_output=False,
+                        once_key=f"discovery.multicast.receive:{sockets[sock]}",
+                    )
                     continue
                 findings.setdefault(address[0], set()).add(sockets[sock])
     except OSError as error:

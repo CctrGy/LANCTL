@@ -209,8 +209,18 @@ class SshAccessServer:
                 channel.send_exit_status(code)
                 return
             self._interactive(channel, server.user)
-        except (EOFError, OSError):
-            pass
+        except (EOFError, OSError) as error:
+            from lanctl.core.errors import errors
+
+            errors.from_exception(
+                error,
+                origin="LANCTL.Access.SSH.Session",
+                code="ACCESS.SSH.SESSION.CLOSED",
+                level=18,
+                details={"source": source},
+                print_output=False,
+                once_key=f"access.ssh.session-closed:{source}",
+            )
         finally:
             transport.close()
 

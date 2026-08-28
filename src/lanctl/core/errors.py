@@ -72,6 +72,22 @@ _SECRET_PARTS = (
     "csrf",
     "pairing",
 )
+_SECRET_ASSIGNMENT = re.compile(
+    r"(?i)\b(password|passwd|secret|token|credential|authorization|cookie|csrf|pairing|"
+    r"private[_ -]?key)\b(\s*[:=]\s*)(?:\"[^\"]*\"|'[^']*'|[^\s,;]+)"
+)
+_BEARER_TOKEN = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+")
+_PRIVATE_KEY_BLOCK = re.compile(
+    r"-----BEGIN [^-\r\n]*PRIVATE KEY-----.*?-----END [^-\r\n]*PRIVATE KEY-----",
+    re.DOTALL,
+)
+
+
+def redact_text(value: str) -> str:
+    """Oculta secretos habituales sin modificar texto que sólo nombra el campo."""
+    value = _PRIVATE_KEY_BLOCK.sub("***PRIVATE KEY REDACTED***", str(value))
+    value = _BEARER_TOKEN.sub("Bearer ***", value)
+    return _SECRET_ASSIGNMENT.sub(lambda match: f"{match.group(1)}{match.group(2)}***", value)
 
 
 def make_error_id(origin: str, code: str) -> str:
@@ -87,7 +103,9 @@ def _redact(value: Any, key: str = "") -> Any:
         return {str(k): _redact(v, str(k)) for k, v in value.items()}
     if isinstance(value, (list, tuple, set)):
         return [_redact(item) for item in value]
-    if isinstance(value, (str, int, float, bool)) or value is None:
+    if isinstance(value, str):
+        return redact_text(value)
+    if isinstance(value, (int, float, bool)) or value is None:
         return value
     return repr(value)
 
@@ -116,7 +134,8 @@ class ErrorEvent:
         if not _ERROR_ID.fullmatch(identifier):
             raise ValueError("el identificador debe usar el formato 0eXXXXXXXX hexadecimal")
         object.__setattr__(self, "error_id", identifier)
-        object.__setattr__(self, "message", str(self.message).strip() or "Error sin descripción")
+        message = redact_text(str(self.message)).strip() or "Error sin descripción"
+        object.__setattr__(self, "message", message)
         object.__setattr__(self, "details", _redact(dict(self.details)))
 
     @property

@@ -18,6 +18,7 @@ datas = collect_data_files("manuf") + [
     ("bundled/lanctl.network.wol.lcp", "bundled"),
     ("assets/lanctl-icon-v3.png", "assets"),
     ("assets/device-icons", "assets/device-icons"),
+    ("errorList.txt", "."),
 ]
 
 a = Analysis(

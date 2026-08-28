@@ -390,6 +390,11 @@ local lanwire = clink.argmatcher()
     :addflags({ "-h", "--help", "/?", "--new-window" })
     :loop()
 
+local error_lookup = clink.argmatcher()
+    :addarg({ fromhistory = true, hint = "0eXXXXXXXX" })
+    :addflags({ "-h", "--help", "/?", "--json" })
+    :nofiles()
+
 local root_commands = {
     "list" .. list, "recurrent" .. recurrent, "ping" .. ping,
     "open" .. open, "connect" .. open,
@@ -408,6 +413,7 @@ local root_commands = {
     "project" .. project, "projects" .. project, "plugin" .. plugin,
     "plugins" .. plugin, "addon" .. plugin, "addons" .. plugin,
     "language" .. language, "languages" .. language, "lang" .. language,
+    "error" .. error_lookup, "errors" .. error_lookup,
     "lanwire" .. lanwire, "wire" .. lanwire
 }
 

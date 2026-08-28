@@ -26,6 +26,29 @@ def test_error_event_validates_and_redacts_sensitive_details():
     assert "visible" not in repr(event)
 
 
+def test_error_event_redacts_secrets_embedded_in_messages_and_values():
+    private_key = "-----BEGIN PRIVATE KEY-----\nvisible-key\n-----END PRIVATE KEY-----"
+    event = ErrorEvent(
+        41,
+        "LANCTL.Security.Redaction",
+        "SECURITY.REDACTION.TEST",
+        "password=visible token:abc Authorization=BearerValue Bearer bearer-secret",
+        details={"context": f"cookie=session-secret {private_key}"},
+    )
+
+    serialized = json.dumps(event.to_dict())
+    for secret in (
+        "visible",
+        "abc",
+        "BearerValue",
+        "bearer-secret",
+        "session-secret",
+        "visible-key",
+    ):
+        assert secret not in serialized
+    assert "***" in event.message
+
+
 def test_error_manager_logs_json_and_can_print_without_breaking():
     logged, printed = [], []
     manager = ErrorManager(logger=logged.append, output=printed.append, minimum_level=1)

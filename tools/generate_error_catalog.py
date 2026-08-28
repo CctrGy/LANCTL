@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import ast
 import sys
 from dataclasses import dataclass
@@ -244,7 +245,7 @@ class Collector(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def main() -> int:
+def render_catalog() -> tuple[str, int]:
     points = []
     for path in sorted((ROOT / "src" / "lanctl").rglob("*.py")):
         relative = path.relative_to(ROOT).as_posix()
@@ -268,8 +269,26 @@ def main() -> int:
         f"{i} | {level:02d} | {path} | {line} | {origin} | {kind}"
         for i, level, path, line, origin, kind in sorted(rows)
     )
-    OUTPUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"{OUTPUT}: {len(rows)} puntos catalogados")
+    return "\n".join(lines) + "\n", len(rows)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Genera o valida el catálogo de errores.")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="No escribe; falla si errorList.txt no coincide con el código fuente.",
+    )
+    args = parser.parse_args(argv)
+    content, count = render_catalog()
+    if args.check:
+        if not OUTPUT.is_file() or OUTPUT.read_text(encoding="utf-8") != content:
+            print(f"{OUTPUT} está desactualizado; ejecuta {Path(__file__).name}", file=sys.stderr)
+            return 1
+        print(f"{OUTPUT}: actualizado ({count} puntos catalogados)")
+        return 0
+    OUTPUT.write_text(content, encoding="utf-8")
+    print(f"{OUTPUT}: {count} puntos catalogados")
     return 0
 
 

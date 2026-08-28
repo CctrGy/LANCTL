@@ -322,8 +322,18 @@ class DeviceDatabase:
                             operationId="database.device.update",
                         )
                     )
-        except (ValueError, OSError):
-            pass
+        except (ValueError, OSError) as error:
+            from lanctl.core.errors import errors
+
+            errors.from_exception(
+                error,
+                origin="LANCTL.Database.History",
+                code="DATABASE.HISTORY.WRITE.DEGRADED",
+                level=18,
+                details={"operation": "database.device.update"},
+                print_output=False,
+                once_key="database.history.write-degraded",
+            )
 
     @transactional_method
     def save_devices(self, devices: list[Device]) -> None:

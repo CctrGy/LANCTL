@@ -212,8 +212,18 @@ def _install_builtin_theme(root: Path) -> None:
             installed = json.loads(installed_info.read_text(encoding="utf-8"))
             if installed.get("version") == incoming.version:
                 return
-        except (OSError, json.JSONDecodeError):
-            pass
+        except (OSError, json.JSONDecodeError) as error:
+            from lanctl.core.errors import errors
+
+            errors.from_exception(
+                error,
+                origin="LANCTL.Plugins.Builtin.Theme",
+                code="PLUGINS.BUILTIN.MANIFEST.REPAIR",
+                level=16,
+                details={"pluginInfo": str(installed_info)},
+                print_output=False,
+                once_key="plugins.builtin.theme-manifest-repair",
+            )
     install_package(package, root)
 
 
@@ -230,6 +240,16 @@ def _install_builtin_package(root: Path, relative: str) -> None:
                 == incoming.version
             ):
                 return
-        except (OSError, json.JSONDecodeError):
-            pass
+        except (OSError, json.JSONDecodeError) as error:
+            from lanctl.core.errors import errors
+
+            errors.from_exception(
+                error,
+                origin="LANCTL.Plugins.Builtin.Package",
+                code="PLUGINS.BUILTIN.MANIFEST.REPAIR",
+                level=16,
+                details={"pluginInfo": str(installed_info), "package": relative},
+                print_output=False,
+                once_key=f"plugins.builtin.manifest-repair:{relative}",
+            )
     install_package(package, root)
