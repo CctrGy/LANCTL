@@ -16,6 +16,7 @@ PERMISSIONS = {
     "project.manage",
     "users.manage",
     "system.configure",
+    "system.destructive",
 }
 ROLE_PERMISSIONS = {
     "viewer": {"inventory.read", "history.read", "monitor.read", "smb.read"},

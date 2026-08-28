@@ -21,7 +21,12 @@ from lanctl.apps.access.https_server import (
 )
 from lanctl.apps.access.keys import generate_certificate, generate_host_key
 from lanctl.apps.access.network import source_allowed, validate_endpoint
-from lanctl.apps.access.remote import LanctlCommandAdapter, RemoteGuiApi, parse_remote_command
+from lanctl.apps.access.remote import (
+    LanctlCommandAdapter,
+    RemoteGuiApi,
+    parse_remote_command,
+    required_permission,
+)
 from lanctl.apps.access.runtime import AccessRuntime
 from lanctl.apps.access.service import AccessService
 from lanctl.apps.access.ssh_server import RestrictedSshServer, SshAccessServer
@@ -108,6 +113,24 @@ class AccessTests(unittest.TestCase):
             with self.assertRaises(PermissionError):
                 auth.consume_pairing(code)
             self.assertNotIn("csrfHash", _public_session(session))
+
+    def test_destructive_remote_commands_require_administrator_permission(self):
+        self.assertEqual(
+            required_permission(["element", "192.0.2.1", "-delete"]),
+            "system.destructive",
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            store = AccessStore(Path(temporary) / "users.json")
+            auth = AuthenticationService(store)
+            operator = auth.add_user("operator", ["operator"], "another-strong-password")
+            administrator = auth.add_user(
+                "administrator", ["administrator"], "another-strong-password"
+            )
+            with self.assertRaises(PermissionError):
+                AuthorizationService(store).require(operator, "system.destructive")
+            self.assertTrue(
+                AuthorizationService(store).require(administrator, "system.destructive")
+            )
 
     def test_expired_user_is_rejected_at_creation(self):
         with tempfile.TemporaryDirectory() as temporary:

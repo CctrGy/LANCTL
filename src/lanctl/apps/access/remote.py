@@ -56,6 +56,13 @@ def required_permission(arguments: list[str]) -> str:
     if not arguments:
         raise ValueError("indica un comando LANCTL")
     command = arguments[0].casefold()
+    lowered = {item.casefold() for item in arguments[1:]}
+    if (
+        (command == "element" and {"-delete", "--delete"} & lowered)
+        or (command == "group" and {"-del", "--delete"} & lowered)
+        or (command == "project" and "delete" in lowered)
+    ):
+        return "system.destructive"
     if command == "root":
         action = arguments[1].casefold() if len(arguments) > 1 else "status"
         if action == "status":

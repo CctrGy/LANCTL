@@ -193,6 +193,7 @@ class AuthenticationService:
             hashlib.sha256(csrf.encode()).hexdigest(),
         )
         self.store.save_session(session)
+        self.audit("access.session.created", user, "success", source_ip)
         return session, csrf
 
     def validate_session(self, session_id, source_ip, csrf=None):
