@@ -203,6 +203,30 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("scripts/generate-hashes.py", build)
         self.assertIn("scripts/verify-release.py", build)
 
+    def test_windows_version_metadata_contains_exact_git_revision(self):
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "version.txt"
+            revision = "a" * 40
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(root / "scripts/generate-windows-version-info.py"),
+                    "0.3.0-beta.20",
+                    revision,
+                    str(output),
+                ],
+                check=True,
+            )
+            metadata = output.read_text(encoding="utf-8")
+            self.assertIn("ProductVersion', u'0.3.0-beta.20", metadata)
+            self.assertIn(f"PrivateBuild', u'{revision}", metadata)
+
+        spec = (root / "LANCTL.spec").read_text(encoding="utf-8")
+        build = (root / "scripts/build-windows.ps1").read_text(encoding="utf-8")
+        self.assertIn("LANCTL_VERSION_INFO", spec)
+        self.assertIn("generate-windows-version-info.py", build)
+
 
 if __name__ == "__main__":
     unittest.main()

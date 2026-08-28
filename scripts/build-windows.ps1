@@ -18,6 +18,10 @@ try {
     # Usa el entorno reproducible del repositorio cuando existe.
     $Python = Join-Path $Root '.venv\Scripts\python.exe'
     if (-not (Test-Path -LiteralPath $Python)) { $Python = 'python' }
+    $VersionInfo = Join-Path $Root 'build\windows-version-info.generated.txt'
+    & $Python scripts/generate-windows-version-info.py $Version $Revision $VersionInfo
+    if ($LASTEXITCODE -ne 0) { throw 'Windows version metadata generation failed' }
+    $env:LANCTL_VERSION_INFO = $VersionInfo
     & $Python -m PyInstaller --clean --noconfirm LANCTL.spec
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller failed' }
     if (-not (Test-Path -LiteralPath 'dist\lanip.exe')) {
@@ -60,4 +64,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Checksum generation failed' }
     & $Python scripts/verify-release.py dist/release
     if ($LASTEXITCODE -ne 0) { throw 'Release verification failed' }
-} finally { Pop-Location }
+} finally {
+    Remove-Item Env:\LANCTL_VERSION_INFO -ErrorAction SilentlyContinue
+    Pop-Location
+}

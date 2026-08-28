@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
 import sys
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 PROJECT_ROOT = Path(SPECPATH)
 SOURCE_ROOT = PROJECT_ROOT / "src"
 sys.path.insert(0, str(SOURCE_ROOT))
+VERSION_INFO = os.environ.get("LANCTL_VERSION_INFO", "packaging/windows_version_info.txt")
 
 
 datas = collect_data_files("manuf") + [
@@ -54,7 +56,7 @@ exe = EXE(
     upx=True,
     console=True,
     icon="assets/lanctl-v3.ico",
-    version="packaging/windows_version_info.txt",
+    version=VERSION_INFO,
 )
 
 gui_exe = EXE(
@@ -70,7 +72,7 @@ gui_exe = EXE(
     upx=True,
     console=False,
     icon="assets/lanctl-v3.ico",
-    version="packaging/windows_version_info.txt",
+    version=VERSION_INFO,
 )
 
 # Entrada directa de la aplicación lógica LANIP. El orquestador LANCTL y este
@@ -105,7 +107,7 @@ ip_exe = EXE(
     upx=True,
     console=True,
     icon="assets/lanctl-v3.ico",
-    version="packaging/windows_version_info.txt",
+    version=VERSION_INFO,
 )
 
 # LANWIRE es la segunda entrada de la misma suite. Mantiene su propio archivo
@@ -139,5 +141,5 @@ physical_exe = EXE(
     upx=True,
     console=True,
     icon="assets/lanctl-v3.ico",
-    version="packaging/windows_version_info.txt",
+    version=VERSION_INFO,
 )
