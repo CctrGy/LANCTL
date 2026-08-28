@@ -20,7 +20,7 @@ Archivos inválidos se anotan en `errors` sin impedir el inicio del programa.
 ## API para la GUI
 
 ```python
-from app.assets.icons import get_icon_manager
+from lanctl.shared.assets.icons import get_icon_manager
 
 icons = get_icon_manager()
 icons.initialize()

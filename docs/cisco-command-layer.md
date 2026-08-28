@@ -54,7 +54,7 @@ run switch SW port unlabel NAS
 ## Catálogo y validación
 
 Las consultas generales admitidas corresponden al catálogo de `show` definido
-en `app/cisco/catalog.py`. Las acciones de puerto admiten:
+en `src/cisco/catalog.py`. Las acciones de puerto admiten:
 
 - `show`: status, description, config, errors y vlan;
 - `set`: description, speed y duplex;

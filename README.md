@@ -52,6 +52,7 @@ desinstalación y advertencias de SmartScreen.
 | Seguridad | Credenciales protegidas con DPAPI y confirmación de operaciones sensibles |
 | Presentación | GUI, CLI, consola interactiva, TUI y exportación a tabla, JSON, CSV, HTML o XML |
 | Proyectos | Contenedores `.vlf` verificables con inventario SQLite, configuración y auditoría |
+| Infraestructura física | LANWIRE integrado para armarios, cableado, puertos y conexiones físicas |
 | Extensiones | Complementos `.lcp` con permisos, eventos y ámbitos definidos |
 
 El complemento integrado `lanctl.example.network-summary` aporta los comandos
@@ -71,8 +72,30 @@ Los iconos JPEG de `125×125` utilizados por la GUI se catalogan en
 La beta.20 reúne las interfaces CLI, TUI y GUI con un mismo inventario, añade
 políticas de guardado para proyectos VLF y mantiene el acceso remoto desactivado
 hasta que el administrador lo configure expresamente. LANCTL administra el
-modelo lógico de la red y sus protocolos; el mapa físico de cableado permanece
-fuera del alcance actual.
+modelo lógico y LANWIRE el inventario físico de cableado, armarios y puertos.
+Ambos comparten la misma raíz de datos, pero nunca el mismo archivo o esquema.
+
+## LANWIRE: infraestructura física
+
+Las distribuciones Windows incluyen `lanip.exe` y `lanwire.exe` junto al
+orquestador `LANCTL.exe` y `LANCTL-GUI.exe`. Cada aplicación puede iniciarse
+directamente o mediante LANCTL:
+
+```powershell
+lanctl ip --tui
+lanip --tui
+lanctl wire
+lanctl wire list
+lanwire list
+```
+
+LANCTL exporta al proceso hijo la raíz resuelta como `LANCTL_DATA_DIR`. La
+prioridad común es: `LANCTL_DATA_DIR`, marcador portable `LANCTL.portable`,
+ámbito `LANCTL_DATA_SCOPE` y ubicación estándar del sistema. LANWIRE conserva
+su base SQLite en `physical/idf.db`; LANCTL mantiene `database/devices.json` y
+`monitoring/monitor.db` separados. La configuración publica la ruta como
+`physicalDatabase` y no intenta abrirla con el gestor JSON. Consulta
+[docs/LANWIRE.md](docs/LANWIRE.md).
 
 ## Historial estructurado del proyecto
 
@@ -128,19 +151,28 @@ python -m venv .venv
 python -m pip install -e .
 ```
 
-La instalación registra dos puntos de entrada equivalentes:
+La instalación registra el orquestador y las dos primeras aplicaciones:
 
 ```powershell
 lanctl --version
+lanip --version
 als --version
+lanwire --version
+lanwre --version
 ```
 
 También puede ejecutarse directamente desde el repositorio:
 
 ```powershell
-python main.py --help
+python lanctl.py --help
+python lanip.py --help
+python lanwire.py --help
 run.cmd --help
 ```
+
+LANCTL es el orquestador de la suite. LANIP gestiona el inventario lógico
+IP/MAC y LANWIRE gestiona la infraestructura física. El mismo build produce
+`LANCTL.exe`, `lanip.exe` y `lanwire.exe`; no requiere un repositorio hermano.
 
 ## Inicio rápido
 
@@ -158,7 +190,7 @@ instalación:
 
 ```powershell
 $env:LANCTL_DATA_DIR = "$PWD\runtime-clean"
-python main.py settings
+python lanctl.py settings
 ```
 
 Los datos locales continúan excluidos de Git. Una actualización nunca reemplaza
@@ -508,7 +540,7 @@ python -m unittest discover -s tests -v
 Antes de distribuir una compilación también conviene verificar la sintaxis:
 
 ```powershell
-python -m compileall -q app tests
+python -m compileall -q src tests
 ```
 
 ## Compilación para Windows
@@ -555,12 +587,19 @@ pio device monitor -p COM50 -b 115200
 ## Estructura del repositorio
 
 ```text
-app/           Aplicación y servicios de LANCTL
+src/lanctl/                  Paquete principal de la suite
+├── apps/ip/                 LANIP: dominio, infraestructura y CLI/TUI/GUI
+├── apps/wire/               LANWIRE: IDF, cableado y TUI/CLI
+├── apps/access/             Acceso remoto y credenciales compartidas
+├── apps/monitor/            Monitorización y eventos
+├── core/                    Configuración, datos, proyectos y plugins
+├── shared/                  Recursos comunes
+├── infrastructure/          Adaptadores de plataforma y distribución
+└── bootstrap/               Entradas lanctl, lanip y lanwire
 tests/         Pruebas automatizadas
 docs/          Contratos y documentación técnica
 assets/        Iconos y recursos visuales
 packaging/     Metadatos de distribución
-RackFimeware2/ Firmware experimental del rack
 ```
 
 ## Radmin Viewer

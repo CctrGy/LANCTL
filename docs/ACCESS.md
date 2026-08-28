@@ -58,6 +58,18 @@ lanctl access user add administrador --role administrator --ssh-key C:\Users\Vic
 ssh -p 2222 administrador@192.168.1.5
 ```
 
+Desde `F12 > REMOTE ACCESS > Usuarios remotos` se abre el administrador de
+cuentas. La tabla muestra usuario, nivel de acceso, estado y si existe una
+contraseña, pero nunca revela hashes ni secretos. Sus controles son `N` para
+crear, `P` para cambiar contraseña, `R` para cambiar rol, `E` para
+activar/desactivar y `Supr` para eliminar. Los niveles integrados son `viewer`,
+`operator`, `manager` y `administrator`.
+
+Las cuentas se almacenan en `users.dc`. Aunque el archivo sea estructurado, las
+contraseñas solo aparecen como hashes Scrypt con sal individual. Al abrir por
+primera vez esta versión, un `users.json` anterior se migra automáticamente sin
+perder las cuentas existentes.
+
 La sesión resultante es la consola restringida de LANCTL, no una shell de
 Windows. Además de los comandos autorizados dispone de controles exclusivos
 para el ordenador raíz:

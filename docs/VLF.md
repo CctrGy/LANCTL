@@ -34,7 +34,9 @@ project list ARCHIVO.vlf
 `settings --save-mode MODO` permite elegir:
 
 - `manual`: solo `project save` o `project update`.
-- `manual.inCloseConsult`: pregunta al cerrar si el workspace tiene cambios.
+- `manual.inCloseConsult` (también acepta `manual.consultToClose`): si el
+  workspace tiene cambios, el TUI abre una ventana para guardar, descartar o
+  cancelar el cierre.
 - `automatic.toClose`: al cerrar la invocación principal, CLI, TUI o GUI.
 - `automatic.toScan`: después de cada escaneo de red.
 - `automatic.timeToSave`: guardado periódico; el intervalo se configura con
