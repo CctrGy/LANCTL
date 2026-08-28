@@ -50,6 +50,12 @@ INITIAL_JSON_FILES = {
     "data/lc/monitor-profiles.json": {},
     "data/lc/monitor-assignments.json": {},
     "data/lc/cisco_profiles.json": {},
+    "data/lc/physical/idf.db": {
+        "format": "LANWRE-IDF-DB",
+        "version": 1,
+        "prefixes": {},
+        "records": {},
+    },
 }
 
 

@@ -46,9 +46,12 @@ class DataMigrationTests(unittest.TestCase):
                 "monitoring/profiles.json",
                 "monitoring/assignments.json",
                 "config/cisco_profiles.json",
+                "physical/idf.db",
             ):
                 with self.subTest(relative=relative):
                     json.loads((root / relative).read_text(encoding="utf-8"))
+            physical = json.loads((root / "physical/idf.db").read_text(encoding="utf-8"))
+            self.assertEqual(physical["format"], "LANWRE-IDF-DB")
 
     def test_bootstrap_does_not_overwrite_existing_data(self):
         with tempfile.TemporaryDirectory() as temporary:
