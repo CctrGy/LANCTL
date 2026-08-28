@@ -19,6 +19,14 @@ def normalize_mac(value: str) -> str:
     return normalized
 
 
+def is_private_mac(value: str) -> bool:
+    """Indica si la MAC usa el bit local (incluye direcciones aleatorias)."""
+    try:
+        return bool(int(normalize_mac(value).split(":", 1)[0], 16) & 0x02)
+    except ValueError:
+        return False
+
+
 def device_identifier(mac: str, ip: str) -> str:
     """Identificador estable y no secreto para enlazar datos auxiliares."""
     source = normalize_mac(mac) if mac else f"ip:{ip.strip().casefold()}"

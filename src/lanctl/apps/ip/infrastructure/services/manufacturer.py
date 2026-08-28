@@ -2,13 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-
-def _is_private_mac(mac: str) -> bool:
-    try:
-        first_octet = int(mac.split(":", 1)[0], 16)
-    except (ValueError, IndexError):
-        return False
-    return bool(first_octet & 0x02)
+from lanctl.apps.ip.domain.models.device import is_private_mac
 
 
 @lru_cache(maxsize=1)
@@ -40,7 +34,7 @@ def detect_manufacturer(mac: str) -> str:
     provided = resolve_manufacturer_extensions(normalized)
     if provided:
         return provided
-    if _is_private_mac(normalized):
+    if is_private_mac(normalized):
         return "MAC privada/aleatoria"
     parser = _parser()
     if parser is None:

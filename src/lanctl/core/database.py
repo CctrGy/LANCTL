@@ -6,6 +6,7 @@ from collections.abc import Iterable, Mapping
 from datetime import datetime
 
 from lanctl.apps.ip.domain.models import Device, normalize_cnf, normalize_mac
+from lanctl.apps.ip.domain.models.device import is_private_mac
 from lanctl.core.config import load_config
 from lanctl.core.file_transaction import atomic_write_json, transactional_method
 from lanctl.core.logger import write_database_log
@@ -77,6 +78,24 @@ class DeviceDatabase:
 
             # La MAC identifica al dispositivo aunque DHCP le asigne otra IP.
             previous_index = mac_indexes.get(mac) if mac else None
+            if previous_index is None and mac and is_private_mac(mac):
+                candidate_index = ip_indexes.get(ip)
+                candidate = devices[candidate_index] if candidate_index is not None else None
+                incoming_name = str(record.get("defaultName") or record.get("NAME") or "").strip()
+                previous_names = (
+                    {candidate.default_name.casefold(), candidate.name.casefold()}
+                    if candidate
+                    else set()
+                )
+                explicit_id = str(record.get("deviceId") or "")
+                if candidate and (
+                    (explicit_id and explicit_id == candidate.device_id)
+                    or (incoming_name and incoming_name.casefold() in previous_names)
+                ):
+                    # Una MAC aleatoria puede rotar manteniendo IP y hostname.
+                    # Exigimos evidencia estable para no fusionar dos equipos
+                    # distintos que reutilicen una concesión DHCP.
+                    previous_index = candidate_index
             # Sin MAC solo puede utilizarse la IP como identidad provisional.
             # Una MAC nueva nunca sustituye otra MAC por compartir la misma IP.
             if previous_index is None and not mac:
@@ -153,6 +172,8 @@ class DeviceDatabase:
                 # como etiqueta inicial y luego queda protegido.
                 incoming["NAME"] = incoming["defaultName"]
             if previous:
+                if previous.mac and previous.mac.upper() != incoming.mac.upper():
+                    mac_indexes.pop(previous.mac.upper(), None)
                 devices[previous_index] = incoming
             else:
                 previous_index = len(devices)

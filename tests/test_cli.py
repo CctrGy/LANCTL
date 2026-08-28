@@ -897,6 +897,40 @@ class DatabaseTests(unittest.TestCase):
             self.assertIn("defaultAlias", devices[0])
             self.assertIn("nameDeleted", devices[0])
 
+    def test_rotating_private_mac_with_stable_hostname_does_not_duplicate_device(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = DeviceDatabase(str(Path(directory) / "devices.json"))
+            original = database.upsert(
+                [
+                    {
+                        "IP": "192.168.1.25",
+                        "MAC": "02:11:22:33:44:55",
+                        "defaultName": "victor-phone",
+                    }
+                ]
+            )[0]
+            devices = database.upsert(
+                [
+                    {
+                        "IP": "192.168.1.25",
+                        "MAC": "06:AA:BB:CC:DD:EE",
+                        "defaultName": "victor-phone",
+                    }
+                ]
+            )
+            self.assertEqual(len(devices), 1)
+            self.assertEqual(devices[0].device_id, original.device_id)
+            self.assertEqual(devices[0].mac, "06:AA:BB:CC:DD:EE")
+
+    def test_private_mac_rotation_without_stable_evidence_remains_a_conflict(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = DeviceDatabase(str(Path(directory) / "devices.json"))
+            database.upsert([{"IP": "192.168.1.25", "MAC": "02:11:22:33:44:55"}])
+            devices = database.upsert(
+                [{"IP": "192.168.1.25", "MAC": "06:AA:BB:CC:DD:EE"}]
+            )
+            self.assertEqual(len(devices), 2)
+
     def test_empty_mac_does_not_erase_known_mac(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
