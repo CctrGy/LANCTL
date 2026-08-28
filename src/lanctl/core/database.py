@@ -139,6 +139,11 @@ class DeviceDatabase:
                 if not incoming.last_seen:
                     incoming.last_seen = previous.last_seen
                 incoming.icon_id = previous.icon_id
+                incoming.previous_ips = list(previous.previous_ips)
+                if previous.ip and previous.ip != incoming.ip:
+                    incoming.previous_ips = list(
+                        dict.fromkeys([*incoming.previous_ips, previous.ip])
+                    )
                 if previous["aliasDeleted"]:
                     incoming["ALIAS"] = ""
                 elif previous["ALIAS"] and previous["ALIAS"] != previous["defaultAlias"]:

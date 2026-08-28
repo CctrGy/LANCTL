@@ -47,6 +47,7 @@ class ExtensionTests(unittest.TestCase):
         self.assertLess(fast_timeout, accurate_timeout)
         self.assertGreater(fast_workers, accurate_workers)
         self.assertIn("wsd", accurate.extra_methods)
+        self.assertIn("smb", accurate.extra_methods)
 
     def test_discovery_probes_use_standard_multicast_endpoints(self):
         self.assertEqual(discovery_probe("wsd")[1], ("239.255.255.250", 3702))

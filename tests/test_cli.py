@@ -747,6 +747,18 @@ class DatabaseTests(unittest.TestCase):
             self.assertEqual(device.discovery_methods, ["ARP"])
             self.assertEqual(device.last_discovery, "ARP")
 
+    def test_ip_changes_are_retained_as_identity_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = DeviceDatabase(str(Path(directory) / "devices.json"))
+            database.upsert([{"IP": "192.168.1.44", "MAC": "DE:AD:BE:EF:FE:ED"}])
+            device = database.upsert([{"IP": "192.168.1.87", "MAC": "DE:AD:BE:EF:FE:ED"}])[0]
+            self.assertEqual(device.ip, "192.168.1.87")
+            self.assertEqual(device.previous_ips, ["192.168.1.44"])
+            self.assertEqual(
+                Device.from_dict(device.to_dict()).previous_ips,
+                ["192.168.1.44"],
+            )
+
     def test_search_finds_alias_name_ip_and_mac(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))

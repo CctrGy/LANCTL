@@ -93,6 +93,7 @@ class Device(MutableMapping[str, Any]):
     discovery_methods: list[str] = field(default_factory=list)
     last_discovery: str = ""
     last_seen: str = ""
+    previous_ips: list[str] = field(default_factory=list)
     icon_id: str = ""
 
     JSON_FIELDS: ClassVar[dict[str, str]] = {
@@ -115,6 +116,7 @@ class Device(MutableMapping[str, Any]):
         "discoveryMethods": "discovery_methods",
         "lastDiscovery": "last_discovery",
         "lastSeen": "last_seen",
+        "previousIPs": "previous_ips",
         "iconId": "icon_id",
     }
 
@@ -164,6 +166,9 @@ class Device(MutableMapping[str, Any]):
             ],
             last_discovery=str(value.get("lastDiscovery", "")),
             last_seen=str(value.get("lastSeen", "")),
+            previous_ips=[
+                str(address) for address in value.get("previousIPs", []) if str(address).strip()
+            ],
             icon_id=str(value.get("iconId", "")),
         )
 
@@ -192,6 +197,11 @@ class Device(MutableMapping[str, Any]):
         self.discovery_methods = list(
             dict.fromkeys(
                 method.strip().upper() for method in self.discovery_methods if method.strip()
+            )
+        )
+        self.previous_ips = list(
+            dict.fromkeys(
+                address for address in self.previous_ips if address and address != self.ip
             )
         )
 
