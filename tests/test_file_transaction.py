@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.core.file_transaction import InterProcessLock, atomic_write_json, update_json
+from lanctl.core.file_transaction import InterProcessLock, atomic_write_json, update_json
 
 
 def _increment_json(path: str, repetitions: int) -> None:

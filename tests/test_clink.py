@@ -2,7 +2,7 @@ import argparse
 import unittest
 from pathlib import Path
 
-from app.cli import build_parser
+from lanctl.apps.ip.interfaces.cli.main import build_parser
 
 
 class ClinkCompletionTests(unittest.TestCase):
@@ -30,6 +30,11 @@ class ClinkCompletionTests(unittest.TestCase):
 
     def test_removed_scope_is_not_completed(self):
         self.assertNotIn('"virtual"', self.script)
+
+    def test_error_log_level_completes_the_valid_integer_range(self):
+        self.assertIn("local error_log_levels = integer_range(1, 59)", self.script)
+        self.assertIn('"--error-log-level" .. error_log_levels', self.script)
+        self.assertNotIn('"--error-log-level" .. history_value', self.script)
 
     def test_clink_installation_instructions_are_shipped(self):
         readme = (Path(__file__).resolve().parents[1] / "packaging/clink/README.md").read_text(

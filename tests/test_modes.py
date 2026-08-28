@@ -4,13 +4,13 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from app.cli import build_parser
-from app.commands.modes import (
+from lanctl.apps.ip.interfaces.cli.commands.modes import (
     CliSelection,
     _clear_screen,
     _selected_command,
     run_global_cli,
 )
+from lanctl.apps.ip.interfaces.cli.main import build_parser
 
 
 class LanctlModeTests(unittest.TestCase):
@@ -19,7 +19,7 @@ class LanctlModeTests(unittest.TestCase):
         output = io.StringIO()
         with (
             patch(
-                "app.commands.project.active_project_info",
+                "lanctl.apps.ip.interfaces.cli.commands.project.active_project_info",
                 return_value={
                     "path": "C:/Projects/Casa.vlf",
                     "name": "Casa",
@@ -49,7 +49,7 @@ class LanctlModeTests(unittest.TestCase):
     def test_project_option_activates_the_vlf_before_opening_the_gui(self):
         from pathlib import Path
 
-        from app.cli import main
+        from lanctl.apps.ip.interfaces.cli.main import main
 
         project_path = "C:/Users/Victor/Desktop/Casa.vlf"
         parser = build_parser(include_plugin_commands=False)
@@ -58,20 +58,20 @@ class LanctlModeTests(unittest.TestCase):
             project_id="project-casa",
         )
         with (
-            patch("app.cli.configure_utf8_stdio"),
-            patch("app.core.data_migration.ensure_data_layout"),
-            patch("app.cli.run_automatic_log_cleanup"),
-            patch("app.i18n.initialize_language"),
-            patch("app.assets.icons.initialize_icons"),
-            patch("app.cli.load_plugin_safe_mode", return_value=True),
-            patch("app.plugins.get_plugin_manager") as manager_factory,
-            patch("app.cli.write_log"),
-            patch("app.cli.build_parser", return_value=parser),
+            patch("lanctl.apps.ip.interfaces.cli.main.configure_utf8_stdio"),
+            patch("lanctl.core.data_migration.ensure_data_layout"),
+            patch("lanctl.apps.ip.interfaces.cli.main.run_automatic_log_cleanup"),
+            patch("lanctl.shared.i18n.initialize_language"),
+            patch("lanctl.shared.assets.icons.initialize_icons"),
+            patch("lanctl.apps.ip.interfaces.cli.main.load_plugin_safe_mode", return_value=True),
+            patch("lanctl.core.plugins.get_plugin_manager") as manager_factory,
+            patch("lanctl.apps.ip.interfaces.cli.main.write_log"),
+            patch("lanctl.apps.ip.interfaces.cli.main.build_parser", return_value=parser),
             patch(
-                "app.projects.activate_project_workspace",
+                "lanctl.core.projects.activate_project_workspace",
                 return_value=workspace,
             ) as activate,
-            patch("app.gui.run_gui", return_value=0) as gui,
+            patch("lanctl.apps.ip.interfaces.gui.main.run_gui", return_value=0) as gui,
         ):
             result = main(["--project", project_path])
 
@@ -89,8 +89,10 @@ class LanctlModeTests(unittest.TestCase):
         self.assertIsNone(args.command)
 
     def test_cli_flag_opens_the_global_interactive_terminal(self):
-        with patch("app.cli.run_global_cli", return_value=0) as interactive:
-            from app.cli import main
+        with patch(
+            "lanctl.apps.ip.interfaces.cli.main.run_global_cli", return_value=0
+        ) as interactive:
+            from lanctl.apps.ip.interfaces.cli.main import main
 
             self.assertEqual(main(["--cli"]), 0)
         interactive.assert_called_once_with()
@@ -115,10 +117,16 @@ class LanctlModeTests(unittest.TestCase):
         values = iter(["select SW", "scan --ports 22", "exit"])
         dispatched = []
         with (
-            patch("app.commands.modes.load_config", return_value={"database": "db.json"}),
-            patch("app.commands.modes.DeviceDatabase") as database_type,
-            patch("app.cli.main", side_effect=lambda argv: dispatched.append(argv) or 0),
-            patch("app.commands.modes.ok"),
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.modes.load_config",
+                return_value={"database": "db.json"},
+            ),
+            patch("lanctl.apps.ip.interfaces.cli.commands.modes.DeviceDatabase") as database_type,
+            patch(
+                "lanctl.apps.ip.interfaces.cli.main.main",
+                side_effect=lambda argv: dispatched.append(argv) or 0,
+            ),
+            patch("lanctl.apps.ip.interfaces.cli.commands.modes.ok"),
         ):
             database_type.return_value.resolve.side_effect = lambda selector: (
                 device if selector == "SW" else (_ for _ in ()).throw(ValueError())
@@ -141,10 +149,16 @@ class LanctlModeTests(unittest.TestCase):
         values = iter(["select SW", "info", "exit"])
         dispatched = []
         with (
-            patch("app.commands.modes.load_config", return_value={"database": "db.json"}),
-            patch("app.commands.modes.DeviceDatabase") as database_type,
-            patch("app.cli.main", side_effect=lambda argv: dispatched.append(argv) or 0),
-            patch("app.commands.modes.ok"),
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.modes.load_config",
+                return_value={"database": "db.json"},
+            ),
+            patch("lanctl.apps.ip.interfaces.cli.commands.modes.DeviceDatabase") as database_type,
+            patch(
+                "lanctl.apps.ip.interfaces.cli.main.main",
+                side_effect=lambda argv: dispatched.append(argv) or 0,
+            ),
+            patch("lanctl.apps.ip.interfaces.cli.commands.modes.ok"),
         ):
             database_type.return_value.resolve.return_value = device
             run_global_cli(input_fn=lambda _prompt: next(values))

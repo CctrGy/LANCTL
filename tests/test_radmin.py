@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from app.protocols.radmin import build_arguments, validate_mode
+from lanctl.apps.ip.infrastructure.protocols.radmin import build_arguments, validate_mode
 
 
 class RadminProtocolTests(unittest.TestCase):

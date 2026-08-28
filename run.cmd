@@ -1,3 +1,3 @@
 @echo off
-python "%~dp0main.py" %*
+python "%~dp0lanctl.py" %*
 exit /b %errorlevel%

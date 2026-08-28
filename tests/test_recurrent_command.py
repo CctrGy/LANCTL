@@ -6,7 +6,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from app.cli import build_parser
+from lanctl.apps.ip.interfaces.cli.main import build_parser
 
 
 class RecurrentCommandTests(unittest.TestCase):
@@ -29,7 +29,7 @@ class RecurrentCommandTests(unittest.TestCase):
             encoding="utf-8",
         )
         path_patch = patch(
-            "app.core.recurrent_elements.application_path",
+            "lanctl.core.recurrent_elements.application_path",
             return_value=recurrent_path,
         )
         path_patch.start()

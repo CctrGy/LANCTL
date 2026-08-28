@@ -2,8 +2,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from app.plugins.contracts import FunctionResult
-from app.plugins.scanners import run_scanner_extensions
+from lanctl.core.plugins.contracts import FunctionResult
+from lanctl.core.plugins.scanners import run_scanner_extensions
 
 
 class ScannerPluginTests(unittest.TestCase):
@@ -29,7 +29,7 @@ class ScannerPluginTests(unittest.TestCase):
             ),
             audit=lambda *args: None,
         )
-        with patch("app.plugins.get_plugin_manager", return_value=manager):
+        with patch("lanctl.core.plugins.get_plugin_manager", return_value=manager):
             findings = run_scanner_extensions(("mdns",), 0.5)
 
         self.assertEqual(findings, {"192.168.1.20": {"MDNS"}})
@@ -49,7 +49,7 @@ class ScannerPluginTests(unittest.TestCase):
             functions=SimpleNamespace(call=lambda *args, **kwargs: calls.append(args)),
             audit=lambda *args: None,
         )
-        with patch("app.plugins.get_plugin_manager", return_value=manager):
+        with patch("lanctl.core.plugins.get_plugin_manager", return_value=manager):
             self.assertEqual(run_scanner_extensions(("wsd",), 0.5), {})
         self.assertEqual(calls, [])
 

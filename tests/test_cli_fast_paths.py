@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from app.cli import configure_utf8_stdio, main
+from lanctl.apps.ip.interfaces.cli.main import configure_utf8_stdio, main
 
 
 class CliFastPathTests(unittest.TestCase):
@@ -17,8 +17,8 @@ class CliFastPathTests(unittest.TestCase):
                 sys.executable,
                 "-c",
                 (
-                    "import sys; import app.cli; "
-                    "print(any(name.startswith('app.commands.') "
+                    "import sys; import lanctl.apps.ip.interfaces.cli.main; "
+                    "print(any(name.startswith('lanctl.apps.ip.interfaces.cli.commands.') "
                     "for name in sys.modules))"
                 ),
             ],
@@ -35,8 +35,8 @@ class CliFastPathTests(unittest.TestCase):
                 sys.executable,
                 "-c",
                 (
-                    "import sys; import app.plugins.contracts; "
-                    "print('app.plugins.manager' in sys.modules)"
+                    "import sys; import lanctl.core.plugins.contracts; "
+                    "print('lanctl.core.plugins.manager' in sys.modules)"
                 ),
             ],
             cwd=Path(__file__).resolve().parents[1],
@@ -52,8 +52,8 @@ class CliFastPathTests(unittest.TestCase):
                 sys.executable,
                 "-c",
                 (
-                    "import sys; from app.projects import active_project_info; "
-                    "print('app.projects.vlf' in sys.modules)"
+                    "import sys; from lanctl.core.projects import active_project_info; "
+                    "print('lanctl.core.projects.vlf' in sys.modules)"
                 ),
             ],
             cwd=Path(__file__).resolve().parents[1],
@@ -66,7 +66,10 @@ class CliFastPathTests(unittest.TestCase):
     def test_standard_text_output_is_configured_as_utf8(self):
         stdout = Mock()
         stderr = Mock()
-        with patch("app.cli.sys.stdout", stdout), patch("app.cli.sys.stderr", stderr):
+        with (
+            patch("lanctl.apps.ip.interfaces.cli.main.sys.stdout", stdout),
+            patch("lanctl.apps.ip.interfaces.cli.main.sys.stderr", stderr),
+        ):
             configure_utf8_stdio()
         stdout.reconfigure.assert_called_once_with(encoding="utf-8", errors="replace")
         stderr.reconfigure.assert_called_once_with(encoding="utf-8", errors="replace")

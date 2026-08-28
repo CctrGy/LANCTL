@@ -3,15 +3,15 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.core.config import load_config
-from app.models import Device
+from lanctl.apps.ip.domain.models import Device
+from lanctl.core.config import load_config
 
 
 class ConfigIsolationTests(unittest.TestCase):
     def test_missing_config_returns_independent_nested_defaults(self):
         with tempfile.TemporaryDirectory() as temporary:
             missing = Path(temporary) / "missing.json"
-            with patch("app.core.config.CONFIG_PATH", missing):
+            with patch("lanctl.core.config.CONFIG_PATH", missing):
                 first = load_config()
                 first["wol"]["port"] = 1
                 first["listColumns"].append("temporary")

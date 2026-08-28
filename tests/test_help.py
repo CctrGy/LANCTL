@@ -6,9 +6,9 @@ from unittest.mock import patch
 
 from colorama import Fore, Style
 
-from app.cli import build_parser
-from app.core.parser import LANCTLArgumentParser
-from app.i18n import t
+from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.core.parser import LANCTLArgumentParser
+from lanctl.shared.i18n import t
 
 
 def all_parsers(root):
@@ -32,7 +32,7 @@ class TtyBuffer(io.StringIO):
 
 class HelpTests(unittest.TestCase):
     def test_help_uses_current_terminal_width(self):
-        with patch("app.core.parser.terminal_columns", return_value=54):
+        with patch("lanctl.core.parser.terminal_columns", return_value=54):
             parser = build_parser()
             help_text = parser.format_help()
         # Los nombres canónicos con varios alias son tokens indivisibles.
@@ -59,7 +59,7 @@ class HelpTests(unittest.TestCase):
         # respeto de NO_COLOR sigue siendo responsabilidad del renderizador.
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("NO_COLOR", None)
-            with patch("app.core.parser.sys.stdout", stream):
+            with patch("lanctl.core.parser.sys.stdout", stream):
                 help_text = build_parser().format_help()
         self.assertIn(Style.BRIGHT + Fore.CYAN + t("LANCTL.PARSER.SECTION.USAGE"), help_text)
         self.assertIn(Style.BRIGHT + Fore.YELLOW + t("LANCTL.PARSER.SECTION.ARGUMENTS"), help_text)

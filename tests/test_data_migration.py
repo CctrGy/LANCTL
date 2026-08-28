@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.core.data_migration import ensure_data_layout, migrate_config_paths
+from lanctl.core.data_migration import ensure_data_layout, migrate_config_paths
 
 
 class DataMigrationTests(unittest.TestCase):
@@ -14,7 +14,7 @@ class DataMigrationTests(unittest.TestCase):
             root = Path(temporary) / "lanctl-data"
             with (
                 patch(
-                    "app.core.data_migration.application_directory", return_value=Path(temporary)
+                    "lanctl.core.data_migration.application_directory", return_value=Path(temporary)
                 ),
                 patch.dict("os.environ", {"LANCTL_DATA_DIR": str(root)}, clear=False),
             ):
@@ -58,7 +58,7 @@ class DataMigrationTests(unittest.TestCase):
             database.write_text('[{"IP":"192.0.2.1","MAC":"00:11:22:33:44:55"}]', encoding="utf-8")
             with (
                 patch(
-                    "app.core.data_migration.application_directory", return_value=Path(temporary)
+                    "lanctl.core.data_migration.application_directory", return_value=Path(temporary)
                 ),
                 patch.dict("os.environ", {"LANCTL_DATA_DIR": str(root)}, clear=False),
             ):
@@ -72,7 +72,7 @@ class DataMigrationTests(unittest.TestCase):
             legacy.mkdir(parents=True)
             (legacy / "devices.json").write_text("legacy", encoding="utf-8")
             with (
-                patch("app.core.data_migration.application_directory", return_value=root),
+                patch("lanctl.core.data_migration.application_directory", return_value=root),
                 patch.dict("os.environ", {"LANCTL_DATA_DIR": str(root / "data/lc")}, clear=False),
             ):
                 current = ensure_data_layout()
@@ -89,7 +89,7 @@ class DataMigrationTests(unittest.TestCase):
             (root / "data/lc/database").mkdir(parents=True)
             (root / "data/lc/database/devices.json").write_text("new", encoding="utf-8")
             with (
-                patch("app.core.data_migration.application_directory", return_value=root),
+                patch("lanctl.core.data_migration.application_directory", return_value=root),
                 patch.dict("os.environ", {"LANCTL_DATA_DIR": str(root / "data/lc")}, clear=False),
                 self.assertRaisesRegex(ValueError, "conflictos"),
             ):
@@ -106,7 +106,7 @@ class DataMigrationTests(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "semántica Windows")
     def test_installed_legacy_data_is_copied_out_of_program_files(self):
-        import app.core.paths as paths
+        import lanctl.core.paths as paths
 
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)

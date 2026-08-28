@@ -2,7 +2,7 @@ import ipaddress
 import unittest
 from unittest.mock import patch
 
-from app.services.lan_scanner import LanScanner
+from lanctl.apps.ip.infrastructure.services.lan_scanner import LanScanner
 
 
 class SpecialElementCnfTests(unittest.TestCase):
@@ -19,11 +19,11 @@ class SpecialElementCnfTests(unittest.TestCase):
             patch.object(scanner, "_local_mac", return_value=""),
             patch.object(scanner, "_resolve_name", return_value=""),
             patch(
-                "app.services.lan_scanner.active_arp_mac",
+                "lanctl.apps.ip.infrastructure.services.lan_scanner.active_arp_mac",
                 return_value="",
             ),
             patch(
-                "app.services.lan_scanner.local_ipv4",
+                "lanctl.apps.ip.infrastructure.services.lan_scanner.local_ipv4",
                 return_value=ipaddress.IPv4Address("10.0.0.2"),
             ),
         ):

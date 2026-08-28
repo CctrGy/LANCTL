@@ -3,10 +3,10 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from app.cli import build_parser
-from app.core.database import DeviceDatabase
-from app.models import normalize_cnf
-from app.tui import LanctlTui
+from lanctl.apps.ip.domain.models import normalize_cnf
+from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.apps.ip.interfaces.tui.main import LanctlTui
+from lanctl.core.database import DeviceDatabase
 
 
 class FixedCnfTests(unittest.TestCase):

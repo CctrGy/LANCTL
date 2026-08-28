@@ -3,14 +3,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.cisco.adapters import FakeCiscoAdapter
-from app.cisco.context import CiscoContext
-from app.cisco.executor import CiscoExecutor
-from app.cisco.models import Risk
-from app.cisco.planner import CiscoPlanner
-from app.cisco.profiles import load_profile
-from app.commands.switch import _device_profile
-from app.models import Device
+from lanctl.apps.ip.domain.models import Device
+from lanctl.apps.ip.infrastructure.cisco.adapters import FakeCiscoAdapter
+from lanctl.apps.ip.infrastructure.cisco.context import CiscoContext
+from lanctl.apps.ip.infrastructure.cisco.executor import CiscoExecutor
+from lanctl.apps.ip.infrastructure.cisco.models import Risk
+from lanctl.apps.ip.infrastructure.cisco.planner import CiscoPlanner
+from lanctl.apps.ip.infrastructure.cisco.profiles import load_profile
+from lanctl.apps.ip.interfaces.cli.commands.switch import _device_profile
 
 
 class CiscoCommandLayerTests(unittest.TestCase):

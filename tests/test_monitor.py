@@ -6,21 +6,21 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from app.cli import build_parser
-from app.core.database import DeviceDatabase
-from app.monitor.checks import CheckRegistry
-from app.monitor.identity import IdentityResolver, NetworkIdentity
-from app.monitor.incidents import IncidentManager
-from app.monitor.lifecycle import SingletonLock
-from app.monitor.models import CheckResult, CheckSpec, MonitorProfile
-from app.monitor.repositories import (
+from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.apps.monitor.checks import CheckRegistry
+from lanctl.apps.monitor.identity import IdentityResolver, NetworkIdentity
+from lanctl.apps.monitor.incidents import IncidentManager
+from lanctl.apps.monitor.lifecycle import SingletonLock
+from lanctl.apps.monitor.models import CheckResult, CheckSpec, MonitorProfile
+from lanctl.apps.monitor.repositories import (
     InMemoryIncidentRepository,
     InMemorySessionRepository,
 )
-from app.monitor.scheduler import MonitorScheduler, MonitorWorkerPool
-from app.monitor.sessions import SessionManager
-from app.monitor.state import StateEvaluator
-from app.platform.linux import LinuxPlatform
+from lanctl.apps.monitor.scheduler import MonitorScheduler, MonitorWorkerPool
+from lanctl.apps.monitor.sessions import SessionManager
+from lanctl.apps.monitor.state import StateEvaluator
+from lanctl.core.database import DeviceDatabase
+from lanctl.infrastructure.platform.linux import LinuxPlatform
 
 
 class ImmediateFuture:
@@ -71,7 +71,7 @@ class MonitorTests(unittest.TestCase):
         self.assertIsNone(pool.submit(lambda: None))
 
     def test_bounded_runner_limits_and_cooperative_cancellation(self):
-        from app.monitor.operations import BoundedRunner
+        from lanctl.apps.monitor.operations import BoundedRunner
 
         clock = [0.0]
         calls = []
@@ -186,7 +186,7 @@ class MonitorTests(unittest.TestCase):
         context = MagicMock()
         context.__enter__.return_value = MagicMock()
         with (
-            patch("app.commands.monitor._database", return_value=context),
+            patch("lanctl.apps.ip.interfaces.cli.commands.monitor._database", return_value=context),
             self.assertRaisesRegex(ValueError, "acción monitor no válida"),
         ):
             args.handler(args)
@@ -228,9 +228,12 @@ class MonitorTests(unittest.TestCase):
                 ]
             )
             with (
-                patch("app.commands.monitor.load_config", return_value=config),
                 patch(
-                    "app.commands.monitor.ping_targets",
+                    "lanctl.apps.ip.interfaces.cli.commands.monitor.load_config",
+                    return_value=config,
+                ),
+                patch(
+                    "lanctl.apps.ip.interfaces.cli.commands.monitor.ping_targets",
                     return_value={"status": "completed", "samples": 5, "lossPercent": 0},
                 ) as runner,
             ):
@@ -263,12 +266,17 @@ class MonitorTests(unittest.TestCase):
             from io import StringIO
 
             with (
-                patch("app.commands.monitor.load_config", return_value=config),
                 patch(
-                    "app.commands.monitor.scan_target", return_value={"success": True}
+                    "lanctl.apps.ip.interfaces.cli.commands.monitor.load_config",
+                    return_value=config,
+                ),
+                patch(
+                    "lanctl.apps.ip.interfaces.cli.commands.monitor.scan_target",
+                    return_value={"success": True},
                 ) as scanner,
                 patch(
-                    "app.commands.monitor.identify_target", return_value={"confidence": "confirmed"}
+                    "lanctl.apps.ip.interfaces.cli.commands.monitor.identify_target",
+                    return_value={"confidence": "confirmed"},
                 ),
                 contextlib.redirect_stdout(StringIO()),
             ):
@@ -297,8 +305,11 @@ class MonitorTests(unittest.TestCase):
 
             output = StringIO()
             with (
-                patch("app.commands.monitor.load_config", return_value=config),
-                patch("app.plugins.manager.get_plugin_manager", return_value=manager),
+                patch(
+                    "lanctl.apps.ip.interfaces.cli.commands.monitor.load_config",
+                    return_value=config,
+                ),
+                patch("lanctl.core.plugins.manager.get_plugin_manager", return_value=manager),
                 contextlib.redirect_stdout(output),
             ):
                 self.assertEqual(args.handler(args), 1)
@@ -319,8 +330,14 @@ class MonitorTests(unittest.TestCase):
             from io import StringIO
 
             with (
-                patch("app.commands.monitor.load_config", return_value=config),
-                patch("app.commands.monitor.HistoryService", return_value=history),
+                patch(
+                    "lanctl.apps.ip.interfaces.cli.commands.monitor.load_config",
+                    return_value=config,
+                ),
+                patch(
+                    "lanctl.apps.ip.interfaces.cli.commands.monitor.HistoryService",
+                    return_value=history,
+                ),
                 contextlib.redirect_stdout(StringIO()),
             ):
                 self.assertEqual(health.handler(health), 0)
@@ -344,8 +361,11 @@ class MonitorTests(unittest.TestCase):
 
             output = StringIO()
             with (
-                patch("app.commands.monitor.load_config", return_value=config),
-                patch("app.commands.monitor.os.kill") as killed,
+                patch(
+                    "lanctl.apps.ip.interfaces.cli.commands.monitor.load_config",
+                    return_value=config,
+                ),
+                patch("lanctl.apps.ip.interfaces.cli.commands.monitor.os.kill") as killed,
                 contextlib.redirect_stdout(output),
             ):
                 self.assertEqual(args.handler(args), 0)

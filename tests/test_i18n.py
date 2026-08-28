@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.i18n import ENGLISH_STRINGS, LanguageManager
+from lanctl.shared.i18n import ENGLISH_STRINGS, LanguageManager
 
 
 class LanguageTests(unittest.TestCase):

@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from app.commands.ping import run_ping
+from lanctl.apps.ip.interfaces.cli.commands.ping import run_ping
 
 
 class PingCommandTests(unittest.TestCase):
@@ -18,10 +18,16 @@ class PingCommandTests(unittest.TestCase):
     def test_auto_reports_device_found_by_arp_when_ping_is_blocked(self):
         device = SimpleNamespace(ip="192.168.1.44", mac="DE:AD:BE:EF:FE:ED")
         with (
-            patch("app.commands.ping.DeviceDatabase") as database,
-            patch("app.commands.ping.ping_details", return_value=(False, None, None)),
-            patch("app.commands.ping.active_arp_mac", return_value="DE:AD:BE:EF:FE:ED"),
-            patch("app.commands.ping.write_log"),
+            patch("lanctl.apps.ip.interfaces.cli.commands.ping.DeviceDatabase") as database,
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.ping.ping_details",
+                return_value=(False, None, None),
+            ),
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.ping.active_arp_mac",
+                return_value="DE:AD:BE:EF:FE:ED",
+            ),
+            patch("lanctl.apps.ip.interfaces.cli.commands.ping.write_log"),
         ):
             database.return_value.resolve.return_value = device
             self.assertEqual(run_ping(self._args()), 0)
@@ -29,11 +35,14 @@ class PingCommandTests(unittest.TestCase):
     def test_ping_only_does_not_send_active_arp(self):
         device = SimpleNamespace(ip="192.168.1.44", mac="DE:AD:BE:EF:FE:ED")
         with (
-            patch("app.commands.ping.DeviceDatabase") as database,
-            patch("app.commands.ping.ping_details", return_value=(True, 2.0, 64)),
-            patch("app.commands.ping.observed_arp_mac", return_value=""),
-            patch("app.commands.ping.active_arp_mac") as active_arp,
-            patch("app.commands.ping.write_log"),
+            patch("lanctl.apps.ip.interfaces.cli.commands.ping.DeviceDatabase") as database,
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.ping.ping_details",
+                return_value=(True, 2.0, 64),
+            ),
+            patch("lanctl.apps.ip.interfaces.cli.commands.ping.observed_arp_mac", return_value=""),
+            patch("lanctl.apps.ip.interfaces.cli.commands.ping.active_arp_mac") as active_arp,
+            patch("lanctl.apps.ip.interfaces.cli.commands.ping.write_log"),
         ):
             database.return_value.resolve.return_value = device
             self.assertEqual(run_ping(self._args("ping")), 0)

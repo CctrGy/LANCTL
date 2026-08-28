@@ -6,31 +6,45 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
-from app.access.auth import (
+from lanctl.apps.access.auth import (
     AuthenticationService,
     AuthorizationService,
     fingerprint_key,
     verify_password,
 )
-from app.access.firewall import FirewallManager
-from app.access.https_server import (
+from lanctl.apps.access.firewall import FirewallManager
+from lanctl.apps.access.https_server import (
     COOKIE_ATTRIBUTES,
     SECURITY_HEADERS,
     HttpsAccessServer,
     HttpsCapability,
 )
-from app.access.keys import generate_certificate, generate_host_key
-from app.access.network import source_allowed, validate_endpoint
-from app.access.remote import LanctlCommandAdapter, RemoteGuiApi, parse_remote_command
-from app.access.runtime import AccessRuntime
-from app.access.service import AccessService
-from app.access.ssh_server import RestrictedSshServer, SshAccessServer
-from app.access.store import AccessStore
-from app.cli import build_parser
-from app.commands.access import _public_session, _setup_wizard
+from lanctl.apps.access.keys import generate_certificate, generate_host_key
+from lanctl.apps.access.network import source_allowed, validate_endpoint
+from lanctl.apps.access.remote import LanctlCommandAdapter, RemoteGuiApi, parse_remote_command
+from lanctl.apps.access.runtime import AccessRuntime
+from lanctl.apps.access.service import AccessService
+from lanctl.apps.access.ssh_server import RestrictedSshServer, SshAccessServer
+from lanctl.apps.access.store import AccessStore
+from lanctl.apps.ip.interfaces.cli.commands.access import _public_session, _setup_wizard
+from lanctl.apps.ip.interfaces.cli.main import build_parser
 
 
 class AccessTests(unittest.TestCase):
+    def test_users_dc_migrates_the_legacy_store_without_exposing_passwords(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            legacy = Path(temporary) / "users.json"
+            old_store = AccessStore(legacy)
+            AuthenticationService(old_store).add_user(
+                "administrator", ["administrator"], "a-very-strong-password"
+            )
+
+            store = AccessStore(Path(temporary) / "users.dc")
+
+            self.assertFalse(legacy.exists())
+            self.assertEqual(store.users()[0].username, "administrator")
+            self.assertNotIn("a-very-strong-password", store.path.read_text(encoding="utf-8"))
+
     def test_defaults_are_disabled_and_monitor_does_not_change_them(self):
         with tempfile.TemporaryDirectory() as temporary:
             service = AccessService(Path(temporary) / "config.json", Path(temporary) / "users.json")
@@ -142,7 +156,7 @@ class AccessTests(unittest.TestCase):
             service = AccessService(Path(temporary) / "config.json", Path(temporary) / "users.json")
             service.initialize()
             before = service.status()
-            from app.monitor.configuration import ConfigProvider
+            from lanctl.apps.monitor.configuration import ConfigProvider
 
             with suppress(ValueError):
                 ConfigProvider(config={"monitor": {"enabled": True}}).monitor()
@@ -238,13 +252,17 @@ class AccessTests(unittest.TestCase):
             viewer = auth.add_user("viewer", ["viewer"], "another-strong-password")
             admin = auth.add_user("admin", ["administrator"], "another-strong-password")
             adapter = LanctlCommandAdapter(AuthorizationService(store))
-            with patch("app.access.root_control.root_status", return_value={"state": "BACKEND"}):
+            with patch(
+                "lanctl.apps.access.root_control.root_status", return_value={"state": "BACKEND"}
+            ):
                 code, output = adapter.execute(viewer, "root status")
             self.assertEqual(code, 0)
             self.assertIn("BACKEND", output)
             with self.assertRaises(PermissionError):
                 adapter.execute(viewer, "root refresh")
-            with patch("app.access.root_control.forced_view", return_value={"launched": True}):
+            with patch(
+                "lanctl.apps.access.root_control.forced_view", return_value={"launched": True}
+            ):
                 code, output = adapter.execute(admin, "root forced-view settings")
             self.assertEqual(code, 0)
             self.assertIn("launched", output)
@@ -426,7 +444,7 @@ class AccessTests(unittest.TestCase):
             + "$"
             + __import__("base64").b64encode(b"0" * 32).decode()
         )
-        with patch("app.access.auth.hashlib.scrypt") as derive:
+        with patch("lanctl.apps.access.auth.hashlib.scrypt") as derive:
             self.assertFalse(verify_password("password", encoded))
         derive.assert_not_called()
 

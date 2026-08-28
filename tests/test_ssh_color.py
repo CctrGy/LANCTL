@@ -2,7 +2,7 @@ import unittest
 
 from colorama import Fore
 
-from app.terminals.ssh_color import colorize_ssh_output, terminal_theme
+from lanctl.apps.ip.infrastructure.terminals.ssh_color import colorize_ssh_output, terminal_theme
 
 
 class SshColorTests(unittest.TestCase):

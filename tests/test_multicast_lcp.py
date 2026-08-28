@@ -2,8 +2,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.plugins.manager import PluginManager
-from app.plugins.package import build_package, verify_package
+from lanctl.core.plugins.manager import PluginManager
+from lanctl.core.plugins.package import build_package, verify_package
 
 
 class MulticastLcpTests(unittest.TestCase):

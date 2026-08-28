@@ -2,14 +2,14 @@ import io
 import ipaddress
 import unittest
 
-from app.commands.open import connection_target
-from app.core.output import render_records
-from app.core.progress import ScanProgress
-from app.core.query import matches_query
-from app.models import Device
-from app.services.lan_scanner import LanScanner
-from app.services.network_discovery import discovery_probe
-from app.services.scan_profiles import apply_profile
+from lanctl.apps.ip.domain.models import Device
+from lanctl.apps.ip.infrastructure.services.lan_scanner import LanScanner
+from lanctl.apps.ip.infrastructure.services.network_discovery import discovery_probe
+from lanctl.apps.ip.infrastructure.services.scan_profiles import apply_profile
+from lanctl.apps.ip.interfaces.cli.commands.open import connection_target
+from lanctl.core.output import render_records
+from lanctl.core.progress import ScanProgress
+from lanctl.core.query import matches_query
 
 
 class _Tty(io.StringIO):
@@ -34,7 +34,7 @@ class ExtensionTests(unittest.TestCase):
             LanScanner(network, 1, 0.1, 8, scan_order="invalid")
 
     def test_scan_options_are_available_from_cli(self):
-        from app.cli import build_parser
+        from lanctl.apps.ip.interfaces.cli.main import build_parser
 
         args = build_parser().parse_args(["list", "--scan-order", "random", "--timeout", "1.25"])
         self.assertEqual(args.scan_order, "random")

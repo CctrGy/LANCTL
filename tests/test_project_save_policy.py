@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from app.projects.save_policy import (
+from lanctl.core.projects.save_policy import (
     SaveMode,
     SaveTrigger,
     available_save_modes,
@@ -69,7 +69,7 @@ class ProjectSavePolicyTests(unittest.TestCase):
                 list=lambda kind: [extension] if kind == "project-save-mode" else []
             )
         )
-        with patch("app.plugins.get_plugin_manager", return_value=manager):
+        with patch("lanctl.core.plugins.get_plugin_manager", return_value=manager):
             modes = available_save_modes()
             self.assertEqual(normalize_save_mode("PLUGIN.NIGHTLY"), "plugin.nightly")
 
@@ -83,17 +83,17 @@ class ProjectSavePolicyTests(unittest.TestCase):
             workspace = SimpleNamespace(project_id="project-1")
             manager = SimpleNamespace(events=SimpleNamespace(emit=lambda *_args, **_kwargs: None))
             with (
-                patch("app.projects.save_policy.load_config", return_value=settings),
+                patch("lanctl.core.projects.save_policy.load_config", return_value=settings),
                 patch(
-                    "app.projects.vlf.update_project",
+                    "lanctl.core.projects.vlf.update_project",
                     return_value={"path": settings["activeProject"]},
                 ) as update,
                 patch(
-                    "app.projects.workspace.activate_project_workspace",
+                    "lanctl.core.projects.workspace.activate_project_workspace",
                     return_value=workspace,
                 ),
-                patch("app.plugins.get_plugin_manager", return_value=manager),
-                patch("app.projects.save_policy.write_log"),
+                patch("lanctl.core.plugins.get_plugin_manager", return_value=manager),
+                patch("lanctl.core.projects.save_policy.write_log"),
             ):
                 skipped = save_active_project(SaveTrigger.CHANGE)
                 saved = save_active_project(SaveTrigger.SCAN)
@@ -108,17 +108,17 @@ class ProjectSavePolicyTests(unittest.TestCase):
             workspace = SimpleNamespace(project_id="project-1")
             manager = SimpleNamespace(events=SimpleNamespace(emit=lambda *_args, **_kwargs: None))
             with (
-                patch("app.projects.save_policy.load_config", return_value=settings),
+                patch("lanctl.core.projects.save_policy.load_config", return_value=settings),
                 patch(
-                    "app.projects.vlf.update_project",
+                    "lanctl.core.projects.vlf.update_project",
                     return_value={"path": settings["activeProject"]},
                 ) as update,
                 patch(
-                    "app.projects.workspace.activate_project_workspace",
+                    "lanctl.core.projects.workspace.activate_project_workspace",
                     return_value=workspace,
                 ),
-                patch("app.plugins.get_plugin_manager", return_value=manager),
-                patch("app.projects.save_policy.write_log"),
+                patch("lanctl.core.plugins.get_plugin_manager", return_value=manager),
+                patch("lanctl.core.projects.save_policy.write_log"),
             ):
                 skipped = save_active_project(SaveTrigger.CLOSE)
                 saved = save_active_project(force=True)
@@ -131,8 +131,8 @@ class ProjectSavePolicyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             settings = self._workspace(Path(directory), SaveMode.MANUAL_CLOSE_CONSULT.value)
             with (
-                patch("app.projects.save_policy.load_config", return_value=settings),
-                patch("app.projects.save_policy.save_active_project") as save,
+                patch("lanctl.core.projects.save_policy.load_config", return_value=settings),
+                patch("lanctl.core.projects.save_policy.save_active_project") as save,
             ):
                 declined = close_active_project(input_fn=lambda _prompt: "n")
                 accepted = close_active_project(input_fn=lambda _prompt: "s")
@@ -141,6 +141,12 @@ class ProjectSavePolicyTests(unittest.TestCase):
             self.assertFalse(declined.saved)
             save.assert_called_once_with(SaveTrigger.CLOSE, force=True, config=settings)
             self.assertIs(accepted, save.return_value)
+
+    def test_user_facing_consult_to_close_alias_is_supported(self):
+        self.assertEqual(
+            normalize_save_mode("manual.consultToClose"),
+            SaveMode.MANUAL_CLOSE_CONSULT.value,
+        )
 
     def test_timed_mode_uses_timer_trigger(self):
         definitions = {item.mode: item for item in available_save_modes()}

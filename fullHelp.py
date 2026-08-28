@@ -7,14 +7,14 @@ la ayuda no tenga que mantenerse manualmente cada vez que cambia un comando.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import io
 import sys
 from collections.abc import Iterable
 from pathlib import Path
 
-from app import __version__
-from app.cli import build_parser
-
+from lanctl import __version__
+from lanctl.apps.ip.interfaces.cli.main import build_parser
 
 TREE_BRANCH = "├── "
 TREE_LAST = "└── "
@@ -99,11 +99,7 @@ def _subparser_groups(
 
 def _subparser_action(parser: argparse.ArgumentParser):
     return next(
-        (
-            action
-            for action in parser._actions
-            if isinstance(action, argparse._SubParsersAction)
-        ),
+        (action for action in parser._actions if isinstance(action, argparse._SubParsersAction)),
         None,
     )
 
@@ -114,7 +110,7 @@ def _usage(parser: argparse.ArgumentParser) -> str:
     value = buffer.getvalue().strip()
     for prefix in ("usage:", "Uso:"):
         if value.startswith(prefix):
-            value = value[len(prefix):].strip()
+            value = value[len(prefix) :].strip()
             break
     return _clean(value)
 
@@ -140,11 +136,7 @@ def _leaf_variants(parser: argparse.ArgumentParser) -> list[str]:
         if action.option_strings or isinstance(action, argparse._SubParsersAction):
             continue
         choices = list(action.choices or [_metavar(action)])
-        variants = [
-            f"{prefix} {choice}".strip()
-            for prefix in variants
-            for choice in choices
-        ]
+        variants = [f"{prefix} {choice}".strip() for prefix in variants for choice in choices]
     return variants or [""]
 
 
@@ -156,15 +148,16 @@ def _node_lines(parser: argparse.ArgumentParser) -> list[tuple[str, list[str]]]:
     nodes.append(("Sintaxis", [_usage(parser)]))
 
     positionals = [
-        action for action in parser._actions
-        if not action.option_strings
-        and not isinstance(action, argparse._SubParsersAction)
+        action
+        for action in parser._actions
+        if not action.option_strings and not isinstance(action, argparse._SubParsersAction)
     ]
     for action in sorted(positionals, key=lambda item: item.dest.casefold()):
         nodes.append((f"Argumento: {_metavar(action)}", _action_detail(action)))
 
     options = [
-        action for action in parser._actions
+        action
+        for action in parser._actions
         if action.option_strings and action.help is not argparse.SUPPRESS
     ]
     for action in sorted(options, key=lambda item: item.option_strings[0].lstrip("-/").casefold()):
@@ -180,8 +173,11 @@ def _node_lines(parser: argparse.ArgumentParser) -> list[tuple[str, list[str]]]:
 
 
 def _emit_details(
-    lines: list[str], prefix: str, nodes: list[tuple[str, list[str]]],
-    *, has_following: bool = False,
+    lines: list[str],
+    prefix: str,
+    nodes: list[tuple[str, list[str]]],
+    *,
+    has_following: bool = False,
 ) -> None:
     for index, (label, details) in enumerate(nodes):
         last = index == len(nodes) - 1 and not has_following
@@ -235,11 +231,14 @@ def build_full_help() -> str:
 def _arguments(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Genera la ayuda completa de LANCTL.")
     parser.add_argument(
-        "-o", "--output", metavar="ARCHIVO",
+        "-o",
+        "--output",
+        metavar="ARCHIVO",
         help="Guarda la referencia en UTF-8 además de mostrarla.",
     )
     parser.add_argument(
-        "--no-print", action="store_true",
+        "--no-print",
+        action="store_true",
         help="No muestra la referencia; requiere --output.",
     )
     args = parser.parse_args(argv)
@@ -256,10 +255,8 @@ def main(argv: Iterable[str] | None = None) -> int:
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(content, encoding="utf-8", newline="")
     if not args.no_print:
-        try:
+        with contextlib.suppress(AttributeError, io.UnsupportedOperation):
             sys.stdout.reconfigure(encoding="utf-8")
-        except (AttributeError, io.UnsupportedOperation):
-            pass
         print(content, end="")
     return 0
 

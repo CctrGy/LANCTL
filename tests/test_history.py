@@ -7,10 +7,10 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from app.cli import build_parser
-from app.core.database import DeviceDatabase
-from app.core.history import DeviceSnapshot, HistoryEvent, HistoryReader, HistoryService
-from app.projects.vlf import append_database_log, create_project, verify_project
+from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.core.database import DeviceDatabase
+from lanctl.core.history import DeviceSnapshot, HistoryEvent, HistoryReader, HistoryService
+from lanctl.core.projects.vlf import append_database_log, create_project, verify_project
 
 
 class HistoryTests(unittest.TestCase):
@@ -104,13 +104,15 @@ class HistoryTests(unittest.TestCase):
             args = build_parser().parse_args(["history", "NAS", "--format", "json"])
             output = io.StringIO()
             with (
-                patch("app.core.history.load_config", return_value={"activeProject": str(project)}),
+                patch(
+                    "lanctl.core.history.load_config", return_value={"activeProject": str(project)}
+                ),
                 contextlib.redirect_stdout(output),
             ):
                 self.assertEqual(args.handler(args), 0)
             self.assertEqual(json.loads(output.getvalue())[0]["type"], "device.detected")
             with (
-                patch("app.core.history.load_config", return_value={"activeProject": None}),
+                patch("lanctl.core.history.load_config", return_value={"activeProject": None}),
                 self.assertRaisesRegex(ValueError, "proyecto VLF activo"),
             ):
                 HistoryService()

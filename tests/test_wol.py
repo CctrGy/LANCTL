@@ -5,12 +5,12 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from app.cli import build_parser
-from app.commands.wol import _validate_graph, run_wol
-from app.core.conditions import ConditionContext, evaluate, parse_condition
-from app.core.database import DeviceDatabase
-from app.plugins.package import verify_package
-from app.plugins.wol_runtime import magic_packet, send_magic_packet, validate_mac
+from lanctl.apps.ip.interfaces.cli.commands.wol import _validate_graph, run_wol
+from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.core.conditions import ConditionContext, evaluate, parse_condition
+from lanctl.core.database import DeviceDatabase
+from lanctl.core.plugins.package import verify_package
+from lanctl.core.plugins.wol_runtime import magic_packet, send_magic_packet, validate_mac
 
 
 class WolTests(unittest.TestCase):
@@ -72,9 +72,9 @@ class WolTests(unittest.TestCase):
                 ["wol", device.device_id, "--dry-run", "--json", "--database", path]
             )
             with (
-                patch("app.commands.wol._online", return_value=False),
-                patch("app.commands.wol.send_magic_packet") as send,
-                patch("app.commands.wol.write_log"),
+                patch("lanctl.apps.ip.interfaces.cli.commands.wol._online", return_value=False),
+                patch("lanctl.apps.ip.interfaces.cli.commands.wol.send_magic_packet") as send,
+                patch("lanctl.apps.ip.interfaces.cli.commands.wol.write_log"),
             ):
                 import contextlib
                 from io import StringIO
@@ -95,7 +95,7 @@ class WolTests(unittest.TestCase):
             args = build_parser().parse_args(
                 ["wol", "PC", "shutdown", "-t", "10m", "--json", "--database", path]
             )
-            with patch("app.commands.wol.write_log"):
+            with patch("lanctl.apps.ip.interfaces.cli.commands.wol.write_log"):
                 import contextlib
                 from io import StringIO
 
@@ -152,7 +152,7 @@ class WolTests(unittest.TestCase):
             import contextlib
             from io import StringIO
 
-            with patch("app.commands.wol.write_log"):
+            with patch("lanctl.apps.ip.interfaces.cli.commands.wol.write_log"):
                 with contextlib.redirect_stdout(StringIO()):
                     self.assertEqual(run_wol(configure), 0)
                 output = StringIO()
@@ -172,9 +172,9 @@ class WolTests(unittest.TestCase):
                 ["wol", "PC", "-if", "online", "--json", "--database", path]
             )
             with (
-                patch("app.commands.wol._online", return_value=False),
-                patch("app.commands.wol.send_magic_packet") as send,
-                patch("app.commands.wol.write_log"),
+                patch("lanctl.apps.ip.interfaces.cli.commands.wol._online", return_value=False),
+                patch("lanctl.apps.ip.interfaces.cli.commands.wol.send_magic_packet") as send,
+                patch("lanctl.apps.ip.interfaces.cli.commands.wol.write_log"),
             ):
                 import contextlib
                 from io import StringIO
@@ -220,8 +220,8 @@ class WolTests(unittest.TestCase):
 
             with (
                 patch.object(DeviceDatabase, "load", wraps=database.load) as load,
-                patch("app.commands.wol._online", return_value=False),
-                patch("app.commands.wol.write_log"),
+                patch("lanctl.apps.ip.interfaces.cli.commands.wol._online", return_value=False),
+                patch("lanctl.apps.ip.interfaces.cli.commands.wol.write_log"),
                 contextlib.redirect_stdout(StringIO()),
             ):
                 self.assertEqual(run_wol(args), 0)

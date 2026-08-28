@@ -10,31 +10,31 @@ from unittest.mock import patch
 
 from colorama import Fore, Style
 
-from app import __version__
-from app.cli import build_parser
-from app.commands.download_settings import lan_settings
-from app.commands.group import _paint
-from app.commands.list import active_flags, filter_rows, ip_in_range
-from app.commands.terminal import choose_terminal
-from app.core.config import normalize_dhcp_range
-from app.core.credentials import CredentialStore
-from app.core.database import DeviceDatabase
-from app.core.differences import compare_scan
-from app.core.group_database import GroupDatabase
-from app.core.log_cleanup import cleanup_old_logs
-from app.core.logger import write_database_log, write_log
-from app.core.output import STRIKETHROUGH, normalize_columns, render_records
-from app.core.tr064 import Tr064Client
-from app.models import Device, normalize_cnf, normalize_mac
-from app.protocols.ssh import (
+from lanctl import __version__
+from lanctl.apps.ip.domain.models import Device, normalize_cnf, normalize_mac
+from lanctl.apps.ip.infrastructure.protocols.ssh import (
     SSH_PROFILES,
     SshProfile,
     disabled_algorithms,
     run_show_command,
 )
-from app.services.lan_scanner import LanScanner, resolve_network
-from app.services.manufacturer import detect_manufacturer
-from app.terminals.tr064 import parse_call
+from lanctl.apps.ip.infrastructure.services.lan_scanner import LanScanner, resolve_network
+from lanctl.apps.ip.infrastructure.services.manufacturer import detect_manufacturer
+from lanctl.apps.ip.infrastructure.terminals.tr064 import parse_call
+from lanctl.apps.ip.interfaces.cli.commands.download_settings import lan_settings
+from lanctl.apps.ip.interfaces.cli.commands.group import _paint
+from lanctl.apps.ip.interfaces.cli.commands.list import active_flags, filter_rows, ip_in_range
+from lanctl.apps.ip.interfaces.cli.commands.terminal import choose_terminal
+from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.core.config import normalize_dhcp_range
+from lanctl.core.credentials import CredentialStore
+from lanctl.core.database import DeviceDatabase
+from lanctl.core.differences import compare_scan
+from lanctl.core.group_database import GroupDatabase
+from lanctl.core.log_cleanup import cleanup_old_logs
+from lanctl.core.logger import write_database_log, write_log
+from lanctl.core.output import STRIKETHROUGH, normalize_columns, render_records
+from lanctl.core.tr064 import Tr064Client
 
 
 class OutputTests(unittest.TestCase):
@@ -564,7 +564,7 @@ class NetworkTests(unittest.TestCase):
             patch.object(scanner, "_local_mac", return_value="CC:CC:CC:CC:CC:CC"),
             patch.object(scanner, "_resolve_name", return_value=""),
             patch(
-                "app.services.lan_scanner.local_ipv4",
+                "lanctl.apps.ip.infrastructure.services.lan_scanner.local_ipv4",
                 return_value=ipaddress.IPv4Address("192.168.1.6"),
             ),
         ):
@@ -588,11 +588,11 @@ class NetworkTests(unittest.TestCase):
             patch.object(scanner, "_local_mac", return_value=""),
             patch.object(scanner, "_resolve_name", return_value=""),
             patch(
-                "app.services.lan_scanner.active_arp_mac",
+                "lanctl.apps.ip.infrastructure.services.lan_scanner.active_arp_mac",
                 side_effect=lambda ip, _timeout: target_mac if ip == "192.168.1.44" else "",
             ),
             patch(
-                "app.services.lan_scanner.local_ipv4",
+                "lanctl.apps.ip.infrastructure.services.lan_scanner.local_ipv4",
                 return_value=ipaddress.IPv4Address("192.168.1.46"),
             ),
         ):
@@ -621,7 +621,9 @@ class NetworkTests(unittest.TestCase):
 
         with (
             patch.object(scanner, "_ping", side_effect=ping),
-            patch("app.services.lan_scanner.active_arp_mac", side_effect=arp),
+            patch(
+                "lanctl.apps.ip.infrastructure.services.lan_scanner.active_arp_mac", side_effect=arp
+            ),
         ):
             alive, macs = scanner._parallel_discovery(["192.168.1.1"], use_icmp=True, use_arp=True)
 
@@ -667,7 +669,7 @@ class NetworkTests(unittest.TestCase):
             patch.object(scanner, "_local_mac", return_value=""),
             patch.object(scanner, "_resolve_name", return_value=""),
             patch(
-                "app.services.lan_scanner.local_ipv4",
+                "lanctl.apps.ip.infrastructure.services.lan_scanner.local_ipv4",
                 return_value=ipaddress.IPv4Address("192.168.1.46"),
             ),
         ):
@@ -693,8 +695,8 @@ class DatabaseTests(unittest.TestCase):
             after.alias = "NEW"
             after.credentials = {"ssh": "credential-2"}
             with (
-                patch("app.core.database.load_config", return_value={"database": str(path)}),
-                patch("app.core.database.write_database_log") as audit,
+                patch("lanctl.core.database.load_config", return_value={"database": str(path)}),
+                patch("lanctl.core.database.write_database_log") as audit,
             ):
                 database._audit_changes([before], [after])
 
@@ -1298,10 +1300,13 @@ class TerminalTests(unittest.TestCase):
 
 class VersionTests(unittest.TestCase):
     def test_version_does_not_build_commands_or_touch_data(self):
-        from app.cli import main
+        from lanctl.apps.ip.interfaces.cli.main import main
 
         with (
-            patch("app.cli.build_parser", side_effect=AssertionError("data access")),
+            patch(
+                "lanctl.apps.ip.interfaces.cli.main.build_parser",
+                side_effect=AssertionError("data access"),
+            ),
             patch("builtins.print") as output,
             self.assertRaises(SystemExit) as result,
         ):

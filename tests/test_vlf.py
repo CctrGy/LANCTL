@@ -5,7 +5,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from app.projects.vlf import (
+from lanctl.core.projects.vlf import (
     REQUIRED_ENTRIES,
     _normalized_log_name,
     append_database_log,

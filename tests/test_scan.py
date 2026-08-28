@@ -1,6 +1,6 @@
 import unittest
 
-from app.services.element_scanner import (
+from lanctl.apps.ip.infrastructure.services.element_scanner import (
     identify_device,
     identify_tcp_service,
     parse_ports,

@@ -4,9 +4,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from app.core.plugin_storage import PluginStorage
-from app.plugins.smb_runtime import SMBError, SMBService, classify_share, unc_path
-from app.plugins.ui_contracts import (
+from lanctl.core.plugin_storage import PluginStorage
+from lanctl.core.plugins.smb_runtime import SMBError, SMBService, classify_share, unc_path
+from lanctl.core.plugins.ui_contracts import (
     validate_form_schema,
     validate_ui_action,
     validate_ui_panel,
@@ -82,7 +82,7 @@ class SMBTests(unittest.TestCase):
         self.assertEqual(native.opened, [])
 
     def test_linux_smbclient_parses_workgroups_shares_and_printers(self):
-        from app.plugins.smb_runtime import SMBNative
+        from lanctl.core.plugins.smb_runtime import SMBNative
 
         completed = SimpleNamespace(
             returncode=0,
@@ -91,9 +91,11 @@ class SMBTests(unittest.TestCase):
         )
         native = SMBNative()
         with (
-            patch("app.plugins.smb_runtime.os.name", "posix"),
-            patch("app.plugins.smb_runtime.shutil.which", return_value="/usr/bin/smbclient"),
-            patch("app.plugins.smb_runtime.subprocess.run", return_value=completed) as run,
+            patch("lanctl.core.plugins.smb_runtime.os.name", "posix"),
+            patch(
+                "lanctl.core.plugins.smb_runtime.shutil.which", return_value="/usr/bin/smbclient"
+            ),
+            patch("lanctl.core.plugins.smb_runtime.subprocess.run", return_value=completed) as run,
         ):
             shares = native.shares("nas")
             identity = native.identity("nas")

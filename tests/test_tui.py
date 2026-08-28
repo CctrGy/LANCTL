@@ -4,8 +4,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from app.cli import build_parser
-from app.tui import (
+from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.apps.ip.interfaces.tui.main import (
     CLI_PANEL,
     LIST_ELEMENT_PANEL,
     TUI_ELEMENT_HELP,
@@ -20,6 +20,7 @@ from app.tui import (
     _expand_tui_widths,
     _fit_ansi,
     _function_bar,
+    _help_command_entries,
     _inject_selected_group_element,
     _is_interactive_terminal,
     _last_meaningful_line,
@@ -29,7 +30,7 @@ from app.tui import (
     _spinner_character,
     _translate_tui_element,
 )
-from app.tui_modal import ModalState, SettingField
+from lanctl.apps.ip.interfaces.tui.modal import HelpCommand, ModalState, SettingField
 
 
 class TuiTests(unittest.TestCase):
@@ -46,8 +47,8 @@ class TuiTests(unittest.TestCase):
         tui = LanctlTui.__new__(LanctlTui)
         tui.screen = io.StringIO()
         with (
-            patch("app.tui.os.name", "nt"),
-            patch("app.tui.sys.stdin", io.StringIO()),
+            patch("lanctl.apps.ip.interfaces.tui.main.os.name", "nt"),
+            patch("lanctl.apps.ip.interfaces.tui.main.sys.stdin", io.StringIO()),
             self.assertRaisesRegex(OSError, "terminal interactiva"),
         ):
             tui.run()
@@ -195,6 +196,82 @@ class TuiTests(unittest.TestCase):
         tui._handle_settings_key(tui.modal, "DOWN")
         self.assertNotEqual(tui.modal.items[tui.modal.selected].key, first_key)
 
+    def test_remote_access_settings_opens_the_masked_user_manager(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui._last_screen_lines = []
+        tui.modal = None
+        tui.messages = []
+        tui.show_settings()
+        tui.modal.tab_index = tui.modal.tabs.index("REMOTE ACCESS")
+        remote_indices = tui._settings_field_indices(tui.modal)
+        tui.modal.selected = remote_indices[-1]
+
+        with patch.object(
+            tui,
+            "_remote_access_capture",
+            return_value=(
+                0,
+                json.dumps(
+                    [
+                        {
+                            "username": "administrator",
+                            "roles": ["administrator"],
+                            "enabled": True,
+                            "passwordConfigured": True,
+                        }
+                    ]
+                ),
+            ),
+        ):
+            tui._handle_settings_key(tui.modal, "ENTER")
+
+        self.assertEqual(tui.modal.kind, "remote_users")
+        rendered = "\n".join(tui._modal_page(tui.modal))
+        self.assertIn("administrator", rendered)
+        self.assertIn("CONFIGURADA", rendered)
+        self.assertNotIn("passwordHash", rendered)
+
+    def test_manual_consult_to_close_opens_a_modal_and_can_cancel_exit(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui._last_screen_lines = ["INVENTARIO"]
+        tui.modal = None
+        tui.messages = []
+        tui.running = True
+        settings = {
+            "projectSaveMode": "manual.consultToClose",
+            "activeProject": "C:/Projects/office.vlf",
+        }
+        with (
+            patch("lanctl.apps.ip.interfaces.tui.main.load_config", return_value=settings),
+            patch("lanctl.core.projects.save_policy.workspace_is_dirty", return_value=True),
+        ):
+            tui._begin_close()
+
+        self.assertEqual(tui.modal.kind, "project_close")
+        self.assertTrue(tui.running)
+        tui._handle_project_close_key(tui.modal, "ESC")
+        self.assertIsNone(tui.modal)
+        self.assertTrue(tui.running)
+
+    def test_close_modal_passes_discard_decision_to_common_shutdown(self):
+        from lanctl.core.projects.save_policy import _consume_close_answer
+
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.running = True
+        tui.modal = ModalState(
+            "project_close",
+            "CAMBIOS SIN GUARDAR",
+            ["Cerrar"],
+            [["Guardar", "Descartar"]],
+            items=["save", "discard"],
+            selected=1,
+        )
+
+        tui._handle_project_close_key(tui.modal, "ENTER")
+
+        self.assertFalse(tui.running)
+        self.assertEqual(_consume_close_answer(), "discard")
+
     def test_command_history_opens_modal_and_recovers_selection(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.detail_lines = []
@@ -261,7 +338,7 @@ class TuiTests(unittest.TestCase):
             changes=(),
             device=SimpleNamespace(label="NAS"),
         )
-        with patch("app.core.history.HistoryService") as service:
+        with patch("lanctl.core.history.HistoryService") as service:
             service.return_value.query.return_value = [event]
             tui.show_history()
         self.assertEqual(tui.view_state, "history")
@@ -288,7 +365,7 @@ class TuiTests(unittest.TestCase):
         tui.render = lambda: observed_prompts.append(tui.secret_prompt)
 
         with (
-            patch("app.tui.os.name", "nt"),
+            patch("lanctl.apps.ip.interfaces.tui.main.os.name", "nt"),
             patch.dict(
                 "sys.modules",
                 {
@@ -348,7 +425,7 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(_selectable_output_indexes(lines), [2, 3])
 
     def test_f2_modal_splits_information_and_lists_ports(self):
-        from app.tui import LanctlTui
+        from lanctl.apps.ip.interfaces.tui.main import LanctlTui
 
         tui = LanctlTui.__new__(LanctlTui)
         tui.devices = [
@@ -418,6 +495,56 @@ class TuiTests(unittest.TestCase):
 
         self.assertEqual(tui.modal.tab_index, 1)
         self.assertEqual(tui.modal.background, ["PANTALLA PRINCIPAL"])
+
+    def test_help_modal_navigates_commands_and_opens_live_detail(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui._last_screen_lines = ["PANTALLA PRINCIPAL"]
+        tui.modal = None
+        tui.command = ""
+        tui.cursor = 0
+        tui.messages = []
+
+        tui.show_help_modal()
+        first = tui.modal.items[0]
+        tui._handle_help_key(tui.modal, "DOWN")
+        selected = tui.modal.items[tui.modal.selected]
+
+        self.assertNotEqual(selected.name, first.name)
+        self.assertIn(f"LANCTL {selected.name}", "\n".join(tui.modal.pages[1]))
+        tui._handle_help_key(tui.modal, "ENTER")
+        self.assertEqual(tui.modal.tab_index, 1)
+
+    def test_help_tab_prepares_selected_command_in_prompt(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.command = ""
+        tui.cursor = 0
+        tui.messages = []
+        entry = HelpCommand("scan", "Escanea un elemento", "Usage: LANCTL scan")
+        tui.modal = ModalState(
+            "help",
+            "HELP",
+            ["Comandos", "Detalle", "Teclas"],
+            [[], [], []],
+            items=[entry],
+        )
+
+        tui._handle_help_key(tui.modal, "TAB")
+
+        self.assertIsNone(tui.modal)
+        self.assertEqual(tui.command, "scan ")
+        self.assertEqual(tui.cursor, len(tui.command))
+        self.assertIn("Comando preparado", tui.messages[0])
+
+    def test_help_catalog_is_generated_from_the_real_parser(self):
+        entries = _help_command_entries()
+        names = {entry.name for entry in entries}
+
+        self.assertIn("list", names)
+        self.assertIn("settings", names)
+        self.assertIn("project", names)
+        project = next(entry for entry in entries if entry.name == "project")
+        self.assertIn("create", project.subcommands)
+        self.assertTrue(project.usage)
 
     def test_reload_is_an_internal_tui_command(self):
         tui = object.__new__(LanctlTui)
@@ -547,14 +674,17 @@ class TuiTests(unittest.TestCase):
 
         with (
             patch(
-                "app.tui.load_config",
+                "lanctl.apps.ip.interfaces.tui.main.load_config",
                 return_value={
                     "database": "projects/casa/devices.json",
                     "dhcpRange": "192.168.1.20-192.168.1.100",
                 },
             ),
-            patch("app.tui.DeviceDatabase") as database_type,
-            patch("app.tui.active_project_info", return_value={"name": "Casa"}),
+            patch("lanctl.apps.ip.interfaces.tui.main.DeviceDatabase") as database_type,
+            patch(
+                "lanctl.apps.ip.interfaces.tui.main.active_project_info",
+                return_value={"name": "Casa"},
+            ),
         ):
             database_type.return_value.load.return_value = [new]
             tui.reload()

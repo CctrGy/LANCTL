@@ -3,16 +3,16 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.plugins.device_adapters import resolve_manufacturer_extensions
-from app.plugins.manager import PluginManager
-from app.plugins.package import build_package, verify_package
-from app.services.manufacturer import detect_manufacturer
+from lanctl.apps.ip.infrastructure.services.manufacturer import detect_manufacturer
+from lanctl.core.plugins.device_adapters import resolve_manufacturer_extensions
+from lanctl.core.plugins.manager import PluginManager
+from lanctl.core.plugins.package import build_package, verify_package
 
 
 class MacVendorPluginTests(unittest.TestCase):
     def test_core_manufacturer_detection_prefers_active_adapter(self):
         with patch(
-            "app.plugins.device_adapters.resolve_manufacturer_extensions",
+            "lanctl.core.plugins.device_adapters.resolve_manufacturer_extensions",
             return_value="Fabricante del plugin",
         ):
             self.assertEqual(

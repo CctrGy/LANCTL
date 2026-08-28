@@ -4,8 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.core.database import DeviceDatabase
-from app.core.paths import (
+from lanctl.core.database import DeviceDatabase
+from lanctl.core.paths import (
     application_directory,
     application_path,
     data_root,
@@ -97,8 +97,8 @@ class ApplicationPathTests(unittest.TestCase):
             with (
                 patch.object(sys, "frozen", True, create=True),
                 patch.object(sys, "executable", str(executable)),
-                patch("app.core.paths.platform.system", return_value="Linux"),
-                patch("app.core.paths.Path.home", return_value=home),
+                patch("lanctl.core.paths.platform.system", return_value="Linux"),
+                patch("lanctl.core.paths.Path.home", return_value=home),
                 patch.dict("os.environ", {}, clear=True),
             ):
                 self.assertEqual(data_root(), home / ".local/share/lanctl")
@@ -106,7 +106,7 @@ class ApplicationPathTests(unittest.TestCase):
             with (
                 patch.object(sys, "frozen", True, create=True),
                 patch.object(sys, "executable", str(executable)),
-                patch("app.core.paths.platform.system", return_value="Linux"),
+                patch("lanctl.core.paths.platform.system", return_value="Linux"),
                 patch.dict("os.environ", {"LANCTL_DATA_SCOPE": "service"}, clear=True),
             ):
                 self.assertEqual(data_root(), Path("/var/lib/lanctl"))

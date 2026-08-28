@@ -19,12 +19,30 @@ dependencies = [
     "rich>=14.1,<15",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "bandit==1.8.6",
+    "coverage==7.10.6",
+    "pip-audit==2.9.0",
+    "pytest==8.4.2",
+    "ruff==0.16.2",
+]
+
 [project.scripts]
-lanctl = "app.cli:main"
-als = "app.cli:main"
+lanctl = "lanctl.bootstrap.lanctl:main"
+lanip = "lanctl.bootstrap.lanip:main"
+als = "lanctl.bootstrap.lanip:main"
+lanwire = "lanctl.bootstrap.lanwire:main"
+lanwre = "lanctl.bootstrap.lanwire:main"
 
 [tool.setuptools.packages.find]
-include = ["app*"]
+where = ["src"]
+include = ["lanctl*"]
+
+[tool.pytest.ini_options]
+minversion = "8.4"
+testpaths = ["tests"]
+pythonpath = ["src"]
 
 [tool.ruff]
 target-version = "py310"

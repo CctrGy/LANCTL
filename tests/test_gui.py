@@ -4,16 +4,16 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.core.database import DeviceDatabase
-from app.gui import GuiApi
-from app.gui_theme import (
+from lanctl.apps.ip.interfaces.gui.main import GuiApi
+from lanctl.apps.ip.interfaces.gui.theme import (
     COMPONENT_IDS,
     DEFAULT_TOKENS,
     resolve_theme,
     validate_theme_specification,
 )
-from app.plugins.manager import PluginManager
-from app.plugins.package import verify_package
+from lanctl.core.database import DeviceDatabase
+from lanctl.core.plugins.manager import PluginManager
+from lanctl.core.plugins.package import verify_package
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -25,14 +25,14 @@ class GuiIntegrationTests(unittest.TestCase):
             active = root / "externo" / "casa.vlf"
             with (
                 patch(
-                    "app.gui.load_config",
+                    "lanctl.apps.ip.interfaces.gui.main.load_config",
                     return_value={
                         "activeProject": str(active),
                         "projectsDirectory": str(root),
                     },
                 ),
                 patch(
-                    "app.gui.active_project_info",
+                    "lanctl.apps.ip.interfaces.gui.main.active_project_info",
                     return_value={
                         "path": str(active),
                         "name": "Casa",
@@ -121,14 +121,14 @@ class GuiIntegrationTests(unittest.TestCase):
     def test_gui_api_creates_a_project_in_the_selected_directory(self):
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("app.gui.create_project") as creator,
-            patch("app.gui.activate_project_workspace"),
+            patch("lanctl.apps.ip.interfaces.gui.main.create_project") as creator,
+            patch("lanctl.apps.ip.interfaces.gui.main.activate_project_workspace"),
             patch(
-                "app.gui.GuiApi._projects_payload",
+                "lanctl.apps.ip.interfaces.gui.main.GuiApi._projects_payload",
                 return_value={"projects": [], "activeProject": ""},
             ),
             patch(
-                "app.gui.GuiApi._inventory_payload",
+                "lanctl.apps.ip.interfaces.gui.main.GuiApi._inventory_payload",
                 return_value={"devices": [], "summary": {}},
             ),
         ):
@@ -180,7 +180,7 @@ class GuiIntegrationTests(unittest.TestCase):
                 "workers": 1,
                 "credentials": str(Path(temporary) / "credentials"),
             }
-            with patch("app.gui.load_config", return_value=config):
+            with patch("lanctl.apps.ip.interfaces.gui.main.load_config", return_value=config):
                 api = GuiApi()
                 listed = api.list_devices()
                 self.assertTrue(listed["ok"])
@@ -218,7 +218,7 @@ class GuiIntegrationTests(unittest.TestCase):
                 "workers": 1,
                 "credentials": str(root / "credentials"),
             }
-            with patch("app.gui.load_config", return_value=config):
+            with patch("lanctl.apps.ip.interfaces.gui.main.load_config", return_value=config):
                 api = GuiApi()
                 rejected = api.delete_device(device.device_id, False)
                 deleted = api.delete_device(device.device_id, True)
@@ -242,8 +242,10 @@ class GuiIntegrationTests(unittest.TestCase):
                 "credentials": str(Path(temporary) / "credentials"),
             }
             with (
-                patch("app.gui.load_config", return_value=config),
-                patch("app.gui.local_ipv4", return_value="192.168.50.10"),
+                patch("lanctl.apps.ip.interfaces.gui.main.load_config", return_value=config),
+                patch(
+                    "lanctl.apps.ip.interfaces.gui.main.local_ipv4", return_value="192.168.50.10"
+                ),
             ):
                 api = GuiApi()
                 listed = api.list_devices()
@@ -268,8 +270,8 @@ class GuiIntegrationTests(unittest.TestCase):
                 "credentials": str(Path(temporary) / "credentials"),
             }
             with (
-                patch("app.gui.load_config", return_value=config),
-                patch("app.gui.run_open") as opened,
+                patch("lanctl.apps.ip.interfaces.gui.main.load_config", return_value=config),
+                patch("lanctl.apps.ip.interfaces.gui.main.run_open") as opened,
             ):
                 result = GuiApi().open_service(device.device_id, "http-alt", 8080)
                 self.assertTrue(result["ok"], result.get("error"))
@@ -288,8 +290,8 @@ class GuiIntegrationTests(unittest.TestCase):
                 "credentials": str(Path(temporary) / "credentials"),
             }
             with (
-                patch("app.gui.load_config", return_value=config),
-                patch("app.gui.subprocess.Popen") as opened,
+                patch("lanctl.apps.ip.interfaces.gui.main.load_config", return_value=config),
+                patch("lanctl.apps.ip.interfaces.gui.main.subprocess.Popen") as opened,
             ):
                 result = GuiApi().open_service(device.device_id, "ssh", 2222)
                 self.assertTrue(result["ok"], result.get("error"))
@@ -308,7 +310,7 @@ class GuiIntegrationTests(unittest.TestCase):
                 "workers": 1,
                 "credentials": str(Path(temporary) / "credentials"),
             }
-            with patch("app.gui.load_config", return_value=config):
+            with patch("lanctl.apps.ip.interfaces.gui.main.load_config", return_value=config):
                 devices = GuiApi().list_devices()["devices"]
             self.assertEqual([item["wolAvailable"] for item in devices], [True, False])
 

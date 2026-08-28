@@ -4,8 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.core.database import DeviceDatabase
-from app.core.recurrent_elements import RecurrentElementDatabase
+from lanctl.core.database import DeviceDatabase
+from lanctl.core.recurrent_elements import RecurrentElementDatabase
 
 
 class RecurrentElementDatabaseTests(unittest.TestCase):
@@ -23,7 +23,7 @@ class RecurrentElementDatabaseTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            with patch("app.core.recurrent_elements.application_path", return_value=resource):
+            with patch("lanctl.core.recurrent_elements.application_path", return_value=resource):
                 database = RecurrentElementDatabase()
                 first = database.find_by_mac("5E:8C:B3:08:05:D4")
                 resource.unlink()
@@ -63,7 +63,7 @@ class RecurrentElementDatabaseTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            with patch("app.core.recurrent_elements.application_path", return_value=resource):
+            with patch("lanctl.core.recurrent_elements.application_path", return_value=resource):
                 vm1 = RecurrentElementDatabase().load()[0]
         self.assertEqual(vm1.mac, "5E:8C:B3:08:05:D4")
         self.assertEqual(vm1.ip, "-")
@@ -86,7 +86,7 @@ class RecurrentElementDatabaseTests(unittest.TestCase):
             resource = root / "known.json"
             database_path = root / "devices.json"
             resource.write_text(json.dumps(catalog), encoding="utf-8")
-            with patch("app.core.recurrent_elements.application_path", return_value=resource):
+            with patch("lanctl.core.recurrent_elements.application_path", return_value=resource):
                 device = DeviceDatabase(str(database_path)).upsert(
                     [{"IP": "10.20.30.40", "MAC": "5e-8c-b3-08-05-d4"}]
                 )[0]
@@ -112,7 +112,7 @@ class RecurrentElementDatabaseTests(unittest.TestCase):
             resource = root / "known.json"
             database_path = root / "devices.json"
             resource.write_text(json.dumps(catalog), encoding="utf-8")
-            with patch("app.core.recurrent_elements.application_path", return_value=resource):
+            with patch("lanctl.core.recurrent_elements.application_path", return_value=resource):
                 database = DeviceDatabase(str(database_path))
                 database.upsert([{"IP": "192.168.1.39", "MAC": "5E:8C:B3:08:05:D4"}])
                 database.set_alias("VM1", "TELEFONO")

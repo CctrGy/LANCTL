@@ -9,17 +9,17 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from app.models import Device
-from app.monitor.database import IncidentRepository, MetricsStore, MonitorDatabase
-from app.monitor.lifecycle import SingletonLock
-from app.monitor.models import MonitorProfile, MonitorSession, MonitorTargetPlan
-from app.monitor.repositories import (
+from lanctl.apps.ip.domain.models import Device
+from lanctl.apps.monitor.database import IncidentRepository, MetricsStore, MonitorDatabase
+from lanctl.apps.monitor.lifecycle import SingletonLock
+from lanctl.apps.monitor.models import MonitorProfile, MonitorSession, MonitorTargetPlan
+from lanctl.apps.monitor.repositories import (
     InMemoryIncidentRepository,
     InMemoryMetricsStore,
     InMemorySessionRepository,
 )
-from app.monitor.service import MonitorService
-from app.platform.windows import WindowsPlatform
+from lanctl.apps.monitor.service import MonitorService
+from lanctl.infrastructure.platform.windows import WindowsPlatform
 
 
 def session():
@@ -107,7 +107,7 @@ class MonitorIntegrationTests(unittest.TestCase):
             )
             service.session = session()
             task = SimpleNamespace(check_id="port", target="dev_1")
-            with patch("app.monitor.service.HistoryService"):
+            with patch("lanctl.apps.monitor.service.HistoryService"):
                 service._check_failed(task, OSError("conexión rechazada"), 2)
             row = database.execute("SELECT details FROM samples").fetchone()
             self.assertEqual(json.loads(row["details"])["error"]["failures"], 2)
@@ -148,7 +148,7 @@ class MonitorIntegrationTests(unittest.TestCase):
             with MonitorDatabase(path) as database:
                 self.assertEqual(database.execute("PRAGMA user_version").fetchone()[0], 2)
                 metrics = MetricsStore(database)
-                from app.monitor.models import CheckResult
+                from lanctl.apps.monitor.models import CheckResult
 
                 metrics.write(CheckResult("availability", "dev_1", True), "session")
                 metrics.write(CheckResult("service", "dev_1", False), "session")
@@ -162,7 +162,7 @@ class MonitorIntegrationTests(unittest.TestCase):
                 encoding="utf-8",
             )
             with patch(
-                "app.monitor.lifecycle._process_identity",
+                "lanctl.apps.monitor.lifecycle._process_identity",
                 return_value={"started": "new", "executable": "lanctl"},
             ):
                 state = SingletonLock(path).status()

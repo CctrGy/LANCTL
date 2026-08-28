@@ -4,12 +4,12 @@ import unittest
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.plugins.contracts import EventContract, FunctionResult
-from app.plugins.events import EventBus, EventRegistry
-from app.plugins.functions import FunctionRegistry
-from app.plugins.manager import PluginManager
-from app.plugins.models import PluginManifest, PluginState
-from app.plugins.package import build_package, verify_package
+from lanctl.core.plugins.contracts import EventContract, FunctionResult
+from lanctl.core.plugins.events import EventBus, EventRegistry
+from lanctl.core.plugins.functions import FunctionRegistry
+from lanctl.core.plugins.manager import PluginManager
+from lanctl.core.plugins.models import PluginManifest, PluginState
+from lanctl.core.plugins.package import build_package, verify_package
 
 
 @dataclass(frozen=True, slots=True)

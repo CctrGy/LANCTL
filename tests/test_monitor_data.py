@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from app.monitor.configuration import (
+from lanctl.apps.monitor.configuration import (
     AssignmentManager,
     MonitorConfig,
     MonitorProfile,
@@ -11,7 +11,7 @@ from app.monitor.configuration import (
     parse_duration,
     validate_profile,
 )
-from app.monitor.database import (
+from lanctl.apps.monitor.database import (
     IdentityRepository,
     IncidentRepository,
     MetricsStore,
@@ -19,8 +19,8 @@ from app.monitor.database import (
     SessionRepository,
     monitor_database_path,
 )
-from app.monitor.models import CheckResult, Incident, MonitorSession
-from app.monitor.reports import ReportBuilder, monitor_view
+from lanctl.apps.monitor.models import CheckResult, Incident, MonitorSession
+from lanctl.apps.monitor.reports import ReportBuilder, monitor_view
 
 
 class MonitorDataTests(unittest.TestCase):

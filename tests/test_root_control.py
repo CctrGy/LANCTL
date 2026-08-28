@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.access import root_control
+from lanctl.apps.access import root_control
 
 
 class RootControlTests(unittest.TestCase):
@@ -84,9 +84,9 @@ class RootControlTests(unittest.TestCase):
         connection = unittest.mock.MagicMock()
         connection.__enter__.return_value = connection
         with (
-            patch("app.access.service.AccessService", FakeAccessService),
+            patch("lanctl.apps.access.service.AccessService", FakeAccessService),
             patch(
-                "app.core.config.load_config",
+                "lanctl.core.config.load_config",
                 return_value={"accessConfig": "a", "accessUsers": "u"},
             ),
             patch.object(root_control, "application_path", side_effect=Path),

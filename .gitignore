@@ -14,11 +14,13 @@ venv/
 # Packaging and build artifacts
 build/
 dist/
+packaging/windows/*.exe
 *.egg-info/
 *.spec.bak
 
 # Local application data, credentials and logs
 data/lc/
+src/data/lc/
 # Ruta antigua: se mantiene ignorada para no publicar datos si reaparece antes
 # de que el migrador de LANCTL pueda procesarla.
 data/als/

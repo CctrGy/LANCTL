@@ -4,8 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.core.config import DEFAULTS
-from app.projects.paths import default_project_directory, resolve_project_path
+from lanctl.core.config import DEFAULTS
+from lanctl.core.projects.paths import default_project_directory, resolve_project_path
 
 
 class ProjectPathTests(unittest.TestCase):
@@ -15,7 +15,7 @@ class ProjectPathTests(unittest.TestCase):
     def test_default_directory_uses_user_documents_lanctl(self):
         with (
             tempfile.TemporaryDirectory() as temporary,
-            patch("app.projects.paths._known_documents_directory", return_value=None),
+            patch("lanctl.core.projects.paths._known_documents_directory", return_value=None),
             patch.dict(os.environ, {"USERPROFILE": temporary}),
         ):
             self.assertEqual(default_project_directory(), Path(temporary) / "Documents" / "LanCTL")
@@ -23,7 +23,7 @@ class ProjectPathTests(unittest.TestCase):
     def test_default_directory_uses_onedrive_known_folder(self):
         documents = Path(r"C:\Users\Victor\OneDrive\Documents")
         with patch(
-            "app.projects.paths._known_documents_directory",
+            "lanctl.core.projects.paths._known_documents_directory",
             return_value=documents,
         ):
             self.assertEqual(default_project_directory(), documents / "LanCTL")
@@ -54,7 +54,7 @@ class ProjectPathTests(unittest.TestCase):
     def test_legacy_default_uses_redirected_documents_folder(self):
         documents = Path(r"C:\Users\Victor\OneDrive\Documents")
         with patch(
-            "app.projects.paths._known_documents_directory",
+            "lanctl.core.projects.paths._known_documents_directory",
             return_value=documents,
         ):
             self.assertEqual(

@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from app.distribution.release import (
+from lanctl.infrastructure.distribution.release import (
     artifact_name,
     classify_channel,
     normalize_architecture,
@@ -66,7 +66,11 @@ class DistributionTests(unittest.TestCase):
         build = (root / "scripts/build-linux.sh").read_text(encoding="utf-8")
         unit = (root / "packaging/systemd/lanctl-monitor.service").read_text(encoding="utf-8")
         self.assertIn("$target/LANCTL/lanctl", shell)
+        self.assertIn("$target/LANCTL/lanwire", shell)
         self.assertIn("$PORTABLE/LANCTL/lanctl", build)
+        self.assertIn("$PORTABLE/LANCTL/lanwire", build)
+        self.assertIn("$PKG/opt/lanctl/lanwire", build)
+        self.assertIn("$PKG/usr/bin/lanwire", build)
         self.assertIn("LANCTL_DATA_DIR=/var/lib/lanctl", unit)
         self.assertIn("LANCTL_SECRET_DIR=/etc/lanctl/access", unit)
         self.assertIn(
@@ -75,7 +79,7 @@ class DistributionTests(unittest.TestCase):
         )
 
     def test_frozen_standard_and_portable_data_roots(self):
-        import app.core.paths as paths
+        import lanctl.core.paths as paths
 
         with (
             mock.patch.object(paths.sys, "frozen", True, create=True),
@@ -99,19 +103,47 @@ class DistributionTests(unittest.TestCase):
         build = (root / "scripts/build-windows.ps1").read_text(encoding="utf-8")
         inno = (root / "packaging/inno/LANCTL.iss").read_text(encoding="utf-8")
         self.assertNotIn("COLLECT(", spec)
+        self.assertIn('["packaging/entrypoints/lanctl_entry.py"]', spec)
+        self.assertNotIn('["main.py"]', spec)
         self.assertIn("a.datas", spec)
+        self.assertIn('icon="assets/lanctl-v3.ico"', spec)
+        self.assertIn('["packaging/entrypoints/lanip_entry.py"]', spec)
+        self.assertIn('["packaging/entrypoints/lanwire_entry.py"]', spec)
+        self.assertIn('collect_submodules("lanctl.apps.wire")', spec)
+        self.assertIn('("assets/lanctl-icon-v3.png", "assets")', spec)
+        self.assertNotIn("lanctl-v2.ico", spec)
+        self.assertIn("SetupIconFile=..\\..\\assets\\lanctl-v3.ico", inno)
         self.assertIn("dist\\LANCTL.exe", build)
         self.assertIn("dist\\LANCTL-GUI.exe", build)
+        self.assertIn("dist\\lanip.exe", build)
+        self.assertIn("dist\\lanwire.exe", build)
+        self.assertNotIn("LANWIRE_ROOT", build)
+        self.assertNotIn("packaging\\windows\\lanwire.exe", build)
+        self.assertTrue((root / "lanwire.py").is_file())
+        self.assertTrue((root / "lanip.py").is_file())
         self.assertNotIn("_internal", build)
         self.assertIn('Source: "{#BuildRoot}\\LANCTL.exe"', inno)
         self.assertNotIn("recursesubdirs", inno)
         self.assertIn('Source: "{#BuildRoot}\\LANCTL-GUI.exe"', inno)
+        self.assertIn('Source: "{#BuildRoot}\\lanip.exe"', inno)
+        self.assertIn('Source: "{#BuildRoot}\\lanwire.exe"', inno)
+        self.assertIn('Filename: "{app}\\lanwire.exe"', inno)
         self.assertIn('Filename: "{app}\\LANCTL-GUI.exe"', inno)
         self.assertIn('Filename: "{app}\\LANCTL.exe"; Parameters: "--tui"', inno)
         self.assertIn('Filename: "{app}\\LANCTL.exe"; Parameters: "--cli"', inno)
         self.assertNotIn("recurrent-elements.json", spec)
         self.assertIn("{commonappdata}\\LANCTL\\database", inno)
+        self.assertIn("{commonappdata}\\LANCTL\\physical", inno)
         self.assertIn("admins-full system-full", inno)
+
+    def test_windows_installers_require_lanwire_in_standard_and_portable_layouts(self):
+        root = Path(__file__).resolve().parents[1]
+        installer = (root / "install.ps1").read_text(encoding="utf-8")
+        portable = (root / "packaging/portable/README-portable.txt").read_text(encoding="utf-8")
+        self.assertGreaterEqual(installer.count("lanip.exe"), 2)
+        self.assertGreaterEqual(installer.count("lanwire.exe"), 2)
+        self.assertIn("LANCTL.exe, lanip.exe or lanwire.exe", portable)
+        self.assertIn("physical/idf.db", portable)
 
     def test_github_actions_enforce_quality_and_security_gates(self):
         root = Path(__file__).resolve().parents[1]
@@ -120,13 +152,13 @@ class DistributionTests(unittest.TestCase):
         security = (root / ".github/workflows/security.yml").read_text(encoding="utf-8")
         for expected in ("--fail-under=60", "ruff check", "bandit", "pip_audit", "shellcheck"):
             self.assertIn(expected, release)
-        for expected in ("pull_request", "--source=app", "pip_audit", "git diff --check"):
+        for expected in ("pull_request", "--source=src", "pip_audit", "git diff --check"):
             self.assertIn(expected, ci)
         self.assertIn("--ignore-vuln PYSEC-2026-3552", ci)
         self.assertIn("--ignore-vuln PYSEC-2026-2858", ci)
         app_source = "\n".join(
             path.read_text(encoding="utf-8", errors="ignore")
-            for path in (root / "app").rglob("*.py")
+            for path in (root / "src").rglob("*.py")
         )
         self.assertNotIn("pkcs7_decrypt_", app_source)
         self.assertIn("github/codeql-action/analyze", security)

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app.assets.icons import IconManager, jpeg_dimensions
+from lanctl.shared.assets.icons import IconManager, jpeg_dimensions
 
 
 def fake_jpeg(width: int, height: int) -> bytes:

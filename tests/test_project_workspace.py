@@ -4,10 +4,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.core.database import DeviceDatabase
-from app.gui import GuiApi
-from app.projects.vlf import create_project
-from app.projects.workspace import (
+from lanctl.apps.ip.interfaces.gui.main import GuiApi
+from lanctl.core.database import DeviceDatabase
+from lanctl.core.projects.vlf import create_project
+from lanctl.core.projects.workspace import (
     activate_project_workspace,
     ensure_active_project_workspace,
 )
@@ -69,7 +69,7 @@ class ProjectWorkspaceTests(unittest.TestCase):
                 settings.update(replacement)
             return dict(settings)
 
-        with patch("app.projects.workspace.update_config", side_effect=update):
+        with patch("lanctl.core.projects.workspace.update_config", side_effect=update):
             first_workspace = activate_project_workspace(
                 first,
                 config=settings,
@@ -110,22 +110,22 @@ class ProjectWorkspaceTests(unittest.TestCase):
             return dict(settings)
 
         with (
-            patch("app.gui.load_config", side_effect=load),
-            patch("app.projects.workspace.load_config", side_effect=load),
-            patch("app.projects.workspace.update_config", side_effect=update),
+            patch("lanctl.apps.ip.interfaces.gui.main.load_config", side_effect=load),
+            patch("lanctl.core.projects.workspace.load_config", side_effect=load),
+            patch("lanctl.core.projects.workspace.update_config", side_effect=update),
             patch(
-                "app.projects.workspace.application_path",
+                "lanctl.core.projects.workspace.application_path",
                 return_value=self.root / "gui-workspaces",
             ),
             patch(
-                "app.gui.GuiApi._projects_payload",
+                "lanctl.apps.ip.interfaces.gui.main.GuiApi._projects_payload",
                 return_value={
                     "projects": [],
                     "activeProject": "",
                 },
             ),
-            patch("app.gui.get_plugin_manager"),
-            patch("app.gui.local_ipv4", return_value="127.0.0.1"),
+            patch("lanctl.apps.ip.interfaces.gui.main.get_plugin_manager"),
+            patch("lanctl.apps.ip.interfaces.gui.main.local_ipv4", return_value="127.0.0.1"),
         ):
             api = GuiApi()
             first_result = api.use_project(str(first))
@@ -148,10 +148,10 @@ class ProjectWorkspaceTests(unittest.TestCase):
             return dict(settings)
 
         with (
-            patch("app.projects.workspace.load_config", side_effect=load),
-            patch("app.projects.workspace.update_config", side_effect=update),
+            patch("lanctl.core.projects.workspace.load_config", side_effect=load),
+            patch("lanctl.core.projects.workspace.update_config", side_effect=update),
             patch(
-                "app.projects.workspace.application_path",
+                "lanctl.core.projects.workspace.application_path",
                 return_value=self.root / "startup-workspaces",
             ),
         ):
@@ -167,7 +167,7 @@ class ProjectWorkspaceTests(unittest.TestCase):
     def test_missing_active_project_does_not_block_gui_startup(self):
         missing = self.root / "movido-o-borrado.vlf"
         with patch(
-            "app.projects.workspace.load_config",
+            "lanctl.core.projects.workspace.load_config",
             return_value={"activeProject": str(missing)},
         ):
             self.assertIsNone(ensure_active_project_workspace())

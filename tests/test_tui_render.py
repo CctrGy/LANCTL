@@ -3,7 +3,7 @@ import unittest
 
 from rich.text import Text
 
-from app.tui_render import RichTuiRenderer
+from lanctl.apps.ip.interfaces.tui.render import RichTuiRenderer
 
 
 class RichTuiRendererTests(unittest.TestCase):
