@@ -1,3 +1,6 @@
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -165,6 +168,40 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("dependency-review-action", security)
         # Dependabot es opcional: el repositorio puede desactivarlo para evitar
         # ramas automáticas sin rebajar las puertas de CI y seguridad anteriores.
+
+    def test_release_hash_generation_and_verification_are_separate(self):
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as temporary:
+            release = Path(temporary)
+            artifact = release / "LANCTL-0.3.0-windows-x64-portable.zip"
+            artifact.write_bytes(b"release")
+            subprocess.run(
+                [sys.executable, str(root / "scripts/generate-hashes.py"), str(release)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            verified = subprocess.run(
+                [sys.executable, str(root / "scripts/verify-release.py"), str(release)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("verified 1", verified.stdout)
+            artifact.write_bytes(b"tampered")
+            failed = subprocess.run(
+                [sys.executable, str(root / "scripts/verify-release.py"), str(release)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertIn("checksum mismatch", failed.stderr)
+
+        build = (root / "scripts/build-windows.ps1").read_text(encoding="utf-8")
+        self.assertIn("Release builds require a clean Git working tree", build)
+        self.assertIn("git rev-parse HEAD", build)
+        self.assertIn("scripts/generate-hashes.py", build)
+        self.assertIn("scripts/verify-release.py", build)
 
 
 if __name__ == "__main__":

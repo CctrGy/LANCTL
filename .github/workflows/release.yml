@@ -81,7 +81,13 @@ jobs:
           $version = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { '${{ inputs.version }}' } else { '${{ github.ref_name }}'.TrimStart('v') }
           ./scripts/build-windows.ps1 -Version $version
       - uses: actions/upload-artifact@v4
-        with: {name: windows-x64, path: dist/release/*, if-no-files-found: error}
+        with:
+          name: windows-x64
+          path: |
+            dist/release/*
+            !dist/release/SHA256SUMS.txt
+            !dist/release/release-metadata.json
+          if-no-files-found: error
 
   linux:
     needs: validate
@@ -126,6 +132,7 @@ jobs:
         with: {name: linux-arm64, path: dist/release}
       - run: cp install.ps1 install.sh dist/release/
       - run: python scripts/release-metadata.py "${GITHUB_REF_NAME#v}" "$GITHUB_SHA" dist/release
+      - run: python scripts/generate-hashes.py dist/release
       - run: python scripts/verify-release.py dist/release
       - name: Optional detached signing
         env:
