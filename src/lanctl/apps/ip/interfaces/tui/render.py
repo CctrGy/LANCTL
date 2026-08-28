@@ -10,6 +10,9 @@ from rich.panel import Panel
 from rich.progress_bar import ProgressBar
 from rich.text import Text
 
+from lanctl.apps.ip.interfaces.tui.layout import adaptive_layout
+from lanctl.apps.ip.interfaces.tui.theme import DEFAULT_THEME, TuiTheme
+
 
 class RichTuiRenderer:
     """Adaptador de Rich para la pantalla completa de LANCTL.
@@ -19,8 +22,9 @@ class RichTuiRenderer:
     consistente y de dibujar componentes gráficos como el progreso.
     """
 
-    def __init__(self, stream: TextIO) -> None:
+    def __init__(self, stream: TextIO, theme: TuiTheme = DEFAULT_THEME) -> None:
         self.stream = stream
+        self.theme = theme
 
     @staticmethod
     def _console(target: TextIO, width: int) -> Console:
@@ -52,6 +56,7 @@ class RichTuiRenderer:
             text = source.copy() if isinstance(source, Text) else Text.from_ansi(source)
             text.no_wrap = True
             text.overflow = "crop"
+            text.truncate(width, pad=True)
             rendered_lines.append(text)
         while len(rendered_lines) < height:
             rendered_lines.append(Text())
@@ -82,19 +87,20 @@ class RichTuiRenderer:
         screen = list(background)[:height]
         while len(screen) < height:
             screen.append("")
-        modal_width = max(10, min(max(10, width - 6), max_width))
-        modal_height = max(6, min(max(6, height - 6), max_height))
+        geometry = adaptive_layout(width, height, settings=max_width > 100)
+        modal_width = min(geometry.modal_width, max_width)
+        modal_height = min(geometry.modal_height, max_height)
         tab_line = Text()
         for index, label in enumerate(tabs):
             if index:
                 tab_line.append("  ")
             tab_line.append(
                 f" {label} ",
-                style="bold black on bright_cyan" if index == selected_tab else "cyan",
+                style=self.theme.selected if index == selected_tab else self.theme.accent,
             )
         content = Text()
         content.append_text(tab_line)
-        content.append("\n" + "─" * max(1, modal_width - 6), style="bright_black")
+        content.append("\n" + "─" * max(1, modal_width - 6), style=self.theme.muted)
         for line in body:
             content.append("\n")
             content.append_text(self._modal_line(str(line)))
@@ -102,7 +108,7 @@ class RichTuiRenderer:
             content,
             title=f"[bold bright_cyan]{title}[/]",
             subtitle=self._modal_footer(footer),
-            border_style="bright_cyan",
+            border_style=self.theme.accent,
             width=modal_width,
             height=modal_height,
             padding=(0, 1),

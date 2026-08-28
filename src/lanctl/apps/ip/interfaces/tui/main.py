@@ -20,6 +20,19 @@ from colorama import Back, Fore, Style, just_fix_windows_console
 
 from lanctl import __version__
 from lanctl.apps.ip.infrastructure.services.lan_scanner import local_ipv4
+from lanctl.apps.ip.interfaces.tui.controllers import ManagerController, SettingsEditor
+from lanctl.apps.ip.interfaces.tui.keyboard import read_windows_key as _read_windows_key
+from lanctl.apps.ip.interfaces.tui.layout import adaptive_layout
+from lanctl.apps.ip.interfaces.tui.managers import (
+    plugin_detail as _plugin_detail,
+)
+from lanctl.apps.ip.interfaces.tui.managers import (
+    plugin_manager_modal,
+    project_manager_modal,
+)
+from lanctl.apps.ip.interfaces.tui.managers import (
+    project_detail as _project_detail,
+)
 from lanctl.apps.ip.interfaces.tui.modal import HelpCommand, ModalState, SettingField
 from lanctl.apps.ip.interfaces.tui.render import RichTuiRenderer
 from lanctl.core.config import load_config
@@ -600,7 +613,8 @@ class LanctlTui:
         modal = self.modal
         if not modal:
             return
-        body_rows = max(1, min(height - 9, 24))
+        geometry = adaptive_layout(width, height, settings=modal.kind == "settings")
+        body_rows = geometry.body_rows
         page = self._modal_page(modal)
         maximum = max(0, len(page) - body_rows)
         modal.scroll = max(0, min(modal.scroll, maximum))
@@ -625,53 +639,7 @@ class LanctlTui:
 
     def _modal_page(self, modal: ModalState) -> list[str]:
         if modal.kind == "settings":
-            rows = [
-                "  CAMPO                      VALOR                         FORMATO",
-                "  ─────────────────────────  ─────────────────────────────  ─────────────────────────",
-            ]
-            visible_indices = set(self._settings_field_indices(modal))
-            for index, field in enumerate(modal.items):
-                if index not in visible_indices:
-                    continue
-                marker = (
-                    "◆"
-                    if index == modal.selected and modal.editing
-                    else "▶"
-                    if index == modal.selected
-                    else " "
-                )
-                changed = "*" if field.value != field.original else " "
-                value = field.value or "(vacío)"
-                rows.append(
-                    f"{marker}{changed} {field.label:<25} {fit_text(value, 29):<29} {field.hint}"
-                )
-            selected = modal.items[modal.selected]
-            description_width = 106
-            rows.extend(("", "  DESCRIPCIÓN"))
-            rows.extend(
-                "  " + line
-                for line in textwrap.wrap(
-                    selected.description,
-                    width=description_width,
-                    break_long_words=False,
-                    break_on_hyphens=False,
-                )
-            )
-            state = (
-                "edición activa"
-                if modal.editing
-                else "modificado, pendiente de guardar"
-                if selected.value != selected.original
-                else "sin cambios"
-            )
-            rows.extend(
-                (
-                    f"  Clave: {selected.key}  ·  Opción CLI: {selected.option}  ·  Estado: {state}",
-                    "",
-                    "* cambio pendiente · Ctrl+S valida y guarda todos los cambios",
-                )
-            )
-            return rows
+            return SettingsEditor.render_page(modal)
         if modal.kind == "help" and modal.tab_index == 0:
             lines = []
             for index, entry in enumerate(modal.items):
@@ -764,21 +732,7 @@ class LanctlTui:
             from lanctl.core.plugins.manager import get_plugin_manager
 
             plugins = get_plugin_manager().list()
-            listing = [
-                f"{item.manifest.name:<24} {item.manifest.version:<12} {item.state.value}"
-                for item in plugins
-            ] or ["(No hay plugins instalados)"]
-            details = [_plugin_detail(item) for item in plugins]
-            self._open_modal(
-                ModalState(
-                    kind="plugins",
-                    title="PLUGIN",
-                    tabs=["Plugins", "Información"],
-                    pages=[listing, details[0] if details else ["No hay información disponible."]],
-                    items=plugins,
-                    footer="↑/↓ seleccionar  → información  Ctrl+R recargar  Esc cerrar",
-                )
-            )
+            self._open_modal(plugin_manager_modal(plugins))
         except (OSError, ValueError) as error:
             self.messages = [f"No se pudo cargar el gestor de plugins: {error}"]
 
@@ -805,21 +759,7 @@ class LanctlTui:
             and all(path.resolve() != active_path.resolve() for path in projects)
         ):
             projects.insert(0, active_path)
-        listing = [
-            f"{'*' if str(path.resolve()).casefold() == str(active).casefold() else ' '} {path.stem:<28} {path}"
-            for path in projects
-        ] or [f"(No hay proyectos en {root})"]
-        details = [_project_detail(path, active) for path in projects]
-        self._open_modal(
-            ModalState(
-                kind="projects",
-                title="PROJECT MANAGER",
-                tabs=["Proyectos", "Información"],
-                pages=[listing, details[0] if details else ["No hay información disponible."]],
-                items=projects,
-                footer="↑/↓ seleccionar  → información  Enter activar  Ctrl+R recargar  Esc cerrar",
-            )
-        )
+        self._open_modal(project_manager_modal(projects, active, root))
 
     def show_settings(self) -> None:
         config = load_config()
@@ -1850,9 +1790,7 @@ class LanctlTui:
             and modal.tab_index == 0
         ):
             delta = -1 if key == "UP" else 1
-            modal.selected = max(0, min(len(modal.page) - 1, modal.selected + delta))
-            self._update_manager_detail(modal)
-            modal.scroll = max(0, modal.selected - 4)
+            ManagerController.move(modal, delta, self._update_manager_detail)
         elif key == "UP":
             modal.scroll -= 1
         elif key == "DOWN":
@@ -1927,76 +1865,13 @@ class LanctlTui:
         self.messages = [f"Comando preparado: {entry.name}. Completa sus argumentos y pulsa Enter."]
 
     def _handle_settings_key(self, modal: ModalState, key: str) -> None:
-        if not modal.items:
-            return
-        field = modal.items[modal.selected]
-        if field.key == "remoteAccessUsers" and key in ("ENTER", "TAB"):
-            self.show_remote_users()
-            return
-        if key in ("TAB", "SHIFT_TAB"):
-            if modal.editing:
-                modal.editing = False
-                modal.editor_fresh = True
-                modal.footer = "←/→ menú  ↑/↓ variable  Tab editar  Ctrl+S guardar  Esc cerrar"
-            else:
-                modal.editing = True
-                modal.edit_snapshot = field.value
-                modal.editor_fresh = True
-                modal.footer = (
-                    "←/→ cambiar valor  ↑/↓ cambiar valor  escribir reemplazar  "
-                    "Tab aceptar  Esc cancelar"
-                    if field.choices
-                    else "escribir reemplazar  Backspace/Delete editar  Tab aceptar  Esc cancelar"
-                )
-            return
-        if key == "ESC":
-            if modal.editing:
-                field.value = modal.edit_snapshot
-                modal.editing = False
-                modal.editor_fresh = True
-                modal.footer = "←/→ menú  ↑/↓ variable  Tab editar  Ctrl+S guardar  Esc cerrar"
-            else:
-                self.modal = None
-            return
-        if key == "CTRL_S":
-            modal.editing = False
-            self._save_settings(modal)
-            return
-        if modal.editing:
-            if field.choices and key in ("LEFT", "UP", "RIGHT", "DOWN"):
-                try:
-                    current = field.choices.index(field.value)
-                except ValueError:
-                    current = -1 if key in ("RIGHT", "DOWN") else 0
-                delta = -1 if key in ("LEFT", "UP") else 1
-                field.value = field.choices[(current + delta) % len(field.choices)]
-                modal.editor_fresh = False
-            elif key == "BACKSPACE":
-                field.value = field.value[:-1]
-                modal.editor_fresh = False
-            elif key == "DELETE":
-                field.value = ""
-                modal.editor_fresh = False
-            elif len(key) == 1 and key.isprintable() and not field.choices:
-                field.value = key if modal.editor_fresh else field.value + key
-                modal.editor_fresh = False
-            return
-        if key in ("LEFT", "RIGHT"):
-            modal.tab_selections[modal.tab_index] = modal.selected
-            modal.change_tab(-1 if key == "LEFT" else 1)
-            indices = self._settings_field_indices(modal)
-            remembered = modal.tab_selections.get(modal.tab_index)
-            modal.selected = remembered if remembered in indices else indices[0]
-            modal.editor_fresh = True
-            modal.scroll = 0
-            return
-        if key in ("UP", "DOWN"):
-            indices = self._settings_field_indices(modal)
-            current = indices.index(modal.selected) if modal.selected in indices else 0
-            delta = -1 if key == "UP" else 1
-            modal.selected = indices[(current + delta) % len(indices)]
-            modal.editor_fresh = True
-            modal.scroll = max(0, indices.index(modal.selected) - 5)
+        SettingsEditor.handle_key(
+            modal,
+            key,
+            close=lambda: setattr(self, "modal", None),
+            save=self._save_settings,
+            open_remote_users=self.show_remote_users,
+        )
 
     def _handle_remote_users_key(self, modal: ModalState, key: str) -> None:
         if key == "ESC":
@@ -2079,11 +1954,7 @@ class LanctlTui:
 
     @staticmethod
     def _settings_field_indices(modal: ModalState) -> list[int]:
-        section = modal.tabs[modal.tab_index] if modal.tabs else "GENERAL"
-        indices = [index for index, field in enumerate(modal.items) if field.section == section]
-        # Compatibilidad con extensiones y estados antiguos que aportaban una
-        # única pestaña con un nombre libre, sin clasificar cada campo.
-        return indices or list(range(len(modal.items)))
+        return SettingsEditor.field_indices(modal)
 
     def _save_settings(self, modal: ModalState) -> None:
         changed = [field for field in modal.items if field.value != field.original]
@@ -2201,56 +2072,6 @@ def _is_interactive_terminal(stream) -> bool:
         return bool(stream.isatty())
     except (AttributeError, OSError, ValueError):
         return False
-
-
-def _windows_control_pressed() -> bool:
-    if os.name != "nt":
-        return False
-    try:
-        import ctypes
-
-        return bool(ctypes.windll.user32.GetKeyState(0x11) & 0x8000)
-    except (AttributeError, OSError):
-        return False
-
-
-def _read_windows_key(getwch, control_pressed=None) -> str:
-    first = getwch()
-    if first in ("\x00", "\xe0"):
-        return {
-            "H": "UP",
-            "P": "DOWN",
-            "K": "LEFT",
-            "M": "RIGHT",
-            "I": "PGUP",
-            "Q": "PGDN",
-            "G": "HOME",
-            "O": "END",
-            "S": "DELETE",
-            ";": "F1",
-            "<": "F2",
-            "=": "F3",
-            "?": "F5",
-            "A": "F7",
-            "C": "F9",
-            "\x86": "F12",
-            "\x0f": "SHIFT_TAB",
-        }.get(getwch(), "UNKNOWN")
-    if first == "\x08":
-        pressed = control_pressed or _windows_control_pressed
-        return "CTRL_H" if pressed() else "BACKSPACE"
-    if first == "\x12":
-        return "CTRL_R"
-    if first == "\x13":
-        return "CTRL_S"
-    if first == "\t":
-        return "TAB"
-    return {
-        "\r": "ENTER",
-        "\n": "ENTER",
-        "\x1b": "ESC",
-        "\x03": "ESC",
-    }.get(first, first)
 
 
 def _device_key(mac: str, ip: str) -> str:
@@ -2673,45 +2494,6 @@ def _help_command_detail(entry: HelpCommand) -> list[str]:
         lines.extend(("", "OPCIONES", *(f"  {option}" for option in entry.options)))
     lines.extend(("", "Tab prepara este comando en el prompt del TUI."))
     return lines
-
-
-def _plugin_detail(plugin) -> list[str]:
-    manifest = plugin.manifest
-    return [
-        f"Nombre       : {manifest.name}",
-        f"ID           : {manifest.plugin_id}",
-        f"Versión      : {manifest.version}",
-        f"Estado       : {plugin.state.value}",
-        f"Autor        : {manifest.author or '-'}",
-        f"Runtime      : {manifest.runtime}",
-        f"Descripción  : {manifest.description or '-'}",
-        f"Capacidades  : {', '.join(manifest.capabilities) or '-'}",
-        f"Permisos     : {', '.join(manifest.permissions) or '-'}",
-        f"Concedidos   : {', '.join(sorted(plugin.granted)) or '-'}",
-        f"Ruta         : {plugin.path}",
-        f"Error        : {plugin.error or '-'}",
-    ]
-
-
-def _project_detail(path: Path, active: str) -> list[str]:
-    try:
-        from lanctl.core.projects.vlf import inspect_project
-
-        info = inspect_project(path)
-        return [
-            f"Nombre       : {info.get('name') or path.stem}",
-            f"Activo       : {'Sí' if str(path.resolve()).casefold() == str(active).casefold() else 'No'}",
-            f"UUID         : {info.get('id') or '-'}",
-            f"Descripción  : {info.get('description') or '-'}",
-            f"Autor        : {info.get('author') or '-'}",
-            f"LANCTL       : {info.get('lanctlVersion') or '-'}",
-            f"Actualizado  : {info.get('updated') or '-'}",
-            f"Dispositivos : {info.get('devices', '-')}",
-            f"Grupos       : {info.get('groups', '-')}",
-            f"Ruta         : {path}",
-        ]
-    except (OSError, ValueError) as error:
-        return [f"Proyecto: {path.stem}", f"Ruta: {path}", f"Error: {error}"]
 
 
 def _function_bar(width: int) -> str:
