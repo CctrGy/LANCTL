@@ -423,6 +423,50 @@ class AccessTests(unittest.TestCase):
                 server.stop()
                 thread.join(2)
 
+    def test_https_accepts_multiple_simultaneous_clients(self):
+        import http.client
+        import ssl
+        import threading
+        from concurrent.futures import ThreadPoolExecutor
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "index.html").write_text("LANCTL", encoding="utf-8")
+            certificate, key = generate_certificate(root / "tls.crt", root / "tls.key", "127.0.0.1")
+            store = AccessStore(root / "users.json")
+            server = HttpsAccessServer(
+                "127.0.0.1",
+                0,
+                "127.0.0.0/8",
+                certificate,
+                key,
+                AuthenticationService(store),
+                AuthorizationService(store),
+                static_directory=root,
+            )
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            port = server.server.server_address[1]
+
+            def request(_index):
+                connection = http.client.HTTPSConnection(
+                    "127.0.0.1", port, context=ssl._create_unverified_context(), timeout=5
+                )
+                try:
+                    connection.request("GET", "/")
+                    response = connection.getresponse()
+                    return response.status, response.read()
+                finally:
+                    connection.close()
+
+            try:
+                with ThreadPoolExecutor(max_workers=8) as executor:
+                    results = list(executor.map(request, range(8)))
+                self.assertEqual(results, [(200, b"LANCTL")] * 8)
+            finally:
+                server.stop()
+                thread.join(2)
+
     def test_persistent_runtime_reconciles_enabled_services(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
