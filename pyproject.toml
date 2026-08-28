@@ -24,7 +24,7 @@ dev = [
     "bandit==1.8.6",
     "coverage==7.10.6",
     "pip-audit==2.9.0",
-    "pytest==8.4.2",
+    "pytest==9.0.3",
     "ruff==0.16.2",
 ]
 
