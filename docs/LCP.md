@@ -215,6 +215,8 @@ lanctl plugin publisher revoke HUELLA_SHA256
 
 El almacén `data/lc/trusted-publishers.json` se escribe de forma atómica y con
 lock. Un paquete sin firma válida nunca puede convertirse en editor confiable.
+Los runtimes `trusted` se bloquean tanto al activarlos como al restaurarlos en
+el arranque si su huella no sigue autorizada; `--trust` no omite esa comprobación.
 Además, `plugin install` muestra firma y permisos solicitados antes de modificar
 la instalación. `lanctl plugin revoke ID [PERMISOS]` desactiva el plugin antes
 de retirar permisos y confianza de ejecución.

@@ -161,14 +161,30 @@ class PluginTests(unittest.TestCase):
     def test_trusted_runtime_requires_explicit_trust(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
+            key = root / "publisher.pem"
+            key.write_bytes(
+                Ed25519PrivateKey.generate().private_bytes(
+                    serialization.Encoding.PEM,
+                    serialization.PrivateFormat.PKCS8,
+                    serialization.NoEncryption(),
+                )
+            )
             package = root / "trusted.lcp"
-            build_package(self._source(root, runtime="trusted"), package)
+            build_package(self._source(root, runtime="trusted"), package, signing_key=key)
             manager = PluginManager(root / "installed", root / "registry.json")
             manager.install(package)
             with self.assertRaises(PermissionError):
                 manager.enable("demo.network-tools", grant={"theme.register"})
+            with self.assertRaisesRegex(PermissionError, "editor confiable"):
+                manager.enable("demo.network-tools", grant={"theme.register"}, trusted=True)
+            manager.publishers.trust_package(package)
             plugin = manager.enable("demo.network-tools", grant={"theme.register"}, trusted=True)
             self.assertIsNotNone(plugin.module)
+            fingerprint = plugin.signature.split(":", 1)[1]
+            self.assertTrue(manager.publishers.revoke(fingerprint))
+            reloaded = PluginManager(root / "installed", root / "registry.json")
+            reloaded.activate_enabled()
+            self.assertEqual(reloaded.get("demo.network-tools").state, PluginState.ERROR)
 
     def test_signed_publisher_can_be_trusted_and_revoked(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -236,9 +252,18 @@ class PluginTests(unittest.TestCase):
                 encoding="utf-8",
             )
             package = root / "hooks.lcp"
-            build_package(source, package)
+            key = root / "publisher.pem"
+            key.write_bytes(
+                Ed25519PrivateKey.generate().private_bytes(
+                    serialization.Encoding.PEM,
+                    serialization.PrivateFormat.PKCS8,
+                    serialization.NoEncryption(),
+                )
+            )
+            build_package(source, package, signing_key=key)
             manager = PluginManager(root / "installed", root / "registry.json")
             manager.install(package)
+            manager.publishers.trust_package(package)
             plugin = manager.enable(
                 "demo.network-tools", grant={"theme.register", "events.listen"}, trusted=True
             )

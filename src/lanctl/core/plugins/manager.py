@@ -31,6 +31,7 @@ from lanctl.core.plugins.extensions import ExtensionRegistry
 from lanctl.core.plugins.functions import FunctionRegistry
 from lanctl.core.plugins.models import PluginManifest, PluginState
 from lanctl.core.plugins.package import inspect_package, install_package, verify_package
+from lanctl.core.plugins.publishers import TrustedPublisherStore
 
 PLUGIN_ROOT = application_path("data/lc/plugins")
 PLUGIN_REGISTRY = application_path("data/lc/plugins.registry")
@@ -44,6 +45,7 @@ class InstalledPlugin:
     granted: set[str] | None = None
     trusted: bool = False
     error: str = ""
+    signature: str = "UNSIGNED"
     module: object | None = None
     isolated_runtime: object | None = None
 
@@ -54,6 +56,7 @@ class InstalledPlugin:
 class PluginManager:
     def __init__(self, root: Path = PLUGIN_ROOT, registry_path: Path = PLUGIN_REGISTRY) -> None:
         self.root, self.registry_path = root, registry_path
+        self.publishers = TrustedPublisherStore(registry_path.with_name("trusted-publishers.json"))
         self.event_registry = EventRegistry()
         self.extensions = ExtensionRegistry()
         self.events = EventBus(self.event_registry, self.audit)
@@ -104,6 +107,7 @@ class PluginManager:
                     granted,
                     bool(saved.get("trusted", False)),
                     str(saved.get("error", "")),
+                    str(saved.get("signature", "UNSIGNED")),
                 )
             except Exception as error:  # noqa: BLE001 - manifiesto externo
                 from lanctl.core.errors import errors
@@ -178,7 +182,7 @@ class PluginManager:
                 "un complemento integrado no se puede reemplazar con plugin install"
             )
         manifest, destination, result = install_package(package, self.root)
-        plugin = InstalledPlugin(manifest, destination)
+        plugin = InstalledPlugin(manifest, destination, signature=str(result["signature"]))
         self.plugins[manifest.plugin_id] = plugin
         self._save_registry()
         self.audit(
@@ -211,6 +215,11 @@ class PluginManager:
             plugin.error = f"permisos sin conceder: {', '.join(sorted(missing))}"
             self._save_registry()
             raise PermissionError(plugin.error)
+        if trusted and not self.publishers.is_trusted(plugin.signature):
+            raise PermissionError(
+                "el runtime trusted requiere un LCP firmado por un editor confiable; "
+                "usa plugin publisher trust"
+            )
         plugin.trusted = plugin.trusted or trusted
         self._check_compatibility(plugin)
         self._check_dependencies(plugin)
@@ -391,6 +400,10 @@ class PluginManager:
             return
         if not plugin.trusted:
             raise PermissionError("el código in-process requiere confianza explícita (--trust)")
+        if not plugin.manifest.raw.get("builtIn") and not self.publishers.is_trusted(
+            plugin.signature
+        ):
+            raise PermissionError("la firma del editor trusted no está autorizada o fue revocada")
         module_name = "lanctl_plugin_" + plugin.manifest.plugin_id.replace(".", "_").replace(
             "-", "_"
         )
@@ -603,6 +616,7 @@ class PluginManager:
                     "granted": sorted(p.granted),
                     "trusted": p.trusted,
                     "error": p.error,
+                    "signature": p.signature,
                     "version": p.manifest.version,
                 }
                 for p in self.list()

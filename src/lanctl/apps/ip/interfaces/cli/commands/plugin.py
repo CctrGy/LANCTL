@@ -136,6 +136,7 @@ def _info(args) -> int:
             "granted": sorted(plugin.granted),
             "trusted": plugin.trusted,
             "error": plugin.error,
+            "signature": plugin.signature,
             "path": str(plugin.path),
         }
     )
