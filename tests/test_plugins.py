@@ -14,6 +14,7 @@ from lanctl.core.plugins.functions import FunctionRegistry
 from lanctl.core.plugins.manager import PluginManager
 from lanctl.core.plugins.models import PluginManifest, PluginState
 from lanctl.core.plugins.package import build_package, verify_package
+from lanctl.core.plugins.publishers import TrustedPublisherStore
 from lanctl.core.resources import bundled_path
 
 
@@ -168,6 +169,34 @@ class PluginTests(unittest.TestCase):
                 manager.enable("demo.network-tools", grant={"theme.register"})
             plugin = manager.enable("demo.network-tools", grant={"theme.register"}, trusted=True)
             self.assertIsNotNone(plugin.module)
+
+    def test_signed_publisher_can_be_trusted_and_revoked(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            key = root / "publisher.pem"
+            key.write_bytes(
+                Ed25519PrivateKey.generate().private_bytes(
+                    serialization.Encoding.PEM,
+                    serialization.PrivateFormat.PKCS8,
+                    serialization.NoEncryption(),
+                )
+            )
+            package = root / "signed.lcp"
+            result = build_package(self._source(root), package, signing_key=key)
+            store = TrustedPublisherStore(root / "publishers.json")
+            entry = store.trust_package(package, "Demo Publisher")
+            self.assertTrue(store.is_trusted(result["signature"]))
+            self.assertEqual(store.list()[0]["name"], "Demo Publisher")
+            self.assertTrue(store.revoke(entry["fingerprint"]))
+            self.assertFalse(store.list())
+
+    def test_unsigned_package_cannot_become_trusted_publisher(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package = root / "unsigned.lcp"
+            build_package(self._source(root), package)
+            with self.assertRaisesRegex(ValueError, "firmado válido"):
+                TrustedPublisherStore(root / "publishers.json").trust_package(package)
 
     def test_isolated_runtime_enforces_call_budget(self):
         with tempfile.TemporaryDirectory() as temporary:

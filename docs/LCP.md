@@ -204,9 +204,20 @@ lanctl plugin verify salida.lcp
 ```
 
 La huella de la clave pública aparece como `VALID_ED25519:...`. La firma prueba
-integridad y posesión de la clave, pero la confianza en el editor debe
-establecerse por un canal independiente. `lanctl plugin revoke ID [PERMISOS]`
-desactiva el plugin antes de retirar permisos y confianza.
+integridad y posesión de la clave. Tras verificar la huella por un canal
+independiente, el editor se administra con:
+
+```text
+lanctl plugin publisher trust complemento.lcp --name "Editor"
+lanctl plugin publisher list
+lanctl plugin publisher revoke HUELLA_SHA256
+```
+
+El almacén `data/lc/trusted-publishers.json` se escribe de forma atómica y con
+lock. Un paquete sin firma válida nunca puede convertirse en editor confiable.
+Además, `plugin install` muestra firma y permisos solicitados antes de modificar
+la instalación. `lanctl plugin revoke ID [PERMISOS]` desactiva el plugin antes
+de retirar permisos y confianza de ejecución.
 # Fachada Wake-on-LAN
 
 Los plugins trusted pueden solicitar `network.udp` y usar exclusivamente

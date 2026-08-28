@@ -371,6 +371,7 @@ local plugin = clink.argmatcher():addarg({
     "enable" .. clink.argmatcher():addarg({ fromhistory = true }):addflags({ "-h", "--help", "/?", "--grant" .. history_value("Permiso"), "--grant-all", "--trust" }):nofiles(),
     "disable" .. plugin_id, "reload" .. plugin_id, "uninstall" .. plugin_id,
     "verify" .. project_action(), "permissions" .. plugin_id, "revoke" .. plugin_id,
+    "publisher" .. clink.argmatcher():addarg({ "list", "trust", "revoke" }):addflags({ "-h", "--help", "/?", "--name" .. history_value("Editor") }),
     "extensions" .. clink.argmatcher():addflags({ "-h", "--help", "/?", "--type" .. history_value("Tipo") }):nofiles(),
     "pack" .. project_action({ "-h", "--help", "/?", "--force", "--signing-key" .. file_arg }, true)
 }):addflags(help_flags):nofiles()

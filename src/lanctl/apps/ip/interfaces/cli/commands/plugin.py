@@ -8,7 +8,8 @@ from colorama import Fore, Style
 
 from lanctl.core.console import ok
 from lanctl.core.plugins.manager import get_plugin_manager
-from lanctl.core.plugins.package import build_package
+from lanctl.core.plugins.package import build_package, verify_package
+from lanctl.core.plugins.publishers import TrustedPublisherStore
 from lanctl.core.resources import bundled_path
 
 
@@ -69,6 +70,26 @@ def register_plugin_command(commands: argparse._SubParsersAction) -> None:
         "permissions", nargs="*", metavar="PERMISO", help="Vacío revoca todos los permisos."
     )
     revoke.set_defaults(plugin_handler=_revoke)
+    publisher = actions.add_parser(
+        "publisher", help="Gestiona huellas Ed25519 de editores LCP confiables."
+    )
+    publisher_actions = publisher.add_subparsers(
+        dest="publisher_action", metavar="ACCIÓN", required=True
+    )
+    publisher_actions.add_parser("list", help="Lista editores confiables.").set_defaults(
+        plugin_handler=_publisher_list
+    )
+    trust_publisher = publisher_actions.add_parser(
+        "trust", help="Confía en la firma que contiene un paquete LCP."
+    )
+    trust_publisher.add_argument("file", help="Paquete .lcp firmado y verificado.")
+    trust_publisher.add_argument("--name", default="", help="Nombre descriptivo del editor.")
+    trust_publisher.set_defaults(plugin_handler=_publisher_trust)
+    revoke_publisher = publisher_actions.add_parser(
+        "revoke", help="Revoca una huella de editor."
+    )
+    revoke_publisher.add_argument("fingerprint", help="Huella SHA-256 Ed25519 completa.")
+    revoke_publisher.set_defaults(plugin_handler=_publisher_revoke)
     extensions = actions.add_parser(
         "extensions", help="Lista extensiones para CLI, TUI y futura GUI."
     )
@@ -123,6 +144,11 @@ def _info(args) -> int:
 
 
 def _install(args) -> int:
+    inspected = verify_package(args.file)
+    requested = inspected["manifest"].permissions
+    print("Permisos solicitados antes de instalar:")
+    print(" " + (", ".join(requested) if requested else "ninguno"))
+    print(f"Firma: {inspected['signature']}")
     plugin = get_plugin_manager().install(args.file)
     ok("PLUGIN INSTALADO", f"{plugin.manifest.plugin_id} {plugin.manifest.version} | desactivado")
     print(" Actívalo con: lanctl plugin enable ID --grant-all")
@@ -183,6 +209,25 @@ def _revoke(args) -> int:
     permissions = set(args.permissions) if args.permissions else None
     get_plugin_manager().revoke(args.plugin_id, permissions)
     ok("PERMISOS REVOCADOS", args.plugin_id)
+    return 0
+
+
+def _publisher_list(args) -> int:
+    print(json.dumps(TrustedPublisherStore().list(), ensure_ascii=False, indent=2))
+    return 0
+
+
+def _publisher_trust(args) -> int:
+    entry = TrustedPublisherStore().trust_package(args.file, args.name)
+    ok("EDITOR CONFIABLE", entry["name"])
+    print(f" Huella : {entry['fingerprint']}")
+    return 0
+
+
+def _publisher_revoke(args) -> int:
+    if not TrustedPublisherStore().revoke(args.fingerprint):
+        raise ValueError("huella de editor no encontrada")
+    ok("EDITOR REVOCADO", args.fingerprint)
     return 0
 
 
