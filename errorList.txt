@@ -39,7 +39,7 @@
 0e0C501A8C | 47 | src/lanctl/core/plugins/smb_runtime.py | 261 | src.lanctl.core.plugins.smb_runtime.SMBNative._linux_shares | raise
 0e0C763EF8 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/group.py | 63 | src.lanctl.apps.ip.interfaces.cli.commands.group.run_group | raise
 0e0C8C6619 | 36 | src/lanctl/apps/access/service.py | 111 | src.lanctl.apps.access.service.AccessService.configure | raise
-0e0CC4A288 | 32 | src/lanctl/apps/ip/interfaces/cli/commands/plugin.py | 230 | src.lanctl.apps.ip.interfaces.cli.commands.plugin._publisher_revoke | raise
+0e0CC4A288 | 32 | src/lanctl/apps/ip/interfaces/cli/commands/plugin.py | 228 | src.lanctl.apps.ip.interfaces.cli.commands.plugin._publisher_revoke | raise
 0e0CE83FCB | 47 | src/lanctl/core/plugins/smb_runtime.py | 365 | src.lanctl.core.plugins.smb_runtime.SMBService.inspect | raise
 0e0D0381E9 | 41 | src/lanctl/apps/monitor/lifecycle.py | 32 | src.lanctl.apps.monitor.lifecycle.SingletonLock.acquire | raise
 0e0D9F00E3 | 47 | src/lanctl/core/plugins/package.py | 75 | src.lanctl.core.plugins.package.install_package | raise

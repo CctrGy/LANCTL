@@ -926,9 +926,7 @@ class DatabaseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))
             database.upsert([{"IP": "192.168.1.25", "MAC": "02:11:22:33:44:55"}])
-            devices = database.upsert(
-                [{"IP": "192.168.1.25", "MAC": "06:AA:BB:CC:DD:EE"}]
-            )
+            devices = database.upsert([{"IP": "192.168.1.25", "MAC": "06:AA:BB:CC:DD:EE"}])
             self.assertEqual(len(devices), 2)
 
     def test_empty_mac_does_not_erase_known_mac(self):

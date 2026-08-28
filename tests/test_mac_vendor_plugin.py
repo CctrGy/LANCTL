@@ -3,6 +3,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
 from lanctl.apps.ip.infrastructure.services.manufacturer import detect_manufacturer
 from lanctl.core.plugins.device_adapters import resolve_manufacturer_extensions
 from lanctl.core.plugins.manager import PluginManager
@@ -10,6 +13,20 @@ from lanctl.core.plugins.package import build_package, verify_package
 
 
 class MacVendorPluginTests(unittest.TestCase):
+    @staticmethod
+    def _signed_package(source: Path, root: Path) -> Path:
+        key = root / "publisher.pem"
+        key.write_bytes(
+            Ed25519PrivateKey.generate().private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.PKCS8,
+                serialization.NoEncryption(),
+            )
+        )
+        package = root / "mac-vendor.lcp"
+        build_package(source, package, signing_key=key)
+        return package
+
     def test_core_manufacturer_detection_prefers_active_adapter(self):
         with patch(
             "lanctl.core.plugins.device_adapters.resolve_manufacturer_extensions",
@@ -24,8 +41,7 @@ class MacVendorPluginTests(unittest.TestCase):
         source = Path(__file__).resolve().parents[1] / ("plugins-src/lanctl.analysis.mac-vendor")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            package = root / "mac-vendor.lcp"
-            build_package(source, package)
+            package = self._signed_package(source, root)
             verified = verify_package(package)
             self.assertEqual(
                 verified["manifest"].plugin_id,
@@ -33,6 +49,7 @@ class MacVendorPluginTests(unittest.TestCase):
             )
             manager = PluginManager(root / "installed", root / "registry.json")
             manager.install(package)
+            manager.publishers.trust_package(package)
             plugin = manager.enable(
                 "lanctl.analysis.mac-vendor",
                 grant={
@@ -64,10 +81,10 @@ class MacVendorPluginTests(unittest.TestCase):
         source = Path(__file__).resolve().parents[1] / ("plugins-src/lanctl.analysis.mac-vendor")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            package = root / "mac-vendor.lcp"
-            build_package(source, package)
+            package = self._signed_package(source, root)
             manager = PluginManager(root / "installed", root / "registry.json")
             manager.install(package)
+            manager.publishers.trust_package(package)
             manager.enable(
                 "lanctl.analysis.mac-vendor",
                 grant={

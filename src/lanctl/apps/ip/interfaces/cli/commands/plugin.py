@@ -85,9 +85,7 @@ def register_plugin_command(commands: argparse._SubParsersAction) -> None:
     trust_publisher.add_argument("file", help="Paquete .lcp firmado y verificado.")
     trust_publisher.add_argument("--name", default="", help="Nombre descriptivo del editor.")
     trust_publisher.set_defaults(plugin_handler=_publisher_trust)
-    revoke_publisher = publisher_actions.add_parser(
-        "revoke", help="Revoca una huella de editor."
-    )
+    revoke_publisher = publisher_actions.add_parser("revoke", help="Revoca una huella de editor.")
     revoke_publisher.add_argument("fingerprint", help="Huella SHA-256 Ed25519 completa.")
     revoke_publisher.set_defaults(plugin_handler=_publisher_revoke)
     extensions = actions.add_parser(

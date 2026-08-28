@@ -34,9 +34,7 @@ def generate() -> str:
     ]
     for path, parser in parser_tree(build_parser()):
         title = " ".join(path)
-        sections.extend(
-            ["", f"## `{title}`", "", "```text", parser.format_help().rstrip(), "```"]
-        )
+        sections.extend(["", f"## `{title}`", "", "```text", parser.format_help().rstrip(), "```"])
     return "\n".join(sections) + "\n"
 
 
