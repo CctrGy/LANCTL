@@ -325,7 +325,8 @@ Referencias operativas: [manual del TUI](docs/TUI.md),
 [CLI y códigos de salida](docs/CLI.md),
 [persistencia y recuperación](docs/STORAGE.md),
 [solución de problemas](docs/TROUBLESHOOTING.md),
-[acceso remoto](docs/ACCESS.md) y [plugins LCP](docs/LCP.md).
+[acceso remoto](docs/ACCESS.md),
+[despliegue empresarial](docs/ENTERPRISE.md) y [plugins LCP](docs/LCP.md).
 
 ## Configuración persistente
 

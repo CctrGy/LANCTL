@@ -1,5 +1,8 @@
 # Acceso remoto LANCTL
 
+Para nodos permanentes, políticas de mínimo privilegio, PKI, actualización y
+recuperación, consulta la [guía de despliegue empresarial](ENTERPRISE.md).
+
 SSH y HTTPS están desactivados inicialmente y son independientes de MONITOR.
 Ambos comparten usuarios y RBAC, pero SSH autentica claves públicas y la web
 usa hashes Scrypt; una clave SSH nunca se transforma en contraseña web.
