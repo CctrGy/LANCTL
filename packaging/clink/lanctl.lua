@@ -10,12 +10,21 @@ local function history_value(hint)
     return clink.argmatcher():addarg({ fromhistory = true, hint = hint }):nofiles()
 end
 
+local function integer_range(first, last)
+    local items = {}
+    for value = first, last do
+        table.insert(items, tostring(value))
+    end
+    return values(items)
+end
+
 local help_flags = { "-h", "--help", "/?" }
 local formats = values({ "table", "json", "csv", "html", "xml" })
 local discovery = values({ "icmp", "arp", "hybrid" })
 local profiles = values({ "fast", "normal", "accurate" })
 local scan_orders = values({ "ascending", "descending", "random" })
 local on_off = values({ "on", "off" })
+local error_log_levels = integer_range(1, 59)
 local cnf_states = values({ "O", "X", "-", "S", "F" })
 local protocols = values({
     "auto", "ssh", "tr-064", "telnet", "http", "https", "ftp",
@@ -93,7 +102,9 @@ local settings = clink.argmatcher()
         "--workers" .. history_value("Workers"), "--timeout" .. history_value("Segundos"),
         "--scan-order" .. scan_orders,
         "--max-hosts" .. history_value("Máximo"), "--database" .. file_arg,
+        "--physical-database" .. file_arg,
         "--groups" .. file_arg, "--log" .. dir_arg,
+        "--error-log-level" .. error_log_levels,
         "--projects-directory" .. dir_arg,
         "-save-mode" .. values({ "list", "manual", "manual.inCloseConsult", "automatic.toClose", "automatic.toScan", "automatic.timeToSave", "automatic.allChanges" }),
         "--save-mode" .. values({ "list", "manual", "manual.inCloseConsult", "automatic.toClose", "automatic.toScan", "automatic.timeToSave", "automatic.allChanges" }),
@@ -374,6 +385,11 @@ local access = clink.argmatcher()
     :addflags({ "-h", "--help", "/?", "--bind", "--cidr", "--port", "--password-auth", "--role", "--ssh-key", "--expires", "--permission", "--certificate", "--private-key", "--common-name", "--yes", "--json", "--scope", "--config", "--users" })
     :nofiles()
 
+local lanwire = clink.argmatcher()
+    :addarg({ fromhistory = true, hint = "Comando o argumento de LANWIRE" })
+    :addflags({ "-h", "--help", "/?", "--new-window" })
+    :loop()
+
 local root_commands = {
     "list" .. list, "recurrent" .. recurrent, "ping" .. ping,
     "open" .. open, "connect" .. open,
@@ -391,7 +407,8 @@ local root_commands = {
     "download-settings" .. download_settings,
     "project" .. project, "projects" .. project, "plugin" .. plugin,
     "plugins" .. plugin, "addon" .. plugin, "addons" .. plugin,
-    "language" .. language, "languages" .. language, "lang" .. language
+    "language" .. language, "languages" .. language, "lang" .. language,
+    "lanwire" .. lanwire, "wire" .. lanwire
 }
 
 clink.argmatcher("lanctl", "lanctl.exe", "als", "als.exe")
