@@ -409,7 +409,7 @@
 0e8530D2D7 | 41 | src/lanctl/apps/ip/interfaces/cli/main.py | 251 | src.lanctl.apps.ip.interfaces.cli.main.main | return-error
 0e8578939D | 42 | src/lanctl/core/plugin_storage.py | 40 | src.lanctl.core.plugin_storage.PluginStorage.put_observations | raise
 0e86055A13 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/scan.py | 102 | src.lanctl.apps.ip.interfaces.cli.commands.scan.run_scan | raise
-0e866DB4C7 | 42 | src/lanctl/core/data_migration.py | 70 | src.lanctl.core.data_migration.ensure_data_layout | raise
+0e866DB4C7 | 42 | src/lanctl/core/data_migration.py | 76 | src.lanctl.core.data_migration.ensure_data_layout | raise
 0e8711F423 | 42 | src/lanctl/apps/access/ssh_server.py | 165 | src.lanctl.apps.access.ssh_server.SshAccessServer.prepare | raise
 0e8728E0EC | 31 | src/lanctl/apps/ip/interfaces/cli/commands/open.py | 173 | src.lanctl.apps.ip.interfaces.cli.commands.open.run_open | raise
 0e8777DDE8 | 43 | src/lanctl/core/projects/vlf.py | 665 | src.lanctl.core.projects.vlf._existing_vlf | raise
