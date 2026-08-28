@@ -35,7 +35,7 @@
 0e0BEE887B | 46 | src/lanctl/apps/ip/infrastructure/services/lan_scanner.py | 589 | src.lanctl.apps.ip.infrastructure.services.lan_scanner.LanScanner._read_arp_table | raise
 0e0C501A8C | 47 | src/lanctl/core/plugins/smb_runtime.py | 261 | src.lanctl.core.plugins.smb_runtime.SMBNative._linux_shares | raise
 0e0C763EF8 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/group.py | 63 | src.lanctl.apps.ip.interfaces.cli.commands.group.run_group | raise
-0e0C8C6619 | 36 | src/lanctl/apps/access/service.py | 112 | src.lanctl.apps.access.service.AccessService.configure | raise
+0e0C8C6619 | 36 | src/lanctl/apps/access/service.py | 111 | src.lanctl.apps.access.service.AccessService.configure | raise
 0e0CE83FCB | 47 | src/lanctl/core/plugins/smb_runtime.py | 365 | src.lanctl.core.plugins.smb_runtime.SMBService.inspect | raise
 0e0D0381E9 | 41 | src/lanctl/apps/monitor/lifecycle.py | 32 | src.lanctl.apps.monitor.lifecycle.SingletonLock.acquire | raise
 0e0D9F00E3 | 47 | src/lanctl/core/plugins/package.py | 75 | src.lanctl.core.plugins.package.install_package | raise
@@ -460,7 +460,7 @@
 0e9BBCB817 | 36 | src/lanctl/apps/wire/idf/database.py | 226 | src.lanctl.apps.wire.idf.database.IDFDatabaseManager._validate_database | raise
 0e9BBD25C6 | 36 | src/lanctl/apps/access/auth.py | 94 | src.lanctl.apps.access.auth.AuthenticationService.add_user | raise
 0e9BE753EC | 48 | src/lanctl/core/plugins/package.py | 140 | src.lanctl.core.plugins.package._verify_signature | raise
-0e9C325967 | 42 | src/lanctl/apps/access/service.py | 144 | src.lanctl.apps.access.service.AccessService.enable.operation | raise
+0e9C325967 | 42 | src/lanctl/apps/access/service.py | 143 | src.lanctl.apps.access.service.AccessService.enable.operation | raise
 0e9E476FB5 | 36 | src/lanctl/apps/wire/tui/app.py | 525 | src.lanctl.apps.wire.tui.app.LanwireTui._execute_wire_side_action | raise
 0e9E89C42A | 42 | src/lanctl/apps/monitor/checks.py | 24 | src.lanctl.apps.monitor.checks.CheckRegistry.register | raise
 0e9EE18D3B | 43 | src/lanctl/core/projects/vlf.py | 587 | src.lanctl.core.projects.vlf._safe_archive | raise
@@ -517,7 +517,7 @@
 0eAE480AC2 | 43 | src/lanctl/core/database.py | 28 | src.lanctl.core.database.DeviceDatabase.load | raise
 0eAE741BF7 | 36 | src/lanctl/apps/wire/cli/main.py | 146 | src.lanctl.apps.wire.cli.main | raise
 0eAF37F129 | 36 | src/lanctl/apps/wire/idf/sample_topology.py | 186 | src.lanctl.apps.wire.idf.sample_topology.validate_topology | raise
-0eB0732069 | 34 | src/lanctl/apps/access/service.py | 122 | src.lanctl.apps.access.service.AccessService.configure.operation | raise
+0eB0732069 | 34 | src/lanctl/apps/access/service.py | 121 | src.lanctl.apps.access.service.AccessService.configure.operation | raise
 0eB088918C | 33 | src/lanctl/apps/ip/interfaces/gui/theme.py | 47 | src.lanctl.apps.ip.interfaces.gui.theme.validate_theme_specification | raise
 0eB0A6E4F9 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/settings.py | 230 | src.lanctl.apps.ip.interfaces.cli.commands.settings.run_settings | raise
 0eB0D7D1EF | 33 | src/lanctl/core/plugins/api.py | 322 | src.lanctl.core.plugins.api._PluginMonitor.write_metric | raise
@@ -528,7 +528,7 @@
 0eB23FE3DE | 36 | src/lanctl/shared/i18n.py | 283 | src.lanctl.shared.i18n.LanguageManager.translate | raise
 0eB2574240 | 45 | src/lanctl/core/plugins/api.py | 265 | src.lanctl.core.plugins.api._PluginHistory.write | raise
 0eB30D3FFE | 46 | src/lanctl/apps/ip/infrastructure/protocols/ssh.py | 299 | src.lanctl.apps.ip.infrastructure.protocols.ssh.open_colored_interactive | raise
-0eB3EAAFE8 | 36 | src/lanctl/apps/access/service.py | 159 | src.lanctl.apps.access.service.AccessService.disable | raise
+0eB3EAAFE8 | 36 | src/lanctl/apps/access/service.py | 158 | src.lanctl.apps.access.service.AccessService.disable | raise
 0eB4126FEC | 31 | src/lanctl/apps/ip/interfaces/cli/commands/wol.py | 715 | src.lanctl.apps.ip.interfaces.cli.commands.wol.run_wol | raise
 0eB43246A4 | 46 | src/lanctl/apps/wire/xfile.py | 54 | src.lanctl.apps.wire.xfile.FileLock.acquire | raise
 0eB487F457 | 46 | src/lanctl/apps/monitor/lifecycle.py | 90 | src.lanctl.apps.monitor.lifecycle._process_identity | raise
@@ -627,7 +627,7 @@
 0eD0BDA655 | 33 | src/lanctl/apps/ip/infrastructure/protocols/radmin.py | 110 | src.lanctl.apps.ip.infrastructure.protocols.radmin.build_arguments | raise
 0eD1057F20 | 32 | src/lanctl/apps/monitor/configuration.py | 327 | src.lanctl.apps.monitor.configuration.AssignmentManager.unassign.remove | raise
 0eD15FF37E | 31 | src/lanctl/apps/ip/interfaces/cli/commands/ssh.py | 87 | src.lanctl.apps.ip.interfaces.cli.commands.ssh.run_ssh | raise
-0eD286D301 | 42 | src/lanctl/apps/access/service.py | 150 | src.lanctl.apps.access.service.AccessService.enable.operation | raise
+0eD286D301 | 42 | src/lanctl/apps/access/service.py | 149 | src.lanctl.apps.access.service.AccessService.enable.operation | raise
 0eD2F6B42A | 45 | src/lanctl/core/plugins/manager.py | 191 | src.lanctl.core.plugins.manager.PluginManager.uninstall | raise
 0eD3FC03C0 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/element.py | 124 | src.lanctl.apps.ip.interfaces.cli.commands.element.run_element | raise
 0eD517D6B7 | 32 | src/lanctl/apps/ip/infrastructure/cisco/planner.py | 47 | src.lanctl.apps.ip.infrastructure.cisco.planner.CiscoPlanner.plan | raise
@@ -635,6 +635,7 @@
 0eD5E24FE0 | 36 | src/lanctl/apps/ip/infrastructure/cisco/models.py | 47 | src.lanctl.apps.ip.infrastructure.cisco.models.SwitchProfile.resolve_port | raise
 0eD6427A6D | 33 | src/lanctl/apps/access/network.py | 10 | src.lanctl.apps.access.network.validate_endpoint | raise
 0eD72EF9C8 | 36 | src/lanctl/apps/access/remote.py | 93 | src.lanctl.apps.access.remote.parse_remote_command | raise
+0eD781A6B9 | 16 | src/lanctl/apps/access/runtime.py | 178 | src.lanctl.apps.access.runtime.AccessRuntime._supervise | diagnostic
 0eD7B2DB2B | 33 | src/lanctl/core/errors.py | 135 | src.lanctl.core.errors.ErrorEvent.__post_init__ | raise
 0eD7BB1855 | 32 | src/lanctl/apps/ip/infrastructure/cisco/planner.py | 27 | src.lanctl.apps.ip.infrastructure.cisco.planner.CiscoPlanner._port | raise
 0eD7DDC00E | 42 | src/lanctl/apps/ip/interfaces/gui/main.py | 803 | src.lanctl.apps.ip.interfaces.gui.main.run_gui | raise
@@ -662,6 +663,7 @@
 0eDF817B46 | 36 | src/lanctl/apps/access/https_server.py | 191 | src.lanctl.apps.access.https_server.HttpsAccessServer.__init__.Handler._origin | raise
 0eDF870D17 | 43 | src/lanctl/core/credentials.py | 128 | src.lanctl.core.credentials.CredentialStore._load | raise
 0eDF872895 | 46 | src/lanctl/apps/ip/interfaces/tui/main.py | 2126 | src.lanctl.apps.ip.interfaces.tui.main.LanctlTui.run | raise
+0eE010DF62 | 18 | src/lanctl/apps/access/service.py | 200 | src.lanctl.apps.access.service.AccessService._audit | diagnostic
 0eE14A2AD4 | 14 | src/lanctl/apps/ip/infrastructure/services/element_scanner.py | 300 | src.lanctl.apps.ip.infrastructure.services.element_scanner.scan_tcp_ports.inspect | diagnostic
 0eE14C0024 | 43 | src/lanctl/core/group_database.py | 32 | src.lanctl.core.group_database.GroupDatabase.load | raise
 0eE17968F9 | 48 | src/lanctl/core/plugins/ui_contracts.py | 66 | src.lanctl.core.plugins.ui_contracts.validate_form_schema | raise
@@ -673,7 +675,7 @@
 0eE2DA4E24 | 37 | src/lanctl/apps/ip/infrastructure/services/lan_scanner.py | 102 | src.lanctl.apps.ip.infrastructure.services.lan_scanner.LanScanner.__init__ | raise
 0eE314D699 | 41 | src/lanctl/apps/access/root_control.py | 115 | src.lanctl.apps.access.root_control.enqueue | raise
 0eE3A25817 | 18 | src/lanctl/apps/monitor/scheduler.py | 119 | src.lanctl.apps.monitor.scheduler.MonitorScheduler._done | diagnostic
-0eE3E0FDE3 | 36 | src/lanctl/apps/access/service.py | 133 | src.lanctl.apps.access.service.AccessService.enable | raise
+0eE3E0FDE3 | 36 | src/lanctl/apps/access/service.py | 132 | src.lanctl.apps.access.service.AccessService.enable | raise
 0eE460A68F | 36 | src/lanctl/apps/wire/tui/app.py | 528 | src.lanctl.apps.wire.tui.app.LanwireTui._execute_wire_side_action | raise
 0eE46BF5DF | 36 | src/lanctl/infrastructure/platform/linux.py | 15 | src.lanctl.infrastructure.platform.linux.LinuxPlatform.unit_text | raise
 0eE4A8E358 | 43 | src/lanctl/core/database.py | 363 | src.lanctl.core.database.DeviceDatabase._find | raise
@@ -705,7 +707,7 @@
 0eEC5F65D4 | 36 | src/lanctl/apps/wire/idf/database.py | 114 | src.lanctl.apps.wire.idf.database.IDFDatabaseManager.define_prefix | raise
 0eEC9D92B7 | 33 | src/lanctl/apps/ip/domain/models/device.py | 208 | src.lanctl.apps.ip.domain.models.device.Device.__setitem__ | raise
 0eED4E5E56 | 42 | src/lanctl/apps/ip/interfaces/cli/commands/wol.py | 431 | src.lanctl.apps.ip.interfaces.cli.commands.wol._sequence_locked | raise
-0eED68A44D | 42 | src/lanctl/apps/access/service.py | 148 | src.lanctl.apps.access.service.AccessService.enable.operation | raise
+0eED68A44D | 42 | src/lanctl/apps/access/service.py | 147 | src.lanctl.apps.access.service.AccessService.enable.operation | raise
 0eED9FA6B0 | 33 | src/lanctl/apps/ip/interfaces/cli/commands/settings.py | 314 | src.lanctl.apps.ip.interfaces.cli.commands.settings.run_settings | raise
 0eEE0B3D26 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/history.py | 61 | src.lanctl.apps.ip.interfaces.cli.commands.history.run_history | raise
 0eEE3CFF08 | 36 | src/lanctl/apps/access/network.py | 14 | src.lanctl.apps.access.network.validate_endpoint | raise

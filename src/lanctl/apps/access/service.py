@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from contextlib import suppress
 from copy import deepcopy
 from pathlib import Path
 
@@ -181,7 +180,7 @@ class AccessService:
     def _audit(self, event_type, user, result, source_ip=""):
         # El historial es auxiliar: un fallo de disco no debe invalidar una
         # autenticación que ya ha terminado correctamente.
-        with suppress(ValueError, OSError):
+        try:
             HistoryService().write(
                 HistoryEvent(
                     event_type,
@@ -194,4 +193,16 @@ class AccessService:
                         "sourceIp": source_ip,
                     },
                 )
+            )
+        except (ValueError, OSError) as error:
+            from lanctl.core.errors import errors
+
+            errors.from_exception(
+                error,
+                origin="LANCTL.Access.Audit",
+                code="ACCESS.AUDIT.WRITE.DEGRADED",
+                level=18,
+                details={"eventType": event_type, "result": result},
+                print_output=False,
+                once_key="access.audit.write-degraded",
             )

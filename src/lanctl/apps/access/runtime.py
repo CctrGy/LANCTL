@@ -172,7 +172,17 @@ class AccessRuntime:
         while not self.stop_event.wait(self.poll_interval):
             try:
                 self.reconcile()
-            except (OSError, RuntimeError, ValueError):
+            except (OSError, RuntimeError, ValueError) as error:
+                from lanctl.core.errors import errors
+
+                errors.from_exception(
+                    error,
+                    origin="LANCTL.Access.Runtime.Supervisor",
+                    code="ACCESS.RUNTIME.RECONCILE.RETRY",
+                    level=16,
+                    print_output=False,
+                    once_key="access.runtime.reconcile-retry",
+                )
                 continue
 
     def stop(self):
