@@ -70,10 +70,14 @@ class DistributionTests(unittest.TestCase):
         unit = (root / "packaging/systemd/lanctl-monitor.service").read_text(encoding="utf-8")
         self.assertIn("$target/LANCTL/lanctl", shell)
         self.assertIn("$target/LANCTL/lanwire", shell)
+        self.assertIn("$target/LANCTL/lanmon", shell)
+        self.assertIn("$target/LANCTL/landemo", shell)
         self.assertIn("$PORTABLE/LANCTL/lanctl", build)
         self.assertIn("$PORTABLE/LANCTL/lanwire", build)
         self.assertIn("$PKG/opt/lanctl/lanwire", build)
         self.assertIn("$PKG/usr/bin/lanwire", build)
+        self.assertIn("$PKG/usr/bin/lanmon", build)
+        self.assertIn("$PKG/usr/bin/landemo", build)
         self.assertIn("LANCTL_DATA_DIR=/var/lib/lanctl", unit)
         self.assertIn("LANCTL_SECRET_DIR=/etc/lanctl/access", unit)
         self.assertIn(
@@ -112,6 +116,8 @@ class DistributionTests(unittest.TestCase):
         self.assertIn('icon="assets/lanctl-v3.ico"', spec)
         self.assertIn('["packaging/entrypoints/lanip_entry.py"]', spec)
         self.assertIn('["packaging/entrypoints/lanwire_entry.py"]', spec)
+        self.assertIn('["packaging/entrypoints/lanmon_entry.py"]', spec)
+        self.assertIn('["packaging/entrypoints/landemo_entry.py"]', spec)
         self.assertIn('collect_submodules("lanctl.apps.wire")', spec)
         self.assertIn('("assets/lanctl-icon-v3.png", "assets")', spec)
         self.assertNotIn("lanctl-v2.ico", spec)
@@ -120,16 +126,22 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("dist\\LANCTL-GUI.exe", build)
         self.assertIn("dist\\lanip.exe", build)
         self.assertIn("dist\\lanwire.exe", build)
+        self.assertIn("dist\\lanmon.exe", build)
+        self.assertIn("dist\\landemo.exe", build)
         self.assertNotIn("LANWIRE_ROOT", build)
         self.assertNotIn("packaging\\windows\\lanwire.exe", build)
         self.assertTrue((root / "lanwire.py").is_file())
         self.assertTrue((root / "lanip.py").is_file())
+        self.assertTrue((root / "lanmon.py").is_file())
+        self.assertTrue((root / "landemo.py").is_file())
         self.assertNotIn("_internal", build)
         self.assertIn('Source: "{#BuildRoot}\\LANCTL.exe"', inno)
         self.assertNotIn("recursesubdirs", inno)
         self.assertIn('Source: "{#BuildRoot}\\LANCTL-GUI.exe"', inno)
         self.assertIn('Source: "{#BuildRoot}\\lanip.exe"', inno)
         self.assertIn('Source: "{#BuildRoot}\\lanwire.exe"', inno)
+        self.assertIn('Source: "{#BuildRoot}\\lanmon.exe"', inno)
+        self.assertIn('Source: "{#BuildRoot}\\landemo.exe"', inno)
         self.assertIn('Filename: "{app}\\lanwire.exe"', inno)
         self.assertIn('Filename: "{app}\\LANCTL-GUI.exe"', inno)
         self.assertIn('Filename: "{app}\\LANCTL.exe"; Parameters: "--tui"', inno)
@@ -139,13 +151,15 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("{commonappdata}\\LANCTL\\physical", inno)
         self.assertIn("admins-full system-full", inno)
 
-    def test_windows_installers_require_lanwire_in_standard_and_portable_layouts(self):
+    def test_windows_installers_require_all_tools_in_standard_and_portable_layouts(self):
         root = Path(__file__).resolve().parents[1]
         installer = (root / "install.ps1").read_text(encoding="utf-8")
         portable = (root / "packaging/portable/README-portable.txt").read_text(encoding="utf-8")
         self.assertGreaterEqual(installer.count("lanip.exe"), 2)
         self.assertGreaterEqual(installer.count("lanwire.exe"), 2)
-        self.assertIn("LANCTL.exe, lanip.exe or lanwire.exe", portable)
+        self.assertGreaterEqual(installer.count("lanmon.exe"), 2)
+        self.assertGreaterEqual(installer.count("landemo.exe"), 2)
+        self.assertIn("lanmon.exe or landemo.exe", portable)
         self.assertIn("physical/idf.db", portable)
 
     def test_github_actions_enforce_quality_and_security_gates(self):
@@ -269,7 +283,7 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("-RequireSignature", release)
         self.assertIn("Clean Windows install, update, demo and uninstall", release)
         self.assertIn("User data was not preserved", release)
-        self.assertIn('LANCTL.exe" demo', release)
+        self.assertIn('landemo.exe" --output', release)
 
 
 if __name__ == "__main__":

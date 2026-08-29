@@ -107,12 +107,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Clean installation failed' }
           & "$install/LANCTL.exe" --version
           if ($LASTEXITCODE -ne 0) { throw 'Installed executable failed' }
+          & "$install/lanmon.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw 'Installed monitor executable failed' }
           $sentinel = Join-Path $env:ProgramData 'LANCTL/config/release-sentinel.txt'
           New-Item -ItemType Directory -Force -Path (Split-Path $sentinel) | Out-Null
           Set-Content -LiteralPath $sentinel -Value 'preserve-release-data' -Encoding utf8
           & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/DIR=$install"
           if ($LASTEXITCODE -ne 0) { throw 'Clean update failed' }
-          & "$install/LANCTL.exe" demo --output (Join-Path $env:RUNNER_TEMP 'LANCTL-demo')
+          & "$install/landemo.exe" --output (Join-Path $env:RUNNER_TEMP 'LANCTL-demo')
           if ($LASTEXITCODE -ne 0) { throw 'Installed demo walkthrough failed' }
           & "$install/unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
           if ($LASTEXITCODE -ne 0) { throw 'Clean uninstall failed' }

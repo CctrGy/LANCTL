@@ -143,3 +143,65 @@ physical_exe = EXE(
     icon="assets/lanctl-v3.ico",
     version=VERSION_INFO,
 )
+
+# Entradas especializadas para operaciones de monitorización y para el
+# recorrido reproducible de presentación. Comparten el mismo núcleo LANCTL.
+monitor_a = Analysis(
+    ["packaging/entrypoints/lanmon_entry.py"],
+    pathex=[str(SOURCE_ROOT)],
+    binaries=[],
+    datas=datas,
+    hiddenimports=["paramiko", "cryptography"] + collect_submodules("lanctl"),
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+monitor_pyz = PYZ(monitor_a.pure)
+monitor_exe = EXE(
+    monitor_pyz,
+    monitor_a.scripts,
+    monitor_a.binaries,
+    monitor_a.datas,
+    [],
+    name="lanmon",
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=True,
+    icon="assets/lanctl-v3.ico",
+    version=VERSION_INFO,
+)
+
+demo_a = Analysis(
+    ["packaging/entrypoints/landemo_entry.py"],
+    pathex=[str(SOURCE_ROOT)],
+    binaries=[],
+    datas=datas,
+    hiddenimports=["paramiko", "cryptography"] + collect_submodules("lanctl"),
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+demo_pyz = PYZ(demo_a.pure)
+demo_exe = EXE(
+    demo_pyz,
+    demo_a.scripts,
+    demo_a.binaries,
+    demo_a.datas,
+    [],
+    name="landemo",
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=True,
+    icon="assets/lanctl-v3.ico",
+    version=VERSION_INFO,
+)

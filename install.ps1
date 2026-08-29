@@ -105,6 +105,8 @@ try {
         if ((Get-Content -LiteralPath (Join-Path $destination 'LANCTL.portable') -Raw).Trim() -ne 'LANCTL-PORTABLE-V1') { throw 'Portable marker is missing or invalid' }
         if (-not (Test-Path -LiteralPath (Join-Path $destination 'lanwire.exe'))) { throw 'Portable package is missing lanwire.exe' }
         if (-not (Test-Path -LiteralPath (Join-Path $destination 'lanip.exe'))) { throw 'Portable package is missing lanip.exe' }
+        if (-not (Test-Path -LiteralPath (Join-Path $destination 'lanmon.exe'))) { throw 'Portable package is missing lanmon.exe' }
+        if (-not (Test-Path -LiteralPath (Join-Path $destination 'landemo.exe'))) { throw 'Portable package is missing landemo.exe' }
         if (Test-Path -LiteralPath (Join-Path $destination '_internal')) { throw 'Portable package unexpectedly contains _internal' }
         Write-Host "Portable LANCTL installed at $destination (PATH is not modified)."
     } else {
@@ -116,6 +118,8 @@ try {
         if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'LANCTL.exe'))) { throw 'Setup did not install LANCTL.exe' }
         if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'lanip.exe'))) { throw 'Setup did not install lanip.exe' }
         if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'lanwire.exe'))) { throw 'Setup did not install lanwire.exe' }
+        if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'lanmon.exe'))) { throw 'Setup did not install lanmon.exe' }
+        if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'landemo.exe'))) { throw 'Setup did not install landemo.exe' }
         foreach($unexpected in @('LANCTL.portable','_internal','data')) { if(Test-Path -LiteralPath (Join-Path $installRoot $unexpected)){throw "Unsafe installed layout: $unexpected"} }
         if (-not (Test-Path -LiteralPath $dataRoot)) { throw 'Setup did not create the ProgramData root' }
         $systemPath=[Environment]::GetEnvironmentVariable('Path','Machine')

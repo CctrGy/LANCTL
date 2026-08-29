@@ -9,6 +9,15 @@ red. Genera un proyecto VLF verificable y dos informes:
 lanctl demo --output .\LANCTL-demo --format all --force
 ```
 
+En la distribución instalada se puede usar directamente el ejecutable dedicado:
+
+```powershell
+landemo.exe --output .\LANCTL-demo --format all --force
+```
+
+`lanmon.exe` abre directamente las funciones de monitorización; sin argumentos
+muestra el estado (`lanctl monitor status`).
+
 Archivos creados:
 
 - `LANCTL-Presentation-Demo.vlf`: proyecto con tres identidades de muestra.

@@ -232,7 +232,7 @@ def main(argv: list[str] | None = None) -> int:
         return 130
     except LanctlError as error:
         if error.print_output:
-            print_error(repr(error), log=False)
+            print_error(repr(error))
         return error.exit_code
     except (OSError, RuntimeError, ValueError) as error:
         from lanctl.core.errors import errors
@@ -248,7 +248,7 @@ def main(argv: list[str] | None = None) -> int:
             else 34,
             print_output=False,
         )
-        print_error(repr(event), log=False)
+        print_error(repr(event))
         return 2
     finally:
         _MAIN_DEPTH.reset(depth_token)

@@ -71,6 +71,8 @@ PY
   sudo ln -sfn "$target/LANCTL/lanctl" /usr/local/bin/lanctl
   sudo ln -sfn "$target/LANCTL/lanip" /usr/local/bin/lanip
   sudo ln -sfn "$target/LANCTL/lanwire" /usr/local/bin/lanwire
+  sudo ln -sfn "$target/LANCTL/lanmon" /usr/local/bin/lanmon
+  sudo ln -sfn "$target/LANCTL/landemo" /usr/local/bin/landemo
 else
   sudo apt-get install -y "$tmp/$artifact"
 fi

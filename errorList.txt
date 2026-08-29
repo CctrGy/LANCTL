@@ -313,6 +313,7 @@
 0e641608BB | 33 | src/lanctl/shared/assets/icons.py | 270 | src.lanctl.shared.assets.icons._validate_id | raise
 0e64840D1D | 46 | src/lanctl/apps/ip/interfaces/cli/commands/lanwire.py | 71 | src.lanctl.apps.ip.interfaces.cli.commands.lanwire.lanwire_command | raise
 0e64FB88EB | 45 | src/lanctl/core/plugins/events.py | 45 | src.lanctl.core.plugins.events.EventRegistry.register | raise
+0e65025ECB | 34 | src/lanctl/apps/ip/interfaces/cli/main.py | 251 | src.lanctl.apps.ip.interfaces.cli.main.main | print-error
 0e6509FDFF | 36 | src/lanctl/infrastructure/platform/linux.py | 19 | src.lanctl.infrastructure.platform.linux.LinuxPlatform.unit_text | raise
 0e65FF5D24 | 36 | src/lanctl/apps/wire/idf/sample_topology.py | 211 | src.lanctl.apps.wire.idf.sample_topology.seed_sample_topology | raise
 0e661AA7CB | 42 | src/lanctl/apps/ip/infrastructure/protocols/radmin.py | 158 | src.lanctl.apps.ip.infrastructure.protocols.radmin.launch | raise
@@ -405,6 +406,7 @@
 0e83D02A56 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/project.py | 157 | src.lanctl.apps.ip.interfaces.cli.commands.project._save | raise
 0e84668650 | 44 | src/lanctl/apps/access/auth.py | 179 | src.lanctl.apps.access.auth.AuthenticationService.authenticate_ssh_key | raise
 0e848459CA | 46 | src/lanctl/apps/ip/infrastructure/protocols/ssh.py | 237 | src.lanctl.apps.ip.infrastructure.protocols.ssh.run_remote_command | raise
+0e849D14BD | 34 | src/lanctl/apps/ip/interfaces/cli/main.py | 235 | src.lanctl.apps.ip.interfaces.cli.main.main | print-error
 0e84DE4F42 | 48 | src/lanctl/core/plugins/ui_contracts.py | 58 | src.lanctl.core.plugins.ui_contracts.validate_form_schema | raise
 0e84EC3E56 | 34 | src/lanctl/apps/ip/interfaces/cli/commands/credential.py | 87 | src.lanctl.apps.ip.interfaces.cli.commands.credential.run_credential | raise
 0e84ECA26B | 31 | src/lanctl/apps/ip/interfaces/cli/commands/group.py | 58 | src.lanctl.apps.ip.interfaces.cli.commands.group.run_group | raise
@@ -683,7 +685,6 @@
 0eDDCE61FA | 34 | src/lanctl/apps/ip/interfaces/cli/commands/wol.py | 425 | src.lanctl.apps.ip.interfaces.cli.commands.wol._sequence_locked | raise
 0eDE896AEF | 36 | src/lanctl/apps/access/network.py | 18 | src.lanctl.apps.access.network.validate_endpoint | raise
 0eDE8C2F2C | 36 | src/lanctl/shared/i18n.py | 189 | src.lanctl.shared.i18n.LanguageManager.load_file | raise
-0eDECC9FA6 | 34 | src/lanctl/apps/ip/interfaces/cli/main.py | 251 | src.lanctl.apps.ip.interfaces.cli.main.main | print-error
 0eDED27663 | 36 | src/lanctl/apps/wire/idf/database.py | 219 | src.lanctl.apps.wire.idf.database.IDFDatabaseManager._validate_database | raise
 0eDF00577D | 14 | src/lanctl/apps/ip/infrastructure/services/network_discovery.py | 66 | src.lanctl.apps.ip.infrastructure.services.network_discovery.multicast_discover | diagnostic
 0eDF2B9D4F | 45 | src/lanctl/apps/access/remote.py | 123 | src.lanctl.apps.access.remote.parse_remote_command | raise
@@ -709,7 +710,6 @@
 0eE4A8E358 | 43 | src/lanctl/core/database.py | 389 | src.lanctl.core.database.DeviceDatabase._find | raise
 0eE4E217B3 | 33 | src/lanctl/apps/ip/domain/models/device.py | 220 | src.lanctl.apps.ip.domain.models.device.Device.__getitem__ | raise
 0eE4E9FF78 | 33 | src/lanctl/shared/assets/icons.py | 275 | src.lanctl.shared.assets.icons._validate_dimensions | raise
-0eE5375DEF | 34 | src/lanctl/apps/ip/interfaces/cli/main.py | 235 | src.lanctl.apps.ip.interfaces.cli.main.main | print-error
 0eE5410F0C | 47 | src/lanctl/core/plugins/manager.py | 295 | src.lanctl.core.plugins.manager.PluginManager.enable | raise
 0eE55D099F | 36 | src/lanctl/apps/wire/idf/database.py | 85 | src.lanctl.apps.wire.idf.database.IDFDatabaseManager.add.insert | raise
 0eE5644894 | 44 | src/lanctl/core/plugins/api.py | 217 | src.lanctl.core.plugins.api._PluginCredentials.get_for_device | raise

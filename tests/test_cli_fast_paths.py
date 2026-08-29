@@ -119,5 +119,14 @@ class CliFastPathTests(unittest.TestCase):
         self.assertNotIn("must-not-appear", value)
 
 
+def test_main_reports_startup_oserror_without_masking_it():
+    with (
+        patch("lanctl.core.data_migration.ensure_data_layout", side_effect=OSError("denied")),
+        patch("lanctl.apps.ip.interfaces.cli.main.print_error") as report,
+    ):
+        assert main(["list"]) == 2
+    report.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()
