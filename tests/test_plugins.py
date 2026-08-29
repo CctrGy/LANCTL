@@ -260,6 +260,41 @@ class PluginTests(unittest.TestCase):
                 manager.enable("demo.network-tools", grant={"theme.register"})
             self.assertEqual(manager.get("demo.network-tools").state, PluginState.BLOCKED)
 
+    def test_modified_installed_plugin_is_moved_to_quarantine_on_startup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package = root / "network-tools.lcp"
+            build_package(self._source(root), package)
+            manager = PluginManager(root / "installed", root / "registry.json")
+            installed = manager.install(package)
+            (installed.path / "main.exec").write_text(
+                "def activate(api):\n    api.log('tampered')\n", encoding="utf-8"
+            )
+
+            reloaded = PluginManager(root / "installed", root / "registry.json")
+            quarantined = reloaded.get("demo.network-tools")
+            self.assertEqual(quarantined.state, PluginState.QUARANTINED)
+            self.assertIn(".quarantine", quarantined.path.parts)
+            self.assertFalse((root / "installed/demo.network-tools").exists())
+
+    def test_isolated_runtime_blocks_direct_network_access_and_audits_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self._source(root)
+            (source / "main.exec").write_text(
+                "import socket\ndef activate(api):\n    socket.socket()\n",
+                encoding="utf-8",
+            )
+            package = root / "network-tools.lcp"
+            build_package(source, package)
+            manager = PluginManager(root / "installed", root / "registry.json")
+            manager.install(package)
+            audit = []
+            manager.audit = lambda *parts: audit.append(parts)
+            with self.assertRaisesRegex(PermissionError, "incumplimiento de política"):
+                manager.enable("demo.network-tools", grant={"theme.register"})
+            self.assertTrue(any(parts[1] == "POLICY VIOLATION" for parts in audit))
+
     def test_trusted_declared_hook_is_connected_to_event_bus(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

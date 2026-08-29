@@ -30,7 +30,12 @@ from lanctl.core.plugins.events import EventBus, EventRegistry
 from lanctl.core.plugins.extensions import ExtensionRegistry
 from lanctl.core.plugins.functions import FunctionRegistry
 from lanctl.core.plugins.models import PluginManifest, PluginState
-from lanctl.core.plugins.package import inspect_package, install_package, verify_package
+from lanctl.core.plugins.package import (
+    directory_hash,
+    inspect_package,
+    install_package,
+    verify_package,
+)
 from lanctl.core.plugins.publishers import TrustedPublisherStore
 
 PLUGIN_ROOT = application_path("data/lc/plugins")
@@ -46,6 +51,7 @@ class InstalledPlugin:
     trusted: bool = False
     error: str = ""
     signature: str = "UNSIGNED"
+    checksum: str = ""
     module: object | None = None
     isolated_runtime: object | None = None
 
@@ -98,6 +104,39 @@ class PluginManager:
                 # controlado por el complemento.
                 manifest.raw["builtIn"] = is_builtin
                 default_enabled = bool(is_builtin and manifest.raw.get("defaultEnabled"))
+                actual_checksum = directory_hash(info.parent, {"meta/checksum", "meta/signature"})
+                checksum_file = info.parent / "meta/checksum"
+                declared_checksum = (
+                    checksum_file.read_text(encoding="ascii").strip().split()[-1].casefold()
+                    if checksum_file.is_file()
+                    else actual_checksum
+                )
+                expected_checksum = str(saved.get("checksum") or declared_checksum).casefold()
+                if actual_checksum != declared_checksum or actual_checksum != expected_checksum:
+                    quarantine = self._quarantine_path(manifest.plugin_id)
+                    try:
+                        info.parent.replace(quarantine)
+                        plugin_path = quarantine
+                    except OSError:
+                        plugin_path = info.parent
+                    discovered[manifest.plugin_id] = InstalledPlugin(
+                        manifest,
+                        plugin_path,
+                        PluginState.QUARANTINED,
+                        set(),
+                        False,
+                        "integridad del plugin modificada",
+                        str(saved.get("signature", "UNSIGNED")),
+                        expected_checksum,
+                    )
+                    self.audit(
+                        manifest.plugin_id,
+                        "INTEGRITY",
+                        str(info.parent),
+                        "QUARANTINED",
+                        f"expected={expected_checksum} actual={actual_checksum}",
+                    )
+                    continue
                 state = PluginState(
                     saved.get("state", "ENABLED" if default_enabled else "DISABLED")
                 )
@@ -110,6 +149,7 @@ class PluginManager:
                     bool(saved.get("trusted", False)),
                     str(saved.get("error", "")),
                     str(saved.get("signature", "UNSIGNED")),
+                    expected_checksum,
                 )
             except Exception as error:  # noqa: BLE001 - manifiesto externo
                 from lanctl.core.errors import errors
@@ -186,7 +226,12 @@ class PluginManager:
                 "un complemento integrado no se puede reemplazar con plugin install"
             )
         manifest, destination, result = install_package(package, self.root)
-        plugin = InstalledPlugin(manifest, destination, signature=str(result["signature"]))
+        plugin = InstalledPlugin(
+            manifest,
+            destination,
+            signature=str(result["signature"]),
+            checksum=str(result["checksum"]),
+        )
         self.plugins[manifest.plugin_id] = plugin
         self._save_registry()
         self.audit(
@@ -350,6 +395,12 @@ class PluginManager:
     def list(self) -> list[InstalledPlugin]:
         return sorted(self.plugins.values(), key=lambda item: item.manifest.name.casefold())
 
+    def _quarantine_path(self, plugin_id: str) -> Path:
+        root = self.root / ".quarantine"
+        root.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S-%f")
+        return root / f"{plugin_id}-{stamp}"
+
     def audit(
         self, plugin_id: str, action: str, target: str = "-", result: str = "OK", detail: str = ""
     ) -> None:
@@ -417,7 +468,12 @@ class PluginManager:
             raise ImportError(f"no se puede cargar {entry}")
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
-        loader.exec_module(module)
+        previous_bytecode_policy = sys.dont_write_bytecode
+        sys.dont_write_bytecode = True
+        try:
+            loader.exec_module(module)
+        finally:
+            sys.dont_write_bytecode = previous_bytecode_policy
         api = PluginApi(plugin.manifest.plugin_id, set(plugin.granted), self)
         self._load_declared_hooks(plugin, module)
         activate = getattr(module, "activate", None)
@@ -621,6 +677,7 @@ class PluginManager:
                     "trusted": p.trusted,
                     "error": p.error,
                     "signature": p.signature,
+                    "checksum": p.checksum,
                     "version": p.manifest.version,
                 }
                 for p in self.list()

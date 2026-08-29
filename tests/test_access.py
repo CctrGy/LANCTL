@@ -274,6 +274,23 @@ class AccessTests(unittest.TestCase):
                 with self.assertRaises(PermissionError):
                     parse_remote_command(command)
 
+    def test_remote_command_timeout_returns_a_recoverable_status(self):
+        import subprocess
+
+        with tempfile.TemporaryDirectory() as temporary:
+            store = AccessStore(Path(temporary) / "users.json")
+            user = AuthenticationService(store).add_user(
+                "viewer", ["viewer"], "another-strong-password"
+            )
+
+            def timeout(*_args, **_kwargs):
+                raise subprocess.TimeoutExpired(["lanctl", "list"], 0.01)
+
+            adapter = LanctlCommandAdapter(AuthorizationService(store), runner=timeout)
+            code, output = adapter.execute(user, "list")
+            self.assertEqual(code, 124)
+            self.assertIn("agotado", output)
+
     def test_remote_root_commands_are_internal_and_permission_checked(self):
         with tempfile.TemporaryDirectory() as temporary:
             store = AccessStore(Path(temporary) / "users.json")
@@ -450,6 +467,73 @@ class AccessTests(unittest.TestCase):
                 self.assertIn("operator:list", stdout.read().decode())
             finally:
                 client.close()
+                server.stop()
+                thread.join(2)
+
+    def test_ssh_recovers_after_disconnect_and_accepts_simultaneous_clients(self):
+        import socket
+        import threading
+        import time
+        from concurrent.futures import ThreadPoolExecutor
+
+        import paramiko
+
+        class Adapter:
+            def execute(self, user, command):
+                return 0, f"{user.username}:{command}"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            host_key = generate_host_key(root / "ssh_host_key")
+            store = AccessStore(root / "users.json")
+            auth = AuthenticationService(store)
+            auth.add_user("operator", ["operator"], "another-strong-password")
+            server = SshAccessServer(
+                "127.0.0.1",
+                0,
+                "127.0.0.0/8",
+                host_key,
+                auth,
+                AuthorizationService(store),
+                True,
+                Adapter(),
+            )
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            for _ in range(100):
+                if server.socket:
+                    break
+                time.sleep(0.01)
+            port = server.socket.getsockname()[1]
+            interrupted = socket.create_connection(("127.0.0.1", port), timeout=2)
+            interrupted.close()
+
+            def request(index):
+                client = paramiko.SSHClient()
+                client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                try:
+                    client.connect(
+                        "127.0.0.1",
+                        port=port,
+                        username="operator",
+                        password="another-strong-password",
+                        allow_agent=False,
+                        look_for_keys=False,
+                        timeout=5,
+                        auth_timeout=5,
+                        banner_timeout=5,
+                    )
+                    _stdin, stdout, _stderr = client.exec_command(f"list --limit {index + 1}")
+                    return stdout.channel.recv_exit_status(), stdout.read().decode()
+                finally:
+                    client.close()
+
+            try:
+                with ThreadPoolExecutor(max_workers=4) as executor:
+                    results = list(executor.map(request, range(4)))
+                self.assertTrue(all(code == 0 for code, _output in results))
+                self.assertTrue(all("operator:list" in output for _code, output in results))
+            finally:
                 server.stop()
                 thread.join(2)
 

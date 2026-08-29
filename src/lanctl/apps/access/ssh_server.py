@@ -8,8 +8,10 @@ try:
     import paramiko
 
     _Base = paramiko.ServerInterface
+    _SSH_SESSION_ERRORS = (EOFError, OSError, paramiko.SSHException)
 except ImportError:
     paramiko = None
+    _SSH_SESSION_ERRORS = (EOFError, OSError)
 
     class _Base:
         pass
@@ -209,7 +211,7 @@ class SshAccessServer:
                 channel.send_exit_status(code)
                 return
             self._interactive(channel, server.user)
-        except (EOFError, OSError) as error:
+        except _SSH_SESSION_ERRORS as error:
             from lanctl.core.errors import errors
 
             errors.from_exception(
