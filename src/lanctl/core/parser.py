@@ -63,6 +63,9 @@ class LANCTLArgumentParser(argparse.ArgumentParser):
 
     def __init__(self, *args, **kwargs):
         kwargs["add_help"] = False
+        # Las abreviaturas de opciones largas son ambiguas y pueden eludir
+        # listas de seguridad que validan el nombre canónico de una opción.
+        kwargs.setdefault("allow_abbrev", False)
         # En POSIX una ruta absoluta comienza por '/', por lo que aceptarlo
         # como prefijo de opción convierte /tmp/... en un argumento inválido.
         # La ayuda /? se conserva únicamente en Windows.

@@ -50,6 +50,8 @@ try {
     # Usa el entorno reproducible del repositorio cuando existe.
     $Python = Join-Path $Root '.venv\Scripts\python.exe'
     if (-not (Test-Path -LiteralPath $Python)) { $Python = 'python' }
+    & $Python scripts/verify-version.py $Version
+    if ($LASTEXITCODE -ne 0) { throw 'Build version does not match the application version' }
     $VersionInfo = Join-Path $Root 'build\windows-version-info.generated.txt'
     & $Python scripts/generate-windows-version-info.py $Version $Revision $VersionInfo
     if ($LASTEXITCODE -ne 0) { throw 'Windows version metadata generation failed' }

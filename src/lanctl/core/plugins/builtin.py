@@ -8,6 +8,12 @@ from lanctl.core.plugins.package import inspect_package, install_package
 from lanctl.core.resources import bundled_path
 
 EXAMPLE_PLUGIN_ID = "lanctl.example.network-summary"
+BUILTIN_PLUGIN_IDS = frozenset(
+    {
+        EXAMPLE_PLUGIN_ID,
+        "lanctl.theme.default",
+    }
+)
 
 EXAMPLE_MANIFEST = {
     "schemaVersion": 1,

@@ -42,7 +42,7 @@ Name: "{commonappdata}\LANCTL\database"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\logs"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\monitoring"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\physical"; Permissions: users-modify
-Name: "{commonappdata}\LANCTL\plugins"; Permissions: users-modify
+Name: "{commonappdata}\LANCTL\plugins"; Permissions: admins-full system-full
 Name: "{commonappdata}\LANCTL\projects"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\automation"; Permissions: users-modify
 

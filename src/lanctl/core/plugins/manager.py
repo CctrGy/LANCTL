@@ -18,7 +18,7 @@ from lanctl.core.file_transaction import atomic_write_json, locked_file
 from lanctl.core.logger import write_database_log, write_log
 from lanctl.core.paths import application_path
 from lanctl.core.plugins.api import PluginApi
-from lanctl.core.plugins.builtin import bootstrap_builtin_plugins
+from lanctl.core.plugins.builtin import BUILTIN_PLUGIN_IDS, bootstrap_builtin_plugins
 from lanctl.core.plugins.contracts import (
     DeviceRemoteEvent,
     EventContract,
@@ -93,9 +93,11 @@ class PluginManager:
             try:
                 manifest = PluginManifest.from_dict(json.loads(info.read_text(encoding="utf-8")))
                 saved = persisted.get(manifest.plugin_id, {})
-                default_enabled = bool(
-                    manifest.raw.get("builtIn") and manifest.raw.get("defaultEnabled")
-                )
+                is_builtin = manifest.plugin_id in BUILTIN_PLUGIN_IDS
+                # La procedencia integrada pertenece al núcleo, nunca al manifiesto
+                # controlado por el complemento.
+                manifest.raw["builtIn"] = is_builtin
+                default_enabled = bool(is_builtin and manifest.raw.get("defaultEnabled"))
                 state = PluginState(
                     saved.get("state", "ENABLED" if default_enabled else "DISABLED")
                 )
@@ -177,7 +179,9 @@ class PluginManager:
     def install(self, package: str | Path) -> InstalledPlugin:
         incoming = inspect_package(package)
         existing = self.plugins.get(incoming.plugin_id)
-        if existing and existing.manifest.raw.get("builtIn"):
+        if incoming.plugin_id in BUILTIN_PLUGIN_IDS or (
+            existing and existing.manifest.plugin_id in BUILTIN_PLUGIN_IDS
+        ):
             raise PermissionError(
                 "un complemento integrado no se puede reemplazar con plugin install"
             )
@@ -192,7 +196,7 @@ class PluginManager:
 
     def uninstall(self, plugin_id: str) -> None:
         plugin = self.get(plugin_id)
-        if plugin.manifest.raw.get("builtIn"):
+        if plugin.manifest.plugin_id in BUILTIN_PLUGIN_IDS:
             raise PermissionError(
                 "los complementos integrados pueden desactivarse, pero no desinstalarse"
             )
@@ -400,7 +404,7 @@ class PluginManager:
             return
         if not plugin.trusted:
             raise PermissionError("el código in-process requiere confianza explícita (--trust)")
-        if not plugin.manifest.raw.get("builtIn") and not self.publishers.is_trusted(
+        if plugin.manifest.plugin_id not in BUILTIN_PLUGIN_IDS and not self.publishers.is_trusted(
             plugin.signature
         ):
             raise PermissionError("la firma del editor trusted no está autorizada o fue revocada")

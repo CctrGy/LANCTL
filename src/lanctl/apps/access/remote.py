@@ -110,7 +110,16 @@ def parse_remote_command(command: str) -> list[str]:
         raise PermissionError("las opciones globales no estan disponibles en remoto")
     for argument in arguments[1:]:
         option = argument.casefold().split("=", 1)[0]
-        if option in FORBIDDEN_PATH_OPTIONS:
+        forbidden = next(
+            (
+                candidate
+                for candidate in FORBIDDEN_PATH_OPTIONS
+                if option == candidate
+                or (option.startswith("--") and len(option) > 2 and candidate.startswith(option))
+            ),
+            None,
+        )
+        if forbidden:
             raise PermissionError(f"ruta de datos no configurable en remoto: {option}")
     return arguments
 
@@ -213,7 +222,7 @@ class RemoteGuiApi:
         "get_device_details": ("scan.run", "get_device_details"),
         "wake_device": ("wol.send", "wake_device"),
         "update_device": ("system.configure", "update_device"),
-        "delete_device": ("system.configure", "delete_device"),
+        "delete_device": ("system.destructive", "delete_device"),
         "use_project": ("project.manage", "use_project"),
         "save_project": ("project.manage", "save_project"),
         "create_project": ("project.manage", "create_project"),

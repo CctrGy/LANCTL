@@ -231,6 +231,36 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("LANCTL_VERSION_INFO", spec)
         self.assertIn("generate-windows-version-info.py", build)
 
+    def test_builds_reject_a_version_different_from_the_application(self):
+        from lanctl import __version__
+
+        root = Path(__file__).resolve().parents[1]
+        verifier = root / "scripts/verify-version.py"
+        accepted = subprocess.run(
+            [sys.executable, str(verifier), __version__], capture_output=True, text=True
+        )
+        rejected = subprocess.run(
+            [sys.executable, str(verifier), "9.9.9"], capture_output=True, text=True
+        )
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn("version mismatch", rejected.stderr)
+        self.assertIn(
+            "scripts/verify-version.py $Version",
+            (root / "scripts/build-windows.ps1").read_text(encoding="utf-8"),
+        )
+        self.assertIn(
+            'scripts/verify-version.py "$VERSION"',
+            (root / "scripts/build-linux.sh").read_text(encoding="utf-8"),
+        )
+
+    def test_machine_plugin_directory_is_not_user_writable(self):
+        root = Path(__file__).resolve().parents[1]
+        inno = (root / "packaging/inno/LANCTL.iss").read_text(encoding="utf-8")
+        plugin_directory = next(line for line in inno.splitlines() if 'LANCTL\\plugins"' in line)
+        self.assertIn("admins-full system-full", plugin_directory)
+        self.assertNotIn("users-modify", plugin_directory)
+
     def test_official_windows_release_requires_authenticode_secrets(self):
         root = Path(__file__).resolve().parents[1]
         release = (root / ".github/workflows/release.yml").read_text(encoding="utf-8")

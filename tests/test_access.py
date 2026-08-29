@@ -267,6 +267,12 @@ class AccessTests(unittest.TestCase):
             self.assertEqual(
                 parse_remote_command('lanctl search "core switch"'), ["search", "core switch"]
             )
+            for command in (
+                "wol equipo --datab C:/foreign.db",
+                "wol equipo --stor C:/foreign.dc",
+            ):
+                with self.assertRaises(PermissionError):
+                    parse_remote_command(command)
 
     def test_remote_root_commands_are_internal_and_permission_checked(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -310,6 +316,30 @@ class AccessTests(unittest.TestCase):
                 remote.call(viewer, "open_terminal", ["router"])
             with self.assertRaises(PermissionError):
                 remote.call(viewer, "plugin_action", ["windows-smb.scan", {}])
+
+    def test_remote_device_deletion_requires_destructive_permission(self):
+        class FakeApi:
+            def delete_device(self, selector, confirmed=False):
+                return {"ok": confirmed, "selector": selector}
+
+        with tempfile.TemporaryDirectory() as temporary:
+            store = AccessStore(Path(temporary) / "users.json")
+            store.update(
+                lambda value: value["roles"].update(
+                    configurator=["inventory.read", "system.configure"]
+                )
+            )
+            auth = AuthenticationService(store)
+            configurator = auth.add_user(
+                "configurator", ["configurator"], "another-strong-password"
+            )
+            administrator = auth.add_user(
+                "administrator", ["administrator"], "another-strong-password"
+            )
+            remote = RemoteGuiApi(AuthorizationService(store), FakeApi())
+            with self.assertRaisesRegex(PermissionError, "system.destructive"):
+                remote.call(configurator, "delete_device", ["router", True])
+            self.assertTrue(remote.call(administrator, "delete_device", ["router", True])["ok"])
 
     def test_https_serves_gui_and_authenticated_rpc(self):
         import http.client

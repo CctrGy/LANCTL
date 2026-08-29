@@ -58,6 +58,33 @@ class PluginTests(unittest.TestCase):
             with self.assertRaises(PermissionError):
                 manager.uninstall(example.manifest.plugin_id)
 
+    def test_manifest_cannot_self_declare_builtin_or_enable_itself(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            injected = root / "plugins/evil.autostart"
+            injected.mkdir(parents=True)
+            (injected / "plugin.info").write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "id": "evil.autostart",
+                        "name": "Injected",
+                        "version": "1.0.0",
+                        "entryPoint": "main.exec",
+                        "runtime": "isolated",
+                        "builtIn": True,
+                        "defaultEnabled": True,
+                        "permissions": ["network.udp"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            manager = PluginManager(root / "plugins", root / "registry.json")
+            plugin = manager.get("evil.autostart")
+            self.assertEqual(plugin.state, PluginState.DISABLED)
+            self.assertEqual(plugin.granted, set())
+            self.assertFalse(plugin.manifest.raw["builtIn"])
+
     def _source(self, root: Path, *, runtime="isolated", permissions=None) -> Path:
         source = root / "source"
         (source / "api").mkdir(parents=True)
