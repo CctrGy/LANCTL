@@ -17,6 +17,18 @@ def test_orchestrator_routes_wire_to_lanwire():
     application.assert_called_once_with(["list"])
 
 
+def test_orchestrator_routes_rack_to_lanrack():
+    with patch("lanctl.apps.rack.cli.main", return_value=10) as application:
+        assert main(["rack", "--tui"]) == 10
+    application.assert_called_once_with(["--tui"])
+
+
+def test_orchestrator_routes_access_to_lanaccess():
+    with patch("lanctl.apps.access.manager_cli.main", return_value=11) as application:
+        assert main(["access", "--tui"]) == 11
+    application.assert_called_once_with(["--tui"])
+
+
 def test_legacy_commands_are_delegated_to_lanip():
     with patch("lanctl.apps.ip.interfaces.cli.main.main", return_value=9) as application:
         assert main(["scan", "192.0.2.10"]) == 9

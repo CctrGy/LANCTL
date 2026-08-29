@@ -36,6 +36,8 @@ lanwire = "lanctl.bootstrap.lanwire:main"
 lanwre = "lanctl.bootstrap.lanwire:main"
 lanmon = "lanctl.bootstrap.lanmon:main"
 landemo = "lanctl.bootstrap.landemo:main"
+lanrack = "lanctl.bootstrap.lanrack:main"
+lanaccess = "lanctl.bootstrap.lanaccess:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

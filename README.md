@@ -77,8 +77,9 @@ Ambos comparten la misma raíz de datos, pero nunca el mismo archivo o esquema.
 
 ## LANWIRE: infraestructura física
 
-Las distribuciones Windows incluyen `lanip.exe`, `lanwire.exe`, `lanmon.exe` y
-`landemo.exe` junto al orquestador `LANCTL.exe` y `LANCTL-GUI.exe`. Cada aplicación puede iniciarse
+Las distribuciones Windows incluyen `lanip.exe`, `lanwire.exe`, `lanrack.exe`,
+`lanaccess.exe`, `lanmon.exe` y `landemo.exe` junto al orquestador `LANCTL.exe`
+y `LANCTL-GUI.exe`. Cada aplicación puede iniciarse
 directamente o mediante LANCTL:
 
 ```powershell
@@ -87,6 +88,12 @@ lanip --tui
 lanctl wire
 lanctl wire list
 lanwire list
+
+# Visualización de racks y sus ocupantes
+lanrack --tui
+
+# Gestor cifrado de credenciales
+lanaccess --tui
 
 # Estado de la monitorización (equivale a `lanctl monitor status`)
 lanmon
@@ -174,7 +181,8 @@ run.cmd --help
 
 LANCTL es el orquestador de la suite. LANIP gestiona el inventario lógico
 IP/MAC y LANWIRE gestiona la infraestructura física. El mismo build produce
-`LANCTL.exe`, `lanip.exe`, `lanwire.exe`, `lanmon.exe` y `landemo.exe`; no
+`LANCTL.exe`, `lanip.exe`, `lanwire.exe`, `lanrack.exe`, `lanaccess.exe`,
+`lanmon.exe` y `landemo.exe`; no
 requiere un repositorio hermano.
 
 ## Inicio rápido
@@ -589,7 +597,7 @@ src/lanctl/                  Paquete principal de la suite
 ├── core/                    Configuración, datos, proyectos y plugins
 ├── shared/                  Recursos comunes
 ├── infrastructure/          Adaptadores de plataforma y distribución
-└── bootstrap/               Entradas lanctl, lanip, lanwire, lanmon y landemo
+└── bootstrap/               Entradas de las aplicaciones paralelas de la suite
 tests/         Pruebas automatizadas
 docs/          Contratos y documentación técnica
 assets/        Iconos y recursos visuales

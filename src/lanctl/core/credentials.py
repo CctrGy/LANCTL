@@ -153,6 +153,18 @@ class CredentialStore:
             raise ValueError(f"credencial no encontrada: {credential_id}")
         return dict(entry)
 
+    def metadata(self) -> list[dict[str, str]]:
+        """Lista metadatos seguros sin descifrar secretos fuera del almacén."""
+        return [
+            {
+                "credentialId": identifier,
+                "deviceId": str(entry.get("deviceId", "")),
+                "protocol": str(entry.get("protocol", "")),
+                "username": str(entry.get("username", "")),
+            }
+            for identifier, entry in sorted(self._load()["entries"].items())
+        ]
+
     @transactional_method
     def delete(self, credential_id: str) -> bool:
         value = self._load()

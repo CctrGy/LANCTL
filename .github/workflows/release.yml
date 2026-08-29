@@ -109,6 +109,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Installed executable failed' }
           & "$install/lanmon.exe" --version
           if ($LASTEXITCODE -ne 0) { throw 'Installed monitor executable failed' }
+          & "$install/lanrack.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw 'Installed rack executable failed' }
+          & "$install/lanaccess.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw 'Installed access executable failed' }
           $sentinel = Join-Path $env:ProgramData 'LANCTL/config/release-sentinel.txt'
           New-Item -ItemType Directory -Force -Path (Split-Path $sentinel) | Out-Null
           Set-Content -LiteralPath $sentinel -Value 'preserve-release-data' -Encoding utf8

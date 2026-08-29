@@ -55,7 +55,7 @@ datos interactivos y datos del servicio.
 
 Los binarios y los datos están separados. En Windows, `Program Files\LANCTL`
 contiene los ejecutables onefile `LANCTL.exe`, `LANCTL-GUI.exe`, `lanip.exe`,
-`lanwire.exe`, `lanmon.exe` y `landemo.exe`
+`lanwire.exe`, `lanrack.exe`, `lanaccess.exe`, `lanmon.exe` y `landemo.exe`
 además de la documentación; inventario, configuración,
 logs, monitorización, plugins y proyectos viven en `ProgramData\LANCTL`. Los
 secretos de usuario (DPAPI, host keys y configuración de acceso) viven bajo el
@@ -68,7 +68,7 @@ mecanismos transaccionales; el instalador portable prepara una carpeta nueva y
 conserva la anterior antes del cambio.
 
 El ZIP portable contiene `LANCTL.exe`, `LANCTL-GUI.exe`, `lanip.exe`, `lanwire.exe`,
-`lanmon.exe`, `landemo.exe`,
+`lanrack.exe`, `lanaccess.exe`, `lanmon.exe`, `landemo.exe`,
 `README-portable.txt` y el marcador firmado `LANCTL.portable`; sus datos se guardan en `data/lanctl` dentro del propio
 directorio portable. Un override `LANCTL_DATA_DIR` debe ser absoluto. Al detectar
 datos de versiones antiguas junto al EXE, LANCTL los copia al nuevo destino sin

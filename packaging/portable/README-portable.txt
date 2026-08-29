@@ -1,7 +1,8 @@
 LANCTL portable
 ===============
 
-Run LANCTL.exe, lanip.exe, lanwire.exe, lanmon.exe or landemo.exe from this
+Run LANCTL.exe, lanip.exe, lanwire.exe, lanrack.exe, lanaccess.exe, lanmon.exe
+or landemo.exe from this
 directory. LANMON provides direct monitoring commands; LANDEMO creates the
 reproducible presentation walkthrough. All tools store
 mutable data in data/lanctl beside the executables. LANWIRE owns physical/idf.db while LANIP

@@ -53,6 +53,8 @@ Source: "{#BuildRoot}\lanip.exe"; DestDir: "{app}"; Flags: ignoreversion; Compon
 Source: "{#BuildRoot}\lanwire.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "{#BuildRoot}\lanmon.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "{#BuildRoot}\landemo.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
+Source: "{#BuildRoot}\lanrack.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
+Source: "{#BuildRoot}\lanaccess.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "..\..\docs\INSTALL.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "..\..\docs\ACCESS.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 
@@ -64,6 +66,8 @@ Name: "{group}\LANIP"; Filename: "{app}\lanip.exe"; Parameters: "--tui"; Working
 Name: "{group}\LANWIRE Physical"; Filename: "{app}\lanwire.exe"; WorkingDir: "{app}"
 Name: "{group}\LANMON Monitor"; Filename: "{app}\lanmon.exe"; WorkingDir: "{app}"
 Name: "{group}\LANDEMO Presentation"; Filename: "{app}\landemo.exe"; Parameters: "--output {userdocs}\LANCTL-demo"; WorkingDir: "{userdocs}"
+Name: "{group}\LANRACK Viewer"; Filename: "{app}\lanrack.exe"; WorkingDir: "{app}"
+Name: "{group}\LANACCESS Credentials"; Filename: "{app}\lanaccess.exe"; WorkingDir: "{app}"
 Name: "{autodesktop}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Tasks]

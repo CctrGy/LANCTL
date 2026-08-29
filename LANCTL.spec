@@ -205,3 +205,33 @@ demo_exe = EXE(
     icon="assets/lanctl-v3.ico",
     version=VERSION_INFO,
 )
+
+rack_a = Analysis(
+    ["packaging/entrypoints/lanrack_entry.py"],
+    pathex=[str(SOURCE_ROOT)],
+    binaries=[],
+    datas=datas,
+    hiddenimports=["paramiko", "cryptography"] + collect_submodules("lanctl"),
+    hookspath=[], hooksconfig={}, runtime_hooks=[], excludes=[], noarchive=False, optimize=0,
+)
+rack_pyz = PYZ(rack_a.pure)
+rack_exe = EXE(
+    rack_pyz, rack_a.scripts, rack_a.binaries, rack_a.datas, [], name="lanrack",
+    debug=False, bootloader_ignore_signals=False, strip=False, upx=True, console=True,
+    icon="assets/lanctl-v3.ico", version=VERSION_INFO,
+)
+
+access_a = Analysis(
+    ["packaging/entrypoints/lanaccess_entry.py"],
+    pathex=[str(SOURCE_ROOT)],
+    binaries=[],
+    datas=datas,
+    hiddenimports=["paramiko", "cryptography"] + collect_submodules("lanctl"),
+    hookspath=[], hooksconfig={}, runtime_hooks=[], excludes=[], noarchive=False, optimize=0,
+)
+access_pyz = PYZ(access_a.pure)
+access_exe = EXE(
+    access_pyz, access_a.scripts, access_a.binaries, access_a.datas, [], name="lanaccess",
+    debug=False, bootloader_ignore_signals=False, strip=False, upx=True, console=True,
+    icon="assets/lanctl-v3.ico", version=VERSION_INFO,
+)

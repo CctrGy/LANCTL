@@ -70,7 +70,9 @@ try {
     if (-not (Test-Path -LiteralPath 'dist\landemo.exe')) {
         throw 'The unified PyInstaller build did not produce dist\landemo.exe'
     }
-    foreach ($binary in @('dist\LANCTL.exe','dist\LANCTL-GUI.exe','dist\lanip.exe','dist\lanwire.exe','dist\lanmon.exe','dist\landemo.exe')) {
+    if (-not (Test-Path -LiteralPath 'dist\lanrack.exe')) { throw 'PyInstaller did not produce dist\lanrack.exe' }
+    if (-not (Test-Path -LiteralPath 'dist\lanaccess.exe')) { throw 'PyInstaller did not produce dist\lanaccess.exe' }
+    foreach ($binary in @('dist\LANCTL.exe','dist\LANCTL-GUI.exe','dist\lanip.exe','dist\lanwire.exe','dist\lanmon.exe','dist\landemo.exe','dist\lanrack.exe','dist\lanaccess.exe')) {
         Sign-And-Verify (Resolve-Path -LiteralPath $binary).Path
     }
     $release = Join-Path $Root 'dist\release'
@@ -87,6 +89,8 @@ try {
     Copy-Item dist\lanwire.exe (Join-Path $portable 'lanwire.exe')
     Copy-Item dist\lanmon.exe (Join-Path $portable 'lanmon.exe')
     Copy-Item dist\landemo.exe (Join-Path $portable 'landemo.exe')
+    Copy-Item dist\lanrack.exe (Join-Path $portable 'lanrack.exe')
+    Copy-Item dist\lanaccess.exe (Join-Path $portable 'lanaccess.exe')
     Copy-Item packaging\portable\README-portable.txt (Join-Path $portable 'README-portable.txt')
     Set-Content -LiteralPath (Join-Path $portable 'LANCTL.portable') -Value 'LANCTL-PORTABLE-V1' -Encoding ascii
     Compress-Archive -Path "$portable\*" -DestinationPath "dist\release\LANCTL-$Version-windows-x64-portable.zip" -Force
