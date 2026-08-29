@@ -1376,5 +1376,21 @@ class VersionTests(unittest.TestCase):
         self.assertEqual(declared, __version__)
 
 
+class DemoTests(unittest.TestCase):
+    def test_demo_walkthrough_creates_verified_project_and_reports(self):
+        from lanctl.core.projects.vlf import verify_project
+
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "presentation"
+            args = build_parser().parse_args(["demo", "--output", str(output)])
+            self.assertEqual(args.handler(args), 0)
+            project = output / "LANCTL-Presentation-Demo.vlf"
+            self.assertTrue(verify_project(project)["valid"])
+            report = json.loads((output / "demo-report.json").read_text(encoding="utf-8"))
+            self.assertEqual(report["summary"]["devicesDiscovered"], 3)
+            self.assertEqual(report["history"][-1]["result"], "simulated")
+            self.assertTrue((output / "demo-report.html").is_file())
+
+
 if __name__ == "__main__":
     unittest.main()

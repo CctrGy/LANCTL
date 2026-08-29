@@ -405,6 +405,12 @@ local database = clink.argmatcher()
         "--target" .. values({ "database", "groups", "physical" }), "--yes", "--json"
     })
 
+local demo = clink.argmatcher()
+    :addflags({
+        "-h", "--help", "/?", "--output" .. file_arg, "--force",
+        "--format" .. values({ "json", "html", "all" })
+    })
+
 local root_commands = {
     "list" .. list, "recurrent" .. recurrent, "ping" .. ping,
     "open" .. open, "connect" .. open,
@@ -424,7 +430,7 @@ local root_commands = {
     "plugins" .. plugin, "addon" .. plugin, "addons" .. plugin,
     "language" .. language, "languages" .. language, "lang" .. language,
     "error" .. error_lookup, "errors" .. error_lookup,
-    "database" .. database, "db" .. database,
+    "database" .. database, "db" .. database, "demo" .. demo,
     "lanwire" .. lanwire, "wire" .. lanwire
 }
 

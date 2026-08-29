@@ -49,6 +49,7 @@ Arguments:
                               Manage LANCTL interface languages.
     error (errors)            Consulta el catálogo por identificador 0eXXXXXXXX.
     database (db)             Diagnostica y exporta datos.
+    demo                      Genera un recorrido reproducible sin depender de una red real.
     lanwire (wire)            Abre LANWIRE o ejecuta uno de sus comandos sobre la base física
                               compartida.
 
@@ -1307,6 +1308,20 @@ Options:
                               Almacén que se restaura.
   --yes                       Confirma la sustitución de datos.
   --json                      Emite el diagnóstico como JSON.
+```
+
+## `LANCTL demo`
+
+```text
+Usage: LANCTL demo [-h] [--output DIRECTORIO] [--force] [--format {json,html,all}]
+
+Crea inventario, proyecto VLF, evidencias, monitorización y un informe de demostración aislados de los datos del usuario.
+
+Options:
+  -h, --help, /?            Show this help and exit.
+  --output DIRECTORIO       Directorio donde se guardará el proyecto y el informe.
+  --force                   Reemplaza una demo anterior.
+  --format {json,html,all}  Formato del informe exportado.
 ```
 
 ## `LANCTL lanwire`

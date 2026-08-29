@@ -267,6 +267,9 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("WINDOWS_SIGNING_CERTIFICATE_BASE64", release)
         self.assertIn("WINDOWS_SIGNING_CERTIFICATE_PASSWORD", release)
         self.assertIn("-RequireSignature", release)
+        self.assertIn("Clean Windows install, update, demo and uninstall", release)
+        self.assertIn("User data was not preserved", release)
+        self.assertIn('LANCTL.exe" demo', release)
 
 
 if __name__ == "__main__":
