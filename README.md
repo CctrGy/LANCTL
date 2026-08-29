@@ -12,7 +12,8 @@ portables `.vlf` y un sistema extensible de complementos `.lcp`.
 
 Esta beta consolida el árbol más moderno del proyecto: GUI para Windows, CLI y
 TUI, proyectos VLF, plugins LCP, monitorización, historial, acceso remoto
-controlado, automatización WoL y el nuevo arranque limpio autocontenido.
+controlado, automatización WoL, aplicaciones paralelas para racks y credenciales,
+y el nuevo arranque limpio autocontenido.
 
 ## Instalación online
 
@@ -49,10 +50,12 @@ desinstalación y advertencias de SmartScreen.
 | Diagnóstico | Ping, ARP activo, escaneo TCP e identificación basada en evidencias |
 | Administración | SSH, TR-064, Telnet, HTTP(S), FTP, RDP, RTSP y SMB |
 | Switching | Planificación y ejecución controlada de operaciones sobre switches Cisco |
-| Seguridad | Credenciales protegidas con DPAPI y confirmación de operaciones sensibles |
+| Seguridad | LANACCESS, credenciales protegidas con DPAPI y confirmación de operaciones sensibles |
 | Presentación | GUI, CLI, consola interactiva, TUI y exportación a tabla, JSON, CSV, HTML, XML o YAML |
 | Proyectos | Contenedores `.vlf` verificables con inventario SQLite, configuración y auditoría |
-| Infraestructura física | LANWIRE integrado para armarios, cableado, puertos y conexiones físicas |
+| Cableado físico | LANWIRE para cables, puertos, paneles y conexiones físicas |
+| Armarios rack | LANRACK para visualizar racks, unidades U y equipos instalados |
+| Observabilidad | LANMON para estado, eventos, historial, incidencias y actividad de red |
 | Extensiones | Complementos `.lcp` con permisos, eventos y ámbitos definidos |
 
 El complemento integrado `lanctl.example.network-summary` aporta los comandos
@@ -69,18 +72,30 @@ Los iconos JPEG de `125×125` utilizados por la GUI se catalogan en
 
 ## Estado y alcance
 
-La beta.21 reúne las interfaces CLI, TUI y GUI con un mismo inventario, añade
+La beta.21 reúne interfaces CLI, TUI y GUI sobre un mismo entorno, añade
 políticas de guardado para proyectos VLF y mantiene el acceso remoto desactivado
-hasta que el administrador lo configure expresamente. LANCTL administra el
-modelo lógico y LANWIRE el inventario físico de cableado, armarios y puertos.
-Ambos comparten la misma raíz de datos, pero nunca el mismo archivo o esquema.
+hasta que el administrador lo configure expresamente. Las aplicaciones pueden
+permanecer abiertas en paralelo: comparten identificadores, configuración y
+servicios transaccionales, pero cada dominio conserva la propiedad de sus datos.
 
-## LANWIRE: infraestructura física
+## Aplicaciones paralelas
 
 Las distribuciones Windows incluyen `lanip.exe`, `lanwire.exe`, `lanrack.exe`,
 `lanaccess.exe`, `lanmon.exe` y `landemo.exe` junto al orquestador `LANCTL.exe`
-y `LANCTL-GUI.exe`. Cada aplicación puede iniciarse
-directamente o mediante LANCTL:
+y `LANCTL-GUI.exe`. Sus responsabilidades son:
+
+| Aplicación | Responsabilidad |
+| --- | --- |
+| `LANCTL` | Entrada general y orquestador de la suite |
+| `LANIP` | Descubrimiento, inventario lógico y operaciones sobre dispositivos |
+| `LANWIRE` | Cableado, puertos, paneles y enlaces físicos |
+| `LANRACK` | Visualización de racks, unidades U y elementos instalados |
+| `LANACCESS` | Gestión cifrada de usuarios y credenciales de dispositivos |
+| `LANMON` | Estado, eventos, historial, alertas e incidencias |
+| `LANDEMO` | Recorrido de presentación reproducible y red de muestra |
+| `LANBACK` | Previsto para una fase posterior: administración del backend |
+
+Cada aplicación puede iniciarse directamente o mediante LANCTL:
 
 ```powershell
 lanctl ip --tui
@@ -90,10 +105,14 @@ lanctl wire list
 lanwire list
 
 # Visualización de racks y sus ocupantes
+lanctl rack --tui
 lanrack --tui
+lanrack show RK-00
 
 # Gestor cifrado de credenciales
+lanctl access --tui
 lanaccess --tui
+lanaccess list
 
 # Estado de la monitorización (equivale a `lanctl monitor status`)
 lanmon
@@ -102,13 +121,25 @@ lanmon
 landemo --output LANCTL-demo
 ```
 
-LANCTL exporta al proceso hijo la raíz resuelta como `LANCTL_DATA_DIR`. La
-prioridad común es: `LANCTL_DATA_DIR`, marcador portable `LANCTL.portable`,
+Todas las entradas resuelven la misma raíz de datos. Cuando una herramienta
+abre otra en un proceso separado, propaga `LANCTL_DATA_DIR`. La prioridad común
+es: `LANCTL_DATA_DIR`, marcador portable `LANCTL.portable`,
 ámbito `LANCTL_DATA_SCOPE` y ubicación estándar del sistema. LANWIRE conserva
 su base SQLite en `physical/idf.db`; LANCTL mantiene `database/devices.json` y
 `monitoring/monitor.db` separados. La configuración publica la ruta como
 `physicalDatabase` y no intenta abrirla con el gestor JSON. Consulta
 [docs/LANWIRE.md](docs/LANWIRE.md).
+
+`LANRACK` consulta la base de LANWIRE en modo de solo lectura: la edición de
+cableado continúa perteneciendo a LANWIRE. `LANACCESS` administra el almacén
+DPAPI y nunca muestra contraseñas; LANIP puede usar una referencia autorizada
+para abrir SSH u otro protocolo sin asumir la gestión del secreto. Al eliminar
+una credencial desde LANACCESS también se retiran sus referencias del inventario.
+Consulta [la arquitectura de aplicaciones](docs/APPLICATIONS.md).
+
+El nombre `access` conserva además los comandos históricos de acceso remoto:
+`lanctl access status`, `configure`, `user` y similares continúan funcionando.
+`lanctl access --tui` abre específicamente el nuevo gestor de credenciales.
 
 ## Historial estructurado del proyecto
 
@@ -160,7 +191,7 @@ python -m venv .venv
 python -m pip install -e .
 ```
 
-La instalación registra el orquestador y las dos primeras aplicaciones:
+La instalación de desarrollo registra el orquestador y las aplicaciones:
 
 ```powershell
 lanctl --version
@@ -168,6 +199,10 @@ lanip --version
 als --version
 lanwire --version
 lanwre --version
+lanrack --version
+lanaccess --version
+lanmon --version
+landemo --version
 ```
 
 También puede ejecutarse directamente desde el repositorio:
@@ -176,14 +211,14 @@ También puede ejecutarse directamente desde el repositorio:
 python lanctl.py --help
 python lanip.py --help
 python lanwire.py --help
+python lanrack.py --help
+python lanaccess.py --help
 run.cmd --help
 ```
 
-LANCTL es el orquestador de la suite. LANIP gestiona el inventario lógico
-IP/MAC y LANWIRE gestiona la infraestructura física. El mismo build produce
-`LANCTL.exe`, `lanip.exe`, `lanwire.exe`, `lanrack.exe`, `lanaccess.exe`,
-`lanmon.exe` y `landemo.exe`; no
-requiere un repositorio hermano.
+LANCTL es el orquestador de la suite. El mismo build produce `LANCTL.exe`,
+`LANCTL-GUI.exe`, `lanip.exe`, `lanwire.exe`, `lanrack.exe`, `lanaccess.exe`,
+`lanmon.exe` y `landemo.exe`; no requiere un repositorio hermano.
 
 ## Inicio rápido
 
@@ -592,7 +627,8 @@ Python.
 src/lanctl/                  Paquete principal de la suite
 ├── apps/ip/                 LANIP: dominio, infraestructura y CLI/TUI/GUI
 ├── apps/wire/               LANWIRE: IDF, cableado y TUI/CLI
-├── apps/access/             Acceso remoto y credenciales compartidas
+├── apps/rack/               LANRACK: visualización de armarios y ocupantes
+├── apps/access/             LANACCESS, acceso remoto y credenciales compartidas
 ├── apps/monitor/            Monitorización y eventos
 ├── core/                    Configuración, datos, proyectos y plugins
 ├── shared/                  Recursos comunes
