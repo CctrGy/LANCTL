@@ -48,6 +48,13 @@ selección, `Supr` elimina un proyecto tras exigir la confirmación `ELIMINAR` y
 `Ctrl+R` vuelve a descubrir los archivos. El proyecto activo no se puede borrar:
 primero debe activarse otro para mantener consistente su espacio de trabajo.
 
+La consola permite encadenar propiedades del elemento seleccionado en cualquier
+orden, sin repetir el selector:
+
+```text
+element -name HomeNAS -alias NAS -description "Almacenamiento principal" -cnf O -group ASSETS
+```
+
 La sección `TECLADO` usa una única tabla `CAMPO | TECLA/VALOR | VISIBLE`.
 Cada acción ocupa una fila: `Tab` permite reasignarla a `F1`–`F12` o a los
 controles admitidos, mientras `Enter` alterna `ON/OFF` para su representación

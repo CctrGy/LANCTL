@@ -444,11 +444,27 @@ class TuiTests(unittest.TestCase):
         selected = "02:00:3F:00:51:0C"
         self.assertEqual(
             _translate_tui_element(["element", "-name", "Rack", "Principal"], selected),
-            ["element", selected, "name", "Rack", "Principal"],
+            ["element", selected, "-name", "Rack", "Principal"],
         )
         self.assertEqual(
             _translate_tui_element(["element", "192.168.1.35", "-alias", "RPI"], selected),
-            ["element", "192.168.1.35", "alias", "RPI"],
+            ["element", "192.168.1.35", "-alias", "RPI"],
+        )
+        self.assertEqual(
+            _translate_tui_element(
+                ["element", "-name", "Rack", "-alias", "RACK", "-cnf", "O"],
+                selected,
+            ),
+            [
+                "element",
+                selected,
+                "-name",
+                "Rack",
+                "-alias",
+                "RACK",
+                "-cnf",
+                "O",
+            ],
         )
         self.assertEqual(
             _translate_tui_element(["element", "-delate"], selected),
@@ -924,6 +940,37 @@ class TuiTests(unittest.TestCase):
         tui.handle_key("F4")
 
         tui._manual_save.assert_called_once_with()
+
+    def test_manual_save_reports_updated_project_in_cli_panel(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.messages = []
+        tui.reload = Mock()
+        saved = SimpleNamespace(saved=True, path="C:/Projects/Casa.vlf", reason="saved")
+
+        with (
+            patch("lanctl.apps.ip.interfaces.tui.main.load_config", return_value={}),
+            patch("lanctl.core.projects.save_policy.workspace_is_dirty", return_value=True),
+            patch("lanctl.core.projects.save_policy.save_active_project", return_value=saved),
+        ):
+            tui._manual_save()
+
+        self.assertEqual(tui.messages, ["Proyecto actualizado: C:/Projects/Casa.vlf"])
+        tui.reload.assert_called_once_with()
+
+    def test_manual_save_reports_saved_project_when_already_synchronized(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.messages = []
+        tui.reload = Mock()
+        saved = SimpleNamespace(saved=True, path="C:/Projects/Casa.vlf", reason="saved")
+
+        with (
+            patch("lanctl.apps.ip.interfaces.tui.main.load_config", return_value={}),
+            patch("lanctl.core.projects.save_policy.workspace_is_dirty", return_value=False),
+            patch("lanctl.core.projects.save_policy.save_active_project", return_value=saved),
+        ):
+            tui._manual_save()
+
+        self.assertEqual(tui.messages, ["Proyecto guardado: C:/Projects/Casa.vlf"])
 
     def test_navigation_shortcuts_prepare_contextual_commands(self):
         tui = LanctlTui.__new__(LanctlTui)

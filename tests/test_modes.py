@@ -14,6 +14,7 @@ from lanctl.apps.ip.interfaces.cli.commands.modes import (
 )
 from lanctl.apps.ip.interfaces.cli.main import build_parser
 from lanctl.core.database import DeviceDatabase
+from lanctl.core.group_database import GroupDatabase
 
 
 class LanctlModeTests(unittest.TestCase):
@@ -246,6 +247,45 @@ class LanctlModeTests(unittest.TestCase):
             updated = database.resolve("02:00:00:00:00:11")
             self.assertEqual(updated.name, "HomeNAS")
             self.assertEqual(updated.alias, "NAS")
+
+    def test_element_option_edits_can_be_chained_in_any_order(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database_path = str(Path(temporary) / "devices.json")
+            groups_path = str(Path(temporary) / "groups.json")
+            database = DeviceDatabase(database_path)
+            database.add_device("02:00:00:00:00:12", alias="OLD")
+            GroupDatabase(groups_path, database).create("IOT")
+            args = build_parser().parse_args(
+                [
+                    "element",
+                    "OLD",
+                    "-description",
+                    "Sensor principal",
+                    "-cnf",
+                    "O",
+                    "-group",
+                    "IOT",
+                    "-alias",
+                    "SENSOR",
+                    "-name",
+                    "SensorCasa",
+                    "-protocol",
+                    "ssh",
+                    "--database",
+                    database_path,
+                    "--groups",
+                    groups_path,
+                ]
+            )
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(args.handler(args), 0)
+
+            updated = database.resolve("SENSOR")
+            self.assertEqual(updated.name, "SensorCasa")
+            self.assertEqual(updated.description, "Sensor principal")
+            self.assertEqual(updated.cnf, "O")
+            self.assertEqual(updated.groups, ["IOT"])
+            self.assertEqual(updated.protocols, ["ssh"])
 
 
 if __name__ == "__main__":

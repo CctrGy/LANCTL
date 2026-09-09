@@ -844,6 +844,22 @@ Options:
   --yes                       Elimina sin solicitar confirmación.
 ```
 
+Las opciones de edición pueden combinarse en una sola orden y escribirse en
+cualquier orden. En CLI se indica el elemento explícitamente:
+
+```text
+lanip element NAS -name HomeNAS -alias NAS -description "Almacenamiento principal" -cnf O -group ASSETS -protocol ssh
+```
+
+Dentro del TUI puede omitirse el selector para aplicar todas las opciones al
+elemento resaltado:
+
+```text
+element -description "Almacenamiento principal" -alias NAS -cnf O
+```
+
+`-delete` es una operación exclusiva y no puede combinarse con ediciones.
+
 ## `LANIP project`
 
 ```text

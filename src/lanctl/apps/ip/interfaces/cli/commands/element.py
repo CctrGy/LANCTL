@@ -16,7 +16,7 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
     command = commands.add_parser(
         "element",
-        help="Edita un elemento identificado por IP, MAC o alias.",
+        help="Edita uno o varios campos de un elemento identificado por IP, MAC o alias.",
     )
     command.add_argument("selector", nargs="?", help="IP, MAC o alias.")
     command.add_argument(
@@ -110,11 +110,37 @@ def run_element(args: argparse.Namespace) -> int:
         if args.action or args.values or requested_edits:
             raise ValueError("-delete no se puede combinar con otra edición")
         args.action = "delete"
-    elif requested_edits:
-        if args.action or args.values or len(requested_edits) != 1:
-            raise ValueError("edita un único campo cada vez")
-        args.action, value = requested_edits[0]
-        args.values = [value]
+    elif requested_edits and (args.action or args.values):
+        raise ValueError(
+            "no mezcles la sintaxis posicional con opciones; usa varias opciones "
+            "-name/-alias/-description/-cnf/-group/-protocol"
+        )
+
+    if requested_edits:
+        stable_selector = database.resolve(args.selector).mac or args.selector
+        updated = None
+        changes: list[str] = []
+        groups = GroupDatabase(args.groups, database)
+        for field, value in requested_edits:
+            if field == "group":
+                group, updated = groups.add(value, stable_selector)
+                changes.append(f"group += {group.name}")
+            elif field == "protocol":
+                parts = value.split()
+                protocol = parts[-1]
+                enabled = not (
+                    len(parts) > 1 and parts[0].casefold() in ("del", "delete", "remove")
+                )
+                updated = database.set_protocol(stable_selector, protocol, enabled)
+                changes.append(f"protocols = {', '.join(updated.protocols) or '-'}")
+            else:
+                updated = database.edit_device(stable_selector, field, value)
+                changes.append(f"{field} = {getattr(updated, field)}")
+        ok(
+            "ACTUALIZADO",
+            f"{updated.alias or updated.ip} | " + " | ".join(changes),
+        )
+        return 0
 
     if args.action is None:
         device = database.resolve(args.selector)

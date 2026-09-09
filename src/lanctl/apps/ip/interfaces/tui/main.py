@@ -1868,16 +1868,23 @@ class LanctlTui:
         return next((action for action, assigned in bindings.items() if assigned == key), None)
 
     def _manual_save(self) -> None:
-        from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+        from lanctl.core.projects.save_policy import (
+            SaveTrigger,
+            save_active_project,
+            workspace_is_dirty,
+        )
 
         try:
+            settings = load_config()
+            had_changes = workspace_is_dirty(settings)
             result = save_active_project(SaveTrigger.CHANGE, force=True)
         except (OSError, ValueError) as error:
             self.messages = [f"No se pudo guardar el proyecto: {error}"]
             return
         if result.saved:
             self.reload()
-            self.messages = [f"Proyecto guardado manualmente: {result.path}"]
+            action = "actualizado" if had_changes else "guardado"
+            self.messages = [f"Proyecto {action}: {result.path}"]
         elif result.reason == "no-active-project":
             self.messages = ["No hay ningún proyecto activo que guardar."]
         else:
@@ -2304,7 +2311,9 @@ class LanctlTui:
         path = item.path.resolve()
         active = str((self.project_info or {}).get("path") or "")
         if active and str(path).casefold() == str(Path(active).resolve()).casefold():
-            self.messages = ["No se puede eliminar el proyecto activo; activa otro proyecto primero."]
+            self.messages = [
+                "No se puede eliminar el proyecto activo; activa otro proyecto primero."
+            ]
             return
         confirmation = self._read_text(f"Escribe ELIMINAR para borrar {item.name}:")
         if confirmation != "ELIMINAR":
@@ -2319,9 +2328,7 @@ class LanctlTui:
                 "LANCTL.Project.File.Close",
                 {"path": str(path), "project_id": item.project_id or None},
             )
-            write_log(
-                f"PROJECT DELETE id={item.project_id or '-'} path={path} source=TUI"
-            )
+            write_log(f"PROJECT DELETE id={item.project_id or '-'} path={path} source=TUI")
             self.messages = [f"Proyecto eliminado: {path}"]
             self.show_project_manager()
         except (OSError, sqlite3.DatabaseError) as error:
@@ -2743,6 +2750,15 @@ def _translate_tui_element(parts: list[str], selected: str) -> list[str]:
     if first in option_map:
         if not selected:
             raise ValueError("no hay ningún elemento seleccionado")
+        # Las opciones de edición son componibles. Inserta únicamente el
+        # selector contextual y conserva todas las opciones para argparse.
+        if first.startswith("-") and first not in (
+            "-delete",
+            "--delete",
+            "-del",
+            "-delate",
+        ):
+            return ["element", selected, *parts[1:]]
         target, option_index = selected, 1
     else:
         target, option_index = parts[1], 2
@@ -2754,6 +2770,8 @@ def _translate_tui_element(parts: list[str], selected: str) -> list[str]:
         # Conserva la sintaxis avanzada anterior: `element OBJETIVO edit ...`.
         return list(parts)
     action = option_map[option]
+    if option.startswith("-") and action != "delete":
+        return list(parts)
     values = parts[option_index + 1 :]
     if action == "delete":
         if values and values != ["--yes"]:
