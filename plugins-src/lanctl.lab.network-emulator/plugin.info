@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "lanctl.lab.network-emulator",
+  "name": "LANLAB Network Emulator",
+  "version": "1.0.0",
+  "description": "Proveedor de redes LAN virtuales reproducibles para probar LANIP sin tráfico real.",
+  "author": "LANCTL",
+  "entryPoint": "main.exec",
+  "runtime": "isolated",
+  "lanctl": {"minimumVersion": "0.3.0", "maximumVersion": "0.x"},
+  "permissions": ["events.emit", "events.register"],
+  "capabilities": ["plugin", "network", "automation", "analysis"]
+}

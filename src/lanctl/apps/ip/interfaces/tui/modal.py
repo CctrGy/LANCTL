@@ -25,6 +25,8 @@ class SettingField:
     section: str = "GENERAL"
     description: str = "Sin descripción disponible."
     choices: tuple[str, ...] = ()
+    visible: str | None = None
+    original_visible: str | None = None
 
 
 @dataclass(slots=True)

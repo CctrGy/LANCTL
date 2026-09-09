@@ -59,6 +59,9 @@ def register_radmin_command(commands: argparse._SubParsersAction) -> None:
 def run_radmin(args: argparse.Namespace) -> int:
     database = DeviceDatabase(args.database)
     device = database.resolve(args.selector)
+    from lanctl.apps.ip.domain.discovery import require_real_target
+
+    require_real_target(device)
     options = dict(device.protocol_options.get("radmin", {}))
     if args.action == "configure":
         options["port"] = validate_port(

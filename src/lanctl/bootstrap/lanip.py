@@ -1,5 +1,14 @@
 """Punto de entrada directo de LANIP."""
 
-from lanctl.apps.ip.interfaces.cli.main import main
+from __future__ import annotations
+
+import sys
+
+from lanctl.apps.ip.interfaces.cli.main import main as ip_main
+
+
+def main(argv: list[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    return ip_main(arguments, program_name="LANIP")
 
 __all__ = ["main"]

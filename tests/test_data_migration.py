@@ -24,9 +24,7 @@ class DataMigrationTests(unittest.TestCase):
             for relative in (
                 "config/icons",
                 "config/languages",
-                "database",
                 "logs",
-                "monitoring",
                 "plugins/storage",
                 "projects/workspaces",
                 "automation",
@@ -36,22 +34,30 @@ class DataMigrationTests(unittest.TestCase):
 
             for relative in (
                 "config/config.json",
-                "database/devices.json",
-                "database/groups.json",
+                "projects/workspaces/default/database/devices.json",
+                "projects/workspaces/default/database/groups.json",
                 "recurrent-elements.json",
                 "plugins/registry.json",
                 "automation/wol-sequences.json",
-                "monitoring/sessions.json",
-                "monitoring/incidents.json",
-                "monitoring/profiles.json",
-                "monitoring/assignments.json",
+                "projects/workspaces/default/monitoring/sessions.json",
+                "projects/workspaces/default/monitoring/incidents.json",
+                "projects/workspaces/default/monitoring/profiles.json",
+                "projects/workspaces/default/monitoring/assignments.json",
                 "config/cisco_profiles.json",
-                "physical/idf.db",
+                "projects/workspaces/default/physical/idf.db",
             ):
                 with self.subTest(relative=relative):
                     json.loads((root / relative).read_text(encoding="utf-8"))
-            physical = json.loads((root / "physical/idf.db").read_text(encoding="utf-8"))
+            physical = json.loads(
+                (root / "projects/workspaces/default/physical/idf.db").read_text(encoding="utf-8")
+            )
             self.assertEqual(physical["format"], "LANWRE-IDF-DB")
+            config = json.loads((root / "config/config.json").read_text(encoding="utf-8"))
+            self.assertEqual(config["schemaVersion"], 2)
+            self.assertEqual(
+                config["projects"]["workspace"]["databases"]["devices"],
+                "data/lc/projects/workspaces/default/database/devices.json",
+            )
 
     def test_bootstrap_does_not_overwrite_existing_data(self):
         with tempfile.TemporaryDirectory() as temporary:

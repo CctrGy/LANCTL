@@ -6,8 +6,11 @@ from unittest.mock import patch
 
 from colorama import Fore, Style
 
-from lanctl.apps.ip.interfaces.cli.main import build_parser
-from lanctl.core.parser import LANCTLArgumentParser
+from lanctl.apps.access.manager_cli import build_parser as build_access_parser
+from lanctl.apps.ip.interfaces.cli.main import build_parser, main
+from lanctl.apps.rack.cli import build_parser as build_rack_parser
+from lanctl.apps.wire.cli.main import build_parser as build_wire_parser
+from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.shared.i18n import t
 
 
@@ -31,6 +34,25 @@ class TtyBuffer(io.StringIO):
 
 
 class HelpTests(unittest.TestCase):
+    def test_dos_help_switch_is_portable(self):
+        self.assertEqual(normalize_help_arguments(["element", "/?"]), ["element", "--help"])
+        with self.assertRaises(SystemExit) as raised:
+            main(["/?"])
+        self.assertEqual(raised.exception.code, 0)
+
+    def test_suite_launchers_share_the_common_parser(self):
+        for parser in (
+            build_parser(),
+            build_wire_parser(),
+            build_rack_parser(),
+            build_access_parser(),
+        ):
+            with self.subTest(prog=parser.prog):
+                self.assertIsInstance(parser, LANCTLArgumentParser)
+                self.assertTrue(
+                    parser.format_help().startswith(t("LANCTL.PARSER.SECTION.USAGE") + " ")
+                )
+
     def test_help_uses_current_terminal_width(self):
         with patch("lanctl.core.parser.terminal_columns", return_value=54):
             parser = build_parser()

@@ -67,12 +67,12 @@ Los catálogos JSON `.lang` se gestionan en `data/lc/languajes/`. Inglés es el
 fallback integrado y los plugins LCP pueden aportar idiomas adicionales.
 Consulta [docs/LANG.md](docs/LANG.md).
 
-Los iconos JPEG de `125×125` utilizados por la GUI se catalogan en
+Los iconos JPEG de `125×125` conservados para la GUI heredada se catalogan en
 `data/lc/icons/icons.json`. Consulta [docs/ICONS.md](docs/ICONS.md).
 
 ## Estado y alcance
 
-La beta.21 reúne interfaces CLI, TUI y GUI sobre un mismo entorno, añade
+La beta.21 centra el producto en las interfaces CLI y TUI, añade
 políticas de guardado para proyectos VLF y mantiene el acceso remoto desactivado
 hasta que el administrador lo configure expresamente. Las aplicaciones pueden
 permanecer abiertas en paralelo: comparten identificadores, configuración y
@@ -81,8 +81,8 @@ servicios transaccionales, pero cada dominio conserva la propiedad de sus datos.
 ## Aplicaciones paralelas
 
 Las distribuciones Windows incluyen `lanip.exe`, `lanwire.exe`, `lanrack.exe`,
-`lanaccess.exe`, `lanmon.exe` y `landemo.exe` junto al orquestador `LANCTL.exe`
-y `LANCTL-GUI.exe`. Sus responsabilidades son:
+`lanaccess.exe` y `lanmon.exe` junto al orquestador `LANCTL.exe`
+. La GUI permanece congelada en el código fuente y no se empaqueta. Sus responsabilidades son:
 
 | Aplicación | Responsabilidad |
 | --- | --- |
@@ -92,7 +92,6 @@ y `LANCTL-GUI.exe`. Sus responsabilidades son:
 | `LANRACK` | Visualización de racks, unidades U y elementos instalados |
 | `LANACCESS` | Gestión cifrada de usuarios y credenciales de dispositivos |
 | `LANMON` | Estado, eventos, historial, alertas e incidencias |
-| `LANDEMO` | Recorrido de presentación reproducible y red de muestra |
 | `LANBACK` | Previsto para una fase posterior: administración del backend |
 
 Cada aplicación puede iniciarse directamente o mediante LANCTL:
@@ -117,8 +116,8 @@ lanaccess list
 # Estado de la monitorización (equivale a `lanctl monitor status`)
 lanmon
 
-# Genera el recorrido reproducible para una presentación
-landemo --output LANCTL-demo
+# El recorrido reproducible permanece como comando interno de LANIP
+lanip demo --output LANCTL-demo
 ```
 
 Todas las entradas resuelven la misma raíz de datos. Cuando una herramienta
@@ -202,7 +201,6 @@ lanwre --version
 lanrack --version
 lanaccess --version
 lanmon --version
-landemo --version
 ```
 
 También puede ejecutarse directamente desde el repositorio:
@@ -217,8 +215,8 @@ run.cmd --help
 ```
 
 LANCTL es el orquestador de la suite. El mismo build produce `LANCTL.exe`,
-`LANCTL-GUI.exe`, `lanip.exe`, `lanwire.exe`, `lanrack.exe`, `lanaccess.exe`,
-`lanmon.exe` y `landemo.exe`; no requiere un repositorio hermano.
+`lanip.exe`, `lanwire.exe`, `lanrack.exe`, `lanaccess.exe`,
+`lanmon.exe`; no requiere un repositorio hermano.
 
 ## Inicio rápido
 
@@ -323,7 +321,7 @@ credential list
 ### Interfaces interactivas
 
 ```powershell
-lanctl --gui
+lanctl                 # abre el TUI
 lanctl --cli
 lanctl -tui
 lanctl --tui PLUGINS
@@ -333,9 +331,12 @@ lanctl --project "C:\Users\Victor\Desktop\Casa.vlf"
 lanctl --tui --project "C:\Users\Victor\Desktop\Casa.vlf"
 ```
 
-La GUI ofrece inventario actualizable, edición de elementos, proyectos,
-diagnóstico y una ventana de detalle accesible mediante doble clic. Los puertos
-detectados se traducen a servicios como HTTP, HTTPS o SSH. Cuando el servicio
+La GUI anterior está congelada y fuera de las distribuciones. Desde una copia del
+código puede probarse instalando `.[gui]` y definiendo
+`LANCTL_ENABLE_LEGACY_GUI=1` antes de ejecutar `lanctl --gui`. El alcance y la
+forma de ejecutar sus pruebas están en [docs/LEGACY-GUI.md](docs/LEGACY-GUI.md).
+
+Los puertos detectados se traducen a servicios como HTTP, HTTPS o SSH. Cuando el servicio
 es interactivo, LANCTL puede abrir el navegador, una terminal SSH o el cliente
 nativo correspondiente utilizando la IP y el puerto detectados.
 
@@ -379,6 +380,9 @@ Referencias operativas: [manual del TUI](docs/TUI.md),
 [despliegue empresarial](docs/ENTERPRISE.md) y [plugins LCP](docs/LCP.md).
 
 ## Configuración persistente
+
+El formato agrupado, su migración y la propiedad de las bases por proyecto se
+documentan en [Configuración de LANCTL](docs/CONFIGURATION.md).
 
 Las rutas lógicas heredadas `data/lc/...` se resuelven mediante una capa central:
 `C:\ProgramData\LANCTL` en Windows instalado, el directorio XDG del usuario en

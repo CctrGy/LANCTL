@@ -9,6 +9,7 @@ import queue
 import re
 import shlex
 import shutil
+import sqlite3
 import sys
 import textwrap
 import time
@@ -21,6 +22,13 @@ from colorama import Back, Fore, Style, just_fix_windows_console
 from lanctl import __version__
 from lanctl.apps.ip.infrastructure.services.lan_scanner import local_ipv4
 from lanctl.apps.ip.interfaces.tui.controllers import ManagerController, SettingsEditor
+from lanctl.apps.ip.interfaces.tui.keyboard import (
+    CONFIGURABLE_TUI_KEYS,
+    DEFAULT_TUI_KEY_BINDINGS,
+    FOOTER_ACTIONS,
+    normalize_footer_actions,
+    normalize_key_bindings,
+)
 from lanctl.apps.ip.interfaces.tui.keyboard import read_windows_key as _read_windows_key
 from lanctl.apps.ip.interfaces.tui.layout import adaptive_layout
 from lanctl.apps.ip.interfaces.tui.managers import (
@@ -158,6 +166,8 @@ class LanctlTui:
         self.modal: ModalState | None = None
         self._last_screen_lines: list[str] = []
         self.startup_modal = startup_modal.casefold() if startup_modal else None
+        self.key_bindings = normalize_key_bindings(config.get("tuiKeyBindings"))
+        self.footer_buttons = normalize_footer_actions(config.get("tuiFooterButtons"))
         self.remote_actions = queue.Queue()
         self.reload()
 
@@ -173,6 +183,8 @@ class LanctlTui:
         self.database = DeviceDatabase(config["database"])
         self.project_info = active_project_info(config)
         self.dhcp_range = config.get("dhcpRange")
+        self.key_bindings = normalize_key_bindings(config.get("tuiKeyBindings"))
+        self.footer_buttons = normalize_footer_actions(config.get("tuiFooterButtons"))
         self.all_devices = self.database.load()
         self.devices = self._filtered_devices()
         if identity:
@@ -591,7 +603,11 @@ class LanctlTui:
         prompt_value = secret_prompt if secret_prompt else self.command
         prompt_text = fit_text(f"{prompt_prefix}{prompt_value}", width)
         lines.append(f"{Fore.LIGHTGREEN_EX}{prompt_text}{RESET}")
-        keys = _function_bar(width)
+        keys = _function_bar(
+            width,
+            getattr(self, "footer_buttons", None),
+            getattr(self, "key_bindings", None),
+        )
         lines.append(keys)
         cursor_offset = len(prompt_value) if self.secret_prompt else self.cursor
         cursor_column = min(width, len(prompt_prefix) + cursor_offset + 1)
@@ -720,6 +736,17 @@ class LanctlTui:
                         "  F9         Gestor de proyectos",
                         "  F12        Editor de configuración",
                         "  Ctrl+H     Historial de comandos",
+                        "  Ctrl+F     Buscar o filtrar elementos",
+                        "  Ctrl+R     Recargar inventario sin escanear",
+                        "  Ctrl+E     Editar el elemento seleccionado",
+                        "  Ctrl+G     Gestionar grupos",
+                        "  Ctrl+P     Abrir la sección de puertos",
+                        "  Ctrl+O     Abrir acceso SSH/HTTP/Telnet/...",
+                        "  Ctrl+S     Guardar manualmente el proyecto",
+                        "  Ctrl+D     Consultar cambios pendientes",
+                        "  Ctrl+X/J   Copiar línea o JSON",
+                        "  Ctrl+L     Limpiar y enfocar la consola",
+                        "  Ctrl+Q     Iniciar el cierre seguro",
                     ],
                 ],
                 items=entries,
@@ -738,6 +765,7 @@ class LanctlTui:
 
     def show_project_manager(self) -> None:
         config = load_config()
+        from lanctl.core.projects.catalog import ProjectCatalog
         from lanctl.core.projects.paths import default_project_directory
 
         configured = config.get("projectsDirectory")
@@ -746,25 +774,36 @@ class LanctlTui:
             if configured
             else default_project_directory()
         )
-        projects = (
-            sorted(root.glob("*.vlf"), key=lambda item: item.name.casefold())
-            if root.exists()
-            else []
-        )
         active = self.project_info.get("path", "") if self.project_info else ""
-        active_path = Path(active) if active else None
-        if (
-            active_path
-            and active_path.is_file()
-            and all(path.resolve() != active_path.resolve() for path in projects)
-        ):
-            projects.insert(0, active_path)
+        try:
+            projects = ProjectCatalog().refresh(root, active_path=active or None)
+        except (OSError, sqlite3.DatabaseError) as error:
+            from lanctl.core.errors import errors
+
+            errors.from_exception(
+                error,
+                origin="LANCTL.Project.Catalog.Refresh",
+                code="PROJECT.CATALOG.REFRESH_FAILED",
+                level=24,
+                print_output=False,
+            )
+            projects = []
+            self.messages = [f"No se pudo actualizar projects.db: {error}"]
         self._open_modal(project_manager_modal(projects, active, root))
 
     def show_settings(self) -> None:
         config = load_config()
+        key_bindings = normalize_key_bindings(config.get("tuiKeyBindings"))
+        footer_buttons = normalize_footer_actions(config.get("tuiFooterButtons"))
 
         def text(key: str, fallback="") -> str:
+            if key.startswith("tuiKey."):
+                assigned = key_bindings[key.removeprefix("tuiKey.")]
+                return assigned.replace("_", "+") if assigned else "None"
+            if key == "tuiFooterButtons":
+                return ",".join(footer_buttons)
+            if key.startswith("tuiFooter."):
+                return "on" if key.removeprefix("tuiFooter.") in footer_buttons else "off"
             value = config.get(key, fallback)
             if isinstance(value, bool):
                 return "on" if value else "off"
@@ -1005,20 +1044,203 @@ class LanctlTui:
                 "Enter gestionar",
                 "Abre la lista segura de usuarios SSH: permite crear cuentas, cambiar su contraseña y nivel de acceso, activarlas o eliminarlas.",
             ),
+            *(
+                (
+                    "TECLADO",
+                    f"tuiKey.{action}",
+                    label,
+                    "--tui-key",
+                    "tecla disponible",
+                    description,
+                )
+                for action, label, description in (
+                    ("help", "Ayuda", "Atajo que abre la ayuda jerárquica del TUI."),
+                    (
+                        "info",
+                        "Información",
+                        "Atajo que abre la información del elemento seleccionado.",
+                    ),
+                    ("ping", "Ping", "Atajo que ejecuta un ping sobre el elemento seleccionado."),
+                    (
+                        "refresh",
+                        "Actualizar",
+                        "Atajo que vuelve a descubrir los elementos de la red.",
+                    ),
+                    ("plugins", "Plugins", "Atajo que abre el gestor de plugins."),
+                    ("projects", "Proyectos", "Atajo que abre el gestor de proyectos."),
+                    ("settings", "Settings", "Atajo que abre esta ventana de configuración."),
+                    ("history", "Historial", "Atajo que abre el historial de comandos."),
+                    ("search", "Buscar", "Prepara la búsqueda o filtrado de elementos."),
+                    ("reload", "Recargar", "Recarga el inventario guardado sin escanear la red."),
+                    ("edit", "Editar elemento", "Prepara la edición del elemento seleccionado."),
+                    ("groups", "Gestionar grupos", "Prepara la gestión de grupos del inventario."),
+                    (
+                        "ports",
+                        "Puertos",
+                        "Abre directamente los puertos del elemento seleccionado.",
+                    ),
+                    ("open", "Abrir acceso", "Prepara la apertura de SSH, HTTP u otro protocolo."),
+                    ("save", "Guardar proyecto", "Guarda manualmente el proyecto activo."),
+                    (
+                        "differences",
+                        "Cambios pendientes",
+                        "Indica si el proyecto activo contiene cambios sin guardar.",
+                    ),
+                    (
+                        "copyLine",
+                        "Copiar línea",
+                        "Copia la fila completa seleccionada como texto tabulado.",
+                    ),
+                    (
+                        "copyJson",
+                        "Copiar JSON",
+                        "Copia los campos principales de la selección como JSON.",
+                    ),
+                    (
+                        "console",
+                        "Consola",
+                        "Limpia la salida y devuelve el foco al prompt del TUI.",
+                    ),
+                    ("quit", "Cierre seguro", "Inicia el cierre seguro de LANIP."),
+                    (
+                        "deviceHistory",
+                        "Historial del elemento",
+                        "Abre los eventos del elemento seleccionado.",
+                    ),
+                    (
+                        "scanSelected",
+                        "Escanear elemento",
+                        "Prepara un análisis individual del elemento seleccionado.",
+                    ),
+                    (
+                        "filterActive",
+                        "Filtrar activos",
+                        "Muestra únicamente los elementos activos del último escaneo.",
+                    ),
+                    (
+                        "filterDisconnected",
+                        "Filtrar desconectados",
+                        "Muestra los elementos no detectados en el último escaneo.",
+                    ),
+                    ("filterAll", "Mostrar todos", "Elimina el filtro actual del inventario."),
+                    ("ssh", "SSH", "Prepara una conexión SSH al elemento seleccionado."),
+                    (
+                        "terminal",
+                        "Terminal del elemento",
+                        "Prepara la terminal configurada del elemento seleccionado.",
+                    ),
+                    (
+                        "credentials",
+                        "Credenciales",
+                        "Prepara la gestión de credenciales del elemento seleccionado.",
+                    ),
+                    (
+                        "wakeOnLan",
+                        "Wake-on-LAN",
+                        "Prepara una acción Wake-on-LAN sobre el elemento seleccionado.",
+                    ),
+                    ("copyIp", "Copiar IP", "Copia únicamente la dirección IP seleccionada."),
+                    ("copyMac", "Copiar MAC", "Copia únicamente la dirección MAC seleccionada."),
+                    (
+                        "projectStatus",
+                        "Estado del proyecto",
+                        "Muestra el estado y la política del proyecto activo.",
+                    ),
+                )
+            ),
+            *(
+                (
+                    "TECLADO",
+                    f"tuiFooter.{action}",
+                    f"Mostrar {label}",
+                    "--tui-footer-button",
+                    "on | off",
+                    "Muestra u oculta este botón de ayuda en la última línea del TUI; la acción continúa disponible.",
+                )
+                for action, label in (
+                    ("help", "Ayuda"),
+                    ("info", "Información"),
+                    ("ping", "Ping"),
+                    ("refresh", "Actualizar"),
+                    ("plugins", "Plugins"),
+                    ("projects", "Proyectos"),
+                    ("settings", "Settings"),
+                    ("history", "Historial"),
+                    ("search", "Buscar"),
+                    ("reload", "Recargar"),
+                    ("edit", "Editar"),
+                    ("groups", "Grupos"),
+                    ("ports", "Puertos"),
+                    ("open", "Abrir acceso"),
+                    ("save", "Guardar"),
+                    ("differences", "Cambios"),
+                    ("copyLine", "Copiar línea"),
+                    ("copyJson", "Copiar JSON"),
+                    ("console", "Consola"),
+                    ("quit", "Cierre seguro"),
+                    ("deviceHistory", "Historial elemento"),
+                    ("scanSelected", "Escanear elemento"),
+                    ("filterActive", "Solo activos"),
+                    ("filterDisconnected", "Desconectados"),
+                    ("filterAll", "Mostrar todos"),
+                    ("ssh", "SSH"),
+                    ("terminal", "Terminal"),
+                    ("credentials", "Credenciales"),
+                    ("wakeOnLan", "Wake-on-LAN"),
+                    ("copyIp", "Copiar IP"),
+                    ("copyMac", "Copiar MAC"),
+                    ("projectStatus", "Estado proyecto"),
+                    ("select", "Seleccionar"),
+                    ("execute", "Ejecutar"),
+                    ("exit", "Salir"),
+                )
+                if action in FOOTER_ACTIONS
+            ),
         )
-        fields = [
-            SettingField(
-                key,
-                label,
-                option,
-                "Abrir lista…" if key == "remoteAccessUsers" else text(key),
-                "Abrir lista…" if key == "remoteAccessUsers" else text(key),
-                hint,
-                section,
-                description,
+        fields = []
+        for section, key, label, option, hint, description in definitions:
+            # En TECLADO la asignación y la visibilidad son dos columnas de una
+            # misma acción, no dos variables visuales independientes.
+            if key.startswith("tuiFooter."):
+                action = key.removeprefix("tuiFooter.")
+                fixed_keys = {"select": "↑/↓", "execute": "Enter", "exit": "Esc"}
+                if action not in fixed_keys:
+                    continue
+                visible = "ON" if action in footer_buttons else "OFF"
+                fields.append(
+                    SettingField(
+                        f"tuiFixed.{action}",
+                        label.removeprefix("Mostrar "),
+                        "--tui-footer-button",
+                        fixed_keys[action],
+                        fixed_keys[action],
+                        "tecla fija",
+                        section,
+                        description,
+                        visible=visible,
+                        original_visible=visible,
+                    )
+                )
+                continue
+            value = "Abrir lista…" if key == "remoteAccessUsers" else text(key)
+            visible = None
+            if key.startswith("tuiKey."):
+                action = key.removeprefix("tuiKey.")
+                visible = "ON" if action in footer_buttons else "OFF"
+            fields.append(
+                SettingField(
+                    key,
+                    label,
+                    option,
+                    value,
+                    value,
+                    hint,
+                    section,
+                    description,
+                    visible=visible,
+                    original_visible=visible,
+                )
             )
-            for section, key, label, option, hint, description in definitions
-        ]
         from lanctl.core.projects.save_policy import available_save_modes
 
         choices = {
@@ -1036,7 +1258,23 @@ class LanctlTui:
         }
         for field in fields:
             field.choices = choices.get(field.key, ())
-        tabs = ["GENERAL", "RED", "ESCANEO", "PROYECTOS", "ALMACENAMIENTO", "LOGS", "REMOTE ACCESS"]
+            if field.key.startswith("tuiKey."):
+                field.choices = (
+                    "None",
+                    *(key.replace("_", "+") for key in CONFIGURABLE_TUI_KEYS),
+                )
+            elif field.key.startswith("tuiFooter."):
+                field.choices = ("on", "off")
+        tabs = [
+            "GENERAL",
+            "RED",
+            "ESCANEO",
+            "PROYECTOS",
+            "ALMACENAMIENTO",
+            "TECLADO",
+            "LOGS",
+            "REMOTE ACCESS",
+        ]
         self._open_modal(
             ModalState(
                 kind="settings",
@@ -1607,11 +1845,9 @@ class LanctlTui:
                 contextual, self.selected.mac or self.selected.ip
             )
         if self.selected and command in {
-            "alias",
             "call",
             "cnf",
             "credential",
-            "name",
             "open",
             "ping",
             "protocol",
@@ -1620,11 +1856,122 @@ class LanctlTui:
             "ssh",
             "switch",
             "terminal",
+            "wol",
         }:
             contextual.insert(1, self.selected.mac or self.selected.ip)
         result, output = self._capture(contextual)
         self.reload()
         self._set_command_output(output, result)
+
+    def _action_for_key(self, key: str) -> str | None:
+        bindings = getattr(self, "key_bindings", DEFAULT_TUI_KEY_BINDINGS)
+        return next((action for action, assigned in bindings.items() if assigned == key), None)
+
+    def _manual_save(self) -> None:
+        from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+
+        try:
+            result = save_active_project(SaveTrigger.CHANGE, force=True)
+        except (OSError, ValueError) as error:
+            self.messages = [f"No se pudo guardar el proyecto: {error}"]
+            return
+        if result.saved:
+            self.reload()
+            self.messages = [f"Proyecto guardado manualmente: {result.path}"]
+        elif result.reason == "no-active-project":
+            self.messages = ["No hay ningún proyecto activo que guardar."]
+        else:
+            self.messages = [f"El proyecto no necesitó guardarse: {result.reason}."]
+
+    def _selected_clipboard_payload(self) -> dict[str, str]:
+        device = self.selected
+        if not device:
+            return {}
+        return {
+            "idf": device.device_id,
+            "mac": device.mac,
+            "ip": device.ip,
+            "cnf": device.cnf,
+            "alias": device.alias,
+            "name": device.name,
+            "group": ",".join(device.groups),
+            "description": device.description,
+        }
+
+    def _copy_selected(self, *, as_json: bool) -> None:
+        payload = self._selected_clipboard_payload()
+        if not payload:
+            self.messages = ["No hay ningún elemento seleccionado para copiar."]
+            return
+        value = (
+            json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+            if as_json
+            else "\t".join(
+                payload[key] or "-"
+                for key in ("ip", "cnf", "alias", "mac", "name", "group", "description")
+            )
+        )
+        try:
+            from lanctl.apps.ip.interfaces.tui.clipboard import copy_text
+
+            copy_text(value)
+        except (MemoryError, OSError) as error:
+            self.messages = [f"No se pudo copiar al portapapeles: {error}"]
+            return
+        label = self.selected.alias or self.selected.ip or self.selected.mac
+        self.messages = [f"{'JSON' if as_json else 'Línea'} copiado: {label}"]
+
+    def _prepare_shortcut_command(self, command: str, message: str) -> None:
+        self.output_focus = False
+        self.output_selectable = []
+        self.command_suggestions = []
+        self.suggestion_index = -1
+        self.command = command
+        self.cursor = len(command)
+        self.messages = [message]
+
+    def _copy_selected_field(self, field: str) -> None:
+        payload = self._selected_clipboard_payload()
+        value = payload.get(field, "")
+        if not value:
+            self.messages = [f"El elemento seleccionado no tiene {field.upper()} disponible."]
+            return
+        try:
+            from lanctl.apps.ip.interfaces.tui.clipboard import copy_text
+
+            copy_text(value)
+        except (MemoryError, OSError) as error:
+            self.messages = [f"No se pudo copiar al portapapeles: {error}"]
+            return
+        self.messages = [f"{field.upper()} copiada: {value}"]
+
+    def _show_ports(self) -> None:
+        self.show_info()
+        if self.modal and self.modal.kind == "info" and "Puertos" in self.modal.tabs:
+            self.modal.tab_index = self.modal.tabs.index("Puertos")
+            self.modal.scroll = 0
+
+    def _show_pending_changes(self) -> None:
+        from lanctl.core.projects.save_policy import workspace_is_dirty
+
+        settings = load_config()
+        active = str(settings.get("activeProject") or "").strip()
+        if not active:
+            self.messages = ["No hay ningún proyecto activo."]
+        elif workspace_is_dirty(settings):
+            self.messages = ["El proyecto activo contiene cambios pendientes de guardar."]
+        else:
+            self.messages = ["El proyecto activo está sincronizado; no hay cambios pendientes."]
+
+    def _focus_console(self) -> None:
+        self.output_focus = False
+        self.output_selectable = []
+        self.output_index = 0
+        self.output_scroll = 0
+        self.command_suggestions = []
+        self.command = ""
+        self.cursor = 0
+        self.messages = ["Consola preparada."]
 
     def handle_key(self, key: str) -> None:
         if getattr(self, "modal", None):
@@ -1707,6 +2054,7 @@ class LanctlTui:
         if key in ("UP", "DOWN") and getattr(self, "command_suggestions", []):
             self._move_suggestion(-1 if key == "UP" else 1)
             return
+        action = self._action_for_key(key)
         if key == "UP":
             self.move(-1)
         elif key == "DOWN":
@@ -1715,22 +2063,91 @@ class LanctlTui:
             self.move(-10)
         elif key == "PGDN":
             self.move(10)
-        elif key == "F1":
+        elif action == "help":
             self.show_help_modal()
-        elif key == "F2":
+        elif action == "info":
             self.show_info()
-        elif key == "F3":
+        elif action == "ping":
             self.ping_selected()
-        elif key == "F5":
+        elif action == "refresh":
             self.refresh()
-        elif key == "F7":
+        elif action == "plugins":
             self.show_plugin_manager()
-        elif key == "F9":
+        elif action == "projects":
             self.show_project_manager()
-        elif key == "F12":
+        elif action == "settings":
             self.show_settings()
-        elif key == "CTRL_H":
+        elif action == "history":
             self.show_command_history()
+        elif action == "search":
+            self._prepare_shortcut_command("search ", "Buscar: escribe texto, IP, MAC o alias.")
+        elif action == "reload":
+            self.reload()
+            self.messages = ["Inventario recargado sin ejecutar un escaneo."]
+        elif action == "edit":
+            self._prepare_shortcut_command(
+                "element ",
+                "Editar: completa una opción; se aplicará al elemento seleccionado.",
+            )
+        elif action == "groups":
+            self._prepare_shortcut_command(
+                "group ",
+                "Grupos: indica el grupo y la acción; se usará el elemento seleccionado.",
+            )
+        elif action == "ports":
+            self._show_ports()
+        elif action == "open":
+            self._prepare_shortcut_command(
+                "open ",
+                "Abrir acceso: escribe ssh, http, https, telnet u otro protocolo.",
+            )
+        elif action == "save":
+            self._manual_save()
+        elif action == "differences":
+            self._show_pending_changes()
+        elif action == "copyLine":
+            self._copy_selected(as_json=False)
+        elif action == "copyJson":
+            self._copy_selected(as_json=True)
+        elif action == "console":
+            self._focus_console()
+        elif action == "quit":
+            self._begin_close()
+        elif action == "deviceHistory":
+            self.show_history()
+        elif action == "scanSelected":
+            self._prepare_shortcut_command(
+                "scan ", "Escanear elemento: añade opciones o pulsa Enter para comenzar."
+            )
+        elif action == "filterActive":
+            self.configure_list(["--active"])
+        elif action == "filterDisconnected":
+            self.configure_list(["--disconnected"])
+        elif action == "filterAll":
+            self.configure_list(["--all"])
+        elif action == "ssh":
+            self._prepare_shortcut_command(
+                "ssh ", "SSH: indica probe, fingerprint, trust, open o show."
+            )
+        elif action == "terminal":
+            self._prepare_shortcut_command(
+                "terminal ", "Terminal: pulsa Enter o añade las opciones necesarias."
+            )
+        elif action == "credentials":
+            self._prepare_shortcut_command(
+                "credential ", "Credenciales: indica set, list o configure."
+            )
+        elif action == "wakeOnLan":
+            self._prepare_shortcut_command(
+                "wol ", "Wake-on-LAN: indica wakeup, status, schedule u otra acción."
+            )
+        elif action == "copyIp":
+            self._copy_selected_field("ip")
+        elif action == "copyMac":
+            self._copy_selected_field("mac")
+        elif action == "projectStatus":
+            result, output = self._capture(["project", "status"])
+            self._set_command_output(output, result)
         elif key == "ENTER":
             self.execute()
         elif key == "BACKSPACE":
@@ -1805,16 +2222,120 @@ class LanctlTui:
             self.modal = None
             self.messages = ["Comando recuperado; pulsa Enter para ejecutarlo."]
         elif key == "ENTER" and modal.kind == "projects" and modal.items:
-            path = modal.items[modal.selected]
+            item = modal.items[modal.selected]
+            path = item.path
+            if not item.available:
+                self.messages = [f"El proyecto ya no está disponible: {path}"]
+                return
             result, output = self._capture(["project", "use", str(path)])
             self.modal = None
             self.reload()
             self._set_command_output(output, result)
+        elif modal.kind == "projects" and key.casefold() == "n":
+            self._create_project_from_manager()
+        elif modal.kind == "projects" and key == "DELETE" and modal.items:
+            self._delete_project_from_manager(modal.items[modal.selected])
         elif key == "CTRL_R":
             if modal.kind == "plugins":
                 self.show_plugin_manager()
             elif modal.kind == "projects":
                 self.show_project_manager()
+
+    def _create_project_from_manager(self) -> None:
+        from lanctl.core.projects.catalog import ProjectCatalog
+        from lanctl.core.projects.paths import default_project_directory
+        from lanctl.core.projects.vlf import create_project
+        from lanctl.core.projects.workspace import activate_project_workspace
+
+        name = self._read_text("Nombre del nuevo proyecto:")
+        if not name:
+            return
+        if any(character in name for character in '<>:"/\\|?*'):
+            self.messages = ["El nombre contiene caracteres no válidos para un archivo de Windows."]
+            return
+        configured = load_config().get("projectsDirectory")
+        default_root = (
+            Path(os.path.expandvars(str(configured))).expanduser()
+            if configured
+            else default_project_directory()
+        )
+        directory_text = self._read_text(f"Carpeta [Enter = {default_root}]:")
+        directory = (
+            Path(os.path.expandvars(directory_text)).expanduser()
+            if directory_text
+            else default_root
+        )
+        description = self._read_text("Descripción [opcional]:")
+        destination = directory / (name if name.casefold().endswith(".vlf") else f"{name}.vlf")
+        try:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            result = create_project(destination, name=Path(name).stem, description=description)
+            path = Path(result["path"])
+            ProjectCatalog().register(path)
+            activate_project_workspace(path)
+            from lanctl.core.logger import write_log
+            from lanctl.core.plugins import get_plugin_manager
+
+            project_id = str(result.get("project", {}).get("id") or "")
+            get_plugin_manager().events.emit(
+                "LANCTL.Project.File.Open",
+                {"path": str(path), "project_id": project_id or None},
+            )
+            write_log(f"PROJECT CREATE id={project_id or '-'} path={path} source=TUI")
+            self.reload()
+            self.messages = [f"Proyecto creado y activado: {path}"]
+            self.show_project_manager()
+        except (OSError, ValueError, sqlite3.DatabaseError) as error:
+            from lanctl.core.errors import errors
+
+            errors.from_exception(
+                error,
+                origin="LANCTL.TUI.ProjectManager.Create",
+                code="PROJECT.MANAGER.CREATE_FAILED",
+                level=34,
+                details={"project": str(destination)},
+                print_output=False,
+            )
+            self.messages = [f"No se pudo crear el proyecto: {error}"]
+
+    def _delete_project_from_manager(self, item) -> None:
+        from lanctl.core.projects.catalog import ProjectCatalog
+
+        path = item.path.resolve()
+        active = str((self.project_info or {}).get("path") or "")
+        if active and str(path).casefold() == str(Path(active).resolve()).casefold():
+            self.messages = ["No se puede eliminar el proyecto activo; activa otro proyecto primero."]
+            return
+        confirmation = self._read_text(f"Escribe ELIMINAR para borrar {item.name}:")
+        if confirmation != "ELIMINAR":
+            self.messages = ["Eliminación cancelada."]
+            return
+        try:
+            ProjectCatalog().remove(path, delete_file=True)
+            from lanctl.core.logger import write_log
+            from lanctl.core.plugins import get_plugin_manager
+
+            get_plugin_manager().events.emit(
+                "LANCTL.Project.File.Close",
+                {"path": str(path), "project_id": item.project_id or None},
+            )
+            write_log(
+                f"PROJECT DELETE id={item.project_id or '-'} path={path} source=TUI"
+            )
+            self.messages = [f"Proyecto eliminado: {path}"]
+            self.show_project_manager()
+        except (OSError, sqlite3.DatabaseError) as error:
+            from lanctl.core.errors import errors
+
+            errors.from_exception(
+                error,
+                origin="LANCTL.TUI.ProjectManager.Delete",
+                code="PROJECT.MANAGER.DELETE_FAILED",
+                level=38,
+                details={"project": str(path)},
+                print_output=False,
+            )
+            self.messages = [f"No se pudo eliminar el proyecto: {error}"]
 
     def _handle_help_key(self, modal: ModalState, key: str) -> None:
         if key in ("ESC", "F1"):
@@ -1957,7 +2478,11 @@ class LanctlTui:
         return SettingsEditor.field_indices(modal)
 
     def _save_settings(self, modal: ModalState) -> None:
-        changed = [field for field in modal.items if field.value != field.original]
+        changed = [
+            field
+            for field in modal.items
+            if field.value != field.original or field.visible != field.original_visible
+        ]
         if not changed:
             self.modal = None
             self.messages = ["SETTINGS: no había cambios pendientes."]
@@ -1972,6 +2497,19 @@ class LanctlTui:
             elif not value:
                 modal.footer = f"ERROR: {field.label} no puede quedar vacío · Esc cancelar"
                 return
+            if field.key.startswith("tuiKey."):
+                action = field.key.removeprefix("tuiKey.")
+                if field.value != field.original:
+                    argv.extend((field.option, f"{action}={value}"))
+                if field.visible != field.original_visible:
+                    argv.extend(("--tui-footer-button", f"{action}={field.visible.casefold()}"))
+                continue
+            if field.key.startswith("tuiFixed."):
+                action = field.key.removeprefix("tuiFixed.")
+                argv.extend(("--tui-footer-button", f"{action}={field.visible.casefold()}"))
+                continue
+            elif field.key.startswith("tuiFooter."):
+                value = f"{field.key.removeprefix('tuiFooter.')}={value}"
             argv.extend((field.option, value))
         result, output = self._capture(argv)
         if result == 0:
@@ -2496,25 +3034,72 @@ def _help_command_detail(entry: HelpCommand) -> list[str]:
     return lines
 
 
-def _function_bar(width: int) -> str:
-    buttons = [
-        ("F1", "Ayuda"),
-        ("F2", "Info"),
-        ("F3", "Ping"),
-        ("F5", "Actualizar"),
-        ("F7", "Plugin"),
-        ("F9", "Proyectos"),
-        ("F12", "Settings"),
-        ("Ctrl+H", "Comandos"),
-        ("↑↓", "Seleccionar"),
-        ("Enter", "Ejecutar"),
-        ("Esc", "Salir"),
-    ]
+def _function_bar(
+    width: int,
+    visible_actions: list[str] | None = None,
+    key_bindings: dict[str, str | None] | None = None,
+) -> str:
+    bindings = normalize_key_bindings(key_bindings)
+    visible = normalize_footer_actions(visible_actions)
+    labels = {
+        "help": "Ayuda",
+        "info": "Info",
+        "ping": "Ping",
+        "refresh": "Actualizar",
+        "plugins": "Plugin",
+        "projects": "Proyectos",
+        "settings": "Settings",
+        "history": "Comandos",
+        "search": "Buscar",
+        "reload": "Recargar",
+        "edit": "Editar",
+        "groups": "Grupos",
+        "ports": "Puertos",
+        "open": "Abrir",
+        "save": "Guardar",
+        "differences": "Cambios",
+        "copyLine": "Copiar",
+        "copyJson": "JSON",
+        "console": "Consola",
+        "quit": "Cerrar",
+        "deviceHistory": "Historial",
+        "scanSelected": "Escanear",
+        "filterActive": "Activos",
+        "filterDisconnected": "Offline",
+        "filterAll": "Todos",
+        "ssh": "SSH",
+        "terminal": "Terminal",
+        "credentials": "Credenciales",
+        "wakeOnLan": "WOL",
+        "copyIp": "IP",
+        "copyMac": "MAC",
+        "projectStatus": "Proyecto",
+        "select": "Seleccionar",
+        "execute": "Ejecutar",
+        "exit": "Salir",
+    }
+    fixed_keys = {"select": "↑↓", "execute": "Enter", "exit": "Esc"}
+
+    def display_key(value: str) -> str:
+        normalized = value.replace("_", "+")
+        return "Ctrl+" + normalized[5:] if normalized.startswith("CTRL+") else normalized
+
+    buttons = []
+    for action in visible:
+        assigned = fixed_keys.get(action) or bindings[action]
+        if assigned:
+            buttons.append((display_key(assigned), labels[action]))
     compact_labels = {
         "Actualizar": "Act.",
         "Proyectos": "Proy.",
         "Settings": "Config.",
         "Comandos": "Cmd.",
+        "Recargar": "Rec.",
+        "Puertos": "Ports",
+        "Cambios": "Camb.",
+        "Consola": "CLI",
+        "Guardar": "Guard.",
+        "Copiar": "Cop.",
         "Seleccionar": "Selec.",
         "Ejecutar": "Ej.",
     }
@@ -2528,7 +3113,40 @@ def _function_bar(width: int) -> str:
     # y salir permanecen disponibles incluso en terminales estrechas.
     if sum(map(button_width, buttons)) + len(buttons) - 1 > width:
         buttons = [(key, compact_labels.get(label, label)) for key, label in buttons]
-    removable = ("F7", "F9", "Ctrl+H", "F3", "F2", "F12", "F5")
+    removable_actions = (
+        "projectStatus",
+        "copyMac",
+        "copyIp",
+        "wakeOnLan",
+        "credentials",
+        "terminal",
+        "ssh",
+        "filterAll",
+        "filterDisconnected",
+        "filterActive",
+        "scanSelected",
+        "deviceHistory",
+        "console",
+        "differences",
+        "groups",
+        "ports",
+        "open",
+        "edit",
+        "reload",
+        "search",
+        "quit",
+        "copyJson",
+        "copyLine",
+        "save",
+        "plugins",
+        "projects",
+        "history",
+        "ping",
+        "info",
+        "settings",
+        "refresh",
+    )
+    removable = [display_key(bindings[action]) for action in removable_actions if bindings[action]]
     for key in removable:
         if sum(map(button_width, buttons)) + max(0, len(buttons) - 1) <= width:
             break

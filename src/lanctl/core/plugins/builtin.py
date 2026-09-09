@@ -210,6 +210,7 @@ def bootstrap_builtin_plugins(root: Path) -> None:
         "lanctl.discovery.mdns-ssdp.lcp",
         "lanctl.discovery.windows-smb.lcp",
         "lanctl.network.wol.lcp",
+        "lanctl.lab.network-emulator.lcp",
     ):
         _install_builtin_package(root, f"bundled/{package}")
 

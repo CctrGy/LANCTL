@@ -7,7 +7,7 @@ from lanctl.apps.ip.interfaces.tui.render import RichTuiRenderer
 
 
 class RichTuiRendererTests(unittest.TestCase):
-    def test_screen_renderer_uses_full_refresh_and_restores_cursor(self):
+    def test_screen_renderer_overlays_frame_and_restores_cursor(self):
         stream = io.StringIO()
         renderer = RichTuiRenderer(stream)
 
@@ -20,10 +20,28 @@ class RichTuiRendererTests(unittest.TestCase):
         )
 
         output = stream.getvalue()
-        self.assertTrue(output.startswith("\x1b[?25h\x1b[2J\x1b[H"))
+        self.assertTrue(output.startswith("\x1b[?25h\x1b[H"))
+        self.assertNotIn("\x1b[2J", output)
         self.assertIn("LANCTL", output)
         self.assertIn("Inventario", output)
         self.assertTrue(output.endswith("\x1b[2;8H"))
+
+    def test_screen_renderer_clears_only_after_resize(self):
+        stream = io.StringIO()
+        renderer = RichTuiRenderer(stream)
+
+        renderer.render_screen(["primero"], width=40, height=3)
+        first_end = stream.tell()
+        renderer.render_screen(["segundo"], width=40, height=3)
+        second_end = stream.tell()
+        renderer.render_screen(["redimensionado"], width=41, height=3)
+
+        first = stream.getvalue()[:first_end]
+        second = stream.getvalue()[first_end:second_end]
+        resized = stream.getvalue()[second_end:]
+        self.assertNotIn("\x1b[2J", first)
+        self.assertNotIn("\x1b[2J", second)
+        self.assertIn("\x1b[2J\x1b[H", resized)
 
     def test_progress_uses_rich_bar_and_reports_discoveries(self):
         output = RichTuiRenderer.progress_line(
@@ -70,7 +88,7 @@ class RichTuiRendererTests(unittest.TestCase):
         self.assertTrue(output.startswith("\x1b[?25l"))
         self.assertIn("INFO", output)
         self.assertIn("Puerto 22 SSH", output)
-        visible_rows = output.removeprefix("\x1b[?25l\x1b[2J\x1b[H").splitlines()
+        visible_rows = output.removeprefix("\x1b[?25l\x1b[H").splitlines()
         panel_rows = [row for row in visible_rows if "INFO" in row or "Puerto 22 SSH" in row]
         self.assertTrue(panel_rows)
         self.assertTrue(all(Text.from_ansi(row).cell_len == 80 for row in panel_rows))

@@ -6,6 +6,20 @@ de dependencias. Dependabot revisa semanalmente paquetes Python y GitHub
 Actions. Los workflows usan permisos mínimos y la publicación solo obtiene
 `contents: write` dentro del trabajo que crea una release desde un tag.
 
+## Protección del repositorio
+
+Los datos de ejecución, inventarios, proyectos VLF, credenciales, claves SSH,
+logs, bases SQLite y artefactos compilados no forman parte del código fuente y
+están excluidos mediante `.gitignore`. Antes de publicar cambios puede ejecutarse:
+
+```console
+python tools/check_repository_hygiene.py
+```
+
+La integración continua ejecuta la misma comprobación y rechaza rutas locales
+delicadas y firmas de secretos de alta confianza. Esto complementa, pero no
+sustituye, la rotación inmediata de cualquier credencial que llegue a publicarse.
+
 ## Excepción temporal de auditoría
 
 `PYSEC-2026-3552` afecta exclusivamente a las funciones

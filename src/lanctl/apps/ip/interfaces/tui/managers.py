@@ -24,7 +24,8 @@ def plugin_detail(plugin: Any) -> list[str]:
     ]
 
 
-def project_detail(path: Path, active: str) -> list[str]:
+def project_detail(project: Any, active: str) -> list[str]:
+    path = project.path if hasattr(project, "path") else Path(project)
     try:
         from lanctl.core.projects.vlf import inspect_project
 
@@ -61,18 +62,20 @@ def plugin_manager_modal(plugins: list[Any]) -> ModalState:
     )
 
 
-def project_manager_modal(projects: list[Path], active: str, root: Path) -> ModalState:
+def project_manager_modal(projects: list[Any], active: str, root: Path) -> ModalState:
     listing = [
-        f"{'*' if str(path.resolve()).casefold() == str(active).casefold() else ' '} "
-        f"{path.stem:<28} {path}"
-        for path in projects
+        f"{'*' if str(item.path.resolve()).casefold() == str(active).casefold() else ' '} "
+        f"{item.name:<28} "
+        f"{'DOCUMENTOS' if item.in_default_directory else 'EXTERNO':<10} "
+        f"{'DISPONIBLE' if item.available else 'NO DISPONIBLE':<13} {item.path}"
+        for item in projects
     ] or [f"(No hay proyectos en {root})"]
-    details = [project_detail(path, active) for path in projects]
+    details = [project_detail(item, active) for item in projects]
     return ModalState(
         kind="projects",
         title="PROJECT MANAGER",
         tabs=["Proyectos", "Información"],
         pages=[listing, details[0] if details else ["No hay información disponible."]],
         items=projects,
-        footer="↑/↓ seleccionar  → información  Enter activar  Ctrl+R recargar  Esc cerrar",
+        footer="N nuevo  Supr eliminar  ↑/↓ seleccionar  → información  Enter activar  Ctrl+R recargar  Esc cerrar",
     )

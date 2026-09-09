@@ -1,0 +1,10 @@
+{
+  "events": {
+    "LANLAB.Network.Scenario.Created": {"arguments": {"scenario_id": "string", "seed": "integer?"}},
+    "LANLAB.Network.Scenario.Started": {"arguments": {"scenario_id": "string", "seed": "integer?"}},
+    "LANLAB.Network.Scenario.Stopped": {"arguments": {"scenario_id": "string"}},
+    "LANLAB.Network.Scenario.Tick": {"arguments": {"scenario_id": "string", "clock": "float"}},
+    "LANLAB.Network.Device.Changed": {"arguments": {"scenario_id": "string", "device_id": "string", "action": "string"}},
+    "LANLAB.Network.Anomaly.Detected": {"arguments": {"scenario_id": "string", "device_id": "string?", "action": "string"}}
+  }
+}

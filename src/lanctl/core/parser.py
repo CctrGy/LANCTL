@@ -11,6 +11,20 @@ from lanctl.core.console import error as print_error
 from lanctl.core.layout import terminal_columns
 from lanctl.shared.i18n import t
 
+HELP_ARGUMENTS = frozenset({"-h", "--help", "/?"})
+
+
+def normalize_help_arguments(arguments: list[str]) -> list[str]:
+    """Normaliza la ayuda DOS ``/?`` para todos los sistemas y launchers."""
+
+    return ["--help" if argument == "/?" else argument for argument in arguments]
+
+
+def has_help_argument(arguments: list[str]) -> bool:
+    """Indica si la invocación solicita ayuda en cualquiera de sus formas."""
+
+    return any(argument in HELP_ARGUMENTS for argument in arguments)
+
 
 def _color_enabled(stream) -> bool:
     return stream.isatty() and "NO_COLOR" not in os.environ

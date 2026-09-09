@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import argparse
 import sys
 from contextlib import suppress
 
 from lanctl import __version__
 from lanctl.apps.wire.cli.commands import CommandProcessor
 from lanctl.apps.wire.idf.database import DEFAULT_DATABASE_PATH, IDFDatabaseManager
+from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 
 
 def configure_utf8_stdio() -> None:
@@ -20,8 +20,8 @@ def configure_utf8_stdio() -> None:
                 reconfigure(encoding="utf-8", errors="replace")
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+def build_parser() -> LANCTLArgumentParser:
+    parser = LANCTLArgumentParser(
         prog="LANWIRE",
         description="Gestión física, IDF, cableado y topología de la suite LANCTL.",
     )
@@ -47,31 +47,33 @@ def build_parser() -> argparse.ArgumentParser:
     subcommands.add_parser("tui", help="Abre la interfaz de pantalla completa.")
     subcommands.add_parser("cli", help="Abre la consola interactiva.")
     list_command = subcommands.add_parser("list", aliases=["ls"], help="Lista los identificadores.")
-    list_command.add_argument("prefix", nargs="?")
+    list_command.add_argument("prefix", nargs="?", help="Filtra por prefijo IDF.")
     subcommands.add_parser("seed", help="Carga la topología inicial de pruebas.")
     show = subcommands.add_parser("show", help="Muestra un identificador.")
-    show.add_argument("idf")
+    show.add_argument("idf", help="Identificador físico que se desea consultar.")
     add = subcommands.add_parser("add", help="Genera el siguiente IDF.")
-    add.add_argument("prefix")
-    add.add_argument("data", nargs="*", metavar="CLAVE=VALOR")
+    add.add_argument("prefix", help="Prefijo del tipo de elemento físico.")
+    add.add_argument("data", nargs="*", metavar="CLAVE=VALOR", help="Datos iniciales opcionales.")
     reserve = subcommands.add_parser("reserve", help="Reserva un IDF.")
-    reserve.add_argument("idf")
-    reserve.add_argument("data", nargs="*", metavar="CLAVE=VALOR")
+    reserve.add_argument("idf", help="IDF exacto que se desea reservar.")
+    reserve.add_argument(
+        "data", nargs="*", metavar="CLAVE=VALOR", help="Datos iniciales opcionales."
+    )
     delete = subcommands.add_parser("delete", aliases=["del"], help="Elimina un IDF.")
-    delete.add_argument("idf")
+    delete.add_argument("idf", help="IDF que se desea eliminar.")
     prefix = subcommands.add_parser("prefix", help="Gestiona juegos de letras.")
     prefix_commands = prefix.add_subparsers(dest="prefix_action", required=True)
     prefix_commands.add_parser("list", aliases=["ls"], help="Lista las definiciones.")
     prefix_show = prefix_commands.add_parser("show", help="Muestra una definición.")
-    prefix_show.add_argument("letters")
+    prefix_show.add_argument("letters", help="Letras del prefijo.")
     prefix_set = prefix_commands.add_parser("set", help="Crea o actualiza una definición.")
-    prefix_set.add_argument("letters")
-    prefix_set.add_argument("name")
-    prefix_set.add_argument("description", nargs="?", default="")
+    prefix_set.add_argument("letters", help="Letras del prefijo.")
+    prefix_set.add_argument("name", help="Nombre descriptivo del tipo.")
+    prefix_set.add_argument("description", nargs="?", default="", help="Descripción opcional.")
     prefix_delete = prefix_commands.add_parser(
         "delete", aliases=["del"], help="Elimina una definición."
     )
-    prefix_delete.add_argument("letters")
+    prefix_delete.add_argument("letters", help="Letras del prefijo que se desea eliminar.")
     return parser
 
 
@@ -93,7 +95,7 @@ def run_cli(database_path: str) -> int:
             return 0
 
 
-def _command_parts(args: argparse.Namespace) -> list[str]:
+def _command_parts(args) -> list[str]:
     command = (
         "list" if args.command == "ls" else "delete" if args.command == "del" else args.command
     )
@@ -126,7 +128,7 @@ def _command_parts(args: argparse.Namespace) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
-    arguments = ["--help" if value == "/?" else value for value in arguments]
+    arguments = normalize_help_arguments(arguments)
     args = build_parser().parse_args(arguments)
     if args.tui or args.command == "tui" or (not args.cli and args.command is None):
         from lanctl.apps.wire.tui import run_tui

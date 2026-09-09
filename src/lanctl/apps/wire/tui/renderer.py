@@ -13,6 +13,7 @@ from rich.text import Text
 class RichTuiRenderer:
     def __init__(self, stream: TextIO) -> None:
         self.stream = stream
+        self._last_size: tuple[int, int] | None = None
 
     @staticmethod
     def _console(target: TextIO, width: int, height: int | None = None) -> Console:
@@ -58,10 +59,13 @@ class RichTuiRenderer:
         console.print(*lines[:height], sep="\n", end="")
         visible = modal is None and cursor_row is not None and cursor_column is not None
         cursor = f"\x1b[{cursor_row};{cursor_column}H" if visible else ""
+        size = (width, height)
+        repaint = "\x1b[2J\x1b[H" if self._last_size not in (None, size) else "\x1b[H"
         self.stream.write(
-            ("\x1b[?25h" if visible else "\x1b[?25l") + "\x1b[2J\x1b[H" + buffer.getvalue() + cursor
+            ("\x1b[?25h" if visible else "\x1b[?25l") + repaint + buffer.getvalue() + cursor
         )
         self.stream.flush()
+        self._last_size = size
 
     @classmethod
     def _overlay_modal(

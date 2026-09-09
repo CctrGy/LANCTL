@@ -119,6 +119,9 @@ def _automatic_protocol(device) -> str:
 
 def run_open(args: argparse.Namespace) -> int:
     device = DeviceDatabase(args.database).resolve(args.selector)
+    from lanctl.apps.ip.domain.discovery import require_real_target
+
+    require_real_target(device)
     if device.ip in ("", "-"):
         raise ValueError(f"{args.selector} no tiene una IP registrada")
     protocol = _automatic_protocol(device) if args.protocol == "auto" else args.protocol

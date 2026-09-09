@@ -7,7 +7,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from lanctl.apps.ip.interfaces.cli.main import build_parser  # noqa: E402
+from lanctl.apps.access.manager_cli import build_parser as access_parser  # noqa: E402
+from lanctl.apps.ip.interfaces.cli.main import build_parser as ip_parser  # noqa: E402
+from lanctl.apps.rack.cli import build_parser as rack_parser  # noqa: E402
+from lanctl.apps.wire.cli.main import build_parser as wire_parser  # noqa: E402
+from lanctl.bootstrap.lanctl import build_parser as suite_parser  # noqa: E402
+from lanctl.bootstrap.lanmon import build_parser as monitor_parser  # noqa: E402
 
 OUTPUT = ROOT / "docs" / "CLI-REFERENCE.md"
 
@@ -32,9 +37,21 @@ def generate() -> str:
         "Documento generado automáticamente desde los parsers de la aplicación.",
         "No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.",
     ]
-    for path, parser in parser_tree(build_parser()):
-        title = " ".join(path)
-        sections.extend(["", f"## `{title}`", "", "```text", parser.format_help().rstrip(), "```"])
+    roots = (
+        (("LANCTL",), suite_parser(), False),
+        (("LANIP",), ip_parser(program_name="LANIP"), True),
+        (("LANWIRE",), wire_parser(), True),
+        (("LANRACK",), rack_parser(), True),
+        (("LANACCESS",), access_parser(), True),
+        (("LANMON",), monitor_parser(), True),
+    )
+    for path, root, recursive in roots:
+        parsers = parser_tree(root, path) if recursive else ((path, root),)
+        for parser_path, parser in parsers:
+            title = " ".join(parser_path)
+            sections.extend(
+                ["", f"## `{title}`", "", "```text", parser.format_help().rstrip(), "```"]
+            )
     return "\n".join(sections) + "\n"
 
 

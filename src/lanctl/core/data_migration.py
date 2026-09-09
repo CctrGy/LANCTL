@@ -33,8 +33,8 @@ LAYOUT_DIRECTORIES = (
 )
 
 INITIAL_JSON_FILES = {
-    "data/lc/devices.json": [],
-    "data/lc/groups.json": [
+    "data/lc/projects/workspaces/default/database/devices.json": [],
+    "data/lc/projects/workspaces/default/database/groups.json": [
         {
             "name": "BASIC",
             "description": "Elementos basicos de la LAN",
@@ -45,12 +45,12 @@ INITIAL_JSON_FILES = {
     "data/lc/recurrent-elements.json": [],
     "data/lc/plugins.registry": {},
     "data/lc/wol-sequences.json": {"sequences": {}, "runs": {}},
-    "data/lc/monitor-sessions.json": {},
-    "data/lc/monitor-incidents.json": [],
-    "data/lc/monitor-profiles.json": {},
-    "data/lc/monitor-assignments.json": {},
+    "data/lc/projects/workspaces/default/monitoring/sessions.json": {},
+    "data/lc/projects/workspaces/default/monitoring/incidents.json": [],
+    "data/lc/projects/workspaces/default/monitoring/profiles.json": {},
+    "data/lc/projects/workspaces/default/monitoring/assignments.json": {},
     "data/lc/cisco_profiles.json": {},
-    "data/lc/physical/idf.db": {
+    "data/lc/projects/workspaces/default/physical/idf.db": {
         "format": "LANWRE-IDF-DB",
         "version": 1,
         "prefixes": {},
@@ -85,9 +85,9 @@ def ensure_data_layout() -> Path:
 
 def _create_initial_files() -> None:
     """Crea los JSON base atómicamente y nunca sobrescribe datos existentes."""
-    from lanctl.core.config import DEFAULTS
+    from lanctl.core.config import DOCUMENT_DEFAULTS
 
-    initial_files = {application_path("data/lc/.config"): deepcopy(DEFAULTS)}
+    initial_files = {application_path("data/lc/.config"): deepcopy(DOCUMENT_DEFAULTS)}
     initial_files.update(
         (application_path(name), deepcopy(value)) for name, value in INITIAL_JSON_FILES.items()
     )

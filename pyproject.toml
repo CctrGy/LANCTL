@@ -14,12 +14,12 @@ dependencies = [
     "paramiko>=4.0,<5",
     "cryptography>=49.0,<50",
     "pyserial>=3.5,<4",
-    "pywebview>=6.2.1,<7",
     "defusedxml>=0.7.1,<1",
     "rich>=14.1,<15",
 ]
 
 [project.optional-dependencies]
+gui = ["pywebview>=6.2.1,<7"]
 dev = [
     "bandit==1.8.6",
     "coverage==7.10.6",
@@ -35,7 +35,6 @@ als = "lanctl.bootstrap.lanip:main"
 lanwire = "lanctl.bootstrap.lanwire:main"
 lanwre = "lanctl.bootstrap.lanwire:main"
 lanmon = "lanctl.bootstrap.lanmon:main"
-landemo = "lanctl.bootstrap.landemo:main"
 lanrack = "lanctl.bootstrap.lanrack:main"
 lanaccess = "lanctl.bootstrap.lanaccess:main"
 
@@ -47,6 +46,10 @@ include = ["lanctl*"]
 minversion = "8.4"
 testpaths = ["tests"]
 pythonpath = ["src"]
+addopts = "-m 'not legacy_gui'"
+markers = [
+    "legacy_gui: pruebas de la GUI congelada; ejecutar explícitamente con -m legacy_gui",
+]
 
 [tool.ruff]
 target-version = "py310"

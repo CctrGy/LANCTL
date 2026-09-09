@@ -6,9 +6,32 @@ No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.
 ## `LANCTL`
 
 ```text
-Usage: LANCTL [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]
-              [-project ARCHIVO.vlf]
-              COMANDO ...
+Usage: LANCTL [-h] [--version] [--cli] [-tui] LAUNCHER ...
+
+Orquestador raíz de las aplicaciones de la suite LANCTL.
+
+Arguments:
+  LAUNCHER
+    lanip (ip)        Inventario lógico, descubrimiento, IP, MAC y servicios.
+    lanwire (wire)    Cableado, puertos, paneles y topología física.
+    lanrack (rack)    Salas técnicas, racks, unidades U y equipos.
+    lanaccess (access)
+                      Usuarios, credenciales y accesos remotos.
+    lanmon (monitor)  Monitorización, eventos, incidencias e historial.
+
+Options:
+  -h, --help, /?      Show this help and exit.
+  --version           Muestra la versión común de la suite y termina.
+  --cli               Abre la consola principal.
+  -tui, --tui         Abre el TUI principal.
+```
+
+## `LANIP`
+
+```text
+Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]
+             [-project ARCHIVO.vlf]
+             COMANDO ...
 
 Logical control of LAN devices and infrastructure.
 
@@ -40,8 +63,6 @@ Arguments:
     switch                    Planifica comandos Cisco filtrados, remapeados y clasificados.
     group                     Crea, edita y consulta grupos de elementos.
     element                   Edita un elemento identificado por IP, MAC o alias.
-    name                      Edita NAME usando una MAC, IP o alias.
-    alias                     Edita ALIAS usando una MAC, IP o alias actual.
     project (projects)        Crea, actualiza e inspecciona proyectos LANCTL .vlf.
     plugin (plugins, addon, addons)
                               Gestiona complementos unificados LANCTL .lcp.
@@ -52,34 +73,36 @@ Arguments:
     demo                      Genera un recorrido reproducible sin depender de una red real.
     lanwire (wire)            Abre LANWIRE o ejecuta uno de sus comandos sobre la base física
                               compartida.
+    lab                       Gestiona redes LAN simuladas sin tráfico real.
 
 Options:
   -h, --help, /?              Show this help and exit.
   --version                   Muestra la versión y termina.
   --quiet                     Omite la salida correcta; conserva errores.
   --verbose                   Añade diagnóstico de ejecución a stderr.
-  --gui                       Open the LANCTL graphical interface.
+  --gui                       Abre la GUI heredada (solo código fuente y con
+                              LANCTL_ENABLE_LEGACY_GUI=1).
   --cli                       Open the persistent interactive LANCTL terminal.
   -tui [VENTANA], --tui [VENTANA]
                               Open the advanced full-screen terminal interface. Puede abrir
                               directamente PLUGINS, PROJECTS o SETTINGS.
   -project ARCHIVO.vlf, --project ARCHIVO.vlf
-                              Selecciona un proyecto VLF antes de abrir la GUI, el TUI o ejecutar
-                              un comando.
+                              Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un
+                              comando.
 ```
 
-## `LANCTL list`
+## `LANIP list`
 
 ```text
-Usage: LANCTL list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]
-                   [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]
-                   [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]
-                   [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]
-                   [--discovery {icmp,arp,hybrid}]
-                   [--profile {fast,normal,accurate} | --fast | --normal | --accurate]
-                   [--progress | --no-progress] [--show-discovery] [--include-arp-cache]
-                   [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]
-                   [-group GRUPO] [-dhcp]
+Usage: LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]
+                  [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]
+                  [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]
+                  [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]
+                  [--discovery {icmp,arp,hybrid}]
+                  [--profile {fast,normal,accurate} | --fast | --normal | --accurate]
+                  [--progress | --no-progress] [--show-discovery] [--include-arp-cache]
+                  [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]
+                  [-group GRUPO] [-dhcp]
 
 Realiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muestra también los equipos no detectados.
 
@@ -129,10 +152,10 @@ Options:
   -dhcp, --dhcp-only          Muestra solo IP incluidas en el rango DHCP configurado.
 ```
 
-## `LANCTL recurrent`
+## `LANIP recurrent`
 
 ```text
-Usage: LANCTL recurrent [-h] -list [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT]
+Usage: LANIP recurrent [-h] -list [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT]
 
 Muestra identidades recurrentes por MAC. No incluye IP porque puede cambiar en cada LAN.
 
@@ -144,12 +167,12 @@ Options:
   -o OUTPUT, --output OUTPUT  Guarda la salida en un archivo.
 ```
 
-## `LANCTL ping`
+## `LANIP ping`
 
 ```text
-Usage: LANCTL ping [-h] [--method {auto,ping,arp} | --ping | --arp] [--timeout TIMEOUT] [--json]
-                   [--database DATABASE]
-                   selector
+Usage: LANIP ping [-h] [--method {auto,ping,arp} | --ping | --arp] [--timeout TIMEOUT] [--json]
+                  [--database DATABASE]
+                  selector
 
 Diagnostica un único elemento sin modificar la base de datos. PING prueba ICMP; ARP realiza una consulta activa en la LAN; AUTO combina ambos métodos.
 
@@ -166,15 +189,15 @@ Options:
   --database DATABASE       Archivo JSON de elementos.
 ```
 
-## `LANCTL open`
+## `LANIP open`
 
 ```text
-Usage: LANCTL open [-h] [--port PORT] [--path PATH]
-                   [--mode {control,view,file,shutdown,chat,voice,message,telnet}]
-                   [--through THROUGH] [--fullscreen] [--color-depth {24,16,8,4,2,1}]
-                   [--updates UPDATES] [--phonebook PHONEBOOK] [--phonebook-id PHONEBOOK_ID]
-                   [--dry-run] [--database DATABASE] [--store STORE]
-                   selector [{auto,ssh,tr-064,telnet,http,https,ftp,rdp,rtsp,smb,radmin}]
+Usage: LANIP open [-h] [--port PORT] [--path PATH]
+                  [--mode {control,view,file,shutdown,chat,voice,message,telnet}]
+                  [--through THROUGH] [--fullscreen] [--color-depth {24,16,8,4,2,1}]
+                  [--updates UPDATES] [--phonebook PHONEBOOK] [--phonebook-id PHONEBOOK_ID]
+                  [--dry-run] [--database DATABASE] [--store STORE]
+                  selector [{auto,ssh,tr-064,telnet,http,https,ftp,rdp,rtsp,smb,radmin}]
 
 Arguments:
   selector                    IP, MAC o alias del elemento.
@@ -200,23 +223,24 @@ Options:
   --store STORE               Almacén cifrado de credenciales.
 ```
 
-## `LANCTL settings`
+## `LANIP settings`
 
 ```text
-Usage: LANCTL settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]]
-                       [-dhcp-range INICIO-FIN] [-credentials ARCHIVO]
-                       [-discovery {icmp,arp,hybrid}] [--scan-profile {fast,normal,accurate}]
-                       [--progress {on,off}] [--service-identification {on,off}]
-                       [--workers WORKERS] [--timeout TIMEOUT]
-                       [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]
-                       [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]
-                       [--log DIRECTORIO] [--error-log-level 1-59]
-                       [--projects-directory DIRECTORIO] [-save-mode MODO]
-                       [-save-interval MINUTOS] [-log-cleanup {on,off}] [-log-retention-days DÍAS]
-                       [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]
-                       [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]
-                       [--remote-backend {service,user}]
-                       [--remote-forced-view {off,gui,tui,plugins,projects,settings}]
+Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]
+                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]
+                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]
+                      [--service-identification {on,off}] [--workers WORKERS] [--timeout TIMEOUT]
+                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]
+                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]
+                      [--log DIRECTORIO] [--error-log-level 1-59]
+                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]
+                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]
+                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]
+                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]
+                      [--remote-backend {service,user}]
+                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]
+                      [--tui-key ACCIÓN=TECLA] [--tui-footer-buttons ACCIONES]
+                      [--tui-footer-button ACCIÓN=on|off]
 
 Options:
   -h, --help, /?              Show this help and exit.
@@ -268,15 +292,22 @@ Options:
                               Ejecuta el backend como servicio persistente o proceso de usuario.
   --remote-forced-view {off,gui,tui,plugins,projects,settings}
                               Vista predeterminada para root forced-view.
+  --tui-key ACCIÓN=TECLA      Asigna una tecla a una acción del TUI. Puede repetirse.
+  --tui-footer-buttons ACCIONES
+                              Acciones visibles en la barra inferior, separadas por comas; usa all
+                              para todas.
+  --tui-footer-button ACCIÓN=on|off
+                              Muestra u oculta una acción concreta de la barra inferior. Puede
+                              repetirse.
 ```
 
-## `LANCTL call`
+## `LANIP call`
 
 ```text
-Usage: LANCTL call [-h]
-                   [-f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}]
-                   [--json] [--database DATABASE]
-                   selector
+Usage: LANIP call [-h]
+                  [-f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}]
+                  [--json] [--database DATABASE]
+                  selector
 
 Arguments:
   selector                    Alias, IP o MAC del dispositivo.
@@ -289,10 +320,10 @@ Options:
   --database DATABASE         Archivo JSON de elementos.
 ```
 
-## `LANCTL search`
+## `LANIP search`
 
 ```text
-Usage: LANCTL search [-h] [--json] [--database DATABASE] selector
+Usage: LANIP search [-h] [--json] [--database DATABASE] selector
 
 Arguments:
   selector             Alias, nombre, IP o MAC exactos.
@@ -303,12 +334,12 @@ Options:
   --database DATABASE  Archivo JSON de elementos.
 ```
 
-## `LANCTL scan`
+## `LANIP scan`
 
 ```text
-Usage: LANCTL scan [-h] [--ports LISTA] [--all-ports] [--timeout TIMEOUT] [--workers WORKERS]
-                   [--banners] [--identify] [--json] [--database DATABASE]
-                   selector
+Usage: LANIP scan [-h] [--ports LISTA] [--all-ports] [--timeout TIMEOUT] [--workers WORKERS]
+                  [--banners] [--identify] [--json] [--database DATABASE]
+                  selector
 
 Resuelve un elemento por IP, MAC o alias y comprueba identidad, disponibilidad y puertos TCP. No modifica el dispositivo.
 
@@ -327,10 +358,10 @@ Options:
   --database DATABASE  Archivo JSON de elementos.
 ```
 
-## `LANCTL cnf`
+## `LANIP cnf`
 
 ```text
-Usage: LANCTL cnf [-h] [--database DATABASE] selector [value]
+Usage: LANIP cnf [-h] [--database DATABASE] selector [value]
 
 Arguments:
   selector             IP, MAC o alias del elemento.
@@ -342,11 +373,11 @@ Options:
   --database DATABASE  Archivo JSON de elementos.
 ```
 
-## `LANCTL credential`
+## `LANIP credential`
 
 ```text
-Usage: LANCTL credential [-h] [-user USERNAME] [--database DATABASE] [--store STORE]
-                         selector [{set,list,delete}] [protocol]
+Usage: LANIP credential [-h] [-user USERNAME] [--database DATABASE] [--store STORE]
+                        selector [{set,list,delete}] [protocol]
 
 Arguments:
   selector                    IP, MAC o alias del elemento.
@@ -361,10 +392,10 @@ Options:
   --store STORE               Almacén cifrado de credenciales.
 ```
 
-## `LANCTL GATEWAY`
+## `LANIP GATEWAY`
 
 ```text
-Usage: LANCTL GATEWAY [-h] ACCIÓN ...
+Usage: LANIP GATEWAY [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
@@ -375,11 +406,11 @@ Options:
   -h, --help, /?              Show this help and exit.
 ```
 
-## `LANCTL GATEWAY downloadSettings`
+## `LANIP GATEWAY downloadSettings`
 
 ```text
-Usage: LANCTL GATEWAY downloadSettings [-h] [--port PORT] [--timeout TIMEOUT]
-                                       [--database DATABASE] [--store STORE]
+Usage: LANIP GATEWAY downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--database DATABASE]
+                                      [--store STORE]
 
 Options:
   -h, --help, /?       Show this help and exit.
@@ -389,12 +420,12 @@ Options:
   --store STORE        Almacén cifrado de credenciales.
 ```
 
-## `LANCTL downloadSettings`
+## `LANIP downloadSettings`
 
 ```text
-Usage: LANCTL downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--database DATABASE]
-                               [--store STORE]
-                               [gateway]
+Usage: LANIP downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--database DATABASE]
+                              [--store STORE]
+                              [gateway]
 
 Arguments:
   gateway              IP, MAC o alias del router.
@@ -407,13 +438,13 @@ Options:
   --store STORE        Almacén cifrado de credenciales.
 ```
 
-## `LANCTL protocol`
+## `LANIP protocol`
 
 ```text
-Usage: LANCTL protocol [-h] [--port PORT] [--driver DRIVER] [--host-key HOST_KEY] [--kex KEX]
-                       [--profile {ssh_legacy_cisco_s300,ssh_esp32_rack_monitor}]
-                       [--database DATABASE]
-                       selector {show,configure} protocol
+Usage: LANIP protocol [-h] [--port PORT] [--driver DRIVER] [--host-key HOST_KEY] [--kex KEX]
+                      [--profile {ssh_legacy_cisco_s300,ssh_esp32_rack_monitor}]
+                      [--database DATABASE]
+                      selector {show,configure} protocol
 
 Arguments:
   selector                    IP, MAC o alias.
@@ -431,11 +462,11 @@ Options:
   --database DATABASE         Archivo JSON de elementos.
 ```
 
-## `LANCTL ssh`
+## `LANIP ssh`
 
 ```text
-Usage: LANCTL ssh [-h] [--database DATABASE] [--store STORE] [--host HOST]
-                  selector {probe,fingerprint,trust,open,show} [COMANDO ...]
+Usage: LANIP ssh [-h] [--database DATABASE] [--store STORE] [--host HOST]
+                 selector {probe,fingerprint,trust,open,show} [COMANDO ...]
 
 Arguments:
   selector                    IP, MAC o alias.
@@ -450,14 +481,14 @@ Options:
   --host HOST                 IP candidata para probe/fingerprint, sin modificar la base de datos.
 ```
 
-## `LANCTL radmin`
+## `LANIP radmin`
 
 ```text
-Usage: LANCTL radmin [-h] [--mode {control,view,file,shutdown,chat,voice,message,telnet}]
-                     [--port PORT] [--executable EXECUTABLE] [--through THROUGH] [--fullscreen]
-                     [--color-depth {24,16,8,4,2,1}] [--updates UPDATES] [--phonebook PHONEBOOK]
-                     [--phonebook-id PHONEBOOK_ID] [--database DATABASE] [--store STORE]
-                     selector {probe,configure,open}
+Usage: LANIP radmin [-h] [--mode {control,view,file,shutdown,chat,voice,message,telnet}]
+                    [--port PORT] [--executable EXECUTABLE] [--through THROUGH] [--fullscreen]
+                    [--color-depth {24,16,8,4,2,1}] [--updates UPDATES] [--phonebook PHONEBOOK]
+                    [--phonebook-id PHONEBOOK_ID] [--database DATABASE] [--store STORE]
+                    selector {probe,configure,open}
 
 Arguments:
   selector                    IP, MAC o alias del elemento.
@@ -481,20 +512,20 @@ Options:
   --store STORE               Opción de configuración de Radmin Viewer.
 ```
 
-## `LANCTL wol`
+## `LANIP wol`
 
 ```text
-Usage: LANCTL wol [-h] [-if CONDICIÓN] [--if-all CONDICIÓN] [--if-any CONDICIÓN]
-                  [--if-not CONDICIÓN] [-t SCHEDULE] [--message MESSAGE] [--force] [--cancel]
-                  [--broadcast BROADCAST] [--port PORT] [--repeat REPEAT] [--interval INTERVAL]
-                  [--wait WAIT] [--method {auto,arp,ping,port}] [--check-port CHECK_PORT]
-                  [--interface INTERFACE] [--retry RETRY] [--dry-run] [--json] [--quiet]
-                  [--group GROUP] [--all] [--yes] [--after AFTER] [--delay DELAY]
-                  [--timeout TIMEOUT] [--on-failure {stop,continue,retry}] [--cooldown COOLDOWN]
-                  [--max-attempts MAX_ATTEMPTS] [--power-transport {ssh,disabled}]
-                  [--power-platform {windows,linux}] [--power-command ACCIÓN=COMANDO]
-                  [--database DATABASE] [--store STORE] [--sequences SEQUENCES]
-                  [words ...]
+Usage: LANIP wol [-h] [-if CONDICIÓN] [--if-all CONDICIÓN] [--if-any CONDICIÓN]
+                 [--if-not CONDICIÓN] [-t SCHEDULE] [--message MESSAGE] [--force] [--cancel]
+                 [--broadcast BROADCAST] [--port PORT] [--repeat REPEAT] [--interval INTERVAL]
+                 [--wait WAIT] [--method {auto,arp,ping,port}] [--check-port CHECK_PORT]
+                 [--interface INTERFACE] [--retry RETRY] [--dry-run] [--json] [--quiet]
+                 [--group GROUP] [--all] [--yes] [--after AFTER] [--delay DELAY]
+                 [--timeout TIMEOUT] [--on-failure {stop,continue,retry}] [--cooldown COOLDOWN]
+                 [--max-attempts MAX_ATTEMPTS] [--power-transport {ssh,disabled}]
+                 [--power-platform {windows,linux}] [--power-command ACCIÓN=COMANDO]
+                 [--database DATABASE] [--store STORE] [--sequences SEQUENCES]
+                 [words ...]
 
 Arguments:
   words                       NAME [wakeup|status|shutdown|restart|sleep|hibernate|configure] o
@@ -547,13 +578,13 @@ Options:
   --sequences SEQUENCES       Archivo transaccional de secuencias.
 ```
 
-## `LANCTL history`
+## `LANIP history`
 
 ```text
-Usage: LANCTL history [-h] [--all] [--commands] [--today] [--from FECHA] [--to FECHA]
-                      [--type TYPES] [--source SOURCE] [--result RESULT] [--errors]
-                      [--search SEARCH] [--limit LIMIT] [--reverse] [--format {table,json,csv}]
-                      [selector]
+Usage: LANIP history [-h] [--all] [--commands] [--today] [--from FECHA] [--to FECHA]
+                     [--type TYPES] [--source SOURCE] [--result RESULT] [--errors]
+                     [--search SEARCH] [--limit LIMIT] [--reverse] [--format {table,json,csv}]
+                     [selector]
 
 Arguments:
   selector                   DeviceId, alias, nombre, MAC, IP actual o histórica.
@@ -575,21 +606,21 @@ Options:
   --format {table,json,csv}  Formato de salida.
 ```
 
-## `LANCTL monitor`
+## `LANIP monitor`
 
 ```text
-Usage: LANCTL monitor [-h] [--project PROJECT] [--permanent] [--duration DURATION]
-                      [--mode {permanent,temporary,diagnostic,once}]
-                      [--authority {observe,operate,administer}] [--json] [--yes]
-                      [--interval INTERVAL] [--every EVERY] [--group GROUP]
-                      [--type {presence,services,ports,identity,smb,full}] [--fast] [--unknown]
-                      [--follow] [--sessions SESSIONS] [--incidents-store INCIDENTS_STORE]
-                      [--lock LOCK] [--monitor-db MONITOR_DB] [--profiles PROFILES]
-                      [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]
-                      [--priority {low,normal,high,critical}] [--check CHECK]
-                      [--presence PRESENCE] [--discovery DISCOVERY] [--services SERVICES]
-                      [--deep DEEP] [--workers WORKERS] [--timeout TIMEOUT]
-                      [words ...]
+Usage: LANIP monitor [-h] [--project PROJECT] [--permanent] [--duration DURATION]
+                     [--mode {permanent,temporary,diagnostic,once}]
+                     [--authority {observe,operate,administer}] [--json] [--yes]
+                     [--interval INTERVAL] [--every EVERY] [--group GROUP]
+                     [--type {presence,services,ports,identity,smb,full}] [--fast] [--unknown]
+                     [--follow] [--sessions SESSIONS] [--incidents-store INCIDENTS_STORE]
+                     [--lock LOCK] [--monitor-db MONITOR_DB] [--profiles PROFILES]
+                     [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]
+                     [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]
+                     [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP]
+                     [--workers WORKERS] [--timeout TIMEOUT]
+                     [words ...]
 
 Arguments:
   words                       attach, detach, status, once, session, incidents, incident, service
@@ -634,15 +665,15 @@ Options:
   --timeout TIMEOUT           Timeout del perfil.
 ```
 
-## `LANCTL access`
+## `LANIP access`
 
 ```text
-Usage: LANCTL access [-h] [--bind BIND] [--cidr CIDR] [--port PORT] [--password-auth {on,off}]
-                     [--role ROLE] [--ssh-key SSH_KEY] [--expires EXPIRES]
-                     [--permission PERMISSION] [--certificate CERTIFICATE]
-                     [--private-key PRIVATE_KEY] [--common-name COMMON_NAME] [--yes] [--json]
-                     [--scope {user,service}] [--config CONFIG] [--users USERS]
-                     [words ...]
+Usage: LANIP access [-h] [--bind BIND] [--cidr CIDR] [--port PORT] [--password-auth {on,off}]
+                    [--role ROLE] [--ssh-key SSH_KEY] [--expires EXPIRES]
+                    [--permission PERMISSION] [--certificate CERTIFICATE]
+                    [--private-key PRIVATE_KEY] [--common-name COMMON_NAME] [--yes] [--json]
+                    [--scope {user,service}] [--config CONFIG] [--users USERS]
+                    [words ...]
 
 Arguments:
   words                      init, status, enable, disable, configure, user, role, session, web o
@@ -668,13 +699,13 @@ Options:
   --users USERS              Almacén de usuarios remotos.
 ```
 
-## `LANCTL smb`
+## `LANIP smb`
 
 ```text
-Usage: LANCTL smb [-h] [--network] [--group GROUP] [--timeout TIMEOUT] [--workers WORKERS]
-                  [--anonymous] [--include-system] [--dry-run] [--yes] [--json]
-                  [--database DATABASE] [--store STORE] [--storage STORAGE]
-                  [name] [action] [resource] [{open,queue,connect}]
+Usage: LANIP smb [-h] [--network] [--group GROUP] [--timeout TIMEOUT] [--workers WORKERS]
+                 [--anonymous] [--include-system] [--dry-run] [--yes] [--json]
+                 [--database DATABASE] [--store STORE] [--storage STORAGE]
+                 [name] [action] [resource] [{open,queue,connect}]
 
 Arguments:
   name                  Servidor/dispositivo (sin acción equivale a info).
@@ -699,11 +730,10 @@ Options:
   --storage STORAGE     Directorio de observaciones de plugins.
 ```
 
-## `LANCTL terminal`
+## `LANIP terminal`
 
 ```text
-Usage: LANCTL terminal [-h] [-p PROTOCOL] [--native] [--database DATABASE] [--store STORE]
-                       selector
+Usage: LANIP terminal [-h] [-p PROTOCOL] [--native] [--database DATABASE] [--store STORE] selector
 
 Arguments:
   selector                    IP, MAC o alias del elemento.
@@ -717,12 +747,12 @@ Options:
   --store STORE               Almacén cifrado de credenciales.
 ```
 
-## `LANCTL switch`
+## `LANIP switch`
 
 ```text
-Usage: LANCTL switch [-h] [--profile PROFILE] [--profiles PROFILES] [--database DATABASE]
-                     [--dry-run] [--yes]
-                     selector ...
+Usage: LANIP switch [-h] [--profile PROFILE] [--profiles PROFILES] [--database DATABASE]
+                    [--dry-run] [--yes]
+                    selector ...
 
 Comandos Cisco gestionados:
   show COMANDO
@@ -752,13 +782,13 @@ Options:
   --yes                Confirma cambios sin preguntar.
 ```
 
-## `LANCTL group`
+## `LANIP group`
 
 ```text
-Usage: LANCTL group [-h]
-                    [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENTO | -remove ELEMENTO | -list]
-                    [--database DATABASE] [--groups GROUPS]
-                    [name]
+Usage: LANIP group [-h]
+                   [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENTO | -remove ELEMENTO | -list]
+                   [--database DATABASE] [--groups GROUPS]
+                   [name]
 
 Arguments:
   name                 Nombre del grupo.
@@ -776,15 +806,16 @@ Options:
   --groups GROUPS      Archivo JSON de grupos.
 ```
 
-## `LANCTL element`
+## `LANIP element`
 
 ```text
-Usage: LANCTL element [-h] [-add MAC] [-name NEW_NAME] [-alias NEW_ALIAS]
-                      [-description NEW_DESCRIPTION] [--database DATABASE] [--groups GROUPS]
-                      [--yes]
-                      [selector]
-                      [{edit,cnf,name,description,alias,group,protocol,delete,del,remove}]
-                      [values ...]
+Usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-alias NEW_ALIAS]
+                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-group NEW_GROUP]
+                     [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE] [--groups GROUPS]
+                     [--yes]
+                     [selector]
+                     [{edit,cnf,name,description,alias,group,protocol,delete,del,remove}]
+                     [values ...]
 
 Arguments:
   selector                    IP, MAC o alias.
@@ -795,51 +826,28 @@ Arguments:
 Options:
   -h, --help, /?              Show this help and exit.
   -add MAC                    Añade un elemento nuevo utilizando su dirección MAC.
-  -name NEW_NAME              Nombre inicial opcional.
-  -alias NEW_ALIAS            Alias inicial opcional.
-  -description NEW_DESCRIPTION
-                              Descripción inicial opcional (máximo 42 caracteres).
+  -name NEW_NAME, --name NEW_NAME
+                              Asigna NAME al elemento indicado.
+  -alias NEW_ALIAS, --alias NEW_ALIAS
+                              Asigna ALIAS al elemento indicado.
+  -description NEW_DESCRIPTION, --description NEW_DESCRIPTION
+                              Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).
+  -cnf NEW_CNF, --cnf NEW_CNF
+                              Asigna el estado CNF.
+  -group NEW_GROUP, --group NEW_GROUP
+                              Añade el elemento al grupo.
+  -protocol NEW_PROTOCOL, --protocol NEW_PROTOCOL
+                              Activa un protocolo.
+  -delete, --delete           Elimina completamente el elemento indicado.
   --database DATABASE         Archivo JSON de elementos.
   --groups GROUPS             Archivo JSON de grupos.
   --yes                       Elimina sin solicitar confirmación.
 ```
 
-## `LANCTL name`
+## `LANIP project`
 
 ```text
-Usage: LANCTL name [-h] [-def] [-del] [--database DATABASE] selector [value]
-
-Arguments:
-  selector             MAC, IP o alias del dispositivo.
-  value                Nuevo valor.
-
-Options:
-  -h, --help, /?       Show this help and exit.
-  -def                 Restaura el valor predeterminado.
-  -del                 Deja el valor en blanco.
-  --database DATABASE  Base de datos JSON.
-```
-
-## `LANCTL alias`
-
-```text
-Usage: LANCTL alias [-h] [-def] [-del] [--database DATABASE] selector [value]
-
-Arguments:
-  selector             MAC, IP o alias del dispositivo.
-  value                Nuevo valor.
-
-Options:
-  -h, --help, /?       Show this help and exit.
-  -def                 Restaura el valor predeterminado.
-  -del                 Deja el valor en blanco.
-  --database DATABASE  Base de datos JSON.
-```
-
-## `LANCTL project`
-
-```text
-Usage: LANCTL project [-h] ACCIÓN ...
+Usage: LANIP project [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
@@ -856,23 +864,23 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL project status`
+## `LANIP project status`
 
 ```text
-Usage: LANCTL project status [-h] [--json]
+Usage: LANIP project status [-h] [--json]
 
 Options:
   -h, --help, /?  Show this help and exit.
   --json          Devuelve JSON.
 ```
 
-## `LANCTL project create`
+## `LANIP project create`
 
 ```text
-Usage: LANCTL project create [-h] [--name NAME] [--description DESCRIPTION] [--author AUTHOR]
-                             [--lan-name LAN_NAME] [--location LOCATION] [--company COMPANY]
-                             [--responsible RESPONSIBLE] [--force]
-                             file
+Usage: LANIP project create [-h] [--name NAME] [--description DESCRIPTION] [--author AUTHOR]
+                            [--lan-name LAN_NAME] [--location LOCATION] [--company COMPANY]
+                            [--responsible RESPONSIBLE] [--force]
+                            file
 
 Arguments:
   file                       Archivo de salida; se añade .vlf si falta.
@@ -889,10 +897,10 @@ Options:
   --force                    Sobrescribe un VLF existente.
 ```
 
-## `LANCTL project update`
+## `LANIP project update`
 
 ```text
-Usage: LANCTL project update [-h] file
+Usage: LANIP project update [-h] file
 
 Arguments:
   file            Proyecto VLF existente.
@@ -901,19 +909,19 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL project save`
+## `LANIP project save`
 
 ```text
-Usage: LANCTL project save [-h]
+Usage: LANIP project save [-h]
 
 Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL project info`
+## `LANIP project info`
 
 ```text
-Usage: LANCTL project info [-h] [--json] file
+Usage: LANIP project info [-h] [--json] file
 
 Arguments:
   file            Proyecto VLF.
@@ -923,10 +931,10 @@ Options:
   --json          Devuelve JSON.
 ```
 
-## `LANCTL project verify`
+## `LANIP project verify`
 
 ```text
-Usage: LANCTL project verify [-h] [--json] file
+Usage: LANIP project verify [-h] [--json] file
 
 Arguments:
   file            Proyecto VLF.
@@ -936,10 +944,10 @@ Options:
   --json          Devuelve JSON.
 ```
 
-## `LANCTL project use`
+## `LANIP project use`
 
 ```text
-Usage: LANCTL project use [-h] file
+Usage: LANIP project use [-h] file
 
 Arguments:
   file            Proyecto VLF existente.
@@ -948,10 +956,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL project list`
+## `LANIP project list`
 
 ```text
-Usage: LANCTL project list [-h] file
+Usage: LANIP project list [-h] file
 
 Arguments:
   file            Proyecto VLF.
@@ -960,10 +968,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin`
+## `LANIP plugin`
 
 ```text
-Usage: LANCTL plugin [-h] ACCIÓN ...
+Usage: LANIP plugin [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
@@ -986,28 +994,28 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin list`
+## `LANIP plugin list`
 
 ```text
-Usage: LANCTL plugin list [-h]
+Usage: LANIP plugin list [-h]
 
 Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin catalog`
+## `LANIP plugin catalog`
 
 ```text
-Usage: LANCTL plugin catalog [-h]
+Usage: LANIP plugin catalog [-h]
 
 Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin info`
+## `LANIP plugin info`
 
 ```text
-Usage: LANCTL plugin info [-h] plugin_id
+Usage: LANIP plugin info [-h] plugin_id
 
 Arguments:
   plugin_id       Identificador estable del complemento.
@@ -1016,10 +1024,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin install`
+## `LANIP plugin install`
 
 ```text
-Usage: LANCTL plugin install [-h] file
+Usage: LANIP plugin install [-h] file
 
 Arguments:
   file            Archivo de paquete con extensión .lcp.
@@ -1028,10 +1036,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin enable`
+## `LANIP plugin enable`
 
 ```text
-Usage: LANCTL plugin enable [-h] [--grant [PERMISO ...]] [--grant-all] [--trust] plugin_id
+Usage: LANIP plugin enable [-h] [--grant [PERMISO ...]] [--grant-all] [--trust] plugin_id
 
 Arguments:
   plugin_id              Identificador del complemento instalado.
@@ -1043,10 +1051,10 @@ Options:
   --trust                Autoriza código trusted dentro del proceso.
 ```
 
-## `LANCTL plugin disable`
+## `LANIP plugin disable`
 
 ```text
-Usage: LANCTL plugin disable [-h] plugin_id
+Usage: LANIP plugin disable [-h] plugin_id
 
 Arguments:
   plugin_id       Identificador del complemento instalado.
@@ -1055,10 +1063,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin reload`
+## `LANIP plugin reload`
 
 ```text
-Usage: LANCTL plugin reload [-h] plugin_id
+Usage: LANIP plugin reload [-h] plugin_id
 
 Arguments:
   plugin_id       Identificador del complemento instalado.
@@ -1067,10 +1075,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin uninstall`
+## `LANIP plugin uninstall`
 
 ```text
-Usage: LANCTL plugin uninstall [-h] plugin_id
+Usage: LANIP plugin uninstall [-h] plugin_id
 
 Arguments:
   plugin_id       Identificador del complemento instalado.
@@ -1079,10 +1087,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin verify`
+## `LANIP plugin verify`
 
 ```text
-Usage: LANCTL plugin verify [-h] target
+Usage: LANIP plugin verify [-h] target
 
 Arguments:
   target          Identificador instalado o ruta de un archivo .lcp.
@@ -1091,10 +1099,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin permissions`
+## `LANIP plugin permissions`
 
 ```text
-Usage: LANCTL plugin permissions [-h] plugin_id
+Usage: LANIP plugin permissions [-h] plugin_id
 
 Arguments:
   plugin_id       Identificador del complemento instalado.
@@ -1103,10 +1111,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin revoke`
+## `LANIP plugin revoke`
 
 ```text
-Usage: LANCTL plugin revoke [-h] plugin_id [PERMISO ...]
+Usage: LANIP plugin revoke [-h] plugin_id [PERMISO ...]
 
 Arguments:
   plugin_id       Identificador del complemento instalado.
@@ -1116,10 +1124,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin publisher`
+## `LANIP plugin publisher`
 
 ```text
-Usage: LANCTL plugin publisher [-h] ACCIÓN ...
+Usage: LANIP plugin publisher [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
@@ -1131,19 +1139,19 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin publisher list`
+## `LANIP plugin publisher list`
 
 ```text
-Usage: LANCTL plugin publisher list [-h]
+Usage: LANIP plugin publisher list [-h]
 
 Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin publisher trust`
+## `LANIP plugin publisher trust`
 
 ```text
-Usage: LANCTL plugin publisher trust [-h] [--name NAME] file
+Usage: LANIP plugin publisher trust [-h] [--name NAME] file
 
 Arguments:
   file            Paquete .lcp firmado y verificado.
@@ -1153,10 +1161,10 @@ Options:
   --name NAME     Nombre descriptivo del editor.
 ```
 
-## `LANCTL plugin publisher revoke`
+## `LANIP plugin publisher revoke`
 
 ```text
-Usage: LANCTL plugin publisher revoke [-h] fingerprint
+Usage: LANIP plugin publisher revoke [-h] fingerprint
 
 Arguments:
   fingerprint     Huella SHA-256 Ed25519 completa.
@@ -1165,20 +1173,20 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL plugin extensions`
+## `LANIP plugin extensions`
 
 ```text
-Usage: LANCTL plugin extensions [-h] [--type TYPE]
+Usage: LANIP plugin extensions [-h] [--type TYPE]
 
 Options:
   -h, --help, /?  Show this help and exit.
   --type TYPE     Filtra por tipo de extensión unificada.
 ```
 
-## `LANCTL plugin pack`
+## `LANIP plugin pack`
 
 ```text
-Usage: LANCTL plugin pack [-h] [--force] [--signing-key SIGNING_KEY] directory output
+Usage: LANIP plugin pack [-h] [--force] [--signing-key SIGNING_KEY] directory output
 
 Arguments:
   directory                  Directorio fuente que contiene plugin.info.
@@ -1190,10 +1198,10 @@ Options:
   --signing-key SIGNING_KEY  Clave privada Ed25519 PEM para firmar el LCP.
 ```
 
-## `LANCTL language`
+## `LANIP language`
 
 ```text
-Usage: LANCTL language [-h] ACTION ...
+Usage: LANIP language [-h] ACTION ...
 
 Arguments:
   ACTION
@@ -1208,19 +1216,19 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL language list`
+## `LANIP language list`
 
 ```text
-Usage: LANCTL language list [-h]
+Usage: LANIP language list [-h]
 
 Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL language use`
+## `LANIP language use`
 
 ```text
-Usage: LANCTL language use [-h] language
+Usage: LANIP language use [-h] language
 
 Arguments:
   language        Language code or name, for example en or Español.
@@ -1229,10 +1237,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL language info`
+## `LANIP language info`
 
 ```text
-Usage: LANCTL language info [-h] [language]
+Usage: LANIP language info [-h] [language]
 
 Arguments:
   language        Language code or name; active language by default.
@@ -1241,10 +1249,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL language install`
+## `LANIP language install`
 
 ```text
-Usage: LANCTL language install [-h] file
+Usage: LANIP language install [-h] file
 
 Arguments:
   file            Language catalog with .lang extension.
@@ -1253,10 +1261,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL language validate`
+## `LANIP language validate`
 
 ```text
-Usage: LANCTL language validate [-h] file
+Usage: LANIP language validate [-h] file
 
 Arguments:
   file            Language catalog with .lang extension.
@@ -1265,10 +1273,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL language export`
+## `LANIP language export`
 
 ```text
-Usage: LANCTL language export [-h] file
+Usage: LANIP language export [-h] file
 
 Arguments:
   file            Destination .lang file.
@@ -1277,10 +1285,10 @@ Options:
   -h, --help, /?  Show this help and exit.
 ```
 
-## `LANCTL error`
+## `LANIP error`
 
 ```text
-Usage: LANCTL error [-h] [--json] 0eXXXXXXXX
+Usage: LANIP error [-h] [--json] 0eXXXXXXXX
 
 Arguments:
   0eXXXXXXXX      Identificador estable del error.
@@ -1290,12 +1298,12 @@ Options:
   --json          Emite el resultado como JSON.
 ```
 
-## `LANCTL database`
+## `LANIP database`
 
 ```text
-Usage: LANCTL database [-h]
-                       (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip | --import ARCHIVO.zip | --restore ARCHIVO.bak)
-                       [--target {database,groups,physical}] [--yes] [--json]
+Usage: LANIP database [-h]
+                      (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip | --import ARCHIVO.zip | --restore ARCHIVO.bak)
+                      [--target {database,groups,physical}] [--yes] [--json]
 
 Options:
   -h, --help, /?              Show this help and exit.
@@ -1310,10 +1318,10 @@ Options:
   --json                      Emite el diagnóstico como JSON.
 ```
 
-## `LANCTL demo`
+## `LANIP demo`
 
 ```text
-Usage: LANCTL demo [-h] [--output DIRECTORIO] [--force] [--format {json,html,all}]
+Usage: LANIP demo [-h] [--output DIRECTORIO] [--force] [--format {json,html,all}]
 
 Crea inventario, proyecto VLF, evidencias, monitorización y un informe de demostración aislados de los datos del usuario.
 
@@ -1324,10 +1332,10 @@ Options:
   --format {json,html,all}  Formato del informe exportado.
 ```
 
-## `LANCTL lanwire`
+## `LANIP lanwire`
 
 ```text
-Usage: LANCTL lanwire [-h] [--new-window] [--version] [--database ARCHIVO.db] [-tui | --cli] ...
+Usage: LANIP lanwire [-h] [--new-window] [--version] [--database ARCHIVO.db] [-tui | --cli] ...
 
 Arguments:
   ARGUMENTO              Argumentos enviados a LANWIRE, por ejemplo: list.
@@ -1340,4 +1348,560 @@ Options:
   --database ARCHIVO.db  Selecciona una base física IDF alternativa.
   -tui, --tui            Abre la interfaz TUI de LANWIRE.
   --cli                  Abre la consola interactiva de LANWIRE.
+```
+
+## `LANIP lab`
+
+```text
+Usage: LANIP lab [-h] ACCIÓN ...
+
+Arguments:
+  ACCIÓN
+    generate      Genera un escenario reproducible.
+    list          Lista escenarios.
+    status        Muestra el escenario activo.
+    stop          Desactiva el proveedor simulado.
+    start         Activa explícitamente un escenario virtual.
+    validate      Valida un escenario.
+    export        Exporta un escenario.
+    import        Importa un escenario JSON.
+    network       Crea manualmente una red virtual.
+    device        Edita dispositivos simulados.
+    evolve        Avanza el reloj y aplica eventos pendientes.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab generate`
+
+```text
+Usage: LANIP lab generate [-h] [--name NAME] [--cidr CIDR]
+                          [--profile {home,office,datacenter,industrial,chaotic}]
+                          [--devices DEVICES] [--seed SEED] [--active-percent ACTIVE_PERCENT]
+                          [--dhcp-percent DHCP_PERCENT] [--type {snapshot,timeline,chaos}]
+
+Options:
+  -h, --help, /?              Show this help and exit.
+  --name NAME                 Nombre del escenario.
+  --cidr CIDR                 Red IPv4 virtual.
+  --profile {home,office,datacenter,industrial,chaotic}
+                              Perfil de dispositivos.
+  --devices DEVICES           Cantidad de dispositivos.
+  --seed SEED                 Semilla reproducible.
+  --active-percent ACTIVE_PERCENT
+                              Porcentaje activo.
+  --dhcp-percent DHCP_PERCENT
+                              Porcentaje DHCP.
+  --type {snapshot,timeline,chaos}
+                              Evolución del escenario.
+```
+
+## `LANIP lab list`
+
+```text
+Usage: LANIP lab list [-h]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab status`
+
+```text
+Usage: LANIP lab status [-h]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab stop`
+
+```text
+Usage: LANIP lab stop [-h]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab start`
+
+```text
+Usage: LANIP lab start [-h] scenario
+
+Arguments:
+  scenario        Nombre del escenario.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab validate`
+
+```text
+Usage: LANIP lab validate [-h] scenario
+
+Arguments:
+  scenario        Nombre del escenario.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab export`
+
+```text
+Usage: LANIP lab export [-h] [--format {json,csv}] [--output OUTPUT] scenario
+
+Arguments:
+  scenario             Nombre del escenario.
+
+Options:
+  -h, --help, /?       Show this help and exit.
+  --format {json,csv}  Formato de salida.
+  --output OUTPUT      Archivo de destino; stdout si se omite.
+```
+
+## `LANIP lab import`
+
+```text
+Usage: LANIP lab import [-h] file
+
+Arguments:
+  file            Archivo JSON.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab network`
+
+```text
+Usage: LANIP lab network [-h] {create} ...
+
+Arguments:
+  {create}
+    create        Crea un escenario vacío.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab network create`
+
+```text
+Usage: LANIP lab network create [-h] --name NAME [--cidr CIDR]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+  --name NAME     Nombre del escenario.
+  --cidr CIDR     CIDR virtual.
+```
+
+## `LANIP lab device`
+
+```text
+Usage: LANIP lab device [-h] {add,delete} ...
+
+Arguments:
+  {add,delete}
+    add           Añade un dispositivo.
+    delete        Elimina un dispositivo.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab device add`
+
+```text
+Usage: LANIP lab device add [-h] --ip IP --mac MAC [--alias ALIAS] [--name NAME] [--inactive]
+                            scenario
+
+Arguments:
+  scenario        Escenario.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+  --ip IP         IPv4 simulada.
+  --mac MAC       MAC simulada.
+  --alias ALIAS   Alias.
+  --name NAME     Nombre.
+  --inactive      Lo crea inactivo.
+```
+
+## `LANIP lab device delete`
+
+```text
+Usage: LANIP lab device delete [-h] scenario device
+
+Arguments:
+  scenario        Escenario.
+  device          ID, IP, MAC o alias.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANIP lab evolve`
+
+```text
+Usage: LANIP lab evolve [-h] --seconds SECONDS
+
+Options:
+  -h, --help, /?     Show this help and exit.
+  --seconds SECONDS  Segundos virtuales.
+```
+
+## `LANWIRE`
+
+```text
+Usage: LANWIRE [-h] [--version] [--database ARCHIVO.db] [-tui | --cli] COMANDO ...
+
+Gestión física, IDF, cableado y topología de la suite LANCTL.
+
+Arguments:
+  COMANDO
+    tui                  Abre la interfaz de pantalla completa.
+    cli                  Abre la consola interactiva.
+    list (ls)            Lista los identificadores.
+    seed                 Carga la topología inicial de pruebas.
+    show                 Muestra un identificador.
+    add                  Genera el siguiente IDF.
+    reserve              Reserva un IDF.
+    delete (del)         Elimina un IDF.
+    prefix               Gestiona juegos de letras.
+
+Options:
+  -h, --help, /?         Show this help and exit.
+  --version              Muestra la versión común de la suite y termina.
+  --database ARCHIVO.db  Base física IDF; por defecto usa physical/idf.db en la raíz compartida.
+  -tui, --tui            Abre la interfaz de pantalla completa.
+  --cli                  Abre la consola interactiva de LANWIRE.
+```
+
+## `LANWIRE tui`
+
+```text
+Usage: LANWIRE tui [-h]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE cli`
+
+```text
+Usage: LANWIRE cli [-h]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE list`
+
+```text
+Usage: LANWIRE list [-h] [prefix]
+
+Arguments:
+  prefix          Filtra por prefijo IDF.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE seed`
+
+```text
+Usage: LANWIRE seed [-h]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE show`
+
+```text
+Usage: LANWIRE show [-h] idf
+
+Arguments:
+  idf             Identificador físico que se desea consultar.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE add`
+
+```text
+Usage: LANWIRE add [-h] prefix [CLAVE=VALOR ...]
+
+Arguments:
+  prefix          Prefijo del tipo de elemento físico.
+  CLAVE=VALOR     Datos iniciales opcionales.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE reserve`
+
+```text
+Usage: LANWIRE reserve [-h] idf [CLAVE=VALOR ...]
+
+Arguments:
+  idf             IDF exacto que se desea reservar.
+  CLAVE=VALOR     Datos iniciales opcionales.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE delete`
+
+```text
+Usage: LANWIRE delete [-h] idf
+
+Arguments:
+  idf             IDF que se desea eliminar.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE prefix`
+
+```text
+Usage: LANWIRE prefix [-h] {list,ls,show,set,delete,del} ...
+
+Arguments:
+  {list,ls,show,set,delete,del}
+    list (ls)                 Lista las definiciones.
+    show                      Muestra una definición.
+    set                       Crea o actualiza una definición.
+    delete (del)              Elimina una definición.
+
+Options:
+  -h, --help, /?              Show this help and exit.
+```
+
+## `LANWIRE prefix list`
+
+```text
+Usage: LANWIRE prefix list [-h]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE prefix show`
+
+```text
+Usage: LANWIRE prefix show [-h] letters
+
+Arguments:
+  letters         Letras del prefijo.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE prefix set`
+
+```text
+Usage: LANWIRE prefix set [-h] letters name [description]
+
+Arguments:
+  letters         Letras del prefijo.
+  name            Nombre descriptivo del tipo.
+  description     Descripción opcional.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANWIRE prefix delete`
+
+```text
+Usage: LANWIRE prefix delete [-h] letters
+
+Arguments:
+  letters         Letras del prefijo que se desea eliminar.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANRACK`
+
+```text
+Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [-tui | --cli] {list,ls,show} ...
+
+Visualiza racks y sus equipos.
+
+Arguments:
+  {list,ls,show}
+    list (ls)            Lista los racks disponibles.
+    show                 Muestra un rack y sus ocupantes.
+
+Options:
+  -h, --help, /?         Show this help and exit.
+  --version              Muestra la versión común de la suite y termina.
+  --database ARCHIVO.db  Base física IDF compartida.
+  -tui, --tui            Abre la interfaz de pantalla completa.
+  --cli                  Abre la consola interactiva.
+```
+
+## `LANRACK list`
+
+```text
+Usage: LANRACK list [-h]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANRACK show`
+
+```text
+Usage: LANRACK show [-h] rack
+
+Arguments:
+  rack            ID o nombre del rack.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANACCESS`
+
+```text
+Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE] [-tui | --cli]
+                 {list,ls,show,set,delete,del} ...
+
+Gestiona credenciales cifradas del entorno LANCTL.
+
+Arguments:
+  {list,ls,show,set,delete,del}
+    list (ls)                 Lista metadatos; nunca secretos.
+    show                      Muestra metadatos de una credencial.
+    set                       Crea o actualiza una credencial.
+    delete (del)              Elimina una credencial.
+
+Options:
+  -h, --help, /?              Show this help and exit.
+  --version                   Muestra la versión común de la suite y termina.
+  --database DATABASE         Base de elementos LANCTL.
+  --store STORE               Almacén cifrado de credenciales.
+  -tui, --tui                 Abre la interfaz de pantalla completa.
+  --cli                       Abre la consola interactiva.
+```
+
+## `LANACCESS list`
+
+```text
+Usage: LANACCESS list [-h]
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANACCESS show`
+
+```text
+Usage: LANACCESS show [-h] credential_id
+
+Arguments:
+  credential_id   Identificador de la credencial.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANACCESS set`
+
+```text
+Usage: LANACCESS set [-h] --username USERNAME element protocol
+
+Arguments:
+  element                     IP, MAC, alias o ID del dispositivo.
+  protocol                    Protocolo asociado, por ejemplo ssh.
+
+Options:
+  -h, --help, /?              Show this help and exit.
+  --username USERNAME, -user USERNAME
+                              Usuario remoto.
+```
+
+## `LANACCESS delete`
+
+```text
+Usage: LANACCESS delete [-h] credential_id
+
+Arguments:
+  credential_id   Identificador de la credencial.
+
+Options:
+  -h, --help, /?  Show this help and exit.
+```
+
+## `LANMON`
+
+```text
+Usage: LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DURATION]
+              [--mode {permanent,temporary,diagnostic,once}]
+              [--authority {observe,operate,administer}] [--json] [--yes] [--interval INTERVAL]
+              [--every EVERY] [--group GROUP] [--type {presence,services,ports,identity,smb,full}]
+              [--fast] [--unknown] [--follow] [--sessions SESSIONS]
+              [--incidents-store INCIDENTS_STORE] [--lock LOCK] [--monitor-db MONITOR_DB]
+              [--profiles PROFILES] [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]
+              [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]
+              [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]
+              [--timeout TIMEOUT]
+              [words ...]
+
+Monitorización, eventos e incidencias de la suite LANCTL.
+
+Arguments:
+  words                       attach, detach, status, once, session, incidents, incident, service
+                              o foreground.
+
+Options:
+  -h, --help, /?              Show this help and exit.
+  --version                   Muestra la versión común de la suite y termina.
+  --project PROJECT           Opción operativa del monitor.
+  --permanent                 Opción operativa del monitor.
+  --duration DURATION         Opción operativa del monitor.
+  --mode {permanent,temporary,diagnostic,once}
+                              Opción operativa del monitor.
+  --authority {observe,operate,administer}
+                              Opción operativa del monitor.
+  --json                      Opción operativa del monitor.
+  --yes                       Opción operativa del monitor.
+  --interval INTERVAL         Opción operativa del monitor.
+  --every EVERY               Opción operativa del monitor.
+  --group GROUP               Opción operativa del monitor.
+  --type {presence,services,ports,identity,smb,full}
+                              Opción operativa del monitor.
+  --fast                      Opción operativa del monitor.
+  --unknown                   Opción operativa del monitor.
+  --follow                    Opción operativa del monitor.
+  --sessions SESSIONS         Estado runtime de sesiones.
+  --incidents-store INCIDENTS_STORE
+                              Estado runtime de incidencias.
+  --lock LOCK                 Lock singleton del monitor.
+  --monitor-db MONITOR_DB     Repositorio SQLite del monitor.
+  --profiles PROFILES         Perfiles personalizados.
+  --assignments-store ASSIGNMENTS_STORE
+                              Asignaciones persistentes.
+  --profile PROFILE           Perfil monitor.
+  --priority {low,normal,high,critical}
+                              Prioridad de asignación.
+  --check CHECK               Check ping, arp o port:NN.
+  --presence PRESENCE         Intervalo de presencia.
+  --discovery DISCOVERY       Intervalo de descubrimiento.
+  --services SERVICES         Intervalo de servicios.
+  --deep DEEP                 Intervalo profundo.
+  --workers WORKERS           Workers del perfil.
+  --timeout TIMEOUT           Timeout del perfil.
 ```

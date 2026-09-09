@@ -142,6 +142,14 @@ def forced_view(view: str) -> dict:
     normalized = view.casefold()
     if normalized not in VIEWS:
         raise ValueError("vista no válida: gui, tui, plugins, projects o settings")
+    if normalized == "gui":
+        from lanctl.apps.ip.interfaces.cli.main import legacy_gui_enabled
+
+        if not legacy_gui_enabled():
+            raise RuntimeError(
+                "la GUI está congelada; usa tui o habilita LANCTL_ENABLE_LEGACY_GUI=1 "
+                "en un entorno de desarrollo"
+            )
     current = interface_status()
     if current["running"] and (current.get("mode") == "tui" or normalized == current.get("mode")):
         return enqueue("view", normalized)

@@ -2,26 +2,47 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import sys
+from contextlib import suppress
 
 from lanctl import __version__
 from lanctl.apps.rack.service import RackService
 from lanctl.apps.wire.idf.database import DEFAULT_DATABASE_PATH
+from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="LANRACK", description="Visualiza racks y sus equipos.")
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
-    parser.add_argument("--database", default=DEFAULT_DATABASE_PATH, metavar="ARCHIVO.db")
+def configure_utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            with suppress(AttributeError, OSError, ValueError):
+                reconfigure(encoding="utf-8", errors="replace")
+
+
+def build_parser() -> LANCTLArgumentParser:
+    parser = LANCTLArgumentParser(prog="LANRACK", description="Visualiza racks y sus equipos.")
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Muestra la versión común de la suite y termina.",
+    )
+    parser.add_argument(
+        "--database",
+        default=DEFAULT_DATABASE_PATH,
+        metavar="ARCHIVO.db",
+        help="Base física IDF compartida.",
+    )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("-tui", "--tui", action="store_true")
-    mode.add_argument("--cli", action="store_true")
+    mode.add_argument(
+        "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
+    )
+    mode.add_argument("--cli", action="store_true", help="Abre la consola interactiva.")
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("list", aliases=["ls"], help="Lista los racks disponibles.")
     show = commands.add_parser("show", help="Muestra un rack y sus ocupantes.")
-    show.add_argument("rack")
+    show.add_argument("rack", help="ID o nombre del rack.")
     return parser
 
 
@@ -33,8 +54,9 @@ def _print_rack(rack: dict) -> None:
 
 
 def run_tui(service: RackService) -> int:
+    print("\x1b[2J\x1b[H", end="")
     while True:
-        print("\x1b[2J\x1b[H", end="")
+        print("\x1b[H", end="")
         print(f"LANRACK TUI {__version__}\n")
         racks = service.list()
         if not racks:
@@ -44,7 +66,7 @@ def run_tui(service: RackService) -> int:
                 f"[{index}] {rack['id']:<10} {rack['name']:<24} {rack['units']:>2}U  {len(rack['occupants'])} elementos"
             )
         try:
-            choice = input("\nNúmero/ID del rack, R para refrescar o Q para salir: ").strip()
+            choice = input("\nNúmero/ID del rack, R para refrescar o Q para salir: \x1b[J").strip()
         except (EOFError, KeyboardInterrupt):
             return 0
         if choice.casefold() in {"q", "quit", "exit"}:
@@ -57,15 +79,17 @@ def run_tui(service: RackService) -> int:
             else choice
         )
         try:
-            print("\x1b[2J\x1b[H", end="")
+            print("\x1b[H", end="")
             _print_rack(service.get(identifier))
         except ValueError as error:
             print(f"Error: {error}")
-        input("\nPulsa Intro para volver…")
+        input("\nPulsa Intro para volver…\x1b[J")
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(sys.argv[1:] if argv is None else argv)
+    configure_utf8_stdio()
+    arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
+    args = build_parser().parse_args(arguments)
     service = RackService(args.database)
     if args.tui or (not args.cli and args.command is None):
         return run_tui(service)

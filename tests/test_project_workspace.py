@@ -4,7 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from lanctl.apps.ip.interfaces.gui.main import GuiApi
+import pytest
+
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.projects.vlf import create_project
 from lanctl.core.projects.workspace import (
@@ -94,7 +95,10 @@ class ProjectWorkspaceTests(unittest.TestCase):
         self.assertEqual(settings["networkDatabase"], str(self.devices))
         self.assertEqual(settings["networkGroups"], str(self.groups))
 
+    @pytest.mark.legacy_gui
     def test_gui_returns_the_inventory_of_each_selected_project(self):
+        from lanctl.apps.ip.interfaces.gui.main import GuiApi
+
         first = self._create_project("casa.vlf", "CASA", "31")
         second = self._create_project("taller.vlf", "TALLER", "32")
         settings = dict(self.config)

@@ -45,6 +45,9 @@ def register_ssh_command(commands: argparse._SubParsersAction) -> None:
 
 def run_ssh(args: argparse.Namespace) -> int:
     device = DeviceDatabase(args.database).resolve(args.selector)
+    from lanctl.apps.ip.domain.discovery import require_real_target
+
+    require_real_target(device)
     if "ssh" not in device.protocols:
         raise ValueError(f"{device.alias or device.ip} no tiene SSH configurado")
     profile = SshProfile.from_options(device.protocol_options.get("ssh", {}))

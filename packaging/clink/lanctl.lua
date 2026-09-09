@@ -119,7 +119,10 @@ local settings = clink.argmatcher()
         "--remote-port" .. history_value("Puerto SSH"),
         "--remote-password-auth" .. on_off,
         "--remote-backend" .. values({ "service", "user" }),
-        "--remote-forced-view" .. values({ "off", "gui", "tui", "plugins", "projects", "settings" })
+        "--remote-forced-view" .. values({ "off", "gui", "tui", "plugins", "projects", "settings" }),
+        "--tui-key" .. history_value("ACCIÓN=TECLA"),
+        "--tui-footer-buttons" .. history_value("ACCIONES"),
+        "--tui-footer-button" .. history_value("ACCIÓN=on|off")
     }):nofiles()
 
 local call = clink.argmatcher()
@@ -151,9 +154,13 @@ local element = clink.argmatcher()
     :addarg({ fromhistory = true, hint = "Valor" })
     :addflags({
         "-h", "--help", "/?", "-add" .. history_value("MAC"),
-        "-name" .. history_value("Nombre"), "-alias" .. history_value("Alias"),
-        "-description" .. history_value("Descripción"),
-        "--database" .. file_arg, "--groups" .. file_arg, "--yes"
+        "-name" .. history_value("Nombre"), "--name" .. history_value("Nombre"),
+        "-alias" .. history_value("Alias"), "--alias" .. history_value("Alias"),
+        "-description" .. history_value("Descripción"), "--description" .. history_value("Descripción"),
+        "-cnf" .. cnf_states, "--cnf" .. cnf_states,
+        "-group" .. history_value("Grupo"), "--group" .. history_value("Grupo"),
+        "-protocol" .. protocols, "--protocol" .. protocols,
+        "-delete", "--delete", "--database" .. file_arg, "--groups" .. file_arg, "--yes"
     }):loop(3)
 
 local group = clink.argmatcher()
@@ -190,12 +197,6 @@ local protocol = clink.argmatcher()
 local simple_selector = clink.argmatcher()
     :addarg({ fromhistory = true, hint = "IP, MAC o alias" })
     :addflags({ "-h", "--help", "/?", "--database" .. file_arg }):nofiles()
-
-local name_alias = clink.argmatcher()
-    :addarg({ fromhistory = true, hint = "IP, MAC o alias" })
-    :addarg({ fromhistory = true, hint = "Nuevo valor" })
-    :addflags({ "-h", "--help", "/?", "-def", "-del", "--database" .. file_arg })
-    :nofiles()
 
 local terminal = clink.argmatcher()
     :addarg({ fromhistory = true, hint = "IP, MAC o alias" })
@@ -411,14 +412,21 @@ local demo = clink.argmatcher()
         "--format" .. values({ "json", "html", "all" })
     })
 
+local lab = clink.argmatcher()
+    :addarg({ "generate", "network", "device", "list", "validate", "start", "stop", "status", "evolve", "export", "import" })
+    :addflags({
+        "-h", "--help", "/?", "--name", "--cidr", "--profile", "--devices", "--seed",
+        "--active-percent", "--dhcp-percent", "--type", "--ip", "--mac", "--alias",
+        "--inactive", "--seconds", "--format", "--output"
+    }):loop()
+
 local root_commands = {
     "list" .. list, "recurrent" .. recurrent, "ping" .. ping,
     "open" .. open, "connect" .. open,
     "settings" .. settings, "call" .. call, "search" .. search, "scan" .. scan,
     "element" .. element, "group" .. group, "credential" .. credential,
     "credentials" .. credential, "auth" .. credential, "protocol" .. protocol,
-    "switch" .. switch, "name" .. name_alias, "alias" .. name_alias,
-    "cnf" .. simple_selector, "ssh" .. ssh,
+    "switch" .. switch, "cnf" .. simple_selector, "ssh" .. ssh,
     "radmin" .. radmin, "wol" .. wol, "history" .. history,
     "monitor" .. monitor, "smb" .. smb, "access" .. access,
     "terminal" .. terminal, "cli" .. terminal,
@@ -431,7 +439,7 @@ local root_commands = {
     "language" .. language, "languages" .. language, "lang" .. language,
     "error" .. error_lookup, "errors" .. error_lookup,
     "database" .. database, "db" .. database, "demo" .. demo,
-    "lanwire" .. lanwire, "wire" .. lanwire
+    "lanwire" .. lanwire, "wire" .. lanwire, "lab" .. lab
 }
 
 clink.argmatcher("lanctl", "lanctl.exe", "als", "als.exe")

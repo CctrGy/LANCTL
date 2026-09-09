@@ -2,7 +2,7 @@
 
 LANWIRE es el gestor de infraestructura física complementario de LANCTL. En
 Windows se distribuye como `lanwire.exe` en el mismo directorio que
-`LANCTL.exe` y `LANCTL-GUI.exe`.
+`LANCTL.exe`. La GUI heredada no forma parte de la distribución.
 
 ## Ejecución
 

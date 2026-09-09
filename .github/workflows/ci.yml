@@ -52,6 +52,8 @@ jobs:
         run: python tools/generate_cli_reference.py --check
       - name: Source security
         run: python -m bandit -q -r src -ll
+      - name: Repository hygiene and secret guard
+        run: python tools/check_repository_hygiene.py
       - name: Dependency vulnerabilities
         # Véase docs/SECURITY.md: una API inaccesible de cryptography y la
         # compatibilidad RSA/SHA-1 desactivada en Paramiko son excepciones

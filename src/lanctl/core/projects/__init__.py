@@ -3,6 +3,8 @@
 from importlib import import_module
 
 _EXPORTS = {
+    "ProjectCatalog": ("lanctl.core.projects.catalog", "ProjectCatalog"),
+    "ProjectCatalogEntry": ("lanctl.core.projects.catalog", "ProjectCatalogEntry"),
     "VLF_FORMAT_VERSION": ("lanctl.core.projects.vlf", "VLF_FORMAT_VERSION"),
     "ProjectWorkspace": ("lanctl.core.projects.workspace", "ProjectWorkspace"),
     "activate_project_workspace": ("lanctl.core.projects.workspace", "activate_project_workspace"),

@@ -1,0 +1,8 @@
+{
+  "LANLAB.Network.Scenario.Created": "LANLAB_Network_Scenario_Created",
+  "LANLAB.Network.Scenario.Started": "LANLAB_Network_Scenario_Started",
+  "LANLAB.Network.Scenario.Stopped": "LANLAB_Network_Scenario_Stopped",
+  "LANLAB.Network.Scenario.Tick": "LANLAB_Network_Scenario_Tick",
+  "LANLAB.Network.Device.Changed": "LANLAB_Network_Device_Changed",
+  "LANLAB.Network.Anomaly.Detected": "LANLAB_Network_Anomaly_Detected"
+}

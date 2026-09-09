@@ -6,7 +6,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
+junit.xml
 tmp/
 .venv/
 venv/
@@ -15,8 +18,15 @@ venv/
 build/
 dist/
 packaging/windows/*.exe
+*.exe
+*.msi
+*.msix
+*.dll
 *.egg-info/
 *.spec.bak
+LANCTL-*.zip
+LANCTL-*.tar.gz
+SHA256SUMS*
 
 # Local application data, credentials and logs
 data/lc/
@@ -26,17 +36,37 @@ src/data/lc/
 data/als/
 *.log
 *.credentials
+*.credentials.*
+
+# Bases de datos y estado de ejecución (también fuera de data/lc)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.lock
+*.pid
+*.sock
 
 # Proyectos, inventarios y copias locales potencialmente sensibles
 *.vlf
 *.vlf.bak
 *.vlf.old
 *.lgn
-*.sqlite
-*.sqlite3
 secrets/
 .secrets/
 credentials/
+device-credentials.dat
+users.dc
+host_key
+host_key.*
+known_hosts
+authorized_keys
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
 
 # Variables de entorno y material criptográfico privado
 .env
@@ -47,6 +77,14 @@ credentials/
 *.pfx
 *.p12
 *.jks
+*.csr
+
+# Copias y archivos temporales de editores o transacciones
+*.bak
+*.old
+*.tmp
+*.temp
+*~
 
 # Configuración local del firmware; conservar solo plantillas *.example.*
 RackFimeware2/platformio.local.ini
@@ -64,3 +102,6 @@ RackFimeware2/include/SshHostKey.h
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Recursos locales para grabar vídeos promocionales
+/.record/

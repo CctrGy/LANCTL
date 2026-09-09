@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import os
 import sys
 import time
 from contextlib import redirect_stdout, suppress
@@ -42,8 +43,6 @@ _COMMAND_REGISTRARS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("lanctl.apps.ip.interfaces.cli.commands.switch", ("register_switch_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.group", ("register_group_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.element", ("register_element_command",)),
-    ("lanctl.apps.ip.interfaces.cli.commands.name", ("register_name_command",)),
-    ("lanctl.apps.ip.interfaces.cli.commands.alias", ("register_alias_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.project", ("register_project_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.plugin", ("register_plugin_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.language", ("register_language_command",)),
@@ -51,8 +50,16 @@ _COMMAND_REGISTRARS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("lanctl.apps.ip.interfaces.cli.commands.database", ("register_database_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.demo", ("register_demo_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.lanwire", ("register_lanwire_command",)),
+    ("lanctl.apps.ip.interfaces.cli.commands.lab", ("register_lab_command",)),
 )
 _MAIN_DEPTH: ContextVar[int] = ContextVar("lanctl_main_depth", default=0)
+_LEGACY_GUI_ENV = "LANCTL_ENABLE_LEGACY_GUI"
+
+
+def legacy_gui_enabled() -> bool:
+    """Permite ejecutar la GUI congelada solo desde una instalación de desarrollo."""
+
+    return os.environ.get(_LEGACY_GUI_ENV, "").strip().casefold() in {"1", "true", "yes", "on"}
 
 
 def configure_utf8_stdio() -> None:
@@ -95,12 +102,14 @@ def print_error(message: str) -> None:
     error(message)
 
 
-def build_parser(include_plugin_commands: bool = False) -> argparse.ArgumentParser:
+def build_parser(
+    include_plugin_commands: bool = False, *, program_name: str = "LANCTL"
+) -> argparse.ArgumentParser:
     from lanctl.core.parser import LANCTLArgumentParser
     from lanctl.shared.i18n import t
 
     parser = LANCTLArgumentParser(
-        prog="LANCTL",
+        prog=program_name,
         description=t("LANCTL.CORE.APP.DESCRIPTION"),
     )
     parser.add_argument(
@@ -120,7 +129,7 @@ def build_parser(include_plugin_commands: bool = False) -> argparse.ArgumentPars
     parser.add_argument(
         "--gui",
         action="store_true",
-        help=t("LANCTL.CORE.APP.GUI_RESERVED"),
+        help=(f"Abre la GUI heredada (solo código fuente y con {_LEGACY_GUI_ENV}=1)."),
     )
     parser.add_argument(
         "--cli",
@@ -146,21 +155,27 @@ def build_parser(include_plugin_commands: bool = False) -> argparse.ArgumentPars
         "--project",
         dest="startup_project",
         metavar="ARCHIVO.vlf",
-        help=("Selecciona un proyecto VLF antes de abrir la GUI, el TUI o ejecutar un comando."),
+        help=("Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un comando."),
     )
     commands = parser.add_subparsers(dest="command", metavar="COMANDO")
     register_commands(commands, include_plugin_commands)
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
+    from lanctl.core.parser import has_help_argument, normalize_help_arguments
+
+    help_requested = has_help_argument(arguments)
+    arguments = normalize_help_arguments(arguments)
     if arguments == ["--version"]:
         print(f"LANCTL {__version__}")
         raise SystemExit(0)
-    if any(value in arguments for value in ("-h", "--help", "/?")):
-        return build_parser(include_plugin_commands=False).parse_args(arguments)
+    if help_requested:
+        return build_parser(include_plugin_commands=False, program_name=program_name).parse_args(
+            arguments
+        )
     depth = _MAIN_DEPTH.get()
     depth_token = _MAIN_DEPTH.set(depth + 1)
     autosave_scheduler = None
@@ -180,7 +195,7 @@ def main(argv: list[str] | None = None) -> int:
         manager = get_plugin_manager()
         plugins_active = not load_plugin_safe_mode() and manager.activate_enabled()
         write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
-        parser = build_parser(include_plugin_commands=True)
+        parser = build_parser(include_plugin_commands=True, program_name=program_name)
         args = parser.parse_args(arguments)
         if plugins_active:
             mode = (
@@ -189,7 +204,9 @@ def main(argv: list[str] | None = None) -> int:
                 else "cli"
                 if args.cli
                 else "gui"
-                if args.gui or not args.command
+                if args.gui
+                else "tui"
+                if not args.command
                 else "command"
             )
             manager.events.emit(
@@ -212,14 +229,20 @@ def main(argv: list[str] | None = None) -> int:
             from lanctl.core.projects.save_policy import start_autosave_scheduler
 
             autosave_scheduler = start_autosave_scheduler()
-        if args.gui or (not args.command and not args.tui and not args.cli):
+        if args.gui:
+            if not legacy_gui_enabled():
+                print_error(
+                    "La GUI está congelada y no forma parte de la distribución. "
+                    f"En desarrollo puede habilitarse con {_LEGACY_GUI_ENV}=1."
+                )
+                return 2
             from lanctl.apps.ip.interfaces.gui.main import run_gui
 
             return run_gui()
-        if args.tui:
+        if args.tui or (not args.command and not args.cli):
             from lanctl.apps.ip.interfaces.tui.main import run_tui
 
-            return run_tui(None if args.tui == "inventory" else args.tui)
+            return run_tui(None if args.tui in (None, "inventory") else args.tui)
         if args.cli:
             return run_global_cli()
         result = _run_handler(args)

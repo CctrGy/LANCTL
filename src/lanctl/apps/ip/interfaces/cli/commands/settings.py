@@ -6,6 +6,13 @@ import json
 
 from lanctl.apps.ip.infrastructure.services.lan_scanner import SCAN_ORDERS
 from lanctl.apps.ip.infrastructure.services.scan_profiles import SCAN_PROFILES
+from lanctl.apps.ip.interfaces.tui.keyboard import (
+    CONFIGURABLE_TUI_KEYS,
+    FOOTER_ACTIONS,
+    normalize_footer_actions,
+    normalize_key_bindings,
+    validate_key_bindings,
+)
 from lanctl.core.config import (
     CONFIG_PATH,
     load_config,
@@ -147,6 +154,23 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         choices=("off", "gui", "tui", "plugins", "projects", "settings"),
         help="Vista predeterminada para root forced-view.",
     )
+    command.add_argument(
+        "--tui-key",
+        action="append",
+        metavar="ACCIÓN=TECLA",
+        help="Asigna una tecla a una acción del TUI. Puede repetirse.",
+    )
+    command.add_argument(
+        "--tui-footer-buttons",
+        metavar="ACCIONES",
+        help="Acciones visibles en la barra inferior, separadas por comas; usa all para todas.",
+    )
+    command.add_argument(
+        "--tui-footer-button",
+        action="append",
+        metavar="ACCIÓN=on|off",
+        help="Muestra u oculta una acción concreta de la barra inferior. Puede repetirse.",
+    )
     command.set_defaults(handler=run_settings)
 
 
@@ -182,6 +206,9 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.remote_password_auth is None
         and args.remote_backend is None
         and args.remote_forced_view is None
+        and args.tui_key is None
+        and args.tui_footer_buttons is None
+        and args.tui_footer_button is None
     ):
         print(json.dumps(config, indent=2, ensure_ascii=False))
         print(f"\nArchivo: {CONFIG_PATH.resolve()}")
@@ -323,6 +350,62 @@ def run_settings(args: argparse.Namespace) -> int:
         changes.append(
             "Remote Access: " + ("activado" if config["remoteAccessEnabled"] else "desactivado")
         )
+
+    if args.tui_key:
+        bindings = normalize_key_bindings(config.get("tuiKeyBindings"))
+        valid_actions = {action.casefold(): action for action in bindings}
+        for assignment in args.tui_key:
+            action_text, separator, key_text = assignment.partition("=")
+            action = valid_actions.get(action_text.strip().casefold())
+            key = key_text.strip().upper().replace("+", "_")
+            if not separator or not action:
+                valid = ", ".join(bindings)
+                raise ValueError(f"tui-key debe usar ACCIÓN=TECLA; acciones: {valid}")
+            if key in {"NONE", "NULL", "OFF", "-"}:
+                bindings[action] = None
+                continue
+            if key not in CONFIGURABLE_TUI_KEYS:
+                valid = ", ".join(item.replace("_", "+") for item in CONFIGURABLE_TUI_KEYS)
+                raise ValueError(f"tecla TUI no válida: {key_text}. Opciones: None, {valid}")
+            bindings[action] = key
+        config["tuiKeyBindings"] = validate_key_bindings(bindings)
+        changes.append("Atajos TUI actualizados")
+
+    if args.tui_footer_buttons is not None:
+        requested = [part.strip() for part in args.tui_footer_buttons.split(",")]
+        invalid = [
+            part
+            for part in requested
+            if part
+            and part.casefold() != "all"
+            and part.casefold() not in {x.casefold() for x in FOOTER_ACTIONS}
+        ]
+        if invalid:
+            raise ValueError(
+                f"acciones de barra TUI no válidas: {', '.join(invalid)}; "
+                f"opciones: {', '.join(FOOTER_ACTIONS)}"
+            )
+        config["tuiFooterButtons"] = normalize_footer_actions(requested)
+        changes.append("Botones visibles del TUI actualizados")
+
+    if args.tui_footer_button:
+        visible = normalize_footer_actions(config.get("tuiFooterButtons"))
+        valid_actions = {action.casefold(): action for action in FOOTER_ACTIONS}
+        for assignment in args.tui_footer_button:
+            action_text, separator, state_text = assignment.partition("=")
+            action = valid_actions.get(action_text.strip().casefold())
+            state = state_text.strip().casefold()
+            if not separator or not action or state not in {"on", "off"}:
+                raise ValueError(
+                    "tui-footer-button debe usar ACCIÓN=on|off; "
+                    f"acciones: {', '.join(FOOTER_ACTIONS)}"
+                )
+            if state == "on" and action not in visible:
+                visible.append(action)
+            elif state == "off" and action in visible:
+                visible.remove(action)
+        config["tuiFooterButtons"] = [action for action in FOOTER_ACTIONS if action in visible]
+        changes.append("Visibilidad de botones del TUI actualizada")
 
     path = save_config(config)
     if remote_changed:

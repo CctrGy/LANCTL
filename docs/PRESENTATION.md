@@ -12,7 +12,7 @@ lanctl demo --output .\LANCTL-demo --format all --force
 En la distribución instalada se puede usar directamente el ejecutable dedicado:
 
 ```powershell
-landemo.exe --output .\LANCTL-demo --format all --force
+lanip.exe demo --output .\LANCTL-demo --format all --force
 ```
 
 `lanmon.exe` abre directamente las funciones de monitorización; sin argumentos

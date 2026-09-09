@@ -1,6 +1,8 @@
 import contextlib
 import io
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -11,6 +13,7 @@ from lanctl.apps.ip.interfaces.cli.commands.modes import (
     run_global_cli,
 )
 from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.core.database import DeviceDatabase
 
 
 class LanctlModeTests(unittest.TestCase):
@@ -46,7 +49,7 @@ class LanctlModeTests(unittest.TestCase):
         self.assertTrue(args.gui)
         self.assertIsNone(args.command)
 
-    def test_project_option_activates_the_vlf_before_opening_the_gui(self):
+    def test_project_option_activates_the_vlf_before_opening_the_default_tui(self):
         from pathlib import Path
 
         from lanctl.apps.ip.interfaces.cli.main import main
@@ -71,17 +74,35 @@ class LanctlModeTests(unittest.TestCase):
                 "lanctl.core.projects.activate_project_workspace",
                 return_value=workspace,
             ) as activate,
-            patch("lanctl.apps.ip.interfaces.gui.main.run_gui", return_value=0) as gui,
+            patch("lanctl.apps.ip.interfaces.tui.main.run_tui", return_value=0) as tui,
         ):
             result = main(["--project", project_path])
 
         self.assertEqual(result, 0)
         activate.assert_called_once_with(project_path)
-        gui.assert_called_once_with()
+        tui.assert_called_once_with(None)
         manager_factory.return_value.events.emit.assert_called_with(
             "LANCTL.Project.File.Open",
             {"path": str(Path(project_path)), "project_id": "project-casa"},
         )
+
+    def test_gui_is_disabled_without_the_legacy_development_switch(self):
+        from lanctl.apps.ip.interfaces.cli.main import main
+
+        with (
+            patch.dict("os.environ", {"LANCTL_ENABLE_LEGACY_GUI": ""}),
+            patch("lanctl.apps.ip.interfaces.cli.main.configure_utf8_stdio"),
+            patch("lanctl.core.data_migration.ensure_data_layout"),
+            patch("lanctl.apps.ip.interfaces.cli.main.run_automatic_log_cleanup"),
+            patch("lanctl.shared.i18n.initialize_language"),
+            patch("lanctl.shared.assets.icons.initialize_icons"),
+            patch("lanctl.apps.ip.interfaces.cli.main.load_plugin_safe_mode", return_value=True),
+            patch("lanctl.core.plugins.get_plugin_manager"),
+            patch("lanctl.apps.ip.interfaces.cli.main.write_log"),
+            patch("lanctl.apps.ip.interfaces.cli.main.print_error") as output,
+        ):
+            self.assertEqual(main(["--gui"]), 2)
+        self.assertIn("congelada", output.call_args.args[0])
 
     def test_cli_flag_is_registered_without_a_scope(self):
         args = build_parser().parse_args(["--cli"])
@@ -191,6 +212,40 @@ class LanctlModeTests(unittest.TestCase):
         args = build_parser().parse_args(["element", "10:20:30:40:50:60", "delete", "--yes"])
         self.assertEqual(args.action, "delete")
         self.assertTrue(args.yes)
+
+    def test_name_and_alias_are_only_available_below_element(self):
+        parser = build_parser()
+        for removed in ("name", "alias"):
+            with self.assertRaises(SystemExit):
+                parser.parse_args([removed, "NAS", "valor"])
+
+    def test_element_option_edits_explicit_device_name_and_alias(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database_path = str(Path(temporary) / "devices.json")
+            groups_path = str(Path(temporary) / "groups.json")
+            database = DeviceDatabase(database_path)
+            database.add_device("02:00:00:00:00:11", alias="OLD")
+            parser = build_parser()
+
+            for option, value in (("-name", "HomeNAS"), ("-alias", "NAS")):
+                args = parser.parse_args(
+                    [
+                        "element",
+                        "02:00:00:00:00:11",
+                        option,
+                        value,
+                        "--database",
+                        database_path,
+                        "--groups",
+                        groups_path,
+                    ]
+                )
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(args.handler(args), 0)
+
+            updated = database.resolve("02:00:00:00:00:11")
+            self.assertEqual(updated.name, "HomeNAS")
+            self.assertEqual(updated.alias, "NAS")
 
 
 if __name__ == "__main__":

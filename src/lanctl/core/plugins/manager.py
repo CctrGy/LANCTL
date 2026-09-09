@@ -12,7 +12,6 @@ from pathlib import Path
 from threading import RLock
 
 from lanctl import __version__
-from lanctl.apps.ip.interfaces.gui.theme import validate_theme_specification
 from lanctl.core.config import load_config
 from lanctl.core.file_transaction import atomic_write_json, locked_file
 from lanctl.core.logger import write_database_log, write_log
@@ -23,6 +22,7 @@ from lanctl.core.plugins.contracts import (
     DeviceRemoteEvent,
     EventContract,
     LifecycleEvent,
+    NetworkLabEvent,
     NetworkScanEvent,
     ProjectFileEvent,
 )
@@ -37,6 +37,7 @@ from lanctl.core.plugins.package import (
     verify_package,
 )
 from lanctl.core.plugins.publishers import TrustedPublisherStore
+from lanctl.core.plugins.theme import validate_theme_specification
 
 PLUGIN_ROOT = application_path("data/lc/plugins")
 PLUGIN_REGISTRY = application_path("data/lc/plugins.registry")
@@ -87,6 +88,13 @@ class PluginManager:
             ("LANCTL.Network.Scan.End", NetworkScanEvent, False),
             ("LANCTL.Device.Remote.Connect", DeviceRemoteEvent, False),
             ("LANCTL.Device.Remote.Disconnect", DeviceRemoteEvent, False),
+            ("LANCTL.Network.Lab.Created", NetworkLabEvent, False),
+            ("LANCTL.Network.Lab.Start", NetworkLabEvent, False),
+            ("LANCTL.Network.Lab.Stop", NetworkLabEvent, False),
+            ("LANCTL.Network.Lab.Tick", NetworkLabEvent, False),
+            ("LANCTL.Network.Lab.Host", NetworkLabEvent, False),
+            ("LANCTL.Network.Lab.Anomaly", NetworkLabEvent, False),
+            ("LANCTL.Network.Lab.Error", NetworkLabEvent, False),
         )
         for event_id, contract, cancelable in definitions:
             self.event_registry.register(event_id, contract, owner="LANCTL", cancelable=cancelable)

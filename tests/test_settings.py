@@ -61,6 +61,42 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(saved["remoteAccessPort"], 22)
         self.assertIn("valores guardados", report.call_args.args[1])
 
+    def test_tui_keys_and_footer_buttons_are_validated_and_saved(self):
+        args = build_parser().parse_args(
+            [
+                "settings",
+                "--tui-key",
+                "save=F4",
+                "--tui-key",
+                "copyLine=CTRL+S",
+                "--tui-key",
+                "deviceHistory=F6",
+                "--tui-footer-buttons",
+                "help,save,copyLine,exit",
+                "--tui-footer-button",
+                "help=off",
+            ]
+        )
+        with (
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.settings.load_config",
+                return_value=deepcopy(DEFAULTS),
+            ),
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.settings.save_config",
+                return_value=Path("config.json"),
+            ) as save,
+            patch("lanctl.apps.ip.interfaces.cli.commands.settings.ok"),
+        ):
+            self.assertEqual(args.handler(args), 0)
+
+        saved = save.call_args.args[0]
+        self.assertEqual(saved["tuiKeyBindings"]["save"], "F4")
+        self.assertEqual(saved["tuiKeyBindings"]["copyLine"], "CTRL_S")
+        self.assertEqual(saved["tuiKeyBindings"]["deviceHistory"], "F6")
+        self.assertIsNone(saved["tuiKeyBindings"]["projectStatus"])
+        self.assertEqual(saved["tuiFooterButtons"], ["save", "copyLine", "exit"])
+
 
 if __name__ == "__main__":
     unittest.main()

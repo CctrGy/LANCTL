@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.apps.ip.interfaces.tui.keyboard import DEFAULT_TUI_KEY_BINDINGS
 from lanctl.apps.ip.interfaces.tui.main import (
     CLI_PANEL,
     LIST_ELEMENT_PANEL,
@@ -100,6 +101,17 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(_read_windows_key(lambda: next(extended)), "SHIFT_TAB")
         self.assertEqual(_read_windows_key(lambda: "\t"), "TAB")
         self.assertEqual(_read_windows_key(lambda: "\x13"), "CTRL_S")
+        self.assertEqual(_read_windows_key(lambda: "\x18"), "CTRL_X")
+        self.assertEqual(_read_windows_key(lambda: "\x0a"), "CTRL_J")
+        self.assertEqual(_read_windows_key(lambda: "\x06"), "CTRL_F")
+        self.assertEqual(_read_windows_key(lambda: "\x12"), "CTRL_R")
+        self.assertEqual(_read_windows_key(lambda: "\x05"), "CTRL_E")
+        self.assertEqual(_read_windows_key(lambda: "\x07"), "CTRL_G")
+        self.assertEqual(_read_windows_key(lambda: "\x10"), "CTRL_P")
+        self.assertEqual(_read_windows_key(lambda: "\x0f"), "CTRL_O")
+        self.assertEqual(_read_windows_key(lambda: "\x04"), "CTRL_D")
+        self.assertEqual(_read_windows_key(lambda: "\x0c"), "CTRL_L")
+        self.assertEqual(_read_windows_key(lambda: "\x11"), "CTRL_Q")
 
     def test_settings_tab_edits_and_saves_through_the_settings_command(self):
         tui = LanctlTui.__new__(LanctlTui)
@@ -180,6 +192,7 @@ class TuiTests(unittest.TestCase):
                 "ESCANEO",
                 "PROYECTOS",
                 "ALMACENAMIENTO",
+                "TECLADO",
                 "LOGS",
                 "REMOTE ACCESS",
             ],
@@ -187,6 +200,24 @@ class TuiTests(unittest.TestCase):
         general_page = "\n".join(tui._modal_page(tui.modal))
         self.assertIn("DESCRIPCIÓN", general_page)
         self.assertIn("Define qué columnas", general_page)
+        tui.modal.tab_index = tui.modal.tabs.index("TECLADO")
+        keyboard_page = "\n".join(tui._modal_page(tui.modal))
+        self.assertIn("CAMPO", keyboard_page)
+        self.assertIn("TECLA/VALOR", keyboard_page)
+        self.assertIn("VISIBLE", keyboard_page)
+        self.assertIn("Ayuda", keyboard_page)
+        self.assertIn("F1", keyboard_page)
+        self.assertNotIn("Mostrar Ayuda", keyboard_page)
+        self.assertIn("Historial del elemento", keyboard_page)
+        self.assertIn("None", keyboard_page)
+        keyboard_indices = tui._settings_field_indices(tui.modal)
+        tui.modal.selected = keyboard_indices[0]
+        selected_keyboard = tui.modal.items[tui.modal.selected]
+        previous_visibility = selected_keyboard.visible
+        tui._handle_settings_key(tui.modal, "ENTER")
+        self.assertNotEqual(selected_keyboard.visible, previous_visibility)
+        self.assertEqual(selected_keyboard.value, selected_keyboard.original)
+        tui.modal.tab_index = 0
 
         tui._handle_settings_key(tui.modal, "RIGHT")
         self.assertEqual(tui.modal.tabs[tui.modal.tab_index], "RED")
@@ -808,9 +839,134 @@ class TuiTests(unittest.TestCase):
             rendered = _function_bar(width)
             self.assertEqual(Text.from_ansi(rendered).cell_len, width)
             self.assertIn("F1", Text.from_ansi(rendered).plain)
-            self.assertIn("Esc", Text.from_ansi(rendered).plain)
         wide = Text.from_ansi(_function_bar(210)).plain
         self.assertGreater(wide.index("F2") - wide.index("Ayuda"), 5)
+        for expected in ("F1", "F2", "F3", "F5", "F7", "F9", "F12", "↑↓"):
+            self.assertIn(expected, wide)
+        for hidden in ("Ctrl+H", "Ctrl+F", "Ctrl+S", "Enter", "Esc"):
+            self.assertNotIn(hidden, wide)
+
+    def test_function_bar_respects_visible_buttons_and_custom_keys(self):
+        from rich.text import Text
+
+        rendered = Text.from_ansi(
+            _function_bar(
+                100,
+                ["help", "copyJson", "exit"],
+                {"help": "F4", "copyJson": "CTRL_X"},
+            )
+        ).plain
+        self.assertIn("F4", rendered)
+        self.assertIn("Ctrl+X", rendered)
+        self.assertIn("Esc", rendered)
+        self.assertNotIn("F2", rendered)
+        unassigned = Text.from_ansi(_function_bar(100, ["deviceHistory", "exit"], {})).plain
+        self.assertNotIn("Historial", unassigned)
+        self.assertIn("Esc", unassigned)
+
+    def test_copy_selected_supports_full_line_and_requested_json_shape(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.devices = [
+            SimpleNamespace(
+                device_id="dev_123",
+                mac="AA:BB:CC:DD:EE:FF",
+                ip="192.168.1.20",
+                cnf="O",
+                alias="NAS",
+                name="Storage",
+                groups=["ASSETS"],
+                description="Almacenamiento",
+            )
+        ]
+        tui.index = 0
+        copied = []
+        with patch(
+            "lanctl.apps.ip.interfaces.tui.clipboard.copy_text",
+            side_effect=copied.append,
+        ):
+            tui._copy_selected(as_json=False)
+            tui._copy_selected(as_json=True)
+
+        self.assertEqual(
+            copied[0],
+            "192.168.1.20\tO\tNAS\tAA:BB:CC:DD:EE:FF\tStorage\tASSETS\tAlmacenamiento",
+        )
+        self.assertEqual(
+            list(json.loads(copied[1])),
+            ["idf", "mac", "ip", "cnf", "alias", "name", "group", "description"],
+        )
+
+    def test_configured_key_dispatches_manual_save(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.modal = None
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.output_focus = False
+        tui.command_suggestions = []
+        tui.command = ""
+        tui.cursor = 0
+        tui.key_bindings = {**DEFAULT_TUI_KEY_BINDINGS, "save": "F4"}
+        tui._manual_save = Mock()
+
+        tui.handle_key("F4")
+
+        tui._manual_save.assert_called_once_with()
+
+    def test_navigation_shortcuts_prepare_contextual_commands(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.modal = None
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.output_focus = False
+        tui.output_selectable = []
+        tui.command_suggestions = []
+        tui.suggestion_index = -1
+        tui.command = ""
+        tui.cursor = 0
+        tui.key_bindings = DEFAULT_TUI_KEY_BINDINGS
+
+        for key, expected in (
+            ("CTRL_F", "search "),
+            ("CTRL_E", "element "),
+            ("CTRL_G", "group "),
+            ("CTRL_O", "open "),
+        ):
+            tui.handle_key(key)
+            self.assertEqual(tui.command, expected)
+
+    def test_reload_shortcut_does_not_start_network_scan(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.modal = None
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.output_focus = False
+        tui.command_suggestions = []
+        tui.command = ""
+        tui.cursor = 0
+        tui.key_bindings = DEFAULT_TUI_KEY_BINDINGS
+        tui.reload = Mock()
+        tui.refresh = Mock()
+
+        tui.handle_key("CTRL_R")
+
+        tui.reload.assert_called_once_with()
+        tui.refresh.assert_not_called()
+
+    def test_optional_action_does_nothing_until_the_user_assigns_a_key(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.modal = None
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.output_focus = False
+        tui.command_suggestions = []
+        tui.command = ""
+        tui.cursor = 0
+        tui.key_bindings = {**DEFAULT_TUI_KEY_BINDINGS, "deviceHistory": "F6"}
+        tui.show_history = Mock()
+
+        tui.handle_key("F6")
+
+        tui.show_history.assert_called_once_with()
 
     def test_scan_spinner_uses_requested_sequence(self):
         self.assertEqual(

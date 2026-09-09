@@ -67,12 +67,9 @@ try {
     if (-not (Test-Path -LiteralPath 'dist\lanmon.exe')) {
         throw 'The unified PyInstaller build did not produce dist\lanmon.exe'
     }
-    if (-not (Test-Path -LiteralPath 'dist\landemo.exe')) {
-        throw 'The unified PyInstaller build did not produce dist\landemo.exe'
-    }
     if (-not (Test-Path -LiteralPath 'dist\lanrack.exe')) { throw 'PyInstaller did not produce dist\lanrack.exe' }
     if (-not (Test-Path -LiteralPath 'dist\lanaccess.exe')) { throw 'PyInstaller did not produce dist\lanaccess.exe' }
-    foreach ($binary in @('dist\LANCTL.exe','dist\LANCTL-GUI.exe','dist\lanip.exe','dist\lanwire.exe','dist\lanmon.exe','dist\landemo.exe','dist\lanrack.exe','dist\lanaccess.exe')) {
+    foreach ($binary in @('dist\LANCTL.exe','dist\lanip.exe','dist\lanwire.exe','dist\lanmon.exe','dist\lanrack.exe','dist\lanaccess.exe')) {
         Sign-And-Verify (Resolve-Path -LiteralPath $binary).Path
     }
     $release = Join-Path $Root 'dist\release'
@@ -84,11 +81,9 @@ try {
     if(Test-Path -LiteralPath $portable){Remove-Item -LiteralPath $portable -Recurse -Force}
     New-Item -ItemType Directory -Path $portable | Out-Null
     Copy-Item dist\LANCTL.exe (Join-Path $portable 'LANCTL.exe')
-    Copy-Item dist\LANCTL-GUI.exe (Join-Path $portable 'LANCTL-GUI.exe')
     Copy-Item dist\lanip.exe (Join-Path $portable 'lanip.exe')
     Copy-Item dist\lanwire.exe (Join-Path $portable 'lanwire.exe')
     Copy-Item dist\lanmon.exe (Join-Path $portable 'lanmon.exe')
-    Copy-Item dist\landemo.exe (Join-Path $portable 'landemo.exe')
     Copy-Item dist\lanrack.exe (Join-Path $portable 'lanrack.exe')
     Copy-Item dist\lanaccess.exe (Join-Path $portable 'lanaccess.exe')
     Copy-Item packaging\portable\README-portable.txt (Join-Path $portable 'README-portable.txt')

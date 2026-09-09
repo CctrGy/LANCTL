@@ -65,6 +65,23 @@ class TuiFoundationTests(unittest.TestCase):
         expected_row = upper_height + 1 + tui._cli_prompt_line
         self.assertTrue(tui.stream.getvalue().endswith(f"\x1b[{expected_row};13H"))
 
+    def test_renderer_overlays_frames_and_clears_only_after_resize(self):
+        stream = io.StringIO()
+        renderer = RichTuiRenderer(stream)
+
+        renderer.render("uno", "", "", width=80, height=15, upper_height=8, lower_height=6)
+        first_end = stream.tell()
+        renderer.render("dos", "", "", width=80, height=15, upper_height=8, lower_height=6)
+        second_end = stream.tell()
+        renderer.render("tres", "", "", width=81, height=15, upper_height=8, lower_height=6)
+
+        first = stream.getvalue()[:first_end]
+        second = stream.getvalue()[first_end:second_end]
+        resized = stream.getvalue()[second_end:]
+        self.assertNotIn("\x1b[2J", first)
+        self.assertNotIn("\x1b[2J", second)
+        self.assertIn("\x1b[2J\x1b[H", resized)
+
     def test_list_filters_by_idf_letters(self):
         database = IDFDatabaseManager(self.path)
         seed_sample_topology(database)

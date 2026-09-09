@@ -24,10 +24,18 @@ class SettingsEditor:
 
     @classmethod
     def render_page(cls, modal: ModalState, *, description_width: int = 106) -> list[str]:
-        rows = [
-            "  CAMPO                      VALOR                         FORMATO",
-            "  ─────────────────────────  ─────────────────────────────  ─────────────────────────",
-        ]
+        keyboard = bool(modal.tabs) and modal.tabs[modal.tab_index] == "TECLADO"
+        rows = (
+            [
+                "  CAMPO                         TECLA/VALOR                  VISIBLE",
+                "  ─────────────────────────────  ───────────────────────────  ───────",
+            ]
+            if keyboard
+            else [
+                "  CAMPO                      VALOR                         FORMATO",
+                "  ─────────────────────────  ─────────────────────────────  ─────────────────────────",
+            ]
+        )
         visible = set(cls.field_indices(modal))
         for index, field in enumerate(modal.items):
             if index not in visible:
@@ -40,9 +48,22 @@ class SettingsEditor:
                 else " "
             )
             changed = "*" if field.value != field.original else " "
-            rows.append(
-                f"{marker}{changed} {field.label:<25} {fit_text(field.value or '(vacío)', 29):<29} {field.hint}"
-            )
+            if keyboard:
+                changed = (
+                    "*"
+                    if field.value != field.original
+                    or field.visible != field.original_visible
+                    else " "
+                )
+                rows.append(
+                    f"{marker}{changed} {field.label:<29} "
+                    f"{fit_text(field.value or 'None', 27):<27} {field.visible or 'OFF'}"
+                )
+            else:
+                rows.append(
+                    f"{marker}{changed} {field.label:<25} "
+                    f"{fit_text(field.value or '(vacío)', 29):<29} {field.hint}"
+                )
         selected = modal.items[modal.selected]
         rows.extend(("", "  DESCRIPCIÓN"))
         rows.extend(
@@ -85,6 +106,13 @@ class SettingsEditor:
         field = modal.items[modal.selected]
         if field.key == "remoteAccessUsers" and key in ("ENTER", "TAB"):
             open_remote_users()
+            return
+        keyboard_field = field.section == "TECLADO" and field.visible is not None
+        if keyboard_field and not modal.editing and key in ("ENTER", "SPACE"):
+            field.visible = "OFF" if field.visible == "ON" else "ON"
+            return
+        if field.key.startswith("tuiFixed.") and key in ("TAB", "SHIFT_TAB"):
+            field.visible = "OFF" if field.visible == "ON" else "ON"
             return
         if key in ("TAB", "SHIFT_TAB"):
             modal.editing = not modal.editing

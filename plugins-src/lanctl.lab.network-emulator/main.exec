@@ -1,0 +1,6 @@
+def activate(api):
+    api.log("ACTIVATE", "LANLAB Network Emulator; network access is intentionally disabled")
+
+
+def deactivate():
+    return None

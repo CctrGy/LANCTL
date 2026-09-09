@@ -53,6 +53,9 @@ def choose_terminal(device, requested: str | None) -> str:
 def run_terminal(args: argparse.Namespace) -> int:
     config = load_config()
     device = DeviceDatabase(args.database).resolve(args.selector)
+    from lanctl.apps.ip.domain.discovery import require_real_target
+
+    require_real_target(device)
     protocol = choose_terminal(device, args.protocol)
     reference = device.credentials.get(protocol)
     if not reference:

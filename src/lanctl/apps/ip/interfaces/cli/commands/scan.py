@@ -75,6 +75,9 @@ def _shown(value) -> str:
 
 def run_scan(args: argparse.Namespace) -> int:
     device = DeviceDatabase(args.database).resolve(args.selector)
+    from lanctl.apps.ip.domain.discovery import require_real_target
+
+    require_real_target(device)
     if device.ip in ("", "-"):
         raise ValueError(f"{args.selector} no tiene una IP registrada que pueda escanearse")
     if args.all_ports and args.ports != "common":

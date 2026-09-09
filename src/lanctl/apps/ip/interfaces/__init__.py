@@ -1,1 +1,1 @@
-"""Interfaces CLI, TUI y GUI de LANIP."""
+"""Interfaces CLI/TUI activas y compatibilidad congelada de la antigua GUI."""

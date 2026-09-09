@@ -72,7 +72,6 @@ PY
   sudo ln -sfn "$target/LANCTL/lanip" /usr/local/bin/lanip
   sudo ln -sfn "$target/LANCTL/lanwire" /usr/local/bin/lanwire
   sudo ln -sfn "$target/LANCTL/lanmon" /usr/local/bin/lanmon
-  sudo ln -sfn "$target/LANCTL/landemo" /usr/local/bin/landemo
   sudo ln -sfn "$target/LANCTL/lanrack" /usr/local/bin/lanrack
   sudo ln -sfn "$target/LANCTL/lanaccess" /usr/local/bin/lanaccess
 else

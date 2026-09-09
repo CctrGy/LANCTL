@@ -2,39 +2,57 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import sys
+from contextlib import suppress
 
 from lanctl import __version__
 from lanctl.apps.ip.domain.models import normalize_protocol
 from lanctl.core.config import load_config
 from lanctl.core.credentials import CredentialStore
 from lanctl.core.database import DeviceDatabase
+from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.core.secret_input import read_secret
 
 
-def build_parser() -> argparse.ArgumentParser:
+def configure_utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            with suppress(AttributeError, OSError, ValueError):
+                reconfigure(encoding="utf-8", errors="replace")
+
+
+def build_parser() -> LANCTLArgumentParser:
     config = load_config()
-    parser = argparse.ArgumentParser(
+    parser = LANCTLArgumentParser(
         prog="LANACCESS", description="Gestiona credenciales cifradas del entorno LANCTL."
     )
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
-    parser.add_argument("--database", default=config["database"])
-    parser.add_argument("--store", default=config["credentials"])
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Muestra la versión común de la suite y termina.",
+    )
+    parser.add_argument("--database", default=config["database"], help="Base de elementos LANCTL.")
+    parser.add_argument(
+        "--store", default=config["credentials"], help="Almacén cifrado de credenciales."
+    )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("-tui", "--tui", action="store_true")
-    mode.add_argument("--cli", action="store_true")
+    mode.add_argument(
+        "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
+    )
+    mode.add_argument("--cli", action="store_true", help="Abre la consola interactiva.")
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("list", aliases=["ls"], help="Lista metadatos; nunca secretos.")
     show = commands.add_parser("show", help="Muestra metadatos de una credencial.")
-    show.add_argument("credential_id")
+    show.add_argument("credential_id", help="Identificador de la credencial.")
     set_command = commands.add_parser("set", help="Crea o actualiza una credencial.")
     set_command.add_argument("element", help="IP, MAC, alias o ID del dispositivo.")
-    set_command.add_argument("protocol")
-    set_command.add_argument("--username", "-user", required=True)
+    set_command.add_argument("protocol", help="Protocolo asociado, por ejemplo ssh.")
+    set_command.add_argument("--username", "-user", required=True, help="Usuario remoto.")
     delete = commands.add_parser("delete", aliases=["del"], help="Elimina una credencial.")
-    delete.add_argument("credential_id")
+    delete.add_argument("credential_id", help="Identificador de la credencial.")
     return parser
 
 
@@ -94,11 +112,15 @@ def _print_rows(rows: list[dict[str, str]]) -> None:
 
 
 def run_tui(manager: AccessManager) -> int:
+    # El primer borrado prepara la pantalla. Después se repinta desde el origen
+    # y se limpia sólo la cola sobrante, sin mostrar una pantalla vacía entre
+    # frames.
+    print("\x1b[2J\x1b[H", end="")
     while True:
-        print("\x1b[2J\x1b[H", end="")
+        print("\x1b[H", end="")
         print(f"LANACCESS TUI {__version__}\n")
         _print_rows(manager.list())
-        print("\n[L] refrescar  [A] añadir  [E] eliminar  [Q] salir")
+        print("\n[L] refrescar  [A] añadir  [E] eliminar  [Q] salir\x1b[J")
         try:
             action = input("Opción: ").strip().casefold()
         except (EOFError, KeyboardInterrupt):
@@ -149,7 +171,9 @@ def run_cli(manager: AccessManager) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(sys.argv[1:] if argv is None else argv)
+    configure_utf8_stdio()
+    arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
+    args = build_parser().parse_args(arguments)
     manager = AccessManager(args.database, args.store)
     if args.tui or (not args.cli and args.command is None):
         return run_tui(manager)

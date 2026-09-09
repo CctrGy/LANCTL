@@ -30,11 +30,11 @@ def test_screen_snapshot_pads_every_row_and_erases_adjacent_residue() -> None:
     stream = io.StringIO()
     RichTuiRenderer(stream).render_screen(["LANCTL", "X" * 30], width=12, height=3)
 
-    payload = stream.getvalue().removeprefix("\x1b[?25l\x1b[2J\x1b[H")
+    payload = stream.getvalue().removeprefix("\x1b[?25l\x1b[H")
     rows = payload.splitlines()
     # Rich evita imprimir la última fila vacía y reserva una celda antes de un
-    # salto de línea; el borrado completo inicial garantiza que ambas zonas
-    # queden limpias sin provocar autowrap sobre la fila adyacente.
+    # salto de línea. Cada fila emitida cubre el frame anterior sin provocar
+    # autowrap sobre la fila adyacente.
     assert [Text.from_ansi(row).plain for row in rows] == [
         "LANCTL      ",
         "XXXXXXXXXXXX",

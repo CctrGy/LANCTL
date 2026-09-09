@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from lanctl.apps.ip.interfaces.gui.main import GuiApi
 from lanctl.apps.ip.interfaces.gui.theme import (
     COMPONENT_IDS,
@@ -14,6 +16,8 @@ from lanctl.apps.ip.interfaces.gui.theme import (
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.plugins.manager import PluginManager
 from lanctl.core.plugins.package import verify_package
+
+pytestmark = pytest.mark.legacy_gui
 
 ROOT = Path(__file__).resolve().parents[1]
 

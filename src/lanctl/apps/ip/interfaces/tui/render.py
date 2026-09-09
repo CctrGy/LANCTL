@@ -25,6 +25,7 @@ class RichTuiRenderer:
     def __init__(self, stream: TextIO, theme: TuiTheme = DEFAULT_THEME) -> None:
         self.stream = stream
         self.theme = theme
+        self._last_size: tuple[int, int] | None = None
 
     @staticmethod
     def _console(target: TextIO, width: int) -> Console:
@@ -65,8 +66,16 @@ class RichTuiRenderer:
         cursor_visible = cursor_row is not None and cursor_column is not None
         prefix = "\x1b[?25h" if cursor_visible else "\x1b[?25l"
         suffix = f"\x1b[{cursor_row};{cursor_column}H" if cursor_visible else ""
-        self.stream.write(prefix + "\x1b[2J\x1b[H" + buffer.getvalue() + suffix)
+        size = (width, height)
+        # La pantalla alternativa ya se limpia al abrirse. En los siguientes
+        # frames basta volver al origen y cubrir el frame anterior. Borrar antes
+        # de escribir deja durante unos milisegundos una pantalla vacía visible,
+        # especialmente en terminales grandes. Un cambio de tamaño sí requiere
+        # invalidar por completo las celdas que ya no pertenecen al nuevo frame.
+        repaint = "\x1b[2J\x1b[H" if self._last_size not in (None, size) else "\x1b[H"
+        self.stream.write(prefix + repaint + buffer.getvalue() + suffix)
         self.stream.flush()
+        self._last_size = size
 
     def render_modal(
         self,

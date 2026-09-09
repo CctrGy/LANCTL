@@ -62,6 +62,16 @@ class DeviceRemoteEvent(EventContract):
     connected: bool
 
 
+@dataclass(frozen=True, slots=True)
+class NetworkLabEvent(EventContract):
+    scenario_id: str
+    seed: int | None = None
+    path: str | None = None
+    device_id: str | None = None
+    action: str | None = None
+    clock: float | None = None
+
+
 T = TypeVar("T")
 
 

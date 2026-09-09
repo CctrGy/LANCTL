@@ -31,12 +31,29 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
         metavar="MAC",
         help="Añade un elemento nuevo utilizando su dirección MAC.",
     )
-    command.add_argument("-name", dest="new_name", help="Nombre inicial opcional.")
-    command.add_argument("-alias", dest="new_alias", help="Alias inicial opcional.")
+    command.add_argument(
+        "-name", "--name", dest="new_name", help="Asigna NAME al elemento indicado."
+    )
+    command.add_argument(
+        "-alias", "--alias", dest="new_alias", help="Asigna ALIAS al elemento indicado."
+    )
     command.add_argument(
         "-description",
+        "--description",
         dest="new_description",
-        help="Descripción inicial opcional (máximo 42 caracteres).",
+        help="Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).",
+    )
+    command.add_argument("-cnf", "--cnf", dest="new_cnf", help="Asigna el estado CNF.")
+    command.add_argument("-group", "--group", dest="new_group", help="Añade el elemento al grupo.")
+    command.add_argument(
+        "-protocol", "--protocol", dest="new_protocol", help="Activa un protocolo."
+    )
+    command.add_argument(
+        "-delete",
+        "--delete",
+        dest="delete_requested",
+        action="store_true",
+        help="Elimina completamente el elemento indicado.",
     )
     command.add_argument(
         "--database", default=config["database"], help="Archivo JSON de elementos."
@@ -53,7 +70,15 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
 def run_element(args: argparse.Namespace) -> int:
     database = DeviceDatabase(args.database)
     if args.add:
-        if args.selector or args.action or args.values:
+        if (
+            args.selector
+            or args.action
+            or args.values
+            or args.new_cnf
+            or args.new_group
+            or args.new_protocol
+            or args.delete_requested
+        ):
             raise ValueError(
                 "usa: element -add MAC [-name NAME] [-alias ALIAS] [-description DESCRIPTION]"
             )
@@ -71,6 +96,26 @@ def run_element(args: argparse.Namespace) -> int:
 
     if not args.selector:
         raise ValueError("indica un elemento o usa element -add MAC")
+
+    option_edits = [
+        ("name", args.new_name),
+        ("alias", args.new_alias),
+        ("description", args.new_description),
+        ("cnf", args.new_cnf),
+        ("group", args.new_group),
+        ("protocol", args.new_protocol),
+    ]
+    requested_edits = [(field, value) for field, value in option_edits if value is not None]
+    if args.delete_requested:
+        if args.action or args.values or requested_edits:
+            raise ValueError("-delete no se puede combinar con otra edición")
+        args.action = "delete"
+    elif requested_edits:
+        if args.action or args.values or len(requested_edits) != 1:
+            raise ValueError("edita un único campo cada vez")
+        args.action, value = requested_edits[0]
+        args.values = [value]
+
     if args.action is None:
         device = database.resolve(args.selector)
         write_records(

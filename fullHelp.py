@@ -13,8 +13,11 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
 from lanctl import __version__
 from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 
 TREE_BRANCH = "├── "
 TREE_LAST = "└── "
@@ -229,7 +232,10 @@ def build_full_help() -> str:
 
 
 def _arguments(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Genera la ayuda completa de LANCTL.")
+    parser = LANCTLArgumentParser(
+        prog="LANCTL-FULLHELP",
+        description="Genera la ayuda completa de LANCTL.",
+    )
     parser.add_argument(
         "-o",
         "--output",
@@ -241,7 +247,8 @@ def _arguments(argv: Iterable[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="No muestra la referencia; requiere --output.",
     )
-    args = parser.parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    args = parser.parse_args(normalize_help_arguments(arguments))
     if args.no_print and not args.output:
         parser.error("--no-print requiere --output")
     return args

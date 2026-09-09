@@ -4,6 +4,7 @@ import argparse
 import ipaddress
 from datetime import datetime
 
+from lanctl.apps.ip.infrastructure.services.discovery_provider import RealDiscoveryProvider
 from lanctl.apps.ip.infrastructure.services.lan_scanner import (
     DISCOVERY_MODES,
     SCAN_ORDERS,
@@ -253,9 +254,13 @@ def run_list(args: argparse.Namespace) -> int:
     if args.max_hosts < 1:
         raise ValueError("--max-hosts debe ser mayor que cero")
 
-    network = resolve_network(args.network)
-    current_host_ip = str(local_ipv4())
-    if args.network:
+    from lanctl.apps.ip.lab import LabDiscoveryProvider, LabRepository
+
+    lab_repository = LabRepository()
+    lab_active = lab_repository.active()
+    network = resolve_network(lab_active["cidr"] if lab_active else args.network)
+    current_host_ip = "" if lab_active else str(local_ipv4())
+    if args.network and not lab_active:
         local_ip = local_ipv4()
         if local_ip not in network:
             suggested = resolve_network(None)
@@ -269,7 +274,12 @@ def run_list(args: argparse.Namespace) -> int:
         profile_name, args.timeout, args.workers
     )
     discovery = args.discovery or (profile.discovery if args.profile else args.configured_discovery)
-    database = DeviceDatabase(args.database)
+    database = DeviceDatabase(
+        str(lab_repository.root / "inventory" / "devices.json") if lab_active else args.database
+    )
+    groups_path = (
+        str(lab_repository.root / "inventory" / "groups.json") if lab_active else args.groups
+    )
     registered_devices = database.load()
     registered_total = len(registered_devices)
     registered_identities = {}
@@ -279,16 +289,20 @@ def run_list(args: argparse.Namespace) -> int:
             registered_identities[device.ip] = identity
         if device.mac:
             registered_identities[device.mac] = identity
-    scanner = LanScanner(
-        network=network,
-        workers=effective_workers,
-        timeout=effective_timeout,
-        max_hosts=args.max_hosts,
-        scan_order=args.scan_order,
+    scanner = (
+        LabDiscoveryProvider(lab_repository)
+        if lab_active
+        else LanScanner(
+            network=network,
+            workers=effective_workers,
+            timeout=effective_timeout,
+            max_hosts=args.max_hosts,
+            scan_order=args.scan_order,
+        )
     )
     progress = getattr(args, "progress_instance", None) or ScanProgress(args.progress)
     try:
-        records = scanner.scan(
+        scan_options = dict(
             include_unknown=args.include_unknown,
             resolve_names=args.resolve_names or profile.resolve_names,
             discovery=discovery,
@@ -299,6 +313,9 @@ def run_list(args: argparse.Namespace) -> int:
             registered_total=registered_total,
             registered_identities=registered_identities,
         )
+        provider = scanner if lab_active else RealDiscoveryProvider(scanner)
+        discovery_result = provider.discover(**({} if lab_active else scan_options))
+        records = list(discovery_result.devices)
     finally:
         progress.clear()
     seen_at = datetime.now().astimezone().isoformat(timespec="seconds")
@@ -312,7 +329,7 @@ def run_list(args: argparse.Namespace) -> int:
             record.last_seen = seen_at
 
     devices = database.upsert(records)
-    GroupDatabase(args.groups, database).ensure_basic(devices)
+    GroupDatabase(groups_path, database).ensure_basic(devices)
     # El ajuste de grupos básicos puede reescribir la base; se vuelve a cargar
     # el resultado antes de filtrar y presentar el inventario.
     devices = database.load()
