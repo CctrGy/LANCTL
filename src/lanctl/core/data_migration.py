@@ -67,6 +67,7 @@ def ensure_data_layout() -> Path:
     secret_root().mkdir(parents=True, exist_ok=True)
     marker = root / "config" / "migration-v2.complete"
     with locked_file(marker):
+        _migrate_misplaced_root_state(root)
         sources = [] if marker.exists() else _legacy_sources(root)
         conflicts = []
         for source in sources:
@@ -81,6 +82,18 @@ def ensure_data_layout() -> Path:
         if not marker.exists():
             atomic_write_text(marker, "LANCTL-DATA-V2\n", encoding="ascii")
     return root.resolve()
+
+
+def _migrate_misplaced_root_state(root: Path) -> None:
+    """Recupera estado creado en la raíz por versiones instaladas anteriores."""
+
+    source = root / "recurrent-elements.json"
+    destination = root / "automation" / "recurrent-elements.json"
+    if not source.is_file() or destination.exists():
+        return
+    with locked_file(destination):
+        if not destination.exists():
+            atomic_write_bytes(destination, source.read_bytes())
 
 
 def _create_initial_files() -> None:

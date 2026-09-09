@@ -123,6 +123,10 @@ class ApplicationPathTests(unittest.TestCase):
             )
             self.assertEqual(application_path("data/lc/log/now.log"), root / "logs/now.log")
             self.assertEqual(
+                application_path("data/lc/recurrent-elements.json"),
+                root / "automation/recurrent-elements.json",
+            )
+            self.assertEqual(
                 application_path("data/lc/plugins/demo/plugin.info"),
                 root / "plugins/demo/plugin.info",
             )

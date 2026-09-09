@@ -35,7 +35,9 @@ Name: path; Description: "Add LANCTL to system PATH"; Types: standard monitor cu
 Name: monitor; Description: "Monitor service"; Types: monitor custom
 
 [Dirs]
-Name: "{commonappdata}\LANCTL"
+; La raíz también hereda permisos de modificación para que cualquier estado
+; futuro que todavía no tenga subcarpeta no quede bloqueado al usuario normal.
+Name: "{commonappdata}\LANCTL"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\config"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\access"; Permissions: admins-full system-full
 Name: "{commonappdata}\LANCTL\database"; Permissions: users-modify

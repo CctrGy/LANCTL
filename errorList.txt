@@ -443,7 +443,7 @@
 0e8578939D | 42 | src/lanctl/core/plugin_storage.py | 40 | src.lanctl.core.plugin_storage.PluginStorage.put_observations | raise
 0e86055A13 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/scan.py | 105 | src.lanctl.apps.ip.interfaces.cli.commands.scan.run_scan | raise
 0e866529E9 | 36 | src/lanctl/apps/rack/service.py | 23 | src.lanctl.apps.rack.service.RackService.get | raise
-0e866DB4C7 | 42 | src/lanctl/core/data_migration.py | 76 | src.lanctl.core.data_migration.ensure_data_layout | raise
+0e866DB4C7 | 42 | src/lanctl/core/data_migration.py | 77 | src.lanctl.core.data_migration.ensure_data_layout | raise
 0e8711F423 | 42 | src/lanctl/apps/access/ssh_server.py | 167 | src.lanctl.apps.access.ssh_server.SshAccessServer.prepare | raise
 0e8728E0EC | 31 | src/lanctl/apps/ip/interfaces/cli/commands/open.py | 176 | src.lanctl.apps.ip.interfaces.cli.commands.open.run_open | raise
 0e8777DDE8 | 43 | src/lanctl/core/projects/vlf.py | 665 | src.lanctl.core.projects.vlf._existing_vlf | raise
@@ -556,7 +556,7 @@
 0eA7E5F466 | 49 | src/lanctl/core/file_transaction.py | 76 | src.lanctl.core.file_transaction.InterProcessLock.acquire | raise
 0eA7F10300 | 35 | src/lanctl/core/group_database.py | 138 | src.lanctl.core.group_database.GroupDatabase.add | raise
 0eA80577A4 | 36 | src/lanctl/apps/wire/idf/sample_topology.py | 191 | src.lanctl.apps.wire.idf.sample_topology.validate_topology | raise
-0eA8572C86 | 33 | src/lanctl/core/paths.py | 81 | src.lanctl.core.paths.data_root | raise
+0eA8572C86 | 33 | src/lanctl/core/paths.py | 82 | src.lanctl.core.paths.data_root | raise
 0eA8C2E8CD | 41 | src/lanctl/core/file_transaction.py | 81 | src.lanctl.core.file_transaction.InterProcessLock.release | raise
 0eA8D8BEE3 | 33 | src/lanctl/core/query.py | 48 | src.lanctl.core.query.matches_query | raise
 0eA9041487 | 33 | src/lanctl/apps/monitor/operations.py | 21 | src.lanctl.apps.monitor.operations.BoundedRunner.run | raise
@@ -810,7 +810,7 @@
 0eF4ABEA28 | 42 | src/lanctl/core/persistence.py | 123 | src.lanctl.core.persistence.verify_export | raise
 0eF518A526 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/lab.py | 143 | src.lanctl.apps.ip.interfaces.cli.commands.lab.run_lab | raise
 0eF5353140 | 45 | src/lanctl/apps/access/auth.py | 78 | src.lanctl.apps.access.auth.AuthorizationService.require | raise
-0eF54C0787 | 33 | src/lanctl/core/paths.py | 105 | src.lanctl.core.paths.secret_root | raise
+0eF54C0787 | 33 | src/lanctl/core/paths.py | 106 | src.lanctl.core.paths.secret_root | raise
 0eF5802634 | 43 | src/lanctl/core/history.py | 83 | src.lanctl.core.history.HistoryEvent.__post_init__ | raise
 0eF5AEDC31 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/smb.py | 183 | src.lanctl.apps.ip.interfaces.cli.commands.smb.run_smb | raise
 0eF629DE11 | 43 | src/lanctl/core/config.py | 584 | src.lanctl.core.config.load_config | raise

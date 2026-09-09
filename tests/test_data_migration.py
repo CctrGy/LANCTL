@@ -36,7 +36,7 @@ class DataMigrationTests(unittest.TestCase):
                 "config/config.json",
                 "projects/workspaces/default/database/devices.json",
                 "projects/workspaces/default/database/groups.json",
-                "recurrent-elements.json",
+                "automation/recurrent-elements.json",
                 "plugins/registry.json",
                 "automation/wol-sequences.json",
                 "projects/workspaces/default/monitoring/sessions.json",
@@ -73,6 +73,21 @@ class DataMigrationTests(unittest.TestCase):
             ):
                 ensure_data_layout()
             self.assertIn("192.0.2.1", database.read_text(encoding="utf-8"))
+
+    def test_misplaced_recurrent_elements_are_recovered_into_automation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "lanctl-data"
+            root.mkdir(parents=True)
+            (root / "recurrent-elements.json").write_text('[{"MAC":"00:11:22:33:44:55"}]')
+            with (
+                patch(
+                    "lanctl.core.data_migration.application_directory", return_value=Path(temporary)
+                ),
+                patch.dict("os.environ", {"LANCTL_DATA_DIR": str(root)}, clear=False),
+            ):
+                ensure_data_layout()
+            recovered = root / "automation/recurrent-elements.json"
+            self.assertIn("00:11:22:33:44:55", recovered.read_text(encoding="utf-8"))
 
     def test_legacy_directory_is_copied_without_deleting_original(self):
         with tempfile.TemporaryDirectory() as temporary:

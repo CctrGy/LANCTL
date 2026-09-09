@@ -160,6 +160,7 @@ class DistributionTests(unittest.TestCase):
         self.assertNotIn("recurrent-elements.json", spec)
         self.assertIn("{commonappdata}\\LANCTL\\database", inno)
         self.assertIn("{commonappdata}\\LANCTL\\physical", inno)
+        self.assertIn('Name: "{commonappdata}\\LANCTL"; Permissions: users-modify', inno)
         self.assertIn("admins-full system-full", inno)
 
     def test_windows_installers_require_all_tools_in_standard_and_portable_layouts(self):

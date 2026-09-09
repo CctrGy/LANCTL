@@ -18,6 +18,7 @@ _STRUCTURED_PATHS = {
     "languajes": Path("config/languages"),
     "icons": Path("config/icons"),
     "wol-sequences.json": Path("automation/wol-sequences.json"),
+    "recurrent-elements.json": Path("automation/recurrent-elements.json"),
     "monitor-sessions.json": Path("monitoring/sessions.json"),
     "monitor-incidents.json": Path("monitoring/incidents.json"),
     "monitor.lock": Path("monitoring/monitor.lock"),
