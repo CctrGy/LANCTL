@@ -102,12 +102,30 @@ class ProjectCatalog:
     ) -> list[ProjectCatalogEntry]:
         root = Path(default_root).expanduser().resolve()
         if root.exists():
-            for project in root.rglob("*.vlf"):
+            for project in root.glob("*.vlf"):
                 if project.is_file():
                     self.register(project)
+        self._forget_nested_default_projects(root)
         if active_path:
-            self.register(active_path)
+            active = Path(active_path).expanduser().resolve()
+            if not _inside(active, root) or active.parent == root:
+                self.register(active)
         return self.list(root)
+
+    def _forget_nested_default_projects(self, root: Path) -> None:
+        """Oculta copias, backups y proyectos archivados bajo la carpeta principal."""
+
+        with locked_file(self.path), closing(self._connect()) as connection:
+            rows = connection.execute("SELECT path_key, path FROM projects").fetchall()
+            nested = [
+                row["path_key"]
+                for row in rows
+                if _inside(Path(row["path"]), root) and Path(row["path"]).resolve().parent != root
+            ]
+            connection.executemany(
+                "DELETE FROM projects WHERE path_key = ?", ((key,) for key in nested)
+            )
+            connection.commit()
 
     def list(self, default_root: str | Path) -> list[ProjectCatalogEntry]:
         root = Path(default_root).expanduser().resolve()

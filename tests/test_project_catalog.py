@@ -52,3 +52,18 @@ def test_catalog_remove_can_delete_project_file(tmp_path: Path) -> None:
 
     assert not project.exists()
     assert catalog.list(documents) == []
+
+
+def test_catalog_excludes_archived_projects_below_default_directory(tmp_path: Path) -> None:
+    documents = tmp_path / "Documents" / "LanCTL"
+    archived = documents / "delated" / "old.vlf"
+    current = documents / "Home.vlf"
+    archived.parent.mkdir(parents=True)
+    archived.write_bytes(b"old")
+    current.write_bytes(b"current")
+    catalog = ProjectCatalog(tmp_path / "projects.db")
+    catalog.register(archived)
+
+    entries = catalog.refresh(documents, active_path=archived)
+
+    assert [entry.path for entry in entries] == [current.resolve()]

@@ -111,7 +111,20 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(_read_windows_key(lambda: "\x0f"), "CTRL_O")
         self.assertEqual(_read_windows_key(lambda: "\x04"), "CTRL_D")
         self.assertEqual(_read_windows_key(lambda: "\x0c"), "CTRL_L")
+        self.assertEqual(_read_windows_key(lambda: "\x0e"), "CTRL_N")
         self.assertEqual(_read_windows_key(lambda: "\x11"), "CTRL_Q")
+
+    def test_ctrl_n_creates_projects_only_inside_project_manager(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        calls = []
+        tui._create_project_from_manager = lambda: calls.append("new")
+        tui.modal = ModalState("projects", "PROJECT MANAGER", ["Proyectos"], [[]])
+        tui._handle_modal_key("CTRL_N")
+        self.assertEqual(calls, ["new"])
+
+        tui.modal = ModalState("plugins", "PLUGIN", ["Plugins"], [[]])
+        tui._handle_modal_key("CTRL_N")
+        self.assertEqual(calls, ["new"])
 
     def test_settings_tab_edits_and_saves_through_the_settings_command(self):
         tui = LanctlTui.__new__(LanctlTui)

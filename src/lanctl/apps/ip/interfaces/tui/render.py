@@ -151,7 +151,7 @@ class RichTuiRenderer:
         # del TUI. El orden largo-a-corto evita partir Ctrl+R como una tecla R.
         footer.highlight_regex(
             re.compile(
-                r"(?<!\w)(?:Shift\+Tab|Ctrl\+[A-Z]|RePag|AvPag|Enter|Esc|Tab|F\d{1,2}|←/→|↑/↓|↑↓)(?!\w)"
+                r"(?<!\w)(?:Shift\+Tab|Ctrl\+[A-Z]|RePag|AvPag|Enter|Esc|Supr|Tab|F\d{1,2}|←/→|↑/↓|↑↓)(?!\w)"
             ),
             style="bold black on bright_white",
         )

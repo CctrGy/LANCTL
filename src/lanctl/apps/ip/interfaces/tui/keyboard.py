@@ -196,6 +196,7 @@ def read_windows_key(
         "\x07": "CTRL_G",
         "\x0a": "CTRL_J",
         "\x0c": "CTRL_L",
+        "\x0e": "CTRL_N",
         "\x0f": "CTRL_O",
         "\x10": "CTRL_P",
         "\x11": "CTRL_Q",

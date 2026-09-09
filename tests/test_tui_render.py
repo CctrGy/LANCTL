@@ -105,6 +105,14 @@ class RichTuiRendererTests(unittest.TestCase):
         self.assertEqual(len(key_spans), 5)
         self.assertEqual(footer[key_spans[3].start : key_spans[3].end].plain, "Ctrl+S")
 
+    def test_project_footer_styles_ctrl_n_and_delete_as_keycaps(self):
+        footer = RichTuiRenderer._modal_footer("Ctrl+N nuevo  Supr eliminar  Esc cerrar")
+        key_spans = [span for span in footer.spans if "on bright_white" in str(span.style)]
+        self.assertEqual(
+            [footer[span.start : span.end].plain for span in key_spans],
+            ["Ctrl+N", "Supr", "Esc"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

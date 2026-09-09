@@ -2231,7 +2231,7 @@ class LanctlTui:
             self.modal = None
             self.reload()
             self._set_command_output(output, result)
-        elif modal.kind == "projects" and key.casefold() == "n":
+        elif modal.kind == "projects" and key == "CTRL_N":
             self._create_project_from_manager()
         elif modal.kind == "projects" and key == "DELETE" and modal.items:
             self._delete_project_from_manager(modal.items[modal.selected])

@@ -43,7 +43,7 @@ Los proyectos encontrados en la carpeta Documentos de LANCTL aparecen primero;
 los proyectos registrados en otras ubicaciones se muestran después y conservan
 su ruta aunque temporalmente no estén disponibles.
 
-Dentro de la ventana, `N` crea y activa un proyecto nuevo, `Enter` activa la
+Dentro de la ventana, `Ctrl+N` crea y activa un proyecto nuevo, `Enter` activa la
 selección, `Supr` elimina un proyecto tras exigir la confirmación `ELIMINAR` y
 `Ctrl+R` vuelve a descubrir los archivos. El proyecto activo no se puede borrar:
 primero debe activarse otro para mantener consistente su espacio de trabajo.
