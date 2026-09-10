@@ -55,12 +55,9 @@ def test_settings_editor_snapshot_and_manager_navigation() -> None:
     ]
     modal = ModalState("settings", "SETTINGS", ["RED"], [[]], items=fields)
     page = SettingsEditor.render_page(modal)
-    assert page[:4] == [
-        "  CAMPO                      VALOR                         FORMATO",
-        "  ─────────────────────────  ─────────────────────────────  ─────────────────────────",
-        "▶* Workers                   64                            entero",
-        "   Timeout                   1                             segundos",
-    ]
+    assert "CAMPO" in page[0] and "VALOR" in page[0] and "FORMATO" in page[0]
+    assert "▶* Workers" in page[2] and "64" in page[2] and "entero" in page[2]
+    assert "Timeout" in page[3] and "1" in page[3] and "segundos" in page[3]
 
     manager = ModalState("plugins", "PLUGIN", ["Plugins"], [["uno", "dos"]])
     changes = []

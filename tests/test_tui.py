@@ -1,6 +1,7 @@
 import io
 import json
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -129,15 +130,16 @@ class TuiTests(unittest.TestCase):
     def test_ctrl_s_saves_active_project_while_project_manager_is_open(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.modal = ModalState("projects", "PROJECT MANAGER", ["Proyectos"], [[]])
-        tui._manual_save = Mock()
-        tui.show_project_manager = Mock()
+        tui.messages = []
+        tui._manual_save = Mock(side_effect=lambda: tui.messages.append("Proyecto guardado"))
+        tui._update_manager_detail = Mock()
 
         tui.handle_key("CTRL_S")
 
         tui._manual_save.assert_called_once_with()
-        tui.show_project_manager.assert_called_once_with()
+        self.assertIn("Proyecto guardado", tui.modal.footer)
 
-    def test_ctrl_s_keeps_settings_specific_save_behavior(self):
+    def test_ctrl_s_does_not_save_settings_directly(self):
         field = SettingField("workers", "Workers", "--workers", "64", "64", "entero")
         tui = LanctlTui.__new__(LanctlTui)
         tui.modal = ModalState("settings", "SETTINGS", ["GENERAL"], [[]], items=[field])
@@ -147,15 +149,17 @@ class TuiTests(unittest.TestCase):
         tui.handle_key("CTRL_S")
 
         tui._manual_save.assert_not_called()
-        tui._save_settings.assert_called_once_with(tui.modal)
+        tui._save_settings.assert_not_called()
 
-    def test_settings_tab_edits_and_saves_through_the_settings_command(self):
+    def test_settings_exit_menu_saves_through_the_settings_command(self):
         tui = LanctlTui.__new__(LanctlTui)
         fields = [
             SettingField("workers", "Workers", "--workers", "64", "64", "entero"),
             SettingField("timeout", "Timeout", "--timeout", "0.8", "0.8", "segundos"),
         ]
-        tui.modal = ModalState("settings", "SETTINGS", ["Configuración"], [[]], items=fields)
+        tui.modal = ModalState(
+            "settings", "SETTINGS", ["Configuración", "EXIT"], [[], []], items=fields
+        )
         captured = []
         tui._capture = lambda argv: captured.append(argv) or (0, "guardado")
         tui.reload = lambda: None
@@ -166,7 +170,9 @@ class TuiTests(unittest.TestCase):
         tui.handle_key("2")
         tui.handle_key("8")
         tui.handle_key("TAB")
-        tui.handle_key("CTRL_S")
+        tui.handle_key("ESC")
+        self.assertEqual(tui.modal.tabs[tui.modal.tab_index], "EXIT")
+        tui.handle_key("ENTER")
 
         self.assertEqual(captured, [["settings", "--workers", "128"]])
         self.assertIsNone(tui.modal)
@@ -213,6 +219,45 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(field.value, "64")
         self.assertFalse(tui.modal.editing)
 
+    def test_settings_escape_opens_exit_menu_and_can_discard(self):
+        field = SettingField("workers", "Workers", "--workers", "32", "64")
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.messages = []
+        tui.modal = ModalState("settings", "SETTINGS", ["GENERAL", "EXIT"], [[], []], items=[field])
+
+        tui._handle_settings_key(tui.modal, "ESC")
+        self.assertEqual(tui.modal.tabs[tui.modal.tab_index], "EXIT")
+        self.assertIn("Cambios pendientes: 1", "\n".join(tui._modal_page(tui.modal)))
+        tui._handle_settings_key(tui.modal, "DOWN")
+        tui._handle_settings_key(tui.modal, "ENTER")
+
+        self.assertIsNone(tui.modal)
+        self.assertEqual(tui.messages, ["SETTINGS: cambios descartados."])
+
+    def test_project_manager_new_project_opens_inline_form(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui._last_screen_lines = []
+        tui.modal = ModalState("projects", "PROJECT MANAGER", ["Proyectos"], [[]])
+
+        with (
+            patch("lanctl.apps.ip.interfaces.tui.main.load_config", return_value={}),
+            patch(
+                "lanctl.core.projects.paths.default_project_directory",
+                return_value=Path("C:/Projects"),
+            ),
+        ):
+            tui._create_project_from_manager()
+
+        self.assertEqual(tui.modal.kind, "project_create")
+        self.assertEqual(tui.modal.selected, 0)
+        self.assertEqual(tui.modal.items[0].key, "name")
+        for key in "Casa":
+            tui._handle_project_create_key(tui.modal, key)
+        tui._handle_project_create_key(tui.modal, "ENTER")
+        self.assertEqual(tui.modal.items[0].value, "Casa")
+        self.assertEqual(tui.modal.selected, 1)
+        self.assertEqual(tui.modal.items[1].value, "C:\\Projects")
+
     def test_settings_uses_category_menus_and_contextual_descriptions(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui._last_screen_lines = []
@@ -231,6 +276,7 @@ class TuiTests(unittest.TestCase):
                 "TECLADO",
                 "LOGS",
                 "REMOTE ACCESS",
+                "EXIT",
             ],
         )
         general_page = "\n".join(tui._modal_page(tui.modal))
@@ -563,6 +609,7 @@ class TuiTests(unittest.TestCase):
 
         self.assertEqual(tui.modal.kind, "info")
         self.assertEqual(len(tui.modal.tabs), 5)
+        self.assertEqual((tui.modal.max_width, tui.modal.max_height), (90, 26))
         ports = "\n".join(tui.modal.pages[4])
         self.assertIn("Puertos abiertos: 2", ports)
         self.assertIn("443", ports)

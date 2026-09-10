@@ -113,6 +113,16 @@ class RichTuiRendererTests(unittest.TestCase):
             ["Ctrl+N", "Supr", "Esc"],
         )
 
+    def test_plugin_footer_styles_standalone_arrow_as_keycap(self):
+        footer = RichTuiRenderer._modal_footer(
+            "↑/↓ seleccionar  → información  Ctrl+R recargar  Esc cerrar"
+        )
+        key_spans = [span for span in footer.spans if "on bright_white" in str(span.style)]
+        self.assertEqual(
+            [footer[span.start : span.end].plain for span in key_spans],
+            ["↑/↓", "→", "Ctrl+R", "Esc"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

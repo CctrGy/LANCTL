@@ -32,9 +32,10 @@ terminales estrechas; se recomienda un mínimo de 80×24 para la demostración.
 | `Ctrl+Q` | Iniciar el cierre seguro |
 | `Esc` | Cerrar modal o iniciar el cierre seguro |
 
-En Settings, `←/→` cambia de sección, `↑/↓` selecciona una variable, `Tab`
-entra o sale de edición y `Ctrl+S` valida y guarda. `Esc` cancela primero la
-edición activa y, al pulsarlo de nuevo, cierra la ventana.
+En Settings, `←/→` cambia de sección, `↑/↓` selecciona una variable y `Tab`
+entra o sale de edición. `Esc` cancela primero la edición activa y después abre
+el menú `EXIT`, donde se puede salir guardando, descartar los cambios o volver.
+`Ctrl+S` no guarda la configuración desde esta ventana.
 
 ## Project Manager
 
@@ -43,10 +44,13 @@ Los proyectos encontrados en la carpeta Documentos de LANCTL aparecen primero;
 los proyectos registrados en otras ubicaciones se muestran después y conservan
 su ruta aunque temporalmente no estén disponibles.
 
-Dentro de la ventana, `Ctrl+N` crea y activa un proyecto nuevo, `Enter` activa la
-selección, `Supr` elimina un proyecto tras exigir la confirmación `ELIMINAR` y
-`Ctrl+R` vuelve a descubrir los archivos. El proyecto activo no se puede borrar:
-primero debe activarse otro para mantener consistente su espacio de trabajo.
+Dentro de la ventana, `Ctrl+N` abre un formulario integrado para nombre, ruta y
+descripción. La escritura comienza en el nombre y `Enter` avanza al campo
+siguiente hasta crear y activar el proyecto. `Ctrl+S` guarda el proyecto activo,
+`Enter` activa la selección, `Supr` elimina un proyecto tras exigir la
+confirmación `ELIMINAR` y `Ctrl+R` vuelve a descubrir los archivos. El proyecto
+activo no se puede borrar: primero debe activarse otro para mantener consistente
+su espacio de trabajo.
 
 La consola permite encadenar propiedades del elemento seleccionado en cualquier
 orden, sin repetir el selector:

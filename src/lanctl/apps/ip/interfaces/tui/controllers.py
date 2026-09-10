@@ -6,7 +6,7 @@ from collections.abc import Callable
 from lanctl.apps.ip.interfaces.tui.modal import ModalState, SettingField
 from lanctl.core.layout import fit_text
 
-SETTINGS_FOOTER = "←/→ menú  ↑/↓ variable  Tab editar  Ctrl+S guardar  Esc cerrar"
+SETTINGS_FOOTER = "←/→ menú  ↑/↓ variable  Tab editar  Esc salir"
 
 
 class SettingsEditor:
@@ -15,6 +15,8 @@ class SettingsEditor:
     @staticmethod
     def field_indices(modal: ModalState) -> list[int]:
         section = modal.tabs[modal.tab_index] if modal.tabs else "GENERAL"
+        if section == "EXIT":
+            return []
         indices = [
             index
             for index, field in enumerate(modal.items)
@@ -32,8 +34,8 @@ class SettingsEditor:
             ]
             if keyboard
             else [
-                "  CAMPO                      VALOR                         FORMATO",
-                "  ─────────────────────────  ─────────────────────────────  ─────────────────────────",
+                "  CAMPO                      VALOR                                                  FORMATO",
+                "  ─────────────────────────  ─────────────────────────────────────────────────────  ───────────────────────────────",
             ]
         )
         visible = set(cls.field_indices(modal))
@@ -51,8 +53,7 @@ class SettingsEditor:
             if keyboard:
                 changed = (
                     "*"
-                    if field.value != field.original
-                    or field.visible != field.original_visible
+                    if field.value != field.original or field.visible != field.original_visible
                     else " "
                 )
                 rows.append(
@@ -60,10 +61,19 @@ class SettingsEditor:
                     f"{fit_text(field.value or 'None', 27):<27} {field.visible or 'OFF'}"
                 )
             else:
-                rows.append(
-                    f"{marker}{changed} {field.label:<25} "
-                    f"{fit_text(field.value or '(vacío)', 29):<29} {field.hint}"
+                value = field.value or "(vacío)"
+                chunks = (
+                    textwrap.wrap(
+                        value,
+                        width=54,
+                        break_long_words=True,
+                        break_on_hyphens=False,
+                    )
+                    if field.key == "listColumns"
+                    else [fit_text(value, 54)]
                 )
+                rows.append(f"{marker}{changed} {field.label:<25} {chunks[0]:<54} {field.hint}")
+                rows.extend(f"   {'':25} {chunk:<54}" for chunk in chunks[1:])
         selected = modal.items[modal.selected]
         rows.extend(("", "  DESCRIPCIÓN"))
         rows.extend(
@@ -86,7 +96,7 @@ class SettingsEditor:
             (
                 f"  Clave: {selected.key}  ·  Opción CLI: {selected.option}  ·  Estado: {state}",
                 "",
-                "* cambio pendiente · Ctrl+S valida y guarda todos los cambios",
+                "* cambio pendiente · Esc abre el menú de salida y guardado",
             )
         )
         return rows
@@ -98,7 +108,6 @@ class SettingsEditor:
         key: str,
         *,
         close: Callable[[], None],
-        save: Callable[[ModalState], None],
         open_remote_users: Callable[[], None],
     ) -> None:
         if not modal.items:
@@ -136,10 +145,6 @@ class SettingsEditor:
             else:
                 close()
             return
-        if key == "CTRL_S":
-            modal.editing = False
-            save(modal)
-            return
         if modal.editing:
             if field.choices and key in ("LEFT", "UP", "RIGHT", "DOWN"):
                 try:
@@ -164,7 +169,7 @@ class SettingsEditor:
             modal.change_tab(-1 if key == "LEFT" else 1)
             indices = cls.field_indices(modal)
             remembered = modal.tab_selections.get(modal.tab_index)
-            modal.selected = remembered if remembered in indices else indices[0]
+            modal.selected = remembered if remembered in indices else (indices[0] if indices else 0)
             modal.editor_fresh = True
             modal.scroll = 0
         elif key in ("UP", "DOWN"):

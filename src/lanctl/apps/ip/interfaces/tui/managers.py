@@ -78,4 +78,5 @@ def project_manager_modal(projects: list[Any], active: str, root: Path) -> Modal
         pages=[listing, details[0] if details else ["No hay información disponible."]],
         items=projects,
         footer="Ctrl+N nuevo  Ctrl+S guardar  Supr eliminar  ↑/↓ seleccionar  → información  Enter activar  Ctrl+R recargar  Esc cerrar",
+        max_width=120,
     )

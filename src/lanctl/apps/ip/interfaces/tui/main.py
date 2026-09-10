@@ -11,6 +11,7 @@ import shlex
 import shutil
 import sqlite3
 import sys
+import tempfile
 import textwrap
 import time
 from contextlib import redirect_stderr, redirect_stdout
@@ -629,8 +630,11 @@ class LanctlTui:
         modal = self.modal
         if not modal:
             return
-        geometry = adaptive_layout(width, height, settings=modal.kind == "settings")
-        body_rows = geometry.body_rows
+        settings_sized = modal.kind == "settings"
+        maximum_width = modal.max_width or (130 if settings_sized else 100)
+        maximum_height = modal.max_height or (36 if settings_sized else 30)
+        geometry = adaptive_layout(width, height, settings=maximum_width > 100)
+        body_rows = max(1, min(geometry.modal_height, maximum_height) - 7)
         page = self._modal_page(modal)
         maximum = max(0, len(page) - body_rows)
         modal.scroll = max(0, min(modal.scroll, maximum))
@@ -649,13 +653,17 @@ class LanctlTui:
             footer=modal.footer,
             width=width,
             height=height,
-            max_width=130 if modal.kind == "settings" else 100,
-            max_height=36 if modal.kind == "settings" else 30,
+            max_width=maximum_width,
+            max_height=maximum_height,
         )
 
     def _modal_page(self, modal: ModalState) -> list[str]:
         if modal.kind == "settings":
+            if modal.tabs and modal.tabs[modal.tab_index] == "EXIT":
+                return self._settings_exit_page(modal)
             return SettingsEditor.render_page(modal)
+        if modal.kind == "project_create":
+            return self._project_create_page(modal)
         if modal.kind == "help" and modal.tab_index == 0:
             lines = []
             for index, entry in enumerate(modal.items):
@@ -1274,6 +1282,7 @@ class LanctlTui:
             "TECLADO",
             "LOGS",
             "REMOTE ACCESS",
+            "EXIT",
         ]
         self._open_modal(
             ModalState(
@@ -1282,9 +1291,64 @@ class LanctlTui:
                 tabs=tabs,
                 pages=[[] for _ in tabs],
                 items=fields,
-                footer="←/→ menú  ↑/↓ variable  Tab editar  Ctrl+S guardar  Esc cerrar",
+                footer="←/→ menú  ↑/↓ variable  Tab editar  Esc salir",
             )
         )
+
+    @staticmethod
+    def _settings_exit_page(modal: ModalState) -> list[str]:
+        changed = sum(
+            field.value != field.original or field.visible != field.original_visible
+            for field in modal.items
+        )
+        options = (
+            "Salir y guardar",
+            "Salir sin guardar",
+            "Volver a configuración",
+        )
+        return [
+            "",
+            f"  Cambios pendientes: {changed}",
+            "",
+            *(
+                f"  {'▶' if index == modal.selected else ' '} {label}"
+                for index, label in enumerate(options)
+            ),
+            "",
+            "  Selecciona cómo quieres cerrar la ventana de configuración.",
+        ]
+
+    def _open_settings_exit(self, modal: ModalState) -> None:
+        if modal.editing:
+            return
+        modal.tab_selections[-1] = modal.tab_index
+        modal.tab_index = modal.tabs.index("EXIT")
+        modal.selected = 0
+        modal.scroll = 0
+        modal.footer = "↑/↓ seleccionar  Enter confirmar  Esc volver"
+
+    def _leave_settings_exit(self, modal: ModalState) -> None:
+        previous = modal.tab_selections.get(-1, max(0, modal.tab_index - 1))
+        modal.tab_index = min(previous, max(0, len(modal.tabs) - 2))
+        indices = self._settings_field_indices(modal)
+        remembered = modal.tab_selections.get(modal.tab_index)
+        modal.selected = remembered if remembered in indices else (indices[0] if indices else 0)
+        modal.scroll = 0
+        modal.footer = "←/→ menú  ↑/↓ variable  Tab editar  Esc salir"
+
+    def _handle_settings_exit_key(self, modal: ModalState, key: str) -> None:
+        if key in ("UP", "DOWN"):
+            modal.selected = (modal.selected + (-1 if key == "UP" else 1)) % 3
+        elif key in ("LEFT", "RIGHT", "ESC"):
+            self._leave_settings_exit(modal)
+        elif key == "ENTER":
+            if modal.selected == 0:
+                self._save_settings(modal)
+            elif modal.selected == 1:
+                self.modal = None
+                self.messages = ["SETTINGS: cambios descartados."]
+            else:
+                self._leave_settings_exit(modal)
 
     def _remote_access_capture(self, arguments: list[str]) -> tuple[int, str]:
         """Ejecuta una acción de acceso sin dejar cambiado el ámbito del proceso TUI."""
@@ -1668,6 +1732,8 @@ class LanctlTui:
                 title=f"INFO · {device.alias or device.name or device.ip or device.mac}",
                 tabs=["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
                 pages=[identity, classification, network, access, ports],
+                max_width=90,
+                max_height=26,
             )
         )
 
@@ -1999,9 +2065,13 @@ class LanctlTui:
                 "remote_users",
                 "project_close",
             }:
+                active_modal = self.modal
                 self._manual_save()
-                if self.modal and self.modal.kind == "projects":
-                    self.show_project_manager()
+                if self.modal is active_modal:
+                    if active_modal.kind == "projects":
+                        self._update_manager_detail(active_modal)
+                    confirmation = self.messages[-1] if self.messages else "Guardado completado."
+                    active_modal.footer = f"{confirmation} · Esc cerrar"
                 return
             self._handle_modal_key(key)
             return
@@ -2219,6 +2289,9 @@ class LanctlTui:
         if modal.kind == "project_close":
             self._handle_project_close_key(modal, key)
             return
+        if modal.kind == "project_create":
+            self._handle_project_create_key(modal, key)
+            return
         if key in ("ESC", "F1") and not (key == "F1" and modal.kind != "help"):
             self.modal = None
             return
@@ -2270,34 +2343,137 @@ class LanctlTui:
                 self.show_project_manager()
 
     def _create_project_from_manager(self) -> None:
-        from lanctl.core.projects.catalog import ProjectCatalog
         from lanctl.core.projects.paths import default_project_directory
-        from lanctl.core.projects.vlf import create_project
-        from lanctl.core.projects.workspace import activate_project_workspace
 
-        name = self._read_text("Nombre del nuevo proyecto:")
-        if not name:
-            return
-        if any(character in name for character in '<>:"/\\|?*'):
-            self.messages = ["El nombre contiene caracteres no válidos para un archivo de Windows."]
-            return
         configured = load_config().get("projectsDirectory")
         default_root = (
             Path(os.path.expandvars(str(configured))).expanduser()
             if configured
             else default_project_directory()
         )
-        directory_text = self._read_text(f"Carpeta [Enter = {default_root}]:")
-        directory = (
-            Path(os.path.expandvars(directory_text)).expanduser()
-            if directory_text
-            else default_root
+        fields = [
+            SettingField(
+                "name",
+                "Nombre",
+                "",
+                "",
+                "",
+                "Nombre del proyecto y del archivo VLF.",
+                "PROJECT",
+            ),
+            SettingField(
+                "path",
+                "Ruta",
+                "",
+                str(default_root),
+                str(default_root),
+                "Directorio donde se guardará el proyecto.",
+                "PROJECT",
+            ),
+            SettingField(
+                "description",
+                "Descripción",
+                "",
+                "",
+                "",
+                "Descripción opcional del proyecto.",
+                "PROJECT",
+            ),
+        ]
+        self._open_modal(
+            ModalState(
+                kind="project_create",
+                title="PROJECT MANAGER / NUEVO PROYECTO",
+                tabs=["Datos"],
+                pages=[[]],
+                items=fields,
+                editing=True,
+                editor_fresh=True,
+                footer="escribir editar  Enter siguiente/crear  ↑/↓ campo  Esc cancelar",
+                max_width=120,
+            )
         )
-        description = self._read_text("Descripción [opcional]:")
+
+    @staticmethod
+    def _project_create_page(modal: ModalState) -> list[str]:
+        rows = [
+            "  CAMPO                      VALOR",
+            "  ─────────────────────────  ─────────────────────────────────────────────────────────────",
+        ]
+        for index, field in enumerate(modal.items):
+            marker = "▶" if index == modal.selected else " "
+            placeholder = {
+                "name": "(escribe un nombre)",
+                "path": "(indica una ruta)",
+            }.get(field.key, "(opcional)")
+            rows.append(f"{marker} {field.label:<25} {fit_text(field.value or placeholder, 62)}")
+        selected = modal.items[modal.selected]
+        rows.extend(("", "  DESCRIPCIÓN", f"  {selected.description}"))
+        return rows
+
+    def _handle_project_create_key(self, modal: ModalState, key: str) -> None:
+        if key == "ESC":
+            self.show_project_manager()
+            return
+        if key in ("UP", "DOWN", "TAB", "SHIFT_TAB"):
+            backwards = key in ("UP", "SHIFT_TAB")
+            modal.selected = (modal.selected + (-1 if backwards else 1)) % len(modal.items)
+            modal.editor_fresh = True
+            return
+        field = modal.items[modal.selected]
+        if key == "ENTER":
+            if modal.selected < len(modal.items) - 1:
+                modal.selected += 1
+                modal.editor_fresh = True
+            else:
+                self._submit_project_creation(modal)
+            return
+        if key == "BACKSPACE":
+            field.value = field.value[:-1]
+            modal.editor_fresh = False
+        elif key == "DELETE":
+            field.value = ""
+            modal.editor_fresh = False
+        elif len(key) == 1 and key.isprintable():
+            field.value = key if modal.editor_fresh else field.value + key
+            modal.editor_fresh = False
+
+    def _submit_project_creation(self, modal: ModalState) -> None:
+        from lanctl.core.projects.catalog import ProjectCatalog
+        from lanctl.core.projects.vlf import create_project
+        from lanctl.core.projects.workspace import activate_project_workspace
+
+        values = {field.key: field.value.strip() for field in modal.items}
+        name = values["name"]
+        if not name:
+            modal.selected = 0
+            modal.footer = "ERROR: escribe un nombre · Enter siguiente  Esc cancelar"
+            return
+        if any(character in name for character in '<>:"/\\|?*'):
+            modal.selected = 0
+            modal.footer = "ERROR: el nombre contiene caracteres no válidos · Esc cancelar"
+            return
+        directory_text = values["path"]
+        if not directory_text:
+            modal.selected = 1
+            modal.footer = "ERROR: indica la ruta del proyecto · Esc cancelar"
+            return
+        directory = Path(os.path.expandvars(directory_text)).expanduser()
+        description = values["description"]
         destination = directory / (name if name.casefold().endswith(".vlf") else f"{name}.vlf")
         try:
             destination.parent.mkdir(parents=True, exist_ok=True)
-            result = create_project(destination, name=Path(name).stem, description=description)
+            # No heredar el inventario ni los grupos del proyecto activo.
+            with tempfile.TemporaryDirectory(prefix="lanctl-project-create-") as temporary:
+                empty_config = dict(load_config())
+                empty_config["database"] = str(Path(temporary) / "devices.json")
+                empty_config["groups"] = str(Path(temporary) / "groups.json")
+                result = create_project(
+                    destination,
+                    name=Path(name).stem,
+                    description=description,
+                    config=empty_config,
+                )
             path = Path(result["path"])
             ProjectCatalog().register(path)
             activate_project_workspace(path)
@@ -2414,13 +2590,20 @@ class LanctlTui:
         self.messages = [f"Comando preparado: {entry.name}. Completa sus argumentos y pulsa Enter."]
 
     def _handle_settings_key(self, modal: ModalState, key: str) -> None:
+        if modal.tabs and modal.tabs[modal.tab_index] == "EXIT":
+            self._handle_settings_exit_key(modal, key)
+            return
+        previous_tab = modal.tab_index
         SettingsEditor.handle_key(
             modal,
             key,
-            close=lambda: setattr(self, "modal", None),
-            save=self._save_settings,
+            close=lambda: self._open_settings_exit(modal),
             open_remote_users=self.show_remote_users,
         )
+        if modal.tabs and modal.tabs[modal.tab_index] == "EXIT":
+            modal.tab_selections[-1] = previous_tab
+            modal.selected = 0
+            modal.footer = "↑/↓ seleccionar  Enter confirmar  Esc volver"
 
     def _handle_remote_users_key(self, modal: ModalState, key: str) -> None:
         if key == "ESC":
@@ -2546,7 +2729,8 @@ class LanctlTui:
             self._set_command_output(output, result)
         else:
             cleaned = _clean_tui_output(output)
-            modal.footer = f"ERROR: {cleaned[-1]} · Ctrl+S reintentar · Esc cancelar"
+            detail = cleaned[-1] if cleaned else "no se pudo guardar"
+            modal.footer = f"ERROR: {detail} · Enter reintentar · Esc volver"
 
     def _update_manager_detail(self, modal: ModalState) -> None:
         if not modal.items:

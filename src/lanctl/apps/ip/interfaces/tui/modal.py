@@ -47,6 +47,8 @@ class ModalState:
     editing: bool = False
     edit_snapshot: str = ""
     tab_selections: dict[int, int] = field(default_factory=dict)
+    max_width: int | None = None
+    max_height: int | None = None
 
     @property
     def page(self) -> list[str]:
