@@ -265,7 +265,7 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
         return 130
     except LanctlError as error:
         if error.print_output:
-            print_error(repr(error))
+            print_error(error.event.terminal_message())
         return error.exit_code
     except (OSError, RuntimeError, ValueError) as error:
         from lanctl.core.errors import errors
@@ -281,7 +281,7 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
             else 34,
             print_output=False,
         )
-        print_error(repr(event))
+        print_error(event.terminal_message())
         return 2
     finally:
         _MAIN_DEPTH.reset(depth_token)

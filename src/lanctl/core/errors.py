@@ -145,6 +145,10 @@ class ErrorEvent:
     def __str__(self) -> str:
         return f"[{self.level_name}:{self.level} {self.error_id}] {self.message}"
 
+    def terminal_message(self) -> str:
+        """Devuelve el resumen humano; el detalle técnico permanece en logs/repr."""
+        return f"{self.level_name}: {self.message} ({self.error_id})"
+
     def __repr__(self) -> str:
         return (
             f"ErrorEvent(id={self.error_id!r}, level={self.level}, "

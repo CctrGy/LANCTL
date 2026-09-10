@@ -102,6 +102,19 @@ def test_error_identifier_is_stable_for_origin_and_code():
     assert first.level_name == "WARNING"
 
 
+def test_terminal_message_is_compact_but_repr_keeps_diagnostics():
+    event = ErrorEvent(
+        34,
+        "LANCTL.Core.CLI.Command",
+        "CLI.VALUEERROR",
+        "el grupo ASSETS ya existe",
+        error_id="0e0EE4769B",
+    )
+
+    assert event.terminal_message() == "WARNING: el grupo ASSETS ya existe (0e0EE4769B)"
+    assert "origin='LANCTL.Core.CLI.Command'" in repr(event)
+
+
 def test_low_level_event_only_reaches_log_when_threshold_allows_it():
     hidden, visible = [], []
     ErrorManager(logger=hidden.append, minimum_level=20).emit(
