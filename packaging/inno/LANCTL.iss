@@ -58,6 +58,12 @@ Source: "{#BuildRoot}\lanaccess.exe"; DestDir: "{app}"; Flags: ignoreversion; Co
 Source: "..\..\docs\INSTALL.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "..\..\docs\ACCESS.md"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 
+[InstallDelete]
+; Limpia launchers heredados que pudieron quedar al actualizar instalaciones
+; anteriores a la separación actual entre raíz y aplicaciones.
+Type: files; Name: "{app}\LANCTL-GUI.exe"
+Type: files; Name: "{app}\landemo.exe"
+
 [Icons]
 Name: "{group}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"
 Name: "{group}\LANCTL CLI"; Filename: "{app}\LANCTL.exe"; Parameters: "--cli"; WorkingDir: "{app}"

@@ -56,6 +56,14 @@ try {
     & $Python scripts/generate-windows-version-info.py $Version $Revision $VersionInfo
     if ($LASTEXITCODE -ne 0) { throw 'Windows version metadata generation failed' }
     $env:LANCTL_VERSION_INFO = $VersionInfo
+    # `--clean` limpia la caché de PyInstaller, pero no elimina ejecutables
+    # antiguos de dist. Vaciar solo esos artefactos impide confundir launchers
+    # retirados con la distribución que se acaba de generar.
+    $DistDirectory = Join-Path $Root 'dist'
+    if (Test-Path -LiteralPath $DistDirectory) {
+        Get-ChildItem -LiteralPath $DistDirectory -Filter '*.exe' -File |
+            Remove-Item -Force
+    }
     & $Python -m PyInstaller --clean --noconfirm LANCTL.spec
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller failed' }
     if (-not (Test-Path -LiteralPath 'dist\lanip.exe')) {
@@ -69,6 +77,23 @@ try {
     }
     if (-not (Test-Path -LiteralPath 'dist\lanrack.exe')) { throw 'PyInstaller did not produce dist\lanrack.exe' }
     if (-not (Test-Path -LiteralPath 'dist\lanaccess.exe')) { throw 'PyInstaller did not produce dist\lanaccess.exe' }
+    $ExpectedExecutables = @(
+        'LANCTL.exe',
+        'lanip.exe',
+        'lanwire.exe',
+        'lanrack.exe',
+        'lanaccess.exe',
+        'lanmon.exe'
+    )
+    $ActualExecutables = @(
+        Get-ChildItem -LiteralPath $DistDirectory -Filter '*.exe' -File |
+            Select-Object -ExpandProperty Name
+    )
+    $UnexpectedExecutables = @($ActualExecutables | Where-Object { $_ -notin $ExpectedExecutables })
+    $MissingExecutables = @($ExpectedExecutables | Where-Object { $_ -notin $ActualExecutables })
+    if ($UnexpectedExecutables -or $MissingExecutables) {
+        throw "Invalid launcher set. Missing=[$($MissingExecutables -join ', ')] Unexpected=[$($UnexpectedExecutables -join ', ')]"
+    }
     foreach ($binary in @('dist\LANCTL.exe','dist\lanip.exe','dist\lanwire.exe','dist\lanmon.exe','dist\lanrack.exe','dist\lanaccess.exe')) {
         Sign-And-Verify (Resolve-Path -LiteralPath $binary).Path
     }
