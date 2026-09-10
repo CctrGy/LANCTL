@@ -38,6 +38,7 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
         default=config["range"],
         help="Red CIDR. Por defecto detecta la LAN como /24.",
     )
+    command.set_defaults(configured_gateway=config.get("gateway"))
     command.add_argument(
         "--database", default=config["database"], help="Archivo JSON de elementos."
     )
@@ -298,6 +299,7 @@ def run_list(args: argparse.Namespace) -> int:
             timeout=effective_timeout,
             max_hosts=args.max_hosts,
             scan_order=args.scan_order,
+            gateway=args.configured_gateway,
         )
     )
     progress = getattr(args, "progress_instance", None) or ScanProgress(args.progress)

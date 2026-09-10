@@ -11,4 +11,5 @@ def main(argv: list[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     return ip_main(arguments, program_name="LANIP")
 
+
 __all__ = ["main"]

@@ -91,6 +91,22 @@ Options:
                               comando.
 ```
 
+## `LANIP ephemeral`
+
+```text
+Usage: LANIP ephemeral [-h] [--fast | --normal | --accurate] [--range NETWORK]
+                       [--resolve-names] [--ports PORTS] [--json]
+                       [--workers WORKERS] [--timeout TIMEOUT]
+                       [--max-hosts MAX_HOSTS]
+                       [--scan-order {ascending,descending,random}]
+```
+
+Ejecuta un escaneo real completamente aislado del proyecto y del inventario
+persistente. Solo presenta dispositivos confirmados durante la ejecución. El
+alias corto es `lanip -e`; `--ports` añade una comprobación TCP sobre los hosts
+activos. No admite `--project`, edición ni guardado y destruye la sesión en
+memoria al terminar.
+
 ## `LANIP list`
 
 ```text

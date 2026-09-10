@@ -1,6 +1,6 @@
 #define MyAppName "LANCTL"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.3.0-beta.21"
+  #define MyAppVersion "0.3.0-beta.22"
 #endif
 #ifndef BuildRoot
   #define BuildRoot "..\..\dist"

@@ -15,6 +15,8 @@ from pathlib import Path, PurePosixPath
 from threading import RLock
 
 from lanctl import __version__
+from lanctl.apps.ip.domain.models import Group
+from lanctl.apps.ip.domain.models.device import reserved_devices_for_network
 from lanctl.core.config import load_config
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.file_transaction import transactional_path_argument
@@ -91,6 +93,26 @@ def create_project(
         database = DeviceDatabase(str(active["database"]))
         devices = database.load()
         groups = GroupDatabase(str(active["groups"]), database).load()
+        configured_network = ipaddress.ip_network(
+            str(active.get("range") or "192.168.1.0/24"), strict=False
+        )
+        if not isinstance(configured_network, ipaddress.IPv4Network):
+            raise ValueError("los proyectos LANCTL solo admiten redes IPv4 por ahora")
+        if not devices:
+            devices = database.preview(
+                reserved_devices_for_network(configured_network, active.get("gateway")),
+                _devices=devices,
+            )
+        reserved = [device for device in devices if device.default_alias in ("GATEWAY", "BRODCAST")]
+        if reserved:
+            basic = next((group for group in groups if group.name == "BASIC"), None)
+            if basic is None:
+                basic = Group("BASIC", "Elementos basicos de la LAN", editable=False)
+                groups.insert(0, basic)
+            basic.editable = False
+            for device in reserved:
+                if device.mac and device.mac not in basic.members:
+                    basic.members.append(device.mac)
         _write_elements_database(root / "devices/elements.db", devices, groups)
         if not (root / "devices/backup.db").exists():
             shutil.copy2(root / "devices/elements.db", root / "devices/backup.db")

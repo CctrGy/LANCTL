@@ -36,7 +36,9 @@ def test_unscoped_application_command_is_rejected_by_the_orchestrator():
 
 
 def test_lanmon_defaults_to_status_and_forwards_monitor_arguments():
-    with patch("lanctl.apps.ip.interfaces.cli.commands.monitor.run_monitor", return_value=4) as application:
+    with patch(
+        "lanctl.apps.ip.interfaces.cli.commands.monitor.run_monitor", return_value=4
+    ) as application:
         assert lanmon_main([]) == 4
         assert lanmon_main(["list", "--json"]) == 4
     assert application.call_args_list[0].args[0].words == ["status"]

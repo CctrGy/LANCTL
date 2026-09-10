@@ -58,6 +58,17 @@ local list = clink.argmatcher()
         "-dhcp", "--dhcp-only"
     }):nofiles()
 
+local ephemeral = clink.argmatcher()
+    :addflags({
+        "-h", "--help", "/?", "--fast", "--normal", "--accurate",
+        "--range" .. history_value("Red CIDR"), "--resolve-names",
+        "--ports" .. history_value("22,80,443"), "--json",
+        "--workers" .. history_value("Workers"),
+        "--timeout" .. history_value("Segundos"),
+        "--max-hosts" .. history_value("Máximo"),
+        "--scan-order" .. scan_orders
+    }):nofiles()
+
 local recurrent = clink.argmatcher()
     :addflags({
         "-h", "--help", "/?", "-list", "--list",
@@ -421,6 +432,7 @@ local lab = clink.argmatcher()
     }):loop()
 
 local root_commands = {
+    "ephemeral" .. ephemeral, "-e" .. ephemeral,
     "list" .. list, "recurrent" .. recurrent, "ping" .. ping,
     "open" .. open, "connect" .. open,
     "settings" .. settings, "call" .. call, "search" .. search, "scan" .. scan,

@@ -96,6 +96,7 @@ class LanScanner:
         timeout: float,
         max_hosts: int,
         scan_order: str = "ascending",
+        gateway: str | None = None,
     ):
         scan_order = scan_order.casefold()
         if scan_order not in SCAN_ORDERS:
@@ -107,6 +108,7 @@ class LanScanner:
         self.timeout = timeout
         self.max_hosts = max_hosts
         self.scan_order = scan_order
+        self.gateway = gateway
         self.discovery_methods: dict[str, set[str]] = {}
         self.confirmed_devices: set[str] = set()
         self.response_times_ms: dict[str, dict[str, float]] = {}
@@ -334,26 +336,11 @@ class LanScanner:
         self._mark_discovery(own_ip, own_mac, "LOCAL")
 
     def _include_special_devices(self, records, arp_entries):
-        gateway = str(next(self.network.hosts(), self.network.network_address))
-        broadcast = str(self.network.broadcast_address)
-        special = {
-            gateway: self._make_record(
-                gateway,
-                arp_entries.get(gateway, ""),
-                "GATEWAY",
-                cnf="O",
-                description="Puerta de enlace de la red",
-                groups=["BASIC"],
-            ),
-            broadcast: self._make_record(
-                broadcast,
-                "FF:FF:FF:FF:FF:FF",
-                "BRODCAST",
-                cnf="O",
-                description="Difusion general de la LAN",
-                groups=["BASIC"],
-            ),
-        }
+        from lanctl.apps.ip.domain.models.device import reserved_devices_for_network
+
+        reserved = reserved_devices_for_network(self.network, self.gateway)
+        reserved[0].mac = arp_entries.get(reserved[0].ip, "")
+        special = {record.ip: record for record in reserved}
         by_ip = {record.ip: record for record in records}
         for ip, record in special.items():
             if ip not in by_ip:
@@ -361,6 +348,10 @@ class LanScanner:
                 self._mark_discovery(ip, record.mac, "BASIC")
                 continue
             existing = by_ip[ip]
+            # GATEWAY y BRODCAST son elementos estructurales de la LAN. Si la
+            # IP ya fue descubierta como un host normal, conserva su identidad
+            # observada pero adopta siempre el estado confirmado reservado.
+            existing.cnf = "O"
             existing.alias = record.alias
             existing.default_alias = record.default_alias
             existing.description = record.description

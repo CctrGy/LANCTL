@@ -6,7 +6,7 @@ from collections.abc import Iterable, Mapping
 from datetime import datetime
 
 from lanctl.apps.ip.domain.models import Device, normalize_cnf, normalize_mac
-from lanctl.apps.ip.domain.models.device import is_private_mac
+from lanctl.apps.ip.domain.models.device import is_private_mac, reserved_device_role
 from lanctl.core.config import load_config
 from lanctl.core.file_transaction import atomic_write_json, transactional_method
 from lanctl.core.logger import write_database_log
@@ -71,13 +71,25 @@ class DeviceDatabase:
             device.mac.upper(): index for index, device in enumerate(devices) if device.mac
         }
         ip_indexes = {device.ip: index for index, device in enumerate(devices)}
+        reserved_indexes = {
+            role: index
+            for index, device in enumerate(devices)
+            if (role := reserved_device_role(device.alias, device.default_alias))
+        }
         for record in records:
             record = recurrent_elements.enrich(record)
             ip = str(record["IP"])
             mac = str(record.get("MAC", "")).upper()
+            reserved_role = reserved_device_role(
+                str(record.get("ALIAS", "")), str(record.get("defaultAlias", ""))
+            )
 
             # La MAC identifica al dispositivo aunque DHCP le asigne otra IP.
-            previous_index = mac_indexes.get(mac) if mac else None
+            # Los dos elementos estructurales se identifican antes por su rol:
+            # solo puede existir un GATEWAY y un BRODCAST por inventario.
+            previous_index = reserved_indexes.get(reserved_role) if reserved_role else None
+            if previous_index is None:
+                previous_index = mac_indexes.get(mac) if mac else None
             if previous_index is None and mac and is_private_mac(mac):
                 candidate_index = ip_indexes.get(ip)
                 candidate = devices[candidate_index] if candidate_index is not None else None
@@ -127,7 +139,7 @@ class DeviceDatabase:
                 }
             )
             if previous:
-                incoming["cnf"] = previous["cnf"]
+                incoming["cnf"] = "O" if reserved_role else previous["cnf"]
                 incoming["GROUP"] = list(dict.fromkeys([*previous["GROUP"], *incoming["GROUP"]]))
                 if previous["description"] != "-":
                     incoming["description"] = previous["description"]
@@ -167,6 +179,7 @@ class DeviceDatabase:
                     incoming["ALIAS"] = ""
                 elif previous["ALIAS"] and previous["ALIAS"] != previous["defaultAlias"]:
                     incoming["ALIAS"] = previous["ALIAS"]
+                incoming.apply_reserved_defaults()
             elif not incoming["NAME"]:
                 # Primer descubrimiento de la MAC: el nombre detectado sirve
                 # como etiqueta inicial y luego queda protegido.
@@ -184,6 +197,8 @@ class DeviceDatabase:
             if incoming.mac:
                 mac_indexes[incoming.mac.upper()] = previous_index
             ip_indexes[incoming.ip] = previous_index
+            if role := incoming.apply_reserved_defaults():
+                reserved_indexes[role] = previous_index
 
         def address_key(device: Device) -> tuple[int, int]:
             try:

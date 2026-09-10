@@ -36,7 +36,9 @@ def build_parser() -> LANCTLArgumentParser:
         description="Orquestador raíz de las aplicaciones de la suite LANCTL.",
     )
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}",
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
         help="Muestra la versión común de la suite y termina.",
     )
     parser.add_argument("--cli", action="store_true", help="Abre la consola principal.")

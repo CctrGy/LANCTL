@@ -8,7 +8,7 @@ el acceso mediante protocolos de administración y la auditoría de cambios.
 Incluye CLI, consola persistente, TUI, interfaz gráfica para Windows, proyectos
 portables `.vlf` y un sistema extensible de complementos `.lcp`.
 
-> **Versión actual — `0.3.0-beta.21`**
+> **Versión actual — `0.3.0-beta.22`**
 
 Esta beta consolida el árbol más moderno del proyecto: GUI para Windows, CLI y
 TUI, proyectos VLF, plugins LCP, monitorización, historial, acceso remoto
@@ -37,7 +37,7 @@ SSH y HTTPS permanecen apagados en todas las modalidades; `--configure-access`
 solo abre el asistente local e interactivo. Consulta [la guía completa](docs/INSTALL.md)
 para instalación verificable, portable/offline, actualizaciones, ARM64,
 desinstalación y advertencias de SmartScreen.
-> `0.3.0-beta.21` es una versión de prueba. Revisa los cambios y conserva una
+> `0.3.0-beta.22` es una versión de prueba. Revisa los cambios y conserva una
 > copia de seguridad de tus proyectos antes de actualizar una instalación en uso.
 
 ## Capacidades
@@ -72,8 +72,8 @@ Los iconos JPEG de `125×125` conservados para la GUI heredada se catalogan en
 
 ## Estado y alcance
 
-La beta.21 centra el producto en las interfaces CLI y TUI, añade
-políticas de guardado para proyectos VLF y mantiene el acceso remoto desactivado
+La beta.22 centra el producto en las interfaces CLI y TUI, añade el escaneo
+efímero aislado y políticas de guardado para proyectos VLF, y mantiene el acceso remoto desactivado
 hasta que el administrador lo configure expresamente. Las aplicaciones pueden
 permanecer abiertas en paralelo: comparten identificadores, configuración y
 servicios transaccionales, pero cada dominio conserva la propiedad de sus datos.
@@ -247,6 +247,8 @@ falten.
 lanctl list --normal
 lanctl list --fast --active
 lanctl list --accurate --progress
+lanip ephemeral --normal
+lanip -e --fast --range 192.168.1.0/24
 lanctl search NAS
 lanctl ping ESP --arp
 lanctl scan CAM1 --identify
@@ -258,6 +260,12 @@ Los perfiles ajustan el equilibrio entre velocidad y profundidad:
 - `--normal`: combina ICMP y ARP con un equilibrio entre velocidad y cobertura.
 - `--accurate`: añade reintentos, resolución de nombres, WS-Discovery y los
   métodos aportados por complementos de descubrimiento activos.
+
+`lanip ephemeral` (`lanip -e`) es una exploración desechable que muestra
+exclusivamente los equipos activos de esa ejecución. Usa un repositorio en
+memoria, no abre el proyecto activo, no toca el inventario ni dispara guardado
+automático. Puede añadir `--resolve-names`, `--ports 22,80,443` o `--json`;
+todos los resultados se descartan al terminar el proceso.
 
 mDNS y SSDP se distribuyen en el complemento nativo
 `lanctl.discovery.mdns-ssdp.lcp`; ya no forman parte del programa principal.

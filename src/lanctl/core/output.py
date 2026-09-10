@@ -31,6 +31,7 @@ FIELDS = (
     "lastDiscovery",
     "lastSeen",
     "responseMs",
+    "openPorts",
 )
 TABLE_COLUMNS = (
     ("IP", "IP"),
@@ -66,6 +67,7 @@ TABLE_HARD_MIN_WIDTHS = {
     "lastDiscovery": 8,
     "lastSeen": 12,
     "responseMs": 7,
+    "openPorts": 11,
 }
 SHRINK_PRIORITY = (
     "description",
@@ -82,6 +84,7 @@ SHRINK_PRIORITY = (
     "IP",
     "MAC",
     "responseMs",
+    "openPorts",
 )
 MANUFACTURER_COLUMN = ("manufacturer", "manufacturer")
 EXTRA_COLUMNS = (
@@ -92,6 +95,7 @@ EXTRA_COLUMNS = (
     ("last-discovery", "lastDiscovery"),
     ("last-seen", "lastSeen"),
     ("ms", "responseMs"),
+    ("ports", "openPorts"),
 )
 AVAILABLE_COLUMNS = {
     label.casefold(): key for label, key in (*TABLE_COLUMNS, MANUFACTURER_COLUMN, *EXTRA_COLUMNS)
@@ -112,6 +116,7 @@ FIELD_COLORS = {
     "lastDiscovery": Fore.LIGHTCYAN_EX,
     "lastSeen": Fore.LIGHTBLACK_EX,
     "responseMs": Fore.LIGHTCYAN_EX,
+    "openPorts": Fore.LIGHTGREEN_EX,
 }
 DARK_FIELD_COLORS = {
     "IP": Fore.BLUE,
@@ -129,6 +134,7 @@ DARK_FIELD_COLORS = {
     "lastDiscovery": Fore.CYAN,
     "lastSeen": Fore.LIGHTBLACK_EX,
     "responseMs": Fore.CYAN,
+    "openPorts": Fore.GREEN,
 }
 # Constante conservada para extensiones externas que aún puedan importarla; las
 # filas inactivas ya no utilizan el efecto de tachado.

@@ -17,6 +17,7 @@ from lanctl.core.logger import write_log
 # El registro usa nombres importables para que `lanctl --version` no cargue
 # drivers de red, GUI, SSH y plugins antes de saber qué modo se ha solicitado.
 _COMMAND_REGISTRARS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("lanctl.apps.ip.interfaces.cli.commands.ephemeral", ("register_ephemeral_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.list", ("register_list_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.recurrent", ("register_recurrent_command",)),
     ("lanctl.apps.ip.interfaces.cli.commands.ping", ("register_ping_command",)),
@@ -165,6 +166,9 @@ def build_parser(
 def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == "-e":
+        arguments[0] = "ephemeral"
+    ephemeral_requested = "ephemeral" in arguments
     from lanctl.core.parser import has_help_argument, normalize_help_arguments
 
     help_requested = has_help_argument(arguments)
@@ -179,11 +183,13 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
     depth = _MAIN_DEPTH.get()
     depth_token = _MAIN_DEPTH.set(depth + 1)
     autosave_scheduler = None
+    project_independent = ephemeral_requested
     try:
         from lanctl.core.data_migration import ensure_data_layout
 
-        ensure_data_layout()
-        run_automatic_log_cleanup()
+        if not project_independent:
+            ensure_data_layout()
+            run_automatic_log_cleanup()
         from lanctl.shared.i18n import initialize_language, t
 
         initialize_language()
@@ -197,6 +203,7 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
         write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
         parser = build_parser(include_plugin_commands=True, program_name=program_name)
         args = parser.parse_args(arguments)
+        project_independent = bool(getattr(args, "project_independent", False))
         if plugins_active:
             mode = (
                 "tui"
@@ -213,6 +220,8 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
                 "LANCTL.Core.Lifecycle.Startup",
                 {"version": __version__, "mode": mode},
             )
+        if args.startup_project and project_independent:
+            raise ValueError("ephemeral no admite --project ni utiliza el proyecto activo")
         if args.startup_project:
             from lanctl.core.projects import activate_project_workspace
 
@@ -225,7 +234,7 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
                 },
             )
             write_log(f"PROJECT USE id={workspace.project_id} path={workspace.project}")
-        if depth == 0:
+        if depth == 0 and not project_independent:
             from lanctl.core.projects.save_policy import start_autosave_scheduler
 
             autosave_scheduler = start_autosave_scheduler()
@@ -246,9 +255,10 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
         if args.cli:
             return run_global_cli()
         result = _run_handler(args)
-        from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+        if not project_independent:
+            from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
 
-        save_active_project(SaveTrigger.CHANGE)
+            save_active_project(SaveTrigger.CHANGE)
         return result
     except KeyboardInterrupt:
         print_error(t("LANCTL.CORE.APP.CANCELLED"))
@@ -275,7 +285,7 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
         return 2
     finally:
         _MAIN_DEPTH.reset(depth_token)
-        if depth == 0:
+        if depth == 0 and not project_independent:
             try:
                 if autosave_scheduler is not None:
                     autosave_scheduler.stop()

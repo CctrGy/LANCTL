@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import re
 from collections.abc import Iterator, Mapping, MutableMapping
 from dataclasses import dataclass, field
@@ -8,6 +9,58 @@ from typing import Any, ClassVar
 
 MAC_PATTERN = re.compile(r"^(?:[0-9A-F]{2}:){5}[0-9A-F]{2}$")
 CNF_STATES = ("O", "X", "-", "S", "F")
+RESERVED_DEVICE_DEFAULTS = {
+    "GATEWAY": {
+        "description": "Puerta de enlace de la red",
+        "groups": ("BASIC",),
+    },
+    "BRODCAST": {
+        "description": "Difusion general de la LAN",
+        "groups": ("BASIC",),
+        "mac": "FF:FF:FF:FF:FF:FF",
+    },
+}
+
+
+def reserved_device_role(alias: str, default_alias: str = "") -> str:
+    """Devuelve el rol estructural canónico, si el elemento lo tiene."""
+    for candidate in (default_alias, alias):
+        normalized = str(candidate).strip().upper()
+        if normalized in RESERVED_DEVICE_DEFAULTS:
+            return normalized
+    return ""
+
+
+def reserved_devices_for_network(
+    network: ipaddress.IPv4Network, gateway: str | None = None
+) -> tuple[Device, Device]:
+    """Construye los dos elementos estructurales de una LAN IPv4."""
+    gateway_ip = str(gateway or "").strip()
+    try:
+        parsed_gateway = ipaddress.IPv4Address(gateway_ip) if gateway_ip else None
+    except ipaddress.AddressValueError:
+        parsed_gateway = None
+    if (
+        parsed_gateway is None
+        or parsed_gateway not in network
+        or parsed_gateway in (network.network_address, network.broadcast_address)
+    ):
+        parsed_gateway = next(network.hosts(), network.network_address)
+    return (
+        Device(
+            ip=str(parsed_gateway),
+            cnf="O",
+            alias="GATEWAY",
+            default_alias="GATEWAY",
+        ),
+        Device(
+            ip=str(network.broadcast_address),
+            cnf="O",
+            mac="FF:FF:FF:FF:FF:FF",
+            alias="BRODCAST",
+            default_alias="BRODCAST",
+        ),
+    )
 
 
 def normalize_mac(value: str) -> str:
@@ -212,6 +265,25 @@ class Device(MutableMapping[str, Any]):
                 address for address in self.previous_ips if address and address != self.ip
             )
         )
+        self.apply_reserved_defaults()
+
+    def apply_reserved_defaults(self) -> str:
+        """Impone las propiedades inmutables de los elementos de infraestructura."""
+        role = reserved_device_role(self.alias, self.default_alias)
+        if not role:
+            return ""
+        defaults = RESERVED_DEVICE_DEFAULTS[role]
+        self.cnf = "O"
+        self.alias = role
+        self.default_alias = role
+        self.alias_deleted = False
+        self.groups = list(dict.fromkeys([*self.groups, *defaults["groups"]]))
+        if not self.description or self.description == "-":
+            self.description = str(defaults["description"])
+        if defaults.get("mac"):
+            self.mac = str(defaults["mac"])
+            self.device_id = device_identifier(self.mac, self.ip)
+        return role
 
     def __getitem__(self, key: str) -> Any:
         try:
