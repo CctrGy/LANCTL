@@ -1758,6 +1758,14 @@ class LanctlTui:
         self.output_index = 0
         self.output_scroll = 0
 
+    def _set_terminal_message(self, message: str) -> None:
+        """Publica un aviso y restablece cualquier selección anterior del panel CLI."""
+        self.messages = [message]
+        self.output_focus = False
+        self.output_selectable = []
+        self.output_index = 0
+        self.output_scroll = 0
+
     def _move_output(self, delta: int) -> None:
         if self.output_selectable:
             self.output_index = max(
@@ -1940,6 +1948,7 @@ class LanctlTui:
             workspace_is_dirty,
         )
 
+        settings = {}
         try:
             settings = load_config()
             had_changes = workspace_is_dirty(settings)
@@ -1955,16 +1964,16 @@ class LanctlTui:
                 details={"project": str(settings.get("activeProject") or "")},
                 print_output=False,
             )
-            self.messages = [f"No se pudo guardar el proyecto: {error}"]
+            self._set_terminal_message(f"No se pudo guardar el proyecto: {error}")
             return
         if result.saved:
             self.reload()
-            action = "actualizado" if had_changes else "guardado"
-            self.messages = [f"Proyecto {action}: {result.path}"]
+            state = "cambios aplicados" if had_changes else "sin cambios pendientes"
+            self._set_terminal_message(f"Proyecto guardado correctamente: {result.path} ({state}).")
         elif result.reason == "no-active-project":
-            self.messages = ["No hay ningún proyecto activo que guardar."]
+            self._set_terminal_message("No hay ningún proyecto activo que guardar.")
         else:
-            self.messages = [f"El proyecto no necesitó guardarse: {result.reason}."]
+            self._set_terminal_message(f"El proyecto no necesitó guardarse: {result.reason}.")
 
     def _selected_clipboard_payload(self) -> dict[str, str]:
         device = self.selected

@@ -1014,6 +1014,10 @@ class TuiTests(unittest.TestCase):
     def test_manual_save_reports_updated_project_in_cli_panel(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.messages = []
+        tui.output_focus = True
+        tui.output_selectable = [8]
+        tui.output_index = 0
+        tui.output_scroll = 8
         tui.reload = Mock()
         saved = SimpleNamespace(saved=True, path="C:/Projects/Casa.vlf", reason="saved")
 
@@ -1024,12 +1028,22 @@ class TuiTests(unittest.TestCase):
         ):
             tui._manual_save()
 
-        self.assertEqual(tui.messages, ["Proyecto actualizado: C:/Projects/Casa.vlf"])
+        self.assertEqual(
+            tui.messages,
+            ["Proyecto guardado correctamente: C:/Projects/Casa.vlf (cambios aplicados)."],
+        )
+        self.assertFalse(tui.output_focus)
+        self.assertEqual(tui.output_selectable, [])
+        self.assertEqual(tui.output_scroll, 0)
         tui.reload.assert_called_once_with()
 
     def test_manual_save_reports_saved_project_when_already_synchronized(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.messages = []
+        tui.output_focus = False
+        tui.output_selectable = []
+        tui.output_index = 0
+        tui.output_scroll = 0
         tui.reload = Mock()
         saved = SimpleNamespace(saved=True, path="C:/Projects/Casa.vlf", reason="saved")
 
@@ -1040,7 +1054,10 @@ class TuiTests(unittest.TestCase):
         ):
             tui._manual_save()
 
-        self.assertEqual(tui.messages, ["Proyecto guardado: C:/Projects/Casa.vlf"])
+        self.assertEqual(
+            tui.messages,
+            ["Proyecto guardado correctamente: C:/Projects/Casa.vlf (sin cambios pendientes)."],
+        )
 
     def test_navigation_shortcuts_prepare_contextual_commands(self):
         tui = LanctlTui.__new__(LanctlTui)
