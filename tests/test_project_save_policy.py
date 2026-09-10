@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from lanctl.core.database import DeviceDatabase
 from lanctl.core.projects.save_policy import (
     SaveMode,
     SaveTrigger,
@@ -15,6 +16,8 @@ from lanctl.core.projects.save_policy import (
     workspace_fingerprint,
     workspace_is_dirty,
 )
+from lanctl.core.projects.vlf import create_project
+from lanctl.core.projects.workspace import prepare_project_workspace
 
 
 class ProjectSavePolicyTests(unittest.TestCase):
@@ -126,6 +129,54 @@ class ProjectSavePolicyTests(unittest.TestCase):
             self.assertFalse(skipped.saved)
             self.assertTrue(saved.saved)
             update.assert_called_once()
+
+    def test_manual_save_persists_workspace_inventory_inside_real_vlf(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "Casa.vlf"
+            database_path = root / "devices.json"
+            groups_path = root / "groups.json"
+            database = DeviceDatabase(str(database_path))
+            database.add_device("02:00:00:00:00:21", alias="NAS")
+            settings = {
+                "database": str(database_path),
+                "groups": str(groups_path),
+                "activeProject": str(project),
+                "projectSaveMode": SaveMode.MANUAL.value,
+                "range": "192.168.1.0/24",
+            }
+            create_project(project, name="Casa", config=settings)
+            metadata = root / "workspace.json"
+            settings["projectWorkspace"] = {
+                "database": str(database_path),
+                "groups": str(groups_path),
+                "metadata": str(metadata),
+            }
+            metadata.write_text(
+                json.dumps({"workspaceHash": workspace_fingerprint(settings)}),
+                encoding="utf-8",
+            )
+            database.edit_device("NAS", "description", "Cambio pendiente")
+            workspace = SimpleNamespace(project_id="project-1")
+            manager = SimpleNamespace(
+                events=SimpleNamespace(emit=lambda *_args, **_kwargs: None),
+                project_registry=lambda: {"schemaVersion": 1, "plugins": []},
+            )
+
+            with (
+                patch(
+                    "lanctl.core.projects.workspace.activate_project_workspace",
+                    return_value=workspace,
+                ),
+                patch("lanctl.core.plugins.get_plugin_manager", return_value=manager),
+                patch("lanctl.core.projects.save_policy.write_log"),
+            ):
+                result = save_active_project(force=True, config=settings)
+
+            extracted = prepare_project_workspace(project, root=root / "extracted")
+            stored = DeviceDatabase(str(extracted.database)).resolve("NAS")
+            self.assertTrue(result.saved)
+            self.assertEqual(stored.description, "Cambio pendiente")
 
     def test_close_consult_saves_only_after_user_confirmation(self):
         with tempfile.TemporaryDirectory() as directory:

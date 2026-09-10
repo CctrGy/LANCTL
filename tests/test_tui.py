@@ -126,6 +126,29 @@ class TuiTests(unittest.TestCase):
         tui._handle_modal_key("CTRL_N")
         self.assertEqual(calls, ["new"])
 
+    def test_ctrl_s_saves_active_project_while_project_manager_is_open(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.modal = ModalState("projects", "PROJECT MANAGER", ["Proyectos"], [[]])
+        tui._manual_save = Mock()
+        tui.show_project_manager = Mock()
+
+        tui.handle_key("CTRL_S")
+
+        tui._manual_save.assert_called_once_with()
+        tui.show_project_manager.assert_called_once_with()
+
+    def test_ctrl_s_keeps_settings_specific_save_behavior(self):
+        field = SettingField("workers", "Workers", "--workers", "64", "64", "entero")
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.modal = ModalState("settings", "SETTINGS", ["GENERAL"], [[]], items=[field])
+        tui._manual_save = Mock()
+        tui._save_settings = Mock()
+
+        tui.handle_key("CTRL_S")
+
+        tui._manual_save.assert_not_called()
+        tui._save_settings.assert_called_once_with(tui.modal)
+
     def test_settings_tab_edits_and_saves_through_the_settings_command(self):
         tui = LanctlTui.__new__(LanctlTui)
         fields = [

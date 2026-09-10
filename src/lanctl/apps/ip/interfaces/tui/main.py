@@ -1877,8 +1877,18 @@ class LanctlTui:
         try:
             settings = load_config()
             had_changes = workspace_is_dirty(settings)
-            result = save_active_project(SaveTrigger.CHANGE, force=True)
-        except (OSError, ValueError) as error:
+            result = save_active_project(SaveTrigger.CHANGE, force=True, config=settings)
+        except (OSError, RuntimeError, ValueError, sqlite3.DatabaseError) as error:
+            from lanctl.core.errors import errors
+
+            errors.from_exception(
+                error,
+                origin="LANCTL.TUI.Project.Save",
+                code="PROJECT.SAVE.MANUAL_FAILED",
+                level=38,
+                details={"project": str(settings.get("activeProject") or "")},
+                print_output=False,
+            )
             self.messages = [f"No se pudo guardar el proyecto: {error}"]
             return
         if result.saved:
@@ -1982,6 +1992,17 @@ class LanctlTui:
 
     def handle_key(self, key: str) -> None:
         if getattr(self, "modal", None):
+            # Settings conserva su guardado específico. En los demás overlays,
+            # Ctrl+S sigue siendo el guardado manual global del proyecto.
+            if key == "CTRL_S" and self.modal.kind not in {
+                "settings",
+                "remote_users",
+                "project_close",
+            }:
+                self._manual_save()
+                if self.modal and self.modal.kind == "projects":
+                    self.show_project_manager()
+                return
             self._handle_modal_key(key)
             return
         if self.detail_lines:
