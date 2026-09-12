@@ -366,7 +366,7 @@ local project = clink.argmatcher():addarg({
         "--description" .. history_value("Descripción"), "--author" .. history_value("Autor"),
         "--lan-name" .. history_value("LAN"), "--location" .. history_value("Ubicación"),
         "--company" .. history_value("Empresa"), "--responsible" .. history_value("Responsable"),
-        "--force"
+        "--empty", "--force"
     }),
     "update" .. project_action(), "info" .. project_action({ "-h", "--help", "/?", "--json" }),
     "verify" .. project_action({ "-h", "--help", "/?", "--json" }),

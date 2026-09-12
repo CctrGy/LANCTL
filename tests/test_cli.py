@@ -6,7 +6,7 @@ import unittest
 from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from colorama import Fore, Style
 
@@ -24,6 +24,7 @@ from lanctl.apps.ip.infrastructure.terminals.tr064 import parse_call
 from lanctl.apps.ip.interfaces.cli.commands.download_settings import lan_settings
 from lanctl.apps.ip.interfaces.cli.commands.group import _paint
 from lanctl.apps.ip.interfaces.cli.commands.list import active_flags, filter_rows, ip_in_range
+from lanctl.apps.ip.interfaces.cli.commands.project import _create
 from lanctl.apps.ip.interfaces.cli.commands.terminal import choose_terminal
 from lanctl.apps.ip.interfaces.cli.main import build_parser
 from lanctl.core.config import normalize_dhcp_range
@@ -35,6 +36,55 @@ from lanctl.core.log_cleanup import cleanup_old_logs
 from lanctl.core.logger import write_database_log, write_log
 from lanctl.core.output import STRIKETHROUGH, normalize_columns, render_records
 from lanctl.core.tr064 import Tr064Client
+
+
+class ProjectCommandTests(unittest.TestCase):
+    def test_create_empty_uses_fresh_temporary_inventory(self):
+        args = SimpleNamespace(
+            file="Home.vlf",
+            name="Home",
+            description="",
+            author="Victor",
+            lan_name="",
+            location="",
+            company="",
+            responsible="",
+            empty=True,
+            force=False,
+        )
+        captured = {}
+
+        def fake_create(file, **options):
+            captured.update(options)
+            return {
+                "path": str(file),
+                "project": {"id": "project-id", "name": "Home", "devices": 2},
+                "checksum": "checksum",
+            }
+
+        plugin_manager = SimpleNamespace(events=SimpleNamespace(emit=Mock()))
+        with (
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.project.load_config",
+                return_value={"database": "active-devices.json", "groups": "active-groups.json"},
+            ),
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.project.create_project",
+                side_effect=fake_create,
+            ),
+            patch("lanctl.apps.ip.interfaces.cli.commands.project._set_active_project"),
+            patch("lanctl.apps.ip.interfaces.cli.commands.project.write_log"),
+            patch("lanctl.apps.ip.interfaces.cli.commands.project.ok"),
+            patch("lanctl.core.plugins.get_plugin_manager", return_value=plugin_manager),
+        ):
+            self.assertEqual(_create(args), 0)
+
+        config = captured["config"]
+        self.assertNotEqual(config["database"], "active-devices.json")
+        self.assertNotEqual(config["groups"], "active-groups.json")
+        self.assertTrue(config["database"].endswith("devices.json"))
+        self.assertTrue(config["groups"].endswith("groups.json"))
+        self.assertFalse(captured["initialize_reserved"])
 
 
 class OutputTests(unittest.TestCase):
@@ -95,7 +145,7 @@ class OutputTests(unittest.TestCase):
         )
         self.assertEqual(
             rendered.splitlines()[1].split("  "),
-            ["-" * 13, "-" * 3, "-" * 13, "-" * 19, "-" * 17, "-" * 8, "-" * 42],
+            ["-" * 13, "-" * 3, "-" * 13, "-" * 19, "-" * 17, "-" * 12, "-" * 42],
         )
 
     def test_dhcp_range_is_delimited_with_table_separators(self):

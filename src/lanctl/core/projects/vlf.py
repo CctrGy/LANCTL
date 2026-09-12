@@ -71,6 +71,7 @@ def create_project(
     config: Mapping | None = None,
     identity: Mapping | None = None,
     template: str | Path | None = None,
+    initialize_reserved: bool = True,
     overwrite: bool = False,
 ) -> dict:
     destination = _vlf_path(output)
@@ -98,7 +99,7 @@ def create_project(
         )
         if not isinstance(configured_network, ipaddress.IPv4Network):
             raise ValueError("los proyectos LANCTL solo admiten redes IPv4 por ahora")
-        if not devices:
+        if not devices and initialize_reserved:
             devices = database.preview(
                 reserved_devices_for_network(configured_network, active.get("gateway")),
                 _devices=devices,

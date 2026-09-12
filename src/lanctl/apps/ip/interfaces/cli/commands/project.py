@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import getpass
 import json
+import tempfile
+from pathlib import Path
 
 from colorama import Fore, Style
 
@@ -43,6 +45,11 @@ def register_project_command(commands: argparse._SubParsersAction) -> None:
     create.add_argument("--location", default="", help="Ubicación física.")
     create.add_argument("--company", default="", help="Empresa u organización.")
     create.add_argument("--responsible", default="", help="Responsable de la LAN.")
+    create.add_argument(
+        "--empty",
+        action="store_true",
+        help="Crea un proyecto limpio sin copiar el inventario ni los grupos activos.",
+    )
     create.add_argument("--force", action="store_true", help="Sobrescribe un VLF existente.")
     create.set_defaults(project_handler=_create)
 
@@ -100,17 +107,29 @@ def _status(args) -> int:
 
 
 def _create(args) -> int:
-    result = create_project(
-        args.file,
-        name=args.name or "",
-        description=args.description,
-        author=args.author,
-        lan_name=args.lan_name,
-        location=args.location,
-        company=args.company,
-        responsible=args.responsible,
-        overwrite=args.force,
-    )
+    options = {
+        "name": args.name or "",
+        "description": args.description,
+        "author": args.author,
+        "lan_name": args.lan_name,
+        "location": args.location,
+        "company": args.company,
+        "responsible": args.responsible,
+        "overwrite": args.force,
+    }
+    if args.empty:
+        with tempfile.TemporaryDirectory(prefix="lanctl-project-create-") as temporary:
+            empty_config = dict(load_config())
+            empty_config["database"] = str(Path(temporary) / "devices.json")
+            empty_config["groups"] = str(Path(temporary) / "groups.json")
+            result = create_project(
+                args.file,
+                config=empty_config,
+                initialize_reserved=False,
+                **options,
+            )
+    else:
+        result = create_project(args.file, **options)
     project = result["project"]
     _set_active_project(result["path"])
     from lanctl.core.plugins import get_plugin_manager
