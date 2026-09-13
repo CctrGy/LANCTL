@@ -50,6 +50,16 @@ class DistributionTests(unittest.TestCase):
         self.assertNotIn("eval ", shell)
         self.assertNotIn("source ", shell)
 
+    def test_windows_installer_defaults_to_automatic_release_resolution(self):
+        root = Path(__file__).resolve().parents[1]
+        powershell = (root / "install.ps1").read_text(encoding="utf-8")
+        self.assertIn("[string]$Version = 'auto'", powershell)
+        self.assertIn("Resolve-RequestedVersion", powershell)
+        self.assertIn("api.github.com/repos/$Repository/releases?per_page=50", powershell)
+        self.assertIn("api.github.com/repos/$Repository/releases/tags/v$script:RequestedVersion", powershell)
+        self.assertIn("Get-Asset $release 'SHA256SUMS.txt'", powershell)
+        self.assertNotIn("[ValidatePattern", powershell)
+
     def test_updates_preserve_data_and_access_is_never_silent(self):
         root = Path(__file__).resolve().parents[1]
         powershell = (root / "install.ps1").read_text(encoding="utf-8")

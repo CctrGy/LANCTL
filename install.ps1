@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [ValidateSet('stable','beta')][string]$Channel = 'beta',
-    [ValidatePattern('^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$')][string]$Version,
+    [string]$Version = 'auto',
     [ValidateSet('standard','monitor')][string]$Mode = 'standard',
     [switch]$Portable,
     [switch]$ConfigureAccess,
@@ -15,7 +15,7 @@ $Repository = 'CctrGy/LANCTL'
 function Show-Usage {
     @'
 LANCTL online installer
-  .\install.ps1 [-Channel stable|beta] [-Version VERSION]
+  .\install.ps1 [-Channel stable|beta] [-Version auto|VERSION]
                 [-Mode standard|monitor] [-Portable] [-ConfigureAccess] [-Yes]
   .\install.ps1 -Uninstall [-Yes]
 
@@ -23,10 +23,24 @@ LANCTL online installer
 It never enables SSH or HTTPS non-interactively.
 '@
 }
+function Resolve-RequestedVersion {
+    $requested = if ($null -eq $Version) { '' } else { $Version.Trim() }
+    if ([string]::IsNullOrWhiteSpace($requested) -or $requested -ieq 'auto') {
+        return $null
+    }
+    if ($requested -notmatch '^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$') {
+        throw "Invalid version '$requested'. Use auto or a version such as 0.3.0-beta.22."
+    }
+    return $requested
+}
 function Get-Release {
-    $headers = @{ 'Accept'='application/vnd.github+json'; 'X-GitHub-Api-Version'='2022-11-28' }
-    if ($Version) {
-        return Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/$Repository/releases/tags/v$Version"
+    $headers = @{
+        'Accept'='application/vnd.github+json'
+        'X-GitHub-Api-Version'='2022-11-28'
+        'User-Agent'='LANCTL-Windows-Installer'
+    }
+    if ($script:RequestedVersion) {
+        return Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/$Repository/releases/tags/v$script:RequestedVersion"
     }
     $releases = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/$Repository/releases?per_page=50"
     $selected = $releases | Where-Object {
@@ -74,6 +88,7 @@ if ($Uninstall) {
     exit 0
 }
 
+$script:RequestedVersion = Resolve-RequestedVersion
 $release = Get-Release
 $resolvedVersion = $release.tag_name -replace '^v',''
 if ($resolvedVersion -notmatch '^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$') { throw 'Release tag has an unsafe version format' }
