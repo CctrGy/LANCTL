@@ -49,6 +49,8 @@ jobs:
         run: python tools/generate_error_catalog.py --check
       - name: CLI reference gate
         run: |
+          # Equivalent estricto a: python tools/generate_cli_reference.py --check
+          # Se regenera para que una diferencia de plataforma quede visible en el log.
           python tools/generate_cli_reference.py
           git diff --exit-code -- docs/CLI-REFERENCE.md
       - name: Security source gate
