@@ -60,9 +60,7 @@ class LanwireIntegrationTests(unittest.TestCase):
             "lanctl.apps.ip.interfaces.cli.commands.lanwire.data_root",
             return_value=Path("C:/shared/LANCTL"),
         ):
-            self.assertEqual(
-                _environment()["LANCTL_DATA_DIR"], str(Path("C:/shared/LANCTL"))
-            )
+            self.assertEqual(_environment()["LANCTL_DATA_DIR"], str(Path("C:/shared/LANCTL")))
 
     def test_arguments_run_in_current_console(self):
         args = SimpleNamespace(arguments=["list"], new_window=False)
