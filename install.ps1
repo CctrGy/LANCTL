@@ -29,7 +29,7 @@ function Resolve-RequestedVersion {
         return $null
     }
     if ($requested -notmatch '^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$') {
-        throw "Invalid version '$requested'. Use auto or a version such as 0.3.0-beta.22."
+        throw "Invalid version '$requested'. Use auto or a version such as 0.3.1-beta.1."
     }
     return $requested
 }

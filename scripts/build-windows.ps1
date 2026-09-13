@@ -1,5 +1,5 @@
 [CmdletBinding()] param(
-    [string]$Version = '0.3.0-beta.22',
+    [string]$Version = '0.3.1-beta.1',
     [switch]$SkipInstaller,
     [switch]$AllowDirty,
     [string]$SigningCertificateThumbprint = '',

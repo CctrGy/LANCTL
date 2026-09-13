@@ -3,7 +3,7 @@
 Suite CLI/TUI para descubrir, inventariar, diagnosticar y administrar
 infraestructuras LAN desde Windows, Linux y Raspberry Pi OS.
 
-> Versión actual: **0.3.0-beta.22**. Es una beta: conserva copias de seguridad
+> Versión actual: **0.3.1-beta.1**. Es una beta: conserva copias de seguridad
 > de los proyectos y no la utilices como única fuente de inventario.
 
 Los binarios publicados son autocontenidos y no requieren Python.
@@ -297,11 +297,11 @@ ignora vulnerabilidades conocidas.
 ## Compilación
 
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.0-beta.22
+.\scripts\build-windows.ps1 -Version 0.3.1-beta.1
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.0-beta.22
+./scripts/build-linux.sh 0.3.1-beta.1
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.

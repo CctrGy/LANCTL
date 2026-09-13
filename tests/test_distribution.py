@@ -56,7 +56,9 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("[string]$Version = 'auto'", powershell)
         self.assertIn("Resolve-RequestedVersion", powershell)
         self.assertIn("api.github.com/repos/$Repository/releases?per_page=50", powershell)
-        self.assertIn("api.github.com/repos/$Repository/releases/tags/v$script:RequestedVersion", powershell)
+        self.assertIn(
+            "api.github.com/repos/$Repository/releases/tags/v$script:RequestedVersion", powershell
+        )
         self.assertIn("Get-Asset $release 'SHA256SUMS.txt'", powershell)
         self.assertNotIn("[ValidatePattern", powershell)
 
