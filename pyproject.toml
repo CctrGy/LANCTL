@@ -21,7 +21,7 @@ dependencies = [
 [project.optional-dependencies]
 gui = ["pywebview>=6.2.1,<7"]
 dev = [
-    "bandit==1.8.6",
+    "bandit==1.9.4",
     "coverage==7.10.6",
     "pip-audit==2.9.0",
     "pytest==9.0.3",
