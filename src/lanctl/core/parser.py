@@ -12,6 +12,7 @@ from lanctl.core.layout import terminal_columns
 from lanctl.shared.i18n import t
 
 HELP_ARGUMENTS = frozenset({"-h", "--help", "/?"})
+_CANONICAL_HELP_ENV = "LANCTL_CANONICAL_HELP"
 
 
 def normalize_help_arguments(arguments: list[str]) -> list[str]:
@@ -83,11 +84,12 @@ class LANCTLArgumentParser(argparse.ArgumentParser):
         # En POSIX una ruta absoluta comienza por '/', por lo que aceptarlo
         # como prefijo de opción convierte /tmp/... en un argumento inválido.
         # La ayuda /? se conserva únicamente en Windows.
-        kwargs["prefix_chars"] = "-/" if os.name == "nt" else "-"
+        windows_help = os.name == "nt" and os.environ.get(_CANONICAL_HELP_ENV) != "1"
+        kwargs["prefix_chars"] = "-/" if windows_help else "-"
         kwargs.setdefault("formatter_class", LANCTLHelpFormatter)
         super().__init__(*args, **kwargs)
         help_options = ["-h", "--help"]
-        if os.name == "nt":
+        if windows_help:
             help_options.append("/?")
         self.add_argument(*help_options, action="help", help=t("LANCTL.COMMON.ACTION.HELP"))
 

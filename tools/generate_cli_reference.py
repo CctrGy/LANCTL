@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -31,6 +32,9 @@ def parser_tree(parser: argparse.ArgumentParser, path: tuple[str, ...] = ("LANCT
 
 
 def generate() -> str:
+    # La referencia es un artefacto multiplataforma: usa la sintaxis común
+    # POSIX/Windows y documenta /? por separado, evitando diffs según el runner.
+    os.environ["LANCTL_CANONICAL_HELP"] = "1"
     sections = [
         "# Referencia completa del CLI LANCTL",
         "",

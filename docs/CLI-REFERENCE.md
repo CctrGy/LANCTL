@@ -20,7 +20,7 @@ Arguments:
     lanmon (monitor)  Monitorización, eventos, incidencias e historial.
 
 Options:
-  -h, --help, /?      Show this help and exit.
+  -h, --help          Show this help and exit.
   --version           Muestra la versión común de la suite y termina.
   --cli               Abre la consola principal.
   -tui, --tui         Abre el TUI principal.
@@ -78,7 +78,7 @@ Arguments:
     lab                       Gestiona redes LAN simuladas sin tráfico real.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --version                   Muestra la versión y termina.
   --quiet                     Omite la salida correcta; conserva errores.
   --verbose                   Añade diagnóstico de ejecución a stderr.
@@ -103,7 +103,7 @@ Usage: LANIP ephemeral [-h] [--fast | --normal | --accurate] [--range NETWORK] [
 Ejecuta el descubrimiento real en una sesión aislada en memoria. No abre, modifica ni guarda proyectos o bases de dispositivos.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --fast                      Prioriza un barrido ARP rápido.
   --normal                    Combina ICMP, ARP y descubrimiento de servicios.
   --accurate                  Añade reintentos y reconocimiento más profundo.
@@ -134,7 +134,7 @@ Usage: LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUP
 Realiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muestra también los equipos no detectados.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --network NETWORK           Red CIDR. Por defecto detecta la LAN como /24.
   --database DATABASE         Archivo JSON de elementos.
   --groups GROUPS             Archivo JSON de grupos.
@@ -187,7 +187,7 @@ Usage: LANIP recurrent [-h] -list [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT
 Muestra identidades recurrentes por MAC. No incluye IP porque puede cambiar en cada LAN.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   -list, --list               Lista todos los elementos recurrentes sin sus IP.
   -f {table,json,csv,html,xml,yaml}, --format {table,json,csv,html,xml,yaml}
                               Formato de salida (por defecto: table).
@@ -207,7 +207,7 @@ Arguments:
   selector                  IP, MAC, alias o nombre registrado.
 
 Options:
-  -h, --help, /?            Show this help and exit.
+  -h, --help                Show this help and exit.
   --method {auto,ping,arp}  Buscador utilizado: auto, ping o arp (por defecto: auto).
   --ping                    Usa únicamente una solicitud ICMP.
   --arp                     Usa únicamente una solicitud ARP activa.
@@ -232,7 +232,7 @@ Arguments:
                               Protocolo o detección automática.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --port PORT                 Puerto alternativo.
   --path PATH                 Ruta HTTP/FTP/RTSP o recurso SMB.
   --mode {control,view,file,shutdown,chat,voice,message,telnet}
@@ -270,7 +270,7 @@ Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp
                       [--tui-footer-button ACCIÓN=on|off]
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.
   -list-fields CAMPO [CAMPO ...], --list-fields CAMPO [CAMPO ...], -list CAMPO [CAMPO ...]
                               Columnas mostradas por list, separadas por espacios o comas.
@@ -340,7 +340,7 @@ Arguments:
   selector                    Alias, IP o MAC del dispositivo.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   -f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}, --field {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}
                               Dato devuelto (por defecto: ip).
   --json                      Devuelve el registro completo como JSON.
@@ -356,7 +356,7 @@ Arguments:
   selector             Alias, nombre, IP o MAC exactos.
 
 Options:
-  -h, --help, /?       Show this help and exit.
+  -h, --help           Show this help and exit.
   --json               Devuelve el registro completo como JSON para scripts.
   --database DATABASE  Archivo JSON de elementos.
 ```
@@ -374,7 +374,7 @@ Arguments:
   selector             IP, MAC o alias registrado en LANCTL.
 
 Options:
-  -h, --help, /?       Show this help and exit.
+  -h, --help           Show this help and exit.
   --ports LISTA        Puertos o rangos: 22,80,443,8000-8100 (por defecto: common).
   --all-ports          Autoriza explícitamente el escaneo TCP 1-65535.
   --timeout TIMEOUT    Tiempo máximo por conexión, en segundos.
@@ -396,7 +396,7 @@ Arguments:
                        libera F y restaura O.
 
 Options:
-  -h, --help, /?       Show this help and exit.
+  -h, --help           Show this help and exit.
   --database DATABASE  Archivo JSON de elementos.
 ```
 
@@ -412,7 +412,7 @@ Arguments:
   protocol                    Protocolo, por ejemplo tr-064.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   -user USERNAME, --username USERNAME
                               Nombre de usuario remoto.
   --database DATABASE         Archivo JSON de elementos.
@@ -430,7 +430,7 @@ Arguments:
                               Descarga las opciones LAN y DHCP interesantes para configuración.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
 ```
 
 ## `LANIP GATEWAY downloadSettings`
@@ -440,7 +440,7 @@ Usage: LANIP GATEWAY downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--
                                       [--store STORE]
 
 Options:
-  -h, --help, /?       Show this help and exit.
+  -h, --help           Show this help and exit.
   --port PORT          Puerto TR-064 del router.
   --timeout TIMEOUT    Tiempo máximo de espera en segundos.
   --database DATABASE  Archivo JSON de elementos.
@@ -458,7 +458,7 @@ Arguments:
   gateway              IP, MAC o alias del router.
 
 Options:
-  -h, --help, /?       Show this help and exit.
+  -h, --help           Show this help and exit.
   --port PORT          Puerto TR-064 del router.
   --timeout TIMEOUT    Tiempo máximo de espera en segundos.
   --database DATABASE  Archivo JSON de elementos.
@@ -479,7 +479,7 @@ Arguments:
   protocol                    Protocolo que se configura.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --port PORT                 Puerto remoto.
   --driver DRIVER             Controlador del dispositivo.
   --host-key HOST_KEY         Algoritmo de clave de host permitido; se puede repetir.
@@ -502,7 +502,7 @@ Arguments:
   COMANDO                     Huella o comando remoto, según la operación.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --database DATABASE         Archivo JSON de elementos.
   --store STORE               Almacén cifrado de credenciales.
   --host HOST                 IP candidata para probe/fingerprint, sin modificar la base de datos.
@@ -522,7 +522,7 @@ Arguments:
   {probe,configure,open}      Opción de configuración de Radmin Viewer.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --mode {control,view,file,shutdown,chat,voice,message,telnet}
                               Opción de configuración de Radmin Viewer.
   --port PORT                 Opción de configuración de Radmin Viewer.
@@ -559,7 +559,7 @@ Arguments:
                               sequence ...
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   -if CONDICIÓN, --if CONDICIÓN
                               Condición AND adicional (repetible).
   --if-all CONDICIÓN          Condición AND adicional.
@@ -617,7 +617,7 @@ Arguments:
   selector                   DeviceId, alias, nombre, MAC, IP actual o histórica.
 
 Options:
-  -h, --help, /?             Show this help and exit.
+  -h, --help                 Show this help and exit.
   --all                      Incluye eventos generales de toda la LAN.
   --commands                 En CLI interactiva muestra los comandos de la sesión.
   --today                    Limita la consulta al día local actual.
@@ -654,7 +654,7 @@ Arguments:
                               o foreground.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --project PROJECT           Opción operativa del monitor.
   --permanent                 Opción operativa del monitor.
   --duration DURATION         Opción operativa del monitor.
@@ -707,7 +707,7 @@ Arguments:
                              certificate.
 
 Options:
-  -h, --help, /?             Show this help and exit.
+  -h, --help                 Show this help and exit.
   --bind BIND                Opción de acceso remoto.
   --cidr CIDR                Opción de acceso remoto.
   --port PORT                Opción de acceso remoto.
@@ -742,7 +742,7 @@ Arguments:
   {open,queue,connect}  Acción sobre la impresora.
 
 Options:
-  -h, --help, /?        Show this help and exit.
+  -h, --help            Show this help and exit.
   --network             Examina todo el inventario LANCTL.
   --group GROUP         Limita el escaneo a un grupo LANCTL.
   --timeout TIMEOUT     Tiempo máximo del probe TCP.
@@ -766,7 +766,7 @@ Arguments:
   selector                    IP, MAC o alias del elemento.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   -p PROTOCOL, --protocol PROTOCOL
                               Protocolo si hay varias terminales.
   --native                    Usa el cliente SSH nativo sin la capa de color de LANCTL.
@@ -801,7 +801,7 @@ Arguments:
   COMANDO              Acción Cisco gestionada que se quiere planificar.
 
 Options:
-  -h, --help, /?       Show this help and exit.
+  -h, --help           Show this help and exit.
   --profile PROFILE    Perfil Cisco que remapea los puertos.
   --profiles PROFILES  Archivo JSON que contiene los perfiles Cisco.
   --database DATABASE  Archivo JSON de elementos.
@@ -821,7 +821,7 @@ Arguments:
   name                 Nombre del grupo.
 
 Options:
-  -h, --help, /?       Show this help and exit.
+  -h, --help           Show this help and exit.
   -new                 Crea el grupo.
   -del                 Elimina el grupo.
   -rename NUEVO        Renombra el grupo.
@@ -851,7 +851,7 @@ Arguments:
   values                      Nuevo valor.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   -add MAC                    Añade un elemento nuevo utilizando su dirección MAC.
   -name NEW_NAME, --name NEW_NAME
                               Asigna NAME al elemento indicado.
@@ -878,17 +878,17 @@ Usage: LANIP project [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
-    status        Muestra el proyecto activo.
-    create        Crea un proyecto VLF vacío por defecto.
-    update        Actualiza datos activos conservando información complementaria.
-    save          Guarda manualmente el proyecto VLF activo.
-    info          Muestra los metadatos del proyecto.
-    verify        Comprueba hashes, estructura y SQLite.
-    use           Selecciona el proyecto VLF que recibirá la auditoría.
-    list          Lista el contenido interno sin extraerlo.
+    status    Muestra el proyecto activo.
+    create    Crea un proyecto VLF vacío por defecto.
+    update    Actualiza datos activos conservando información complementaria.
+    save      Guarda manualmente el proyecto VLF activo.
+    info      Muestra los metadatos del proyecto.
+    verify    Comprueba hashes, estructura y SQLite.
+    use       Selecciona el proyecto VLF que recibirá la auditoría.
+    list      Lista el contenido interno sin extraerlo.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP project status`
@@ -897,8 +897,8 @@ Options:
 Usage: LANIP project status [-h] [--json]
 
 Options:
-  -h, --help, /?  Show this help and exit.
-  --json          Devuelve JSON.
+  -h, --help  Show this help and exit.
+  --json      Devuelve JSON.
 ```
 
 ## `LANIP project create`
@@ -913,7 +913,7 @@ Arguments:
   file                       Archivo de salida; se añade .vlf si falta.
 
 Options:
-  -h, --help, /?             Show this help and exit.
+  -h, --help                 Show this help and exit.
   --name NAME                Nombre humano del proyecto.
   --description DESCRIPTION  Descripción general.
   --author AUTHOR            Autor del proyecto.
@@ -932,10 +932,10 @@ Options:
 Usage: LANIP project update [-h] file
 
 Arguments:
-  file            Proyecto VLF existente.
+  file        Proyecto VLF existente.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP project save`
@@ -944,7 +944,7 @@ Options:
 Usage: LANIP project save [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP project info`
@@ -953,11 +953,11 @@ Options:
 Usage: LANIP project info [-h] [--json] file
 
 Arguments:
-  file            Proyecto VLF.
+  file        Proyecto VLF.
 
 Options:
-  -h, --help, /?  Show this help and exit.
-  --json          Devuelve JSON.
+  -h, --help  Show this help and exit.
+  --json      Devuelve JSON.
 ```
 
 ## `LANIP project verify`
@@ -966,11 +966,11 @@ Options:
 Usage: LANIP project verify [-h] [--json] file
 
 Arguments:
-  file            Proyecto VLF.
+  file        Proyecto VLF.
 
 Options:
-  -h, --help, /?  Show this help and exit.
-  --json          Devuelve JSON.
+  -h, --help  Show this help and exit.
+  --json      Devuelve JSON.
 ```
 
 ## `LANIP project use`
@@ -979,10 +979,10 @@ Options:
 Usage: LANIP project use [-h] file
 
 Arguments:
-  file            Proyecto VLF existente.
+  file        Proyecto VLF existente.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP project list`
@@ -991,10 +991,10 @@ Options:
 Usage: LANIP project list [-h] file
 
 Arguments:
-  file            Proyecto VLF.
+  file        Proyecto VLF.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin`
@@ -1004,23 +1004,25 @@ Usage: LANIP plugin [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
-    list          Lista complementos instalados.
-    catalog       Muestra el catálogo oficial incluido.
-    info          Muestra manifiesto, permisos y estado.
-    install       Verifica e instala un paquete .lcp desactivado.
-    enable        Concede permisos y activa un complemento.
-    disable       Desactiva el complemento.
-    reload        Recarga un complemento activo.
-    uninstall     Desinstala el complemento.
-    verify        Verifica un .lcp o plugin instalado.
-    permissions   Muestra permisos solicitados y concedidos.
-    revoke        Revoca permisos y confianza de un complemento.
-    publisher     Gestiona huellas Ed25519 de editores LCP confiables.
-    extensions    Lista extensiones para CLI, TUI y futura GUI.
-    pack          Construye un paquete .lcp desde un directorio.
+    list       Lista complementos instalados.
+    catalog    Muestra el catálogo oficial incluido.
+    info       Muestra manifiesto, permisos y estado.
+    install    Verifica e instala un paquete .lcp desactivado.
+    enable     Concede permisos y activa un complemento.
+    disable    Desactiva el complemento.
+    reload     Recarga un complemento activo.
+    uninstall  Desinstala el complemento.
+    verify     Verifica un .lcp o plugin instalado.
+    permissions
+               Muestra permisos solicitados y concedidos.
+    revoke     Revoca permisos y confianza de un complemento.
+    publisher  Gestiona huellas Ed25519 de editores LCP confiables.
+    extensions
+               Lista extensiones para CLI, TUI y futura GUI.
+    pack       Construye un paquete .lcp desde un directorio.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help   Show this help and exit.
 ```
 
 ## `LANIP plugin list`
@@ -1029,7 +1031,7 @@ Options:
 Usage: LANIP plugin list [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin catalog`
@@ -1038,7 +1040,7 @@ Options:
 Usage: LANIP plugin catalog [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin info`
@@ -1047,10 +1049,10 @@ Options:
 Usage: LANIP plugin info [-h] plugin_id
 
 Arguments:
-  plugin_id       Identificador estable del complemento.
+  plugin_id   Identificador estable del complemento.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin install`
@@ -1059,10 +1061,10 @@ Options:
 Usage: LANIP plugin install [-h] file
 
 Arguments:
-  file            Archivo de paquete con extensión .lcp.
+  file        Archivo de paquete con extensión .lcp.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin enable`
@@ -1074,7 +1076,7 @@ Arguments:
   plugin_id              Identificador del complemento instalado.
 
 Options:
-  -h, --help, /?         Show this help and exit.
+  -h, --help             Show this help and exit.
   --grant [PERMISO ...]  Permisos concretos que se conceden.
   --grant-all            Concede todos los permisos solicitados.
   --trust                Autoriza código trusted dentro del proceso.
@@ -1086,10 +1088,10 @@ Options:
 Usage: LANIP plugin disable [-h] plugin_id
 
 Arguments:
-  plugin_id       Identificador del complemento instalado.
+  plugin_id   Identificador del complemento instalado.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin reload`
@@ -1098,10 +1100,10 @@ Options:
 Usage: LANIP plugin reload [-h] plugin_id
 
 Arguments:
-  plugin_id       Identificador del complemento instalado.
+  plugin_id   Identificador del complemento instalado.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin uninstall`
@@ -1110,10 +1112,10 @@ Options:
 Usage: LANIP plugin uninstall [-h] plugin_id
 
 Arguments:
-  plugin_id       Identificador del complemento instalado.
+  plugin_id   Identificador del complemento instalado.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin verify`
@@ -1122,10 +1124,10 @@ Options:
 Usage: LANIP plugin verify [-h] target
 
 Arguments:
-  target          Identificador instalado o ruta de un archivo .lcp.
+  target      Identificador instalado o ruta de un archivo .lcp.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin permissions`
@@ -1134,10 +1136,10 @@ Options:
 Usage: LANIP plugin permissions [-h] plugin_id
 
 Arguments:
-  plugin_id       Identificador del complemento instalado.
+  plugin_id   Identificador del complemento instalado.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin revoke`
@@ -1146,11 +1148,11 @@ Options:
 Usage: LANIP plugin revoke [-h] plugin_id [PERMISO ...]
 
 Arguments:
-  plugin_id       Identificador del complemento instalado.
-  PERMISO         Vacío revoca todos los permisos.
+  plugin_id   Identificador del complemento instalado.
+  PERMISO     Vacío revoca todos los permisos.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin publisher`
@@ -1160,12 +1162,12 @@ Usage: LANIP plugin publisher [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
-    list          Lista editores confiables.
-    trust         Confía en la firma que contiene un paquete LCP.
-    revoke        Revoca una huella de editor.
+    list      Lista editores confiables.
+    trust     Confía en la firma que contiene un paquete LCP.
+    revoke    Revoca una huella de editor.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin publisher list`
@@ -1174,7 +1176,7 @@ Options:
 Usage: LANIP plugin publisher list [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP plugin publisher trust`
@@ -1183,11 +1185,11 @@ Options:
 Usage: LANIP plugin publisher trust [-h] [--name NAME] file
 
 Arguments:
-  file            Paquete .lcp firmado y verificado.
+  file         Paquete .lcp firmado y verificado.
 
 Options:
-  -h, --help, /?  Show this help and exit.
-  --name NAME     Nombre descriptivo del editor.
+  -h, --help   Show this help and exit.
+  --name NAME  Nombre descriptivo del editor.
 ```
 
 ## `LANIP plugin publisher revoke`
@@ -1196,10 +1198,10 @@ Options:
 Usage: LANIP plugin publisher revoke [-h] fingerprint
 
 Arguments:
-  fingerprint     Huella SHA-256 Ed25519 completa.
+  fingerprint  Huella SHA-256 Ed25519 completa.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help   Show this help and exit.
 ```
 
 ## `LANIP plugin extensions`
@@ -1208,8 +1210,8 @@ Options:
 Usage: LANIP plugin extensions [-h] [--type TYPE]
 
 Options:
-  -h, --help, /?  Show this help and exit.
-  --type TYPE     Filtra por tipo de extensión unificada.
+  -h, --help   Show this help and exit.
+  --type TYPE  Filtra por tipo de extensión unificada.
 ```
 
 ## `LANIP plugin pack`
@@ -1222,7 +1224,7 @@ Arguments:
   output                     Archivo .lcp de salida.
 
 Options:
-  -h, --help, /?             Show this help and exit.
+  -h, --help                 Show this help and exit.
   --force                    Sobrescribe el paquete de salida existente.
   --signing-key SIGNING_KEY  Clave privada Ed25519 PEM para firmar el LCP.
 ```
@@ -1234,15 +1236,15 @@ Usage: LANIP language [-h] ACTION ...
 
 Arguments:
   ACTION
-    list          List installed languages.
-    use           Select the interface language.
-    info          Show language metadata and coverage.
-    install       Install or update a .lang JSON catalog.
-    validate      Validate a .lang catalog.
-    export        Export the English template for translation.
+    list      List installed languages.
+    use       Select the interface language.
+    info      Show language metadata and coverage.
+    install   Install or update a .lang JSON catalog.
+    validate  Validate a .lang catalog.
+    export    Export the English template for translation.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP language list`
@@ -1251,7 +1253,7 @@ Options:
 Usage: LANIP language list [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP language use`
@@ -1260,10 +1262,10 @@ Options:
 Usage: LANIP language use [-h] language
 
 Arguments:
-  language        Language code or name, for example en or Español.
+  language    Language code or name, for example en or Español.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP language info`
@@ -1272,10 +1274,10 @@ Options:
 Usage: LANIP language info [-h] [language]
 
 Arguments:
-  language        Language code or name; active language by default.
+  language    Language code or name; active language by default.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP language install`
@@ -1284,10 +1286,10 @@ Options:
 Usage: LANIP language install [-h] file
 
 Arguments:
-  file            Language catalog with .lang extension.
+  file        Language catalog with .lang extension.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP language validate`
@@ -1296,10 +1298,10 @@ Options:
 Usage: LANIP language validate [-h] file
 
 Arguments:
-  file            Language catalog with .lang extension.
+  file        Language catalog with .lang extension.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP language export`
@@ -1308,10 +1310,10 @@ Options:
 Usage: LANIP language export [-h] file
 
 Arguments:
-  file            Destination .lang file.
+  file        Destination .lang file.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP error`
@@ -1320,11 +1322,11 @@ Options:
 Usage: LANIP error [-h] [--json] 0eXXXXXXXX
 
 Arguments:
-  0eXXXXXXXX      Identificador estable del error.
+  0eXXXXXXXX  Identificador estable del error.
 
 Options:
-  -h, --help, /?  Show this help and exit.
-  --json          Emite el resultado como JSON.
+  -h, --help  Show this help and exit.
+  --json      Emite el resultado como JSON.
 ```
 
 ## `LANIP database`
@@ -1335,7 +1337,7 @@ Usage: LANIP database [-h]
                       [--target {database,groups,physical}] [--yes] [--json]
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --diagnose                  Valida los almacenes configurados.
   --export ARCHIVO.zip        Exporta datos con hashes verificables.
   --verify ARCHIVO.zip        Verifica una exportación sin importarla.
@@ -1355,7 +1357,7 @@ Usage: LANIP demo [-h] [--output DIRECTORIO] [--force] [--format {json,html,all}
 Crea inventario, proyecto VLF, evidencias, monitorización y un informe de demostración aislados de los datos del usuario.
 
 Options:
-  -h, --help, /?            Show this help and exit.
+  -h, --help                Show this help and exit.
   --output DIRECTORIO       Directorio donde se guardará el proyecto y el informe.
   --force                   Reemplaza una demo anterior.
   --format {json,html,all}  Formato del informe exportado.
@@ -1370,7 +1372,7 @@ Arguments:
   ARGUMENTO              Argumentos enviados a LANWIRE, por ejemplo: list.
 
 Options:
-  -h, --help, /?         Show this help and exit.
+  -h, --help             Show this help and exit.
   --new-window           Abre LANWIRE en una consola independiente incluso si se indican
                          argumentos.
   --version              Muestra la versión común de LANWIRE y termina.
@@ -1386,20 +1388,20 @@ Usage: LANIP lab [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
-    generate      Genera un escenario reproducible.
-    list          Lista escenarios.
-    status        Muestra el escenario activo.
-    stop          Desactiva el proveedor simulado.
-    start         Activa explícitamente un escenario virtual.
-    validate      Valida un escenario.
-    export        Exporta un escenario.
-    import        Importa un escenario JSON.
-    network       Crea manualmente una red virtual.
-    device        Edita dispositivos simulados.
-    evolve        Avanza el reloj y aplica eventos pendientes.
+    generate  Genera un escenario reproducible.
+    list      Lista escenarios.
+    status    Muestra el escenario activo.
+    stop      Desactiva el proveedor simulado.
+    start     Activa explícitamente un escenario virtual.
+    validate  Valida un escenario.
+    export    Exporta un escenario.
+    import    Importa un escenario JSON.
+    network   Crea manualmente una red virtual.
+    device    Edita dispositivos simulados.
+    evolve    Avanza el reloj y aplica eventos pendientes.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP lab generate`
@@ -1411,7 +1413,7 @@ Usage: LANIP lab generate [-h] [--name NAME] [--cidr CIDR]
                           [--dhcp-percent DHCP_PERCENT] [--type {snapshot,timeline,chaos}]
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --name NAME                 Nombre del escenario.
   --cidr CIDR                 Red IPv4 virtual.
   --profile {home,office,datacenter,industrial,chaotic}
@@ -1432,7 +1434,7 @@ Options:
 Usage: LANIP lab list [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP lab status`
@@ -1441,7 +1443,7 @@ Options:
 Usage: LANIP lab status [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP lab stop`
@@ -1450,7 +1452,7 @@ Options:
 Usage: LANIP lab stop [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP lab start`
@@ -1459,10 +1461,10 @@ Options:
 Usage: LANIP lab start [-h] scenario
 
 Arguments:
-  scenario        Nombre del escenario.
+  scenario    Nombre del escenario.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP lab validate`
@@ -1471,10 +1473,10 @@ Options:
 Usage: LANIP lab validate [-h] scenario
 
 Arguments:
-  scenario        Nombre del escenario.
+  scenario    Nombre del escenario.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP lab export`
@@ -1486,7 +1488,7 @@ Arguments:
   scenario             Nombre del escenario.
 
 Options:
-  -h, --help, /?       Show this help and exit.
+  -h, --help           Show this help and exit.
   --format {json,csv}  Formato de salida.
   --output OUTPUT      Archivo de destino; stdout si se omite.
 ```
@@ -1497,10 +1499,10 @@ Options:
 Usage: LANIP lab import [-h] file
 
 Arguments:
-  file            Archivo JSON.
+  file        Archivo JSON.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP lab network`
@@ -1510,10 +1512,10 @@ Usage: LANIP lab network [-h] {create} ...
 
 Arguments:
   {create}
-    create        Crea un escenario vacío.
+    create    Crea un escenario vacío.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP lab network create`
@@ -1522,9 +1524,9 @@ Options:
 Usage: LANIP lab network create [-h] --name NAME [--cidr CIDR]
 
 Options:
-  -h, --help, /?  Show this help and exit.
-  --name NAME     Nombre del escenario.
-  --cidr CIDR     CIDR virtual.
+  -h, --help   Show this help and exit.
+  --name NAME  Nombre del escenario.
+  --cidr CIDR  CIDR virtual.
 ```
 
 ## `LANIP lab device`
@@ -1534,11 +1536,11 @@ Usage: LANIP lab device [-h] {add,delete} ...
 
 Arguments:
   {add,delete}
-    add           Añade un dispositivo.
-    delete        Elimina un dispositivo.
+    add         Añade un dispositivo.
+    delete      Elimina un dispositivo.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help    Show this help and exit.
 ```
 
 ## `LANIP lab device add`
@@ -1548,15 +1550,15 @@ Usage: LANIP lab device add [-h] --ip IP --mac MAC [--alias ALIAS] [--name NAME]
                             scenario
 
 Arguments:
-  scenario        Escenario.
+  scenario       Escenario.
 
 Options:
-  -h, --help, /?  Show this help and exit.
-  --ip IP         IPv4 simulada.
-  --mac MAC       MAC simulada.
-  --alias ALIAS   Alias.
-  --name NAME     Nombre.
-  --inactive      Lo crea inactivo.
+  -h, --help     Show this help and exit.
+  --ip IP        IPv4 simulada.
+  --mac MAC      MAC simulada.
+  --alias ALIAS  Alias.
+  --name NAME    Nombre.
+  --inactive     Lo crea inactivo.
 ```
 
 ## `LANIP lab device delete`
@@ -1565,11 +1567,11 @@ Options:
 Usage: LANIP lab device delete [-h] scenario device
 
 Arguments:
-  scenario        Escenario.
-  device          ID, IP, MAC o alias.
+  scenario    Escenario.
+  device      ID, IP, MAC o alias.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANIP lab evolve`
@@ -1578,7 +1580,7 @@ Options:
 Usage: LANIP lab evolve [-h] --seconds SECONDS
 
 Options:
-  -h, --help, /?     Show this help and exit.
+  -h, --help         Show this help and exit.
   --seconds SECONDS  Segundos virtuales.
 ```
 
@@ -1602,7 +1604,7 @@ Arguments:
     prefix               Gestiona juegos de letras.
 
 Options:
-  -h, --help, /?         Show this help and exit.
+  -h, --help             Show this help and exit.
   --version              Muestra la versión común de la suite y termina.
   --database ARCHIVO.db  Base física IDF; por defecto usa physical/idf.db en la raíz compartida.
   -tui, --tui            Abre la interfaz de pantalla completa.
@@ -1615,7 +1617,7 @@ Options:
 Usage: LANWIRE tui [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANWIRE cli`
@@ -1624,7 +1626,7 @@ Options:
 Usage: LANWIRE cli [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANWIRE list`
@@ -1633,10 +1635,10 @@ Options:
 Usage: LANWIRE list [-h] [prefix]
 
 Arguments:
-  prefix          Filtra por prefijo IDF.
+  prefix      Filtra por prefijo IDF.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANWIRE seed`
@@ -1645,7 +1647,7 @@ Options:
 Usage: LANWIRE seed [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANWIRE show`
@@ -1654,10 +1656,10 @@ Options:
 Usage: LANWIRE show [-h] idf
 
 Arguments:
-  idf             Identificador físico que se desea consultar.
+  idf         Identificador físico que se desea consultar.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANWIRE add`
@@ -1666,11 +1668,11 @@ Options:
 Usage: LANWIRE add [-h] prefix [CLAVE=VALOR ...]
 
 Arguments:
-  prefix          Prefijo del tipo de elemento físico.
-  CLAVE=VALOR     Datos iniciales opcionales.
+  prefix       Prefijo del tipo de elemento físico.
+  CLAVE=VALOR  Datos iniciales opcionales.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help   Show this help and exit.
 ```
 
 ## `LANWIRE reserve`
@@ -1679,11 +1681,11 @@ Options:
 Usage: LANWIRE reserve [-h] idf [CLAVE=VALOR ...]
 
 Arguments:
-  idf             IDF exacto que se desea reservar.
-  CLAVE=VALOR     Datos iniciales opcionales.
+  idf          IDF exacto que se desea reservar.
+  CLAVE=VALOR  Datos iniciales opcionales.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help   Show this help and exit.
 ```
 
 ## `LANWIRE delete`
@@ -1692,10 +1694,10 @@ Options:
 Usage: LANWIRE delete [-h] idf
 
 Arguments:
-  idf             IDF que se desea eliminar.
+  idf         IDF que se desea eliminar.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANWIRE prefix`
@@ -1711,7 +1713,7 @@ Arguments:
     delete (del)              Elimina una definición.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
 ```
 
 ## `LANWIRE prefix list`
@@ -1720,7 +1722,7 @@ Options:
 Usage: LANWIRE prefix list [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANWIRE prefix show`
@@ -1729,10 +1731,10 @@ Options:
 Usage: LANWIRE prefix show [-h] letters
 
 Arguments:
-  letters         Letras del prefijo.
+  letters     Letras del prefijo.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANWIRE prefix set`
@@ -1741,12 +1743,12 @@ Options:
 Usage: LANWIRE prefix set [-h] letters name [description]
 
 Arguments:
-  letters         Letras del prefijo.
-  name            Nombre descriptivo del tipo.
-  description     Descripción opcional.
+  letters      Letras del prefijo.
+  name         Nombre descriptivo del tipo.
+  description  Descripción opcional.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help   Show this help and exit.
 ```
 
 ## `LANWIRE prefix delete`
@@ -1755,10 +1757,10 @@ Options:
 Usage: LANWIRE prefix delete [-h] letters
 
 Arguments:
-  letters         Letras del prefijo que se desea eliminar.
+  letters     Letras del prefijo que se desea eliminar.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANRACK`
@@ -1774,7 +1776,7 @@ Arguments:
     show                 Muestra un rack y sus ocupantes.
 
 Options:
-  -h, --help, /?         Show this help and exit.
+  -h, --help             Show this help and exit.
   --version              Muestra la versión común de la suite y termina.
   --database ARCHIVO.db  Base física IDF compartida.
   -tui, --tui            Abre la interfaz de pantalla completa.
@@ -1787,7 +1789,7 @@ Options:
 Usage: LANRACK list [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANRACK show`
@@ -1796,10 +1798,10 @@ Options:
 Usage: LANRACK show [-h] rack
 
 Arguments:
-  rack            ID o nombre del rack.
+  rack        ID o nombre del rack.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANACCESS`
@@ -1818,7 +1820,7 @@ Arguments:
     delete (del)              Elimina una credencial.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --version                   Muestra la versión común de la suite y termina.
   --database DATABASE         Base de elementos LANCTL.
   --store STORE               Almacén cifrado de credenciales.
@@ -1832,7 +1834,7 @@ Options:
 Usage: LANACCESS list [-h]
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANACCESS show`
@@ -1841,10 +1843,10 @@ Options:
 Usage: LANACCESS show [-h] credential_id
 
 Arguments:
-  credential_id   Identificador de la credencial.
+  credential_id  Identificador de la credencial.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help     Show this help and exit.
 ```
 
 ## `LANACCESS set`
@@ -1857,7 +1859,7 @@ Arguments:
   protocol                    Protocolo asociado, por ejemplo ssh.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --username USERNAME, -user USERNAME
                               Usuario remoto.
 ```
@@ -1868,10 +1870,10 @@ Options:
 Usage: LANACCESS delete [-h] credential_id
 
 Arguments:
-  credential_id   Identificador de la credencial.
+  credential_id  Identificador de la credencial.
 
 Options:
-  -h, --help, /?  Show this help and exit.
+  -h, --help     Show this help and exit.
 ```
 
 ## `LANMON`
@@ -1896,7 +1898,7 @@ Arguments:
                               o foreground.
 
 Options:
-  -h, --help, /?              Show this help and exit.
+  -h, --help                  Show this help and exit.
   --version                   Muestra la versión común de la suite y termina.
   --project PROJECT           Opción operativa del monitor.
   --permanent                 Opción operativa del monitor.
