@@ -302,12 +302,13 @@ class DistributionTests(unittest.TestCase):
         self.assertIn('LANCTL\\plugins"" /inheritance:r', inno)
         self.assertIn('LANCTL\\access"" /inheritance:r', inno)
 
-    def test_official_windows_release_requires_authenticode_secrets(self):
+    def test_windows_release_signs_when_authenticode_secrets_are_available(self):
         root = Path(__file__).resolve().parents[1]
         release = (root / ".github/workflows/release.yml").read_text(encoding="utf-8")
         self.assertIn("WINDOWS_SIGNING_CERTIFICATE_BASE64", release)
         self.assertIn("WINDOWS_SIGNING_CERTIFICATE_PASSWORD", release)
-        self.assertIn("-RequireSignature", release)
+        self.assertIn("RequireSignature = $true", release)
+        self.assertIn("checksummed unsigned beta artifacts", release)
         self.assertIn("Clean Windows install, update, demo and uninstall", release)
         self.assertIn("User data was not preserved", release)
         self.assertNotIn('landemo.exe" --output', release)
