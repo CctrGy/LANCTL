@@ -118,23 +118,16 @@ def run_element(args: argparse.Namespace) -> int:
 
     if requested_edits:
         stable_selector = database.resolve(args.selector).mac or args.selector
-        updated = None
-        changes: list[str] = []
         groups = GroupDatabase(args.groups, database)
+        updated = groups.edit_device_fields(stable_selector, requested_edits)
+        changes: list[str] = []
         for field, value in requested_edits:
             if field == "group":
-                group, updated = groups.add(value, stable_selector)
-                changes.append(f"group += {group.name}")
+                changes.append(f"group += {value.upper()}")
             elif field == "protocol":
                 parts = value.split()
-                protocol = parts[-1]
-                enabled = not (
-                    len(parts) > 1 and parts[0].casefold() in ("del", "delete", "remove")
-                )
-                updated = database.set_protocol(stable_selector, protocol, enabled)
                 changes.append(f"protocols = {', '.join(updated.protocols) or '-'}")
             else:
-                updated = database.edit_device(stable_selector, field, value)
                 changes.append(f"{field} = {getattr(updated, field)}")
         ok(
             "ACTUALIZADO",

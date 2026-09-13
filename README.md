@@ -1,708 +1,348 @@
 # LANCTL
 
-**Administración, inventario y diagnóstico de infraestructuras LAN desde
-Windows, Linux y Raspberry Pi OS.**
+Suite CLI/TUI para descubrir, inventariar, diagnosticar y administrar
+infraestructuras LAN desde Windows, Linux y Raspberry Pi OS.
 
-LANCTL centraliza el descubrimiento de red, la identificación de dispositivos,
-el acceso mediante protocolos de administración y la auditoría de cambios.
-Incluye CLI, consola persistente, TUI, interfaz gráfica para Windows, proyectos
-portables `.vlf` y un sistema extensible de complementos `.lcp`.
+> Versión actual: **0.3.0-beta.22**. Es una beta: conserva copias de seguridad
+> de los proyectos y no la utilices como única fuente de inventario.
 
-> **Versión actual — `0.3.0-beta.22`**
+Los binarios publicados son autocontenidos y no requieren Python.
 
-Esta beta consolida el árbol más moderno del proyecto: GUI para Windows, CLI y
-TUI, proyectos VLF, plugins LCP, monitorización, historial, acceso remoto
-controlado, automatización WoL, aplicaciones paralelas para racks y credenciales,
-y el nuevo arranque limpio autocontenido.
+## Aplicaciones
 
-## Instalación online
+| Ejecutable | Ámbito |
+| --- | --- |
+| `lanctl` | Orquestador raíz de la suite |
+| `lanip` | Descubrimiento, inventario IP/MAC, diagnóstico y TUI principal |
+| `lanwire` | Cableado, puertos, paneles y topología física |
+| `lanrack` | Salas técnicas, racks, unidades U y equipos |
+| `lanaccess` | Usuarios, credenciales y acceso remoto |
+| `lanmon` | Monitorización, eventos, incidencias e historial |
 
-GitHub Releases distribuye instaladores ya compilados y verificados por
-SHA-256. En Windows puede usarse `install.ps1`; Linux y Raspberry Pi OS 64-bit
-usan `install.sh`. Ambos permiten canal `stable|beta`, versión fija, modo
-Standard o Monitor y desinstalación conservando los datos.
+Cada aplicación puede iniciarse directamente o mediante el orquestador:
+
+```text
+lanip list --active
+lanctl lanip list --active
+lanwire list
+lanctl lanwire list
+lanrack --tui
+lanaccess --tui
+lanmon status
+```
+
+Los comandos de un dominio no se mezclan con los demás. `list`, `scan`,
+`element` y `project` pertenecen a `lanip`, no al ejecutable raíz.
+
+## Estado actual
+
+El desarrollo activo se centra en CLI y TUI. La antigua GUI está congelada, no
+se empaqueta y no forma parte de los binarios publicados. Solo puede ejecutarse
+desde código con el extra `gui` y `LANCTL_ENABLE_LEGACY_GUI=1`; consulta
+[LEGACY-GUI.md](docs/LEGACY-GUI.md).
+
+LANCTL incluye:
+
+- Descubrimiento ICMP, ARP y WS-Discovery, ampliable mediante plugins.
+- Inventario por MAC, IP, CNF, alias, nombre, fabricante y grupos.
+- Identificación de servicios mediante banners y evidencias.
+- SSH, HTTPS, HTTP, Telnet, FTP, RDP, RTSP y SMB.
+- Proyectos `.vlf` con inventario, configuración, auditoría y hashes.
+- Historial, monitorización, incidencias y Wake-on-LAN.
+- Plugins `.lcp` con permisos y runtimes declarativo, aislado o trusted.
+- Exportación a tabla, JSON, CSV, HTML, XML y YAML.
+
+## Instalación
+
+### Windows
 
 ```powershell
-irm https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.ps1 -OutFile install.ps1
+Invoke-WebRequest https://github.com/CctrGy/LANCTL/releases/download/vVERSION/install.ps1 -OutFile install.ps1
+Invoke-WebRequest https://github.com/CctrGy/LANCTL/releases/download/vVERSION/SHA256SUMS.txt -OutFile SHA256SUMS.txt
+Get-FileHash .\install.ps1 -Algorithm SHA256
+# Compara el hash con SHA256SUMS.txt antes de ejecutar:
 .\install.ps1 -Channel beta
 ```
 
+La distribución ofrece un Setup x64 y un ZIP portable. La instalación estándar
+coloca los seis ejecutables en `C:\Program Files\LANCTL` y puede añadirlos al
+`PATH`. Los datos nunca se escriben dentro de Program Files.
+
+### Linux y Raspberry Pi OS
+
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSLo install.sh https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh
+curl --proto '=https' --tlsv1.2 -fsSLo install.sh \
+  https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh
 sudo bash install.sh --channel beta
 ```
 
-Descargar el script y su checksum por separado es el procedimiento recomendado.
-SSH y HTTPS permanecen apagados en todas las modalidades; `--configure-access`
-solo abre el asistente local e interactivo. Consulta [la guía completa](docs/INSTALL.md)
-para instalación verificable, portable/offline, actualizaciones, ARM64,
-desinstalación y advertencias de SmartScreen.
-> `0.3.0-beta.22` es una versión de prueba. Revisa los cambios y conserva una
-> copia de seguridad de tus proyectos antes de actualizar una instalación en uso.
+Se generan DEB y tarballs portables nativos para `amd64` y `arm64`.
+Raspberry Pi OS debe ser de 64 bits para el artefacto ARM64. El DEB instala en
+`/opt/lanctl`, enlaza los comandos en `/usr/bin` e incluye la unidad systemd.
+El tarball no instala servicios.
 
-## Capacidades
+Consulta [INSTALL.md](docs/INSTALL.md) para instalación offline, selección de
+versión, modo Monitor, actualización, rollback y desinstalación.
 
-| Área | Funcionalidad |
-| --- | --- |
-| Descubrimiento | Núcleo ICMP/ARP y WS-Discovery; mDNS/SSDP mediante complemento nativo `.lcp` |
-| Inventario | Identidad por MAC, IP histórica, alias, nombre, fabricante, CNF, grupos y descripción |
-| Elementos recurrentes | Identidades conocidas por MAC reutilizables entre distintas LAN, sin fijar su IP |
-| Diagnóstico | Ping, ARP activo, escaneo TCP e identificación basada en evidencias |
-| Administración | SSH, TR-064, Telnet, HTTP(S), FTP, RDP, RTSP y SMB |
-| Switching | Planificación y ejecución controlada de operaciones sobre switches Cisco |
-| Seguridad | LANACCESS, credenciales protegidas con DPAPI y confirmación de operaciones sensibles |
-| Presentación | GUI, CLI, consola interactiva, TUI y exportación a tabla, JSON, CSV, HTML, XML o YAML |
-| Proyectos | Contenedores `.vlf` verificables con inventario SQLite, configuración y auditoría |
-| Cableado físico | LANWIRE para cables, puertos, paneles y conexiones físicas |
-| Armarios rack | LANRACK para visualizar racks, unidades U y equipos instalados |
-| Observabilidad | LANMON para estado, eventos, historial, incidencias y actividad de red |
-| Extensiones | Complementos `.lcp` con permisos, eventos y ámbitos definidos |
+## Inicio rápido
 
-El complemento integrado `lanctl.example.network-summary` aporta los comandos
-`network-summary` y `netsummary` como ejemplo declarativo seguro.
+### Interfaces
 
-## Idiomas
-
-Los catálogos JSON `.lang` se gestionan en `data/lc/languajes/`. Inglés es el
-fallback integrado y los plugins LCP pueden aportar idiomas adicionales.
-Consulta [docs/LANG.md](docs/LANG.md).
-
-Los iconos JPEG de `125×125` conservados para la GUI heredada se catalogan en
-`data/lc/icons/icons.json`. Consulta [docs/ICONS.md](docs/ICONS.md).
-
-## Estado y alcance
-
-La beta.22 centra el producto en las interfaces CLI y TUI, añade el escaneo
-efímero aislado y políticas de guardado para proyectos VLF, y mantiene el acceso remoto desactivado
-hasta que el administrador lo configure expresamente. Las aplicaciones pueden
-permanecer abiertas en paralelo: comparten identificadores, configuración y
-servicios transaccionales, pero cada dominio conserva la propiedad de sus datos.
-
-## Aplicaciones paralelas
-
-Las distribuciones Windows incluyen `lanip.exe`, `lanwire.exe`, `lanrack.exe`,
-`lanaccess.exe` y `lanmon.exe` junto al orquestador `LANCTL.exe`
-. La GUI permanece congelada en el código fuente y no se empaqueta. Sus responsabilidades son:
-
-| Aplicación | Responsabilidad |
-| --- | --- |
-| `LANCTL` | Entrada general y orquestador de la suite |
-| `LANIP` | Descubrimiento, inventario lógico y operaciones sobre dispositivos |
-| `LANWIRE` | Cableado, puertos, paneles y enlaces físicos |
-| `LANRACK` | Visualización de racks, unidades U y elementos instalados |
-| `LANACCESS` | Gestión cifrada de usuarios y credenciales de dispositivos |
-| `LANMON` | Estado, eventos, historial, alertas e incidencias |
-| `LANBACK` | Previsto para una fase posterior: administración del backend |
-
-Cada aplicación puede iniciarse directamente o mediante LANCTL:
-
-```powershell
-lanctl ip --tui
+```text
 lanip --tui
-lanctl wire
-lanctl wire list
-lanwire list
-
-# Visualización de racks y sus ocupantes
-lanctl rack --tui
-lanrack --tui
-lanrack show RK-00
-
-# Gestor cifrado de credenciales
-lanctl access --tui
-lanaccess --tui
-lanaccess list
-
-# Estado de la monitorización (equivale a `lanctl monitor status`)
-lanmon
-
-# El recorrido reproducible permanece como comando interno de LANIP
-lanip demo --output LANCTL-demo
+lanip --tui PLUGINS
+lanip --tui PROJECTS
+lanip --tui SETTINGS
+lanip --cli
 ```
 
-Todas las entradas resuelven la misma raíz de datos. Cuando una herramienta
-abre otra en un proceso separado, propaga `LANCTL_DATA_DIR`. La prioridad común
-es: `LANCTL_DATA_DIR`, marcador portable `LANCTL.portable`,
-ámbito `LANCTL_DATA_SCOPE` y ubicación estándar del sistema. LANWIRE conserva
-su base SQLite en `physical/idf.db`; LANCTL mantiene `database/devices.json` y
-`monitoring/monitor.db` separados. La configuración publica la ruta como
-`physicalDatabase` y no intenta abrirla con el gestor JSON. Consulta
-[docs/LANWIRE.md](docs/LANWIRE.md).
+`lanctl --tui` y `lanctl --cli` son los puntos de entrada generales. Dentro
+del repositorio también pueden usarse `run.cmd --tui` y `run.cmd --cli`.
 
-`LANRACK` consulta la base de LANWIRE en modo de solo lectura: la edición de
-cableado continúa perteneciendo a LANWIRE. `LANACCESS` administra el almacén
-DPAPI y nunca muestra contraseñas; LANIP puede usar una referencia autorizada
-para abrir SSH u otro protocolo sin asumir la gestión del secreto. Al eliminar
-una credencial desde LANACCESS también se retiran sus referencias del inventario.
-Consulta [la arquitectura de aplicaciones](docs/APPLICATIONS.md).
+El TUI adapta tablas, overlays y pestañas al ancho disponible. El escaneo se
+ejecuta en segundo plano, mantiene activo el teclado y puede cancelarse con
+`Esc`. Los atajos visibles predeterminados son:
 
-El nombre `access` conserva además los comandos históricos de acceso remoto:
-`lanctl access status`, `configure`, `user` y similares continúan funcionando.
-`lanctl access --tui` abre específicamente el nuevo gestor de credenciales.
+| Tecla | Acción |
+| --- | --- |
+| `F1` | Ayuda |
+| `F2` | Información |
+| `F3` | Ping |
+| `F5` | Actualizar |
+| `F7` | Plugins |
+| `F9` | Proyectos |
+| `F12` | Settings |
+| `↑` / `↓` | Seleccionar |
 
-## Historial estructurado del proyecto
+También están disponibles `Ctrl+F` buscar, `Ctrl+S` guardar el proyecto,
+`Ctrl+X` copiar la fila, `Ctrl+J` copiar JSON y `Ctrl+Q` cierre seguro.
+Las asignaciones y su visibilidad se editan en `SETTINGS / TECLADO`.
 
-`history NAME` consulta actividad vinculada a la identidad estable del equipo;
-`history --all` incluye eventos generales. Admite `--today`, `--from`, `--to`,
-`--type`, `--source`, `--result`, `--errors`, `--search`, `--limit`, `--reverse`
-y `--format table|json|csv`. Dentro de la CLI interactiva, `history` y
-`history --commands` conservan el historial de órdenes de la sesión.
+### Descubrir e inspeccionar
 
-## Backend Monitor
+```text
+lanip list --fast --active
+lanip list --normal
+lanip list --accurate --progress
+lanip scan NAS --identify --banners
+lanip ping NAS --arp
+lanip search NAS
+```
 
-El runtime Monitor separa sesiones, scheduler monotónico, checks, evaluación
-con histéresis e incidencias. `monitor attach PROYECTO --permanent` y
-`monitor session start --project X --duration 30m --mode diagnostic` crean
-sesiones con autoridad explícita. `monitor status --json`, `monitor detach`,
-`monitor once` y los comandos de incidencias operan sobre estado transaccional.
-La gestión systemd está disponible en Linux con confirmación y privilegios;
-Windows devuelve `unsupported` y recomienda `foreground`.
+El escaneo normal actualiza el inventario activo. Para descubrir equipos sin
+abrir ni modificar un proyecto:
 
-## Acceso remoto SSH y HTTPS
+```text
+lanip ephemeral --normal
+lanip -e --fast --range 192.168.1.0/24
+lanip ephemeral --ports 22,80,443 --json
+```
 
-`access init` crea almacenes separados y deja SSH/HTTPS desactivados. Configura
-un bind LAN explícito con `access configure ssh|https --bind IP --cidr CIDR`.
-Los usuarios comparten roles y permisos, pero las claves SSH y contraseñas web
-son autenticadores independientes. `access user`, `role`, `session`, `web pair`,
-`certificate` y `rotate-host-key` administran el acceso sin credenciales por
-defecto ni recuperación remota oculta. SSH restringe la sesión al subsystem
-LANCTL; HTTPS exige TLS, CSRF, cookies seguras y origen explícito.
+### Consultar y exportar
 
-Los eventos se guardan dentro del VLF activo en
-`logs/events/YYYY-MM-DD.jsonl`. Los logs humanos `logs/dd-mm-yyyy.log` siguen
-siendo compatibles y se leen en modo best-effort como eventos legacy.
+```text
+lanip list --where "active and group=IOT and vendor~Amazon"
+lanip list --format json
+lanip list --format csv --output inventario.csv
+lanip call NAS --json
+```
 
-## Requisitos
+`--where` admite `and`, estados `active`/`inactive` y operadores `=`,
+`!=` y `~`; las expresiones no ejecutan código.
 
-- Windows 10 u 11.
-- Python 3.10 o superior para ejecutar desde el código fuente.
-- `pywebview` para utilizar la interfaz gráfica desde el código fuente.
-- Acceso autorizado a la red y a los dispositivos que se quieran administrar.
-- Privilegios suficientes para las operaciones de red utilizadas.
+### Editar elementos
 
-## Instalación para desarrollo
+Todas las modificaciones parten del comando raíz `element`:
+
+```text
+lanip element NAS -name HomeNAS
+lanip element NAS -alias NAS -description "Almacenamiento principal"
+lanip element NAS -cnf O -group ASSETS -protocol ssh
+lanip element NAS delete
+lanip element NAS delete --yes
+```
+
+Una cadena de opciones se valida y aplica como una transacción. Dispositivos y
+grupos usan bloqueo conjunto, rollback y journal durable; cualquier journal
+pendiente se recupera al abrir las bases. `GATEWAY` y `BRODCAST` están
+protegidos frente a eliminación. Los estados CNF son `O`, `X`, `S`, `F`
+y `-`.
+
+### Proyectos VLF
+
+Un proyecto nuevo se crea vacío por defecto:
+
+```text
+lanip project create Casa.vlf --name "Red de casa"
+lanip project use Casa.vlf
+lanip list --accurate
+lanip project save
+lanip project verify Casa.vlf
+```
+
+Para copiar explícitamente el inventario y los grupos activos:
+
+```text
+lanip project create Copia.vlf --clone-current
+```
+
+LANCTL impide cambiar o recargar un proyecto con cambios pendientes sin una
+decisión explícita. Cada actualización crea copias de recuperación y verifica
+el inventario guardado. `project update` solo actualiza el proyecto activo.
+Consulta [VLF.md](docs/VLF.md) y [STORAGE.md](docs/STORAGE.md).
+
+### SSH y credenciales de dispositivos
+
+```text
+lanip protocol NAS configure ssh --port 22
+lanip credential NAS set ssh --username USUARIO
+lanip ssh NAS probe
+lanip ssh NAS fingerprint
+lanip ssh NAS trust SHA256:HUELLA
+lanip ssh NAS open
+```
+
+La contraseña se solicita mediante entrada segura. Para listar referencias sin
+mostrar secretos:
+
+```text
+lanaccess list
+lanip credential NAS list
+```
+
+### Acceso remoto a LANCTL
+
+SSH y HTTPS permanecen desactivados hasta configurarlos localmente:
+
+```text
+lanip access init
+lanip access configure ssh --bind 192.168.1.31 --cidr 192.168.1.0/24
+lanip access user add administrador --role administrator
+lanip access status
+```
+
+No existen credenciales predeterminadas. Las sesiones remotas están limitadas
+al entorno LANCTL y aplican roles y permisos. Un servicio Windows en Session 0
+no puede mostrar ventanas; `forced-view` devuelve ese estado y requiere un
+agente interactivo. Consulta [ACCESS.md](docs/ACCESS.md).
+
+### Plugins LCP
+
+```text
+lanip plugin verify complemento.lcp
+lanip plugin install complemento.lcp
+lanip plugin enable ID --grant-all
+lanip plugin list
+```
+
+Los plugins quedan desactivados después de instalarse. Los trusted requieren
+firma de un editor autorizado y confianza explícita. El runtime aislado impone
+límites, pero no sustituye un sandbox del sistema operativo frente a código
+hostil. Instala únicamente paquetes firmados y de confianza. Consulta
+[LCP.md](docs/LCP.md).
+
+## Datos y persistencia
+
+| Entorno | Datos | Secretos |
+| --- | --- | --- |
+| Windows instalado | `C:\ProgramData\LANCTL` | Perfil local o raíz protegida del servicio |
+| Linux interactivo | `$XDG_DATA_HOME/lanctl` | `$XDG_CONFIG_HOME/lanctl/access` |
+| Servicio systemd | `/var/lib/lanctl` | `/etc/lanctl/access` |
+| Portable | `data/lanctl` junto a los ejecutables | Raíz portable |
+
+Los proyectos se guardan por defecto en la carpeta Documentos conocida por el
+sistema, dentro de `LanCTL`. Los instaladores conservan proyectos,
+configuración, métricas y secretos al desinstalar. Consulta
+[CONFIGURATION.md](docs/CONFIGURATION.md).
+
+## Desarrollo y validación
+
+Requiere Python 3.10 o posterior:
 
 ```powershell
 git clone https://github.com/CctrGy/LANCTL.git
 cd LANCTL
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e .
+python -m pip install -e ".[dev]"
 ```
-
-La instalación de desarrollo registra el orquestador y las aplicaciones:
-
-```powershell
-lanctl --version
-lanip --version
-als --version
-lanwire --version
-lanwre --version
-lanrack --version
-lanaccess --version
-lanmon --version
-```
-
-También puede ejecutarse directamente desde el repositorio:
-
-```powershell
-python lanctl.py --help
-python lanip.py --help
-python lanwire.py --help
-python lanrack.py --help
-python lanaccess.py --help
-run.cmd --help
-```
-
-LANCTL es el orquestador de la suite. El mismo build produce `LANCTL.exe`,
-`lanip.exe`, `lanwire.exe`, `lanrack.exe`, `lanaccess.exe`,
-`lanmon.exe`; no requiere un repositorio hermano.
-
-## Inicio rápido
-
-### Primer arranque limpio
-
-En una instalación nueva no es necesario copiar `data/lc` ni crear archivos a
-mano. El primer comando normal de LANCTL prepara automáticamente la jerarquía
-de configuración, inventario, monitorización, plugins, proyectos, automatización
-y credenciales, con documentos JSON iniciales válidos y escrituras atómicas.
-`--help` y `--version` siguen siendo consultas de solo lectura.
-
-Para probar un estado completamente vacío durante el desarrollo puede indicarse
-un directorio absoluto nuevo; LANCTL lo inicializará sin importar datos de otra
-instalación:
-
-```powershell
-$env:LANCTL_DATA_DIR = "$PWD\runtime-clean"
-python lanctl.py settings
-```
-
-Los datos locales continúan excluidos de Git. Una actualización nunca reemplaza
-un archivo existente: la inicialización solo completa carpetas o archivos que
-falten.
-
-### Descubrir e inspeccionar la red
-
-```powershell
-lanctl list --normal
-lanctl list --fast --active
-lanctl list --accurate --progress
-lanip ephemeral --normal
-lanip -e --fast --range 192.168.1.0/24
-lanctl search NAS
-lanctl ping ESP --arp
-lanctl scan CAM1 --identify
-```
-
-Los perfiles ajustan el equilibrio entre velocidad y profundidad:
-
-- `--fast`: prioriza ARP y reduce el tiempo de espera.
-- `--normal`: combina ICMP y ARP con un equilibrio entre velocidad y cobertura.
-- `--accurate`: añade reintentos, resolución de nombres, WS-Discovery y los
-  métodos aportados por complementos de descubrimiento activos.
-
-`lanip ephemeral` (`lanip -e`) es una exploración desechable que muestra
-exclusivamente los equipos activos de esa ejecución. Usa un repositorio en
-memoria, no abre el proyecto activo, no toca el inventario ni dispara guardado
-automático. Puede añadir `--resolve-names`, `--ports 22,80,443` o `--json`;
-todos los resultados se descartan al terminar el proceso.
-
-mDNS y SSDP se distribuyen en el complemento nativo
-`lanctl.discovery.mdns-ssdp.lcp`; ya no forman parte del programa principal.
-
-`scan --identify` utiliza banners y sondas inocuas. Los resultados incluyen
-servicio, producto, confianza y evidencia; el número de puerto por sí solo no
-se considera una identificación suficiente.
-
-### Consultar y exportar el inventario
-
-```powershell
-lanctl list --where "active and group=IOT and vendor~Amazon"
-lanctl list --format json
-lanctl list --format csv --output inventario.csv
-lanctl list --format html --output inventario.html
-```
-
-Las expresiones `--where` admiten términos unidos mediante `and`, los estados
-`active` e `inactive`, y los operadores `=`, `!=` y `~`. Se pueden consultar
-los campos `ip`, `mac`, `alias`, `name`, `cnf`, `group`, `vendor`, `protocol`
-y `description`. Las expresiones se interpretan sin ejecutar código.
-
-### Abrir conexiones y terminales
-
-```powershell
-lanctl open NAS https
-lanctl connect VD1 rdp
-lanctl ssh SW
-lanctl terminal NAS
-lanctl open NAS ssh --dry-run
-```
-
-`open`, también disponible como `connect`, prepara el cliente correspondiente
-para SSH, Telnet, HTTP, HTTPS, FTP, RDP, RTSP o SMB. La opción `--dry-run`
-permite revisar el destino antes de iniciar una aplicación externa.
-
-### Guardar y verificar un acceso SSH
-
-Dentro de la CLI o del TUI puede seleccionarse primero un elemento. Los comandos
-siguientes configuran SSH, guardan sus credenciales cifradas, comprueban el
-servicio y fijan la huella presentada por el dispositivo:
 
 ```text
-protocol configure ssh --port 22
-credential set ssh --username USUARIO
-Contraseña (no se mostrará):
-ssh probe
-ssh fingerprint
-ssh trust SHA256:AbCdEf...
-ssh open
+python lanctl.py /?
+python lanip.py /?
+python lanwire.py /?
+python lanrack.py /?
+python lanaccess.py /?
+python lanmon.py /?
 ```
 
-`open` es un alias corto de `ssh open` cuando el elemento seleccionado ya tiene
-SSH configurado. Para consultar las credenciales asociadas sin mostrar sus
-contraseñas:
+Validación:
 
 ```text
-credential list
-```
-
-### Interfaces interactivas
-
-```powershell
-lanctl                 # abre el TUI
-lanctl --cli
-lanctl -tui
-lanctl --tui PLUGINS
-lanctl --tui PROJECTS
-lanctl --tui SETTINGS
-lanctl --project "C:\Users\Victor\Desktop\Casa.vlf"
-lanctl --tui --project "C:\Users\Victor\Desktop\Casa.vlf"
-```
-
-La GUI anterior está congelada y fuera de las distribuciones. Desde una copia del
-código puede probarse instalando `.[gui]` y definiendo
-`LANCTL_ENABLE_LEGACY_GUI=1` antes de ejecutar `lanctl --gui`. El alcance y la
-forma de ejecutar sus pruebas están en [docs/LEGACY-GUI.md](docs/LEGACY-GUI.md).
-
-Los puertos detectados se traducen a servicios como HTTP, HTTPS o SSH. Cuando el servicio
-es interactivo, LANCTL puede abrir el navegador, una terminal SSH o el cliente
-nativo correspondiente utilizando la IP y el puerto detectados.
-
-La tabla gráfica ajusta sus columnas al ancho disponible y conserva únicamente
-el desplazamiento vertical. La CLI persistente permite seleccionar un elemento
-y reutilizarlo en comandos posteriores. La TUI ofrece inventario y acciones
-contextuales a pantalla completa. Sus ventanas se muestran como overlays
-modales sobre una captura congelada de la pantalla principal:
-
-- `F1`: árbol de comandos y teclas.
-- `F2`: información del elemento en pestañas de identidad, clasificación, red,
-  accesos y puertos.
-- `F7`: plugins instalados, estado e información del manifiesto.
-- `F9`: proyectos creados o cargados; `Enter` activa el seleccionado.
-- `F12`: editor de configuración; `←/→` cambia de menú, `↑/↓` cambia de
-  variable, `Tab` entra o sale de su edición y `Ctrl+S` valida y guarda.
-- `Ctrl+H`: historial de comandos recuperable con `Enter`.
-
-Dentro de un overlay, `←/→` cambia de sección, `↑/↓` desplaza o selecciona y
-`Esc` lo cierra sin modificar la selección ni el contenido del fondo.
-El compositor reemplaza únicamente el rectángulo ocupado por la ventana y
-mantiene visibles los segmentos congelados situados a izquierda y derecha.
-Durante el descubrimiento, la barra de progreso ocupa el 90 % del ancho de la
-terminal y permanece centrada.
-
-`--project` (también `-project`) activa el VLF antes de construir la interfaz.
-Los accesos `--tui PLUGINS`, `--tui PROJECTS` y `--tui SETTINGS` abren
-directamente el overlay interactivo correspondiente sin esperar un escaneo de
-red. Desde la carpeta del proyecto se pueden usar igual con `run.cmd --tui ...`.
-Dentro del TUI, `project` o `project status` muestran el proyecto seleccionado;
-`project use "RUTA.vlf"` cambia de proyecto y sustituye inmediatamente el
-inventario visible. `help project` muestra el resto de operaciones disponibles.
-
-Todos los comandos admiten `-h`, `--help` y `/?`.
-
-Referencias operativas: [manual del TUI](docs/TUI.md),
-[CLI y códigos de salida](docs/CLI.md),
-[persistencia y recuperación](docs/STORAGE.md),
-[solución de problemas](docs/TROUBLESHOOTING.md),
-[acceso remoto](docs/ACCESS.md),
-[despliegue empresarial](docs/ENTERPRISE.md) y [plugins LCP](docs/LCP.md).
-
-## Configuración persistente
-
-El formato agrupado, su migración y la propiedad de las bases por proyecto se
-documentan en [Configuración de LANCTL](docs/CONFIGURATION.md).
-
-Las rutas lógicas heredadas `data/lc/...` se resuelven mediante una capa central:
-`C:\ProgramData\LANCTL` en Windows instalado, el directorio XDG del usuario en
-Linux y `data/lanctl` junto al ejecutable portable. systemd usa explícitamente
-`/var/lib/lanctl` y `/etc/lanctl/access`. Nunca se escriben datos junto a una
-instalación de Program Files. Entre las opciones más relevantes se encuentran:
-
-```powershell
-lanctl settings --scan-profile accurate
-lanctl settings --progress on
-lanctl settings --service-identification on
-lanctl settings --workers 64 --timeout 0.8 --scan-order ascending --max-hosts 4096
-lanctl settings --projects-directory "%USERPROFILE%\Documents\LanCTL"
-```
-
-Para revisar la configuración efectiva:
-
-```powershell
-lanctl settings
-```
-
-Las instalaciones anteriores con `data/als/` o `data/lc/` junto al ejecutable se
-copian al nuevo destino sin borrar el original. Un archivo distinto en ambos
-destinos detiene la migración y muestra el conflicto en lugar de sobrescribirlo.
-
-## Gestión de elementos
-
-Los elementos se identifican principalmente por su MAC. Las modificaciones de
-alias o nombre confirman automáticamente el registro; los elementos reservados
-`GATEWAY` y `BRODCAST` están protegidos frente a operaciones destructivas.
-
-```powershell
-lanctl element 3C:E4:41:01:08:5E description "Echo Dot cocina"
-lanctl cnf 3C:E4:41:01:08:5E O
-lanctl cnf RP1 F
-lanctl element 3C:E4:41:01:08:5E delete
-lanctl element 3C:E4:41:01:08:5E delete --yes
-```
-
-Sin `--yes`, la eliminación solicita confirmación. Si un dispositivo eliminado
-continúa presente en la LAN, un descubrimiento posterior puede incorporarlo de
-nuevo como elemento no identificado.
-
-### Estados CNF y selección fija
-
-Los estados CNF admitidos son `O`, `X`, `S`, `F` y `-`. El estado `F` fija la
-selección del elemento en la consola y la TUI: las flechas no pueden moverla a
-otro elemento hasta ejecutar `cnf` sin argumento o asignar un estado distinto.
-`GATEWAY` y `BRODCAST` utilizan `O` por defecto.
-
-### Elementos recurrentes
-
-La base recurrente guarda equipos conocidos por su MAC —por ejemplo, el portátil
-o el móvil del administrador— y permite reconocerlos en redes diferentes sin
-suponer que conservarán la misma IP.
-
-```powershell
-lanctl list -recurrent
-lanctl recurrent -list
-lanctl recurrent -list --format json
-```
-
-Ambas formas muestran únicamente la identidad estable y omiten deliberadamente
-la IP. El catálogo es privado y no se incluye en los binarios ni en GitHub. Se
-guarda como `recurrent-elements.json` bajo la raíz de datos de cada instalación.
-
-## Proyectos VLF
-
-Un proyecto `.vlf` empaqueta la información necesaria para conservar y
-verificar el estado de una LAN:
-
-```powershell
-lanctl project create Casa.vlf --name "Red de casa"
-lanctl project info Casa.vlf
-lanctl project verify Casa.vlf
-lanctl project list Casa.vlf
-lanctl project update Casa.vlf
-lanctl project use Casa.vlf
-lanctl project save
-```
-
-Los nombres relativos se resuelven en la carpeta Documentos conocida por
-Windows, dentro de `LANctl`. Esto respeta la redirección de Documentos a
-OneDrive u otro proveedor, en lugar de construir manualmente una ruta desde
-`%USERPROFILE%`. Se puede indicar una ruta absoluta o cambiar el directorio
-desde `settings`.
-
-El contenedor utiliza una estructura ZIP fija e incluye:
-
-- Metadatos e identificación del proyecto.
-- Inventario SQLite y copia de restauración.
-- Configuración LAN y topología lógica.
-- Credenciales cifradas como contenido opaco.
-- Auditoría diaria de modificaciones.
-- Hashes de contenido y checksum general.
-
-`project create`, `project update` y `project use` seleccionan el VLF activo.
-Cada entrada de auditoría renueva los hashes para conservar la validez del
-contenedor. El contrato técnico se encuentra en [docs/VLF.md](docs/VLF.md).
-
-La política `SaveMode` controla cuándo se sincroniza el workspace con el VLF:
-
-```powershell
-lanctl settings --save-mode manual
-lanctl settings --save-mode manual.inCloseConsult
-lanctl settings --save-mode automatic.toClose
-lanctl settings --save-mode automatic.toScan
-lanctl settings --save-mode automatic.timeToSave
-lanctl settings --save-interval 5
-lanctl settings --save-mode automatic.allChanges
-lanctl settings --save-mode list
-```
-
-Los modos automáticos comparan hashes del workspace y no reescriben el proyecto
-si no hay cambios. Los plugins pueden registrar modos adicionales mediante una
-extensión declarativa `project-save-mode`.
-
-## Registros y auditoría
-
-LANCTL separa la actividad operativa de los cambios realizados sobre el
-inventario:
-
-| Registro | Ubicación | Contenido |
-| --- | --- | --- |
-| Programa | `logs/dd-mm-yyyy.log` bajo la raíz de datos | Comandos, conexiones, escaneos y mensajes operativos |
-| Auditoría | `./logs/dd-mm-yyyy.log` dentro del VLF activo | Altas, bajas y cambios de los elementos |
-
-La auditoría muestra los valores anteriores y nuevos, pero oculta las
-referencias de credenciales. La limpieza automática del log operativo está
-desactivada inicialmente y puede configurarse así:
-
-```powershell
-lanctl settings -log-cleanup on -log-retention-days 90
-lanctl settings -log-cleanup off
-```
-
-Solo se eliminan archivos con el formato reconocido `dd-mm-yyyy.log`; el
-registro del día actual y cualquier archivo ajeno al patrón permanecen intactos.
-
-## Seguridad operacional
-
-- Utiliza LANCTL únicamente en redes y equipos para los que tengas autorización.
-- Revisa las operaciones de configuración antes de confirmarlas.
-- Las consultas automatizadas por SSH se limitan a comandos de lectura permitidos.
-- Las credenciales no se almacenan en texto plano y están vinculadas al usuario
-  de Windows mediante DPAPI.
-- Los proyectos VLF verifican estructura, tamaño, rutas internas, SQLite y hashes.
-- No publiques `data/lc/`, credenciales, claves ni proyectos reales en el repositorio.
-
-## Complementos LCP
-
-Los complementos `.lcp` amplían LANCTL mediante plugins, temas, idiomas,
-automatizaciones, análisis, seguridad e interfaces. El formato declara permisos
-y eventos para que cada complemento exponga explícitamente su alcance.
-
-Consulta [docs/LCP.md](docs/LCP.md) para conocer el contrato y las restricciones
-de seguridad.
-
-Entre los complementos nativos incluidos o mantenidos junto a esta versión se
-encuentran:
-
-- `lanctl.discovery.mdns-ssdp`: descubrimiento multicast mDNS y SSDP.
-- `lanctl.analysis.mac-vendor`: enriquecimiento de fabricantes a partir de MAC.
-- `lanctl.discovery.windows-smb`: detección y acceso controlado a recursos SMB.
-- `lanctl.network.wol`: Wake-on-LAN y secuencias de encendido seguras.
-- `lanctl.theme.default`: tema gráfico incluido con la aplicación.
-
-Los paquetes SMB, WoL y el tema predeterminado se incluyen en `bundled/`. Los
-plugins mDNS/SSDP y de fabricantes se mantienen como fuentes separadas en
-`plugins-src/` para que su instalación y permisos sean explícitos.
-
-Los paquetes pueden verificarse, instalarse y activarse explícitamente:
-
-```powershell
-lanctl plugin verify complemento.lcp
-lanctl plugin install complemento.lcp
-lanctl plugin enable ID --grant-all
-lanctl plugin list
-```
-
-## Integración con Clink
-
-[`packaging/clink/lanctl.lua`](packaging/clink/lanctl.lua) aporta completado
-contextual para `lanctl`, `LANCTL.exe`, `als` y `als.exe`, incluidos los
-comandos de plugins, proyectos y elementos recurrentes.
-
-Durante el desarrollo se puede registrar con:
-
-```bat
-clink installscripts "C:\ruta\a\LANCTL\packaging\clink"
-```
-
-La distribución para Windows deberá instalarlo desde
-`C:\Program Files\LANCTL\clink\` cuando detecte una instalación de Clink.
-Consulta [packaging/clink/README.md](packaging/clink/README.md).
-
-## Capa de comandos Cisco
-
-Las operaciones sobre switches se clasifican por riesgo, ofrecen una vista
-previa y exigen confirmación cuando corresponde. Los comandos admitidos y el
-modelo de ejecución están documentados en
-[docs/cisco-command-layer.md](docs/cisco-command-layer.md).
-
-## Calidad y pruebas
-
-La suite automatizada se ejecuta con `unittest`:
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-Antes de distribuir una compilación también conviene verificar la sintaxis:
-
-```powershell
+python -m pytest -q
+python -m pytest -q -m legacy_gui
+python -m ruff format --check .
+python -m ruff check .
+python -m bandit -q -r src -ll
+python -m pip_audit . --strict
+python tools/generate_error_catalog.py --check
+python tools/generate_cli_reference.py --check
 python -m compileall -q src tests
 ```
 
-## Compilación para Windows
+La última revisión local completó 616 pruebas principales, 18 de la GUI
+congelada y 594 subpruebas. El catálogo contiene 874 puntos de error. CI no
+ignora vulnerabilidades conocidas.
+
+## Compilación
 
 ```powershell
-python -m pip install pyinstaller
-.\build.cmd
-# Sin Inno Setup: genera los EXE y el ZIP portable
-.\scripts\build-windows.ps1 -SkipInstaller
-.\dist\LANCTL.exe --version
+.\scripts\build-windows.ps1 -Version 0.3.0-beta.22
 ```
 
-Los directorios `build/` y `dist/` son artefactos locales y no se versionan.
+```sh
+./scripts/build-linux.sh 0.3.0-beta.22
+```
 
-La distribución prevista separa los datos de instalación de los proyectos del
-usuario:
+Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.
 
-- Programa y documentación inmutable: `C:\Program Files\LANCTL\`.
-- Datos comunes: `C:\ProgramData\LANCTL\`.
-- Secretos de usuario: `%LOCALAPPDATA%\LANCTL\access\`.
-- Proyectos por defecto: carpeta Documentos conocida por Windows, subcarpeta
-  `LANctl` (incluido OneDrive cuando Documentos está redirigido).
-
-PyInstaller genera el ejecutable; la creación del instalador de Windows es una
-fase de empaquetado posterior y no la realiza directamente el compilador de
-Python.
-
-## Estructura del repositorio
+## Estructura
 
 ```text
-src/lanctl/                  Paquete principal de la suite
-├── apps/ip/                 LANIP: dominio, infraestructura y CLI/TUI/GUI
-├── apps/wire/               LANWIRE: IDF, cableado y TUI/CLI
-├── apps/rack/               LANRACK: visualización de armarios y ocupantes
-├── apps/access/             LANACCESS, acceso remoto y credenciales compartidas
-├── apps/monitor/            Monitorización y eventos
-├── core/                    Configuración, datos, proyectos y plugins
-├── shared/                  Recursos comunes
-├── infrastructure/          Adaptadores de plataforma y distribución
-└── bootstrap/               Entradas de las aplicaciones paralelas de la suite
-tests/         Pruebas automatizadas
-docs/          Contratos y documentación técnica
-assets/        Iconos y recursos visuales
-packaging/     Metadatos de distribución
+src/lanctl/
+├── apps/
+│   ├── ip/             LANIP
+│   ├── wire/           LANWIRE
+│   ├── rack/           LANRACK
+│   ├── access/         LANACCESS y acceso remoto
+│   └── monitor/        LANMON
+├── bootstrap/          Entradas de los ejecutables
+├── core/               Configuración, proyectos, persistencia y plugins
+├── infrastructure/     Adaptadores de plataforma y distribución
+└── shared/             Recursos compartidos
+
+tests/                  Pruebas automatizadas
+docs/                   Manuales y contratos
+packaging/              Windows, Debian, systemd y portable
+plugins-src/            Fuentes de plugins separados
+bundled/                Complementos incluidos
 ```
 
-## Radmin Viewer
+## Documentación
 
-La integración abre Radmin Viewer mediante sus switches documentados y admite
-los modos `control`, `view`, `file`, `shutdown`, `chat`, `voice`, `message` y
-`telnet`, además de servidor intermedio, pantalla completa, profundidad de color,
-frecuencia de actualización y phonebooks `.rpb`. Radmin no ofrece switches
-documentados para usuario/contraseña: LANCTL no coloca secretos en argumentos de
-proceso; la autenticación automática debe gestionarse en el phonebook de Radmin.
+- [Referencia completa del CLI](docs/CLI-REFERENCE.md)
+- [Manual del TUI](docs/TUI.md)
+- [Instalación](docs/INSTALL.md)
+- [Persistencia y recuperación](docs/STORAGE.md)
+- [Acceso remoto](docs/ACCESS.md)
+- [Seguridad](docs/SECURITY.md)
+- [Plugins](docs/LCP.md)
+- [Limitaciones conocidas](docs/KNOWN-ISSUES.md)
+- [Guía para beta testers](docs/BETA-TESTING.md)
 
-## Wake-on-LAN (`wol`)
-
-El complemento trusted `lanctl.network.wol` emite únicamente paquetes mágicos
-UDP mediante una fachada de red limitada. El núcleo resuelve el inventario,
-valida parámetros, evalúa condiciones y coordina secuencias.
-
-```text
-lanctl wol PC
-lanctl wol PC wakeup --broadcast 192.168.1.255 --repeat 3 --wait 60
-lanctl wol PC -if offline -if "time between 07:00 09:00"
-lanctl wol PC --if-any "ping responds" --if-not online
-lanctl wol PC status --method auto
-lanctl wol PC shutdown -t 10m
-lanctl wol sequence create startup.office
-lanctl wol sequence startup.office add ROUTER
-lanctl wol sequence startup.office add SWITCH --after router
-lanctl wol sequence startup.office run
-```
-
-Las condiciones repetidas con `-if`/`--if` usan AND. `--if-any` crea el grupo
-OR y `--if-not` niega condiciones. Una condición falsa devuelve `skipped`.
-Wake-on-LAN solo envía la señal: `sent` no garantiza que el equipo arranque.
-Las acciones `shutdown`, `restart`, `sleep` y `hibernate` requieren un transporte
-SSH explícito, credencial cifrada y host key fijada. Se configura con
-`wol NAME configure --power-transport ssh --power-platform windows|linux` y se
-confirma con `--yes`; `--dry-run` muestra el plan sin ejecutarlo. Las plantillas
-administradas se registran con `--power-command ACCIÓN=COMANDO`.
-
-La salida `--json` contiene `runId`, `taskId`, `operationId`, timestamps,
-duración, estado y errores estructurados. Las secuencias se guardan mediante
-reemplazo transaccional en `data/lc/wol-sequences.json` y rechazan ciclos.
-## SMB Discovery
-
-LANCTL incluye el paquete instalable `bundled/lanctl.discovery.windows-smb.lcp`. Instálalo y habilítalo con confianza explícita para aportar la vista **Recursos compartidos**. La CLI admite `smb scan`, `smb NAS`, `smb NAS shares`, `smb NAS open Public --dry-run`, `smb printers`, `smb NAS printers`, `smb workgroups`, `smb NAS connect|disconnect|status` y `smb NAS printer HP open|queue|connect --yes`.
-
-La detección usa TCP/445 y APIs modernas de Windows; en Linux/Raspberry Pi usa
-`smbclient` con un archivo de autenticación temporal de permisos restringidos.
-No activa SMB1 ni expone contraseñas en la línea de procesos. Las observaciones
-viven en almacenamiento transaccional y las credenciales permanecen en
-`CredentialStore`.
+Todos los comandos admiten `-h`, `--help` y `/?`.
 
 ## Licencia
 
-Este repositorio todavía no incluye un archivo de licencia. Mientras no se
-publique una licencia explícita, se mantienen todos los derechos sobre el código.
+El repositorio todavía no incluye una licencia explícita. Hasta que se añada,
+se mantienen todos los derechos sobre el código.

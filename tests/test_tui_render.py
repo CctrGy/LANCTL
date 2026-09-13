@@ -123,6 +123,25 @@ class RichTuiRendererTests(unittest.TestCase):
             ["↑/↓", "→", "Ctrl+R", "Esc"],
         )
 
+    def test_narrow_modal_keeps_selected_tab_visible(self):
+        tabs = ["GENERAL", "RED", "ESCANEO", "PROYECTOS", "ALMACENAMIENTO", "TECLADO"]
+        visible = RichTuiRenderer._visible_tabs(tabs, 5, 28)
+
+        self.assertIn((5, "TECLADO"), visible)
+        self.assertLessEqual(
+            sum(Text(label).cell_len + 2 for _, label in visible) + 2 * (len(visible) - 1),
+            30,
+        )
+
+    def test_modal_cell_slice_preserves_width_with_wide_unicode_boundary(self):
+        source = Text("A界BC")
+
+        left = RichTuiRenderer._cell_slice(source, 0, 2)
+        right = RichTuiRenderer._cell_slice(source, 2, 5)
+
+        self.assertEqual(left.cell_len, 2)
+        self.assertEqual(right.cell_len, 3)
+
 
 if __name__ == "__main__":
     unittest.main()

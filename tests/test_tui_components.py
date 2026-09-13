@@ -63,3 +63,23 @@ def test_settings_editor_snapshot_and_manager_navigation() -> None:
     changes = []
     ManagerController.move(manager, 1, lambda state: changes.append(state.selected))
     assert (manager.selected, manager.scroll, changes) == (1, 0, [1])
+
+
+def test_settings_editor_adapts_rows_to_narrow_cell_width() -> None:
+    fields = [
+        SettingField(
+            "language",
+            "Idioma 日本語",
+            "--language",
+            "español",
+            "en",
+            "texto Unicode",
+            "GENERAL",
+        )
+    ]
+    modal = ModalState("settings", "SETTINGS", ["GENERAL"], [[]], items=fields)
+
+    page = SettingsEditor.render_page(modal, table_width=32, description_width=28)
+
+    assert "CAMPO / VALOR / FORMATO" in page[0]
+    assert all(Text(row).cell_len <= 32 for row in page[:5])

@@ -260,6 +260,25 @@ class PluginTests(unittest.TestCase):
                 manager.enable("demo.network-tools", grant={"theme.register"})
             self.assertEqual(manager.get("demo.network-tools").state, PluginState.BLOCKED)
 
+    def test_isolated_runtime_timeout_excludes_process_bootstrap(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self._source(root)
+            manifest = json.loads((source / "plugin.info").read_text(encoding="utf-8"))
+            manifest["limits"] = {"timeoutSeconds": 0.1, "memoryMb": 64, "maxCalls": 1}
+            (source / "plugin.info").write_text(json.dumps(manifest), encoding="utf-8")
+            (source / "main.exec").write_text(
+                "import time\ndef activate(api):\n    time.sleep(0.5)\n",
+                encoding="utf-8",
+            )
+            package = root / "slow.lcp"
+            build_package(source, package)
+            manager = PluginManager(root / "installed", root / "registry.json")
+            manager.install(package)
+            with self.assertRaisesRegex(TimeoutError, "timeout activando"):
+                manager.enable("demo.network-tools", grant={"theme.register"})
+            self.assertEqual(manager.get("demo.network-tools").state, PluginState.BLOCKED)
+
     def test_modified_installed_plugin_is_moved_to_quarantine_on_startup(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

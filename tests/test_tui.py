@@ -1,12 +1,14 @@
 import io
 import json
+import queue
+import threading
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from lanctl.apps.ip.interfaces.cli.main import build_parser
-from lanctl.apps.ip.interfaces.tui.keyboard import DEFAULT_TUI_KEY_BINDINGS
+from lanctl.apps.ip.interfaces.tui.keyboard import DEFAULT_TUI_KEY_BINDINGS, read_posix_key
 from lanctl.apps.ip.interfaces.tui.main import (
     CLI_PANEL,
     LIST_ELEMENT_PANEL,
@@ -31,11 +33,66 @@ from lanctl.apps.ip.interfaces.tui.main import (
     _selectable_output_indexes,
     _spinner_character,
     _translate_tui_element,
+    _TuiScanProgress,
 )
 from lanctl.apps.ip.interfaces.tui.modal import HelpCommand, ModalState, SettingField
 
 
 class TuiTests(unittest.TestCase):
+    def test_text_and_secret_dialogs_use_platform_independent_semantic_keys(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.secret_prompt = ""
+        tui.render = Mock()
+        keys = iter(("h", "o", "BACKSPACE", "i", "ENTER"))
+        tui._read_key = lambda: next(keys)
+
+        self.assertEqual(tui._read_text("Nombre:"), "hi")
+
+        keys = iter(("s", "3", "BACKSPACE", "e", "ENTER"))
+        tui._read_key = lambda: next(keys)
+        self.assertEqual(tui._read_secret("Clave:"), "se")
+        self.assertEqual(tui.secret_prompt, "")
+
+    def test_scan_progress_publishes_events_and_honours_cancellation(self):
+        events = queue.Queue()
+        cancelled = threading.Event()
+        progress = _TuiScanProgress(events, cancelled)
+        progress.begin(10)
+        progress.found("192.0.2.1")
+        progress.advance(2)
+
+        self.assertEqual(events.get_nowait(), ("begin", 10))
+        self.assertEqual(events.get_nowait(), ("found", ("192.0.2.1",)))
+        self.assertEqual(events.get_nowait(), ("advance", 2))
+        cancelled.set()
+        with self.assertRaises(InterruptedError):
+            progress.advance()
+
+    def test_refresh_starts_a_background_worker_and_second_request_does_not_overlap(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.scanning = False
+        tui.database = Mock()
+        tui.database.load.return_value = []
+        tui.list_filter = ("all", "")
+        tui.scan_events = queue.Queue()
+        tui.messages = []
+        started = []
+
+        class FakeThread:
+            def __init__(self, *, target, **_kwargs):
+                self.target = target
+
+            def start(self):
+                started.append(self.target)
+
+        with patch("lanctl.apps.ip.interfaces.tui.main.threading.Thread", FakeThread):
+            tui.refresh()
+            tui.refresh()
+
+        self.assertTrue(tui.scanning)
+        self.assertEqual(started, [tui._run_refresh])
+        self.assertIn("Ya hay un escaneo", tui.messages[0])
+
     def test_status_identifies_the_active_project(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.project_info = {"name": "Casa"}
@@ -257,6 +314,46 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(tui.modal.items[0].value, "Casa")
         self.assertEqual(tui.modal.selected, 1)
         self.assertEqual(tui.modal.items[1].value, "C:\\Projects")
+
+    def test_project_switch_with_pending_changes_requires_an_explicit_decision(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui._last_screen_lines = []
+        tui.pending_project_path = None
+        tui.modal = ModalState("projects", "PROJECT MANAGER", ["Proyectos"], [[]])
+
+        with (
+            patch(
+                "lanctl.apps.ip.interfaces.tui.main.load_config",
+                return_value={"activeProject": "C:/Projects/Actual.vlf"},
+            ),
+            patch("lanctl.core.projects.save_policy.workspace_is_dirty", return_value=True),
+        ):
+            tui._request_project_activation(Path("C:/Projects/Otro.vlf"))
+
+        self.assertEqual(tui.modal.kind, "project_switch")
+        self.assertEqual(tui.modal.items, ["save", "discard", "cancel"])
+        self.assertTrue(tui.pending_project_path.endswith("Otro.vlf"))
+
+    def test_project_switch_discard_is_explicit(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.pending_project_path = "C:/Projects/Otro.vlf"
+        tui.modal = ModalState(
+            "project_switch",
+            "CAMBIOS SIN GUARDAR",
+            ["Cambiar proyecto"],
+            [[]],
+            selected=1,
+            items=["save", "discard", "cancel"],
+        )
+        calls = []
+        tui._activate_project_path = lambda path, discard_changes=False: calls.append(
+            (path, discard_changes)
+        )
+
+        tui._handle_project_switch_key(tui.modal, "ENTER")
+
+        self.assertEqual(calls, [("C:/Projects/Otro.vlf", True)])
+        self.assertIsNone(tui.pending_project_path)
 
     def test_settings_uses_category_menus_and_contextual_descriptions(self):
         tui = LanctlTui.__new__(LanctlTui)
@@ -832,6 +929,16 @@ class TuiTests(unittest.TestCase):
         values = iter(["\x00", "="])
         self.assertEqual(_read_windows_key(lambda: next(values)), "F3")
 
+    def test_posix_control_and_escape_keys_are_decoded(self):
+        self.assertEqual(read_posix_key(io.StringIO("\x13")), "CTRL_S")
+        self.assertEqual(read_posix_key(io.StringIO("\x0e")), "CTRL_N")
+        stream = io.StringIO("\x1b[A")
+        with patch("select.select", return_value=([stream], [], [])):
+            self.assertEqual(read_posix_key(stream), "UP")
+        stream = io.StringIO("\x1b[24~")
+        with patch("select.select", return_value=([stream], [], [])):
+            self.assertEqual(read_posix_key(stream), "F12")
+
     def test_element_help_suggestions_take_vertical_focus_from_inventory(self):
         tui = object.__new__(LanctlTui)
         tui.command = ""
@@ -904,6 +1011,43 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(len(lines), 12)
         self.assertEqual(lines[-1], "SCAN-PROGRESS")
         self.assertTrue(all(not line for line in lines[2:-1]))
+
+    def test_inventory_hides_detection_dates_and_gives_group_more_width(self):
+        from rich.text import Text
+
+        tui = object.__new__(LanctlTui)
+        tui.devices = [
+            SimpleNamespace(
+                ip="192.168.1.10",
+                mac="AA:BB:CC:DD:EE:FF",
+                cnf="O",
+                alias="SW",
+                name="Switch",
+                groups=["INFRAESTRUCTURA"],
+                description="-",
+                discovery_methods=["ICMP", "ARP"],
+                last_discovery="ICMP+ARP",
+                last_seen="2026-09-12T12:30:00+02:00",
+                manufacturer="Cisco",
+                protocols=[],
+            )
+        ]
+        tui.dhcp_range = None
+        tui.scan_total = 0
+        tui.index = 0
+        tui.scroll = 0
+        tui.output_focus = False
+        tui.active_devices = {_device_key(tui.devices[0].mac, tui.devices[0].ip)}
+        tui.response_ms = {}
+        tui.local_ip = ""
+
+        lines = tui._inventory_lines(210, 4)
+        header = Text.from_ansi(lines[0]).plain
+
+        self.assertNotIn("DETECTION", header)
+        self.assertNotIn("LAST SEEN", header)
+        self.assertIn("GROUP", header)
+        self.assertIn("INFRAESTR", Text.from_ansi(lines[2]).plain)
 
     def test_typing_after_suggestion_returns_arrows_to_cursor_control(self):
         tui = object.__new__(LanctlTui)

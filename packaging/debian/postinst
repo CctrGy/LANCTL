@@ -5,5 +5,7 @@ getent passwd lanctl >/dev/null 2>&1 || adduser --system --ingroup lanctl --home
 install -d -o lanctl -g lanctl -m 0750 /var/lib/lanctl
 install -d -o root -g lanctl -m 0750 /etc/lanctl
 install -d -o root -g lanctl -m 0770 /etc/lanctl/access
-systemctl daemon-reload >/dev/null 2>&1 || true
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl daemon-reload >/dev/null 2>&1 || true
+fi
 exit 0

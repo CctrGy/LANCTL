@@ -227,9 +227,26 @@ def atomic_write_bytes(path: str | Path, payload: bytes) -> Path:
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, target)
+        fsync_directory(target.parent)
         return target
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def fsync_directory(path: str | Path) -> None:
+    """Persiste razonablemente cambios de nombres en POSIX.
+
+    Windows no permite abrir directorios con ``os.open`` de esta forma; allí
+    ``os.replace`` y el flush del archivo siguen siendo la garantía disponible.
+    """
+
+    if os.name == "nt":
+        return
+    descriptor = os.open(Path(path), os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def atomic_write_text(path: str | Path, value: str, *, encoding: str = "utf-8") -> Path:

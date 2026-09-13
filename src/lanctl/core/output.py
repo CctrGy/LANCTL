@@ -48,7 +48,7 @@ TABLE_MIN_WIDTHS = {
     "ALIAS": 13,
     "MAC": 19,
     "NAME": 17,
-    "GROUP": 8,
+    "GROUP": 12,
     "description": 42,
 }
 TABLE_HARD_MIN_WIDTHS = {

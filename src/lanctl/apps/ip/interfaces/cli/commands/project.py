@@ -36,7 +36,7 @@ def register_project_command(commands: argparse._SubParsersAction) -> None:
     status.add_argument("--json", action="store_true", help="Devuelve JSON.")
     status.set_defaults(project_handler=_status)
 
-    create = actions.add_parser("create", help="Empaqueta la LAN activa en un proyecto VLF.")
+    create = actions.add_parser("create", help="Crea un proyecto VLF vacío por defecto.")
     create.add_argument("file", help="Archivo de salida; se añade .vlf si falta.")
     create.add_argument("--name", help="Nombre humano del proyecto.")
     create.add_argument("--description", default="", help="Descripción general.")
@@ -48,7 +48,12 @@ def register_project_command(commands: argparse._SubParsersAction) -> None:
     create.add_argument(
         "--empty",
         action="store_true",
-        help="Crea un proyecto limpio sin copiar el inventario ni los grupos activos.",
+        help=argparse.SUPPRESS,
+    )
+    create.add_argument(
+        "--clone-current",
+        action="store_true",
+        help="Crea el proyecto copiando explícitamente el inventario y grupos activos.",
     )
     create.add_argument("--force", action="store_true", help="Sobrescribe un VLF existente.")
     create.set_defaults(project_handler=_create)
@@ -107,6 +112,15 @@ def _status(args) -> int:
 
 
 def _create(args) -> int:
+    settings = load_config()
+    destination = Path(args.file).expanduser()
+    if destination.suffix.casefold() != ".vlf":
+        destination = destination.with_suffix(".vlf")
+    active = str(settings.get("activeProject") or "").strip()
+    if args.force and active and destination.resolve() == Path(active).expanduser().resolve():
+        raise ValueError(
+            "no se puede sobrescribir con --force el proyecto activo; crea otro proyecto"
+        )
     options = {
         "name": args.name or "",
         "description": args.description,
@@ -117,7 +131,7 @@ def _create(args) -> int:
         "responsible": args.responsible,
         "overwrite": args.force,
     }
-    if args.empty:
+    if not getattr(args, "clone_current", False):
         with tempfile.TemporaryDirectory(prefix="lanctl-project-create-") as temporary:
             empty_config = dict(load_config())
             empty_config["database"] = str(Path(temporary) / "devices.json")
@@ -150,7 +164,16 @@ def _create(args) -> int:
 
 
 def _update(args) -> int:
-    result = update_project(args.file)
+    settings = load_config()
+    active = str(settings.get("activeProject") or "").strip()
+    target = Path(args.file).expanduser()
+    if target.suffix.casefold() != ".vlf":
+        target = target.with_suffix(".vlf")
+    if not active or target.resolve() != Path(active).expanduser().resolve():
+        raise ValueError(
+            "project update solo puede guardar el proyecto activo; usa project use primero"
+        )
+    result = update_project(target, config=settings)
     _set_active_project(result["path"])
     from lanctl.core.plugins import get_plugin_manager
 

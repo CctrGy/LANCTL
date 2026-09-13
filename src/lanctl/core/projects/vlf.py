@@ -77,6 +77,14 @@ def create_project(
     destination = _vlf_path(output)
     if destination.exists() and not overwrite:
         raise ValueError(f"ya existe el proyecto VLF: {destination}; usa --force o project update")
+    overwrite_backup: Path | None = None
+    if destination.exists() and overwrite:
+        backup_directory = destination.parent / ".lanctl-backups"
+        backup_directory.mkdir(parents=True, exist_ok=True)
+        overwrite_backup = backup_directory / (
+            f"{destination.stem}-{datetime.now().astimezone():%Y%m%d-%H%M%S-%f}.vlf"
+        )
+        shutil.copy2(destination, overwrite_backup)
     active = dict(config or load_config())
     now = datetime.now().astimezone().isoformat(timespec="seconds")
     identity = dict(identity or {})
@@ -209,6 +217,8 @@ def create_project(
         _write_archive(root, destination)
     result = verify_project(destination)
     result.update({"path": str(destination), "project": project_info})
+    if overwrite_backup is not None:
+        result["recoveryBackup"] = str(overwrite_backup)
     return result
 
 
@@ -219,6 +229,10 @@ def update_project(path: str | Path, *, config: Mapping | None = None) -> dict:
     info = inspect_project(source)
     temporary = source.with_name(source.stem + ".update.vlf")
     backup = source.with_suffix(source.suffix + ".bak")
+    backup_directory = source.parent / ".lanctl-backups"
+    versioned_backup = backup_directory / (
+        f"{source.stem}-{datetime.now().astimezone():%Y%m%d-%H%M%S-%f}.vlf"
+    )
     if temporary.exists():
         temporary.unlink()
     result = create_project(
@@ -232,10 +246,13 @@ def update_project(path: str | Path, *, config: Mapping | None = None) -> dict:
     )
     if backup.exists():
         backup.unlink()
+    backup_directory.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, versioned_backup)
     shutil.copy2(source, backup)
     os.replace(temporary, source)
     result["path"] = str(source)
     result["backup"] = str(backup)
+    result["recoveryBackup"] = str(versioned_backup)
     return result
 
 

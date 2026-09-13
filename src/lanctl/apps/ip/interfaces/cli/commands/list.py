@@ -260,9 +260,9 @@ def run_list(args: argparse.Namespace) -> int:
     lab_repository = LabRepository()
     lab_active = lab_repository.active()
     network = resolve_network(lab_active["cidr"] if lab_active else args.network)
-    current_host_ip = "" if lab_active else str(local_ipv4())
+    current_host_ip = "" if lab_active else str(local_ipv4(network))
     if args.network and not lab_active:
-        local_ip = local_ipv4()
+        local_ip = local_ipv4(network)
         if local_ip not in network:
             suggested = resolve_network(None)
             raise ValueError(

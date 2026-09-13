@@ -5,6 +5,7 @@ import re
 from collections.abc import Iterable
 from typing import TextIO
 
+from rich.cells import get_character_cell_size
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress_bar import ProgressBar
@@ -100,8 +101,10 @@ class RichTuiRenderer:
         modal_width = min(geometry.modal_width, max_width)
         modal_height = min(geometry.modal_height, max_height)
         tab_line = Text()
-        for index, label in enumerate(tabs):
-            if index:
+        tab_width = max(1, modal_width - 6)
+        visible_tabs = self._visible_tabs(tabs, selected_tab, tab_width)
+        for position, (index, label) in enumerate(visible_tabs):
+            if position:
                 tab_line.append("  ")
             tab_line.append(
                 f" {label} ",
@@ -137,12 +140,66 @@ class RichTuiRenderer:
                 frozen.truncate(width, pad=True)
                 panel_row = Text.from_ansi(line)
                 panel_row.truncate(modal_width, pad=True)
-                row = frozen[:left]
+                row = self._cell_slice(frozen, 0, left)
                 row.append_text(panel_row)
-                row.append_text(frozen[left + modal_width : width])
+                row.append_text(self._cell_slice(frozen, left + modal_width, width))
                 row.truncate(width, pad=True)
                 screen[top + offset] = row
         self.render_screen(screen, width=width, height=height)
+
+    @staticmethod
+    def _cell_slice(source: Text, start: int, end: int) -> Text:
+        """Recorta un ``Text`` por celdas, no por índices Unicode.
+
+        Si un límite atraviesa un carácter de doble ancho, esa media celda se
+        sustituye por un espacio para no desplazar el resto de la pantalla.
+        """
+
+        start, end = max(0, start), max(0, end)
+        if end <= start:
+            return Text()
+        cells = 0
+        character_start = len(source.plain)
+        prefix = 0
+        for index, character in enumerate(source.plain):
+            size = max(0, get_character_cell_size(character))
+            if cells == start:
+                character_start = index
+                break
+            if cells < start < cells + size:
+                character_start = index + 1
+                prefix = cells + size - start
+                break
+            cells += size
+        result = Text(" " * prefix)
+        result.append_text(source[character_start:])
+        result.truncate(end - start, pad=True)
+        return result
+
+    @staticmethod
+    def _visible_tabs(tabs: list[str], selected: int, available: int) -> list[tuple[int, str]]:
+        """Devuelve una ventana de pestañas que siempre contiene la activa."""
+
+        if not tabs:
+            return []
+        selected = max(0, min(selected, len(tabs) - 1))
+        labels = list(enumerate(tabs))
+        chosen = [labels[selected]]
+        used = Text(labels[selected][1]).cell_len + 2
+        left, right = selected - 1, selected + 1
+        while left >= 0 or right < len(labels):
+            candidate = left if left >= 0 else right
+            item_width = Text(labels[candidate][1]).cell_len + 4
+            if used + item_width > available:
+                break
+            if candidate == left:
+                chosen.insert(0, labels[candidate])
+                left -= 1
+            else:
+                chosen.append(labels[candidate])
+                right += 1
+            used += item_width
+        return chosen
 
     @staticmethod
     def _modal_footer(source: str) -> Text:

@@ -9,8 +9,10 @@ import pytest
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.projects.vlf import create_project
 from lanctl.core.projects.workspace import (
+    ProjectChangesPendingError,
     activate_project_workspace,
     ensure_active_project_workspace,
+    prepare_project_workspace,
 )
 
 
@@ -175,6 +177,39 @@ class ProjectWorkspaceTests(unittest.TestCase):
             return_value={"activeProject": str(missing)},
         ):
             self.assertIsNone(ensure_active_project_workspace())
+
+    def test_dirty_workspace_cannot_be_refreshed_without_explicit_discard(self):
+        project = self._create_project("protegido.vlf", "ORIGINAL", "51")
+        workspace = prepare_project_workspace(project, root=self.root / "protected")
+        DeviceDatabase(str(workspace.database)).edit_device("ORIGINAL", "alias", "EDITADO")
+
+        with self.assertRaises(ProjectChangesPendingError):
+            prepare_project_workspace(project, root=self.root / "protected", refresh=True)
+
+        preserved = DeviceDatabase(str(workspace.database)).load()[0]
+        self.assertEqual(preserved.alias, "EDITADO")
+
+    def test_switching_project_rejects_abandoning_dirty_active_workspace(self):
+        first = self._create_project("primero.vlf", "UNO", "61")
+        second = self._create_project("segundo.vlf", "DOS", "62")
+        settings = dict(self.config)
+
+        def update(callback):
+            callback(settings)
+            return dict(settings)
+
+        with patch("lanctl.core.projects.workspace.update_config", side_effect=update):
+            active = activate_project_workspace(
+                first, config=settings, root=self.root / "switch-protected"
+            )
+            DeviceDatabase(str(active.database)).edit_device("UNO", "alias", "CAMBIO")
+            with self.assertRaises(ProjectChangesPendingError):
+                activate_project_workspace(
+                    second, config=settings, root=self.root / "switch-protected"
+                )
+
+        self.assertEqual(Path(settings["activeProject"]), first.resolve())
+        self.assertEqual(DeviceDatabase(str(active.database)).load()[0].alias, "CAMBIO")
 
 
 if __name__ == "__main__":

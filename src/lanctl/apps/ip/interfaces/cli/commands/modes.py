@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shlex
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -100,7 +99,9 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
         if not raw:
             continue
         try:
-            parts = shlex.split(raw)
+            from lanctl.core.command_line import split_command_line
+
+            parts = split_command_line(raw)
         except ValueError as error:
             print_error(str(error))
             continue

@@ -3,6 +3,8 @@ from __future__ import annotations
 import textwrap
 from collections.abc import Callable
 
+from rich.text import Text
+
 from lanctl.apps.ip.interfaces.tui.modal import ModalState, SettingField
 from lanctl.core.layout import fit_text
 
@@ -25,19 +27,31 @@ class SettingsEditor:
         return indices or list(range(len(modal.items)))
 
     @classmethod
-    def render_page(cls, modal: ModalState, *, description_width: int = 106) -> list[str]:
+    def render_page(
+        cls, modal: ModalState, *, description_width: int = 106, table_width: int = 118
+    ) -> list[str]:
         keyboard = bool(modal.tabs) and modal.tabs[modal.tab_index] == "TECLADO"
-        rows = (
-            [
-                "  CAMPO                         TECLA/VALOR                  VISIBLE",
-                "  ─────────────────────────────  ───────────────────────────  ───────",
+        table_width = max(24, table_width)
+        compact = table_width < 54
+        if keyboard:
+            visible_width = 7
+            field_width = max(8, min(29, (table_width - visible_width - 7) // 2))
+            value_width = max(8, table_width - field_width - visible_width - 7)
+            rows = [
+                f"  {'CAMPO':<{field_width}}  {'TECLA/VALOR':<{value_width}}  VISIBLE",
+                f"  {'─' * field_width}  {'─' * value_width}  {'─' * visible_width}",
             ]
-            if keyboard
-            else [
-                "  CAMPO                      VALOR                                                  FORMATO",
-                "  ─────────────────────────  ─────────────────────────────────────────────────────  ───────────────────────────────",
+        else:
+            field_width = max(8, min(25, table_width // 4))
+            hint_width = max(8, min(31, table_width // 4))
+            value_width = max(8, table_width - field_width - hint_width - 8)
+            rows = [
+                f"  {'CAMPO':<{field_width}}  {'VALOR':<{value_width}}  FORMATO",
+                f"  {'─' * field_width}  {'─' * value_width}  {'─' * hint_width}",
             ]
-        )
+        if compact:
+            heading = "CAMPO / TECLA / VISIBLE" if keyboard else "CAMPO / VALOR / FORMATO"
+            rows = [f"  {cls._pad(heading, table_width - 2)}", "  " + "─" * (table_width - 2)]
         visible = set(cls.field_indices(modal))
         for index, field in enumerate(modal.items):
             if index not in visible:
@@ -56,24 +70,50 @@ class SettingsEditor:
                     if field.value != field.original or field.visible != field.original_visible
                     else " "
                 )
-                rows.append(
-                    f"{marker}{changed} {field.label:<29} "
-                    f"{fit_text(field.value or 'None', 27):<27} {field.visible or 'OFF'}"
-                )
+                if compact:
+                    rows.extend(
+                        (
+                            f"{marker}{changed} {cls._pad(field.label, table_width - 4)}",
+                            (
+                                f"   {cls._pad(field.value or 'None', table_width - 12)}  "
+                                f"[{field.visible or 'OFF'}]"
+                            ),
+                        )
+                    )
+                else:
+                    rows.append(
+                        f"{marker}{changed} {cls._pad(field.label, field_width)} "
+                        f" {cls._pad(field.value or 'None', value_width)}  {field.visible or 'OFF'}"
+                    )
             else:
                 value = field.value or "(vacío)"
                 chunks = (
                     textwrap.wrap(
                         value,
-                        width=54,
+                        width=value_width,
                         break_long_words=True,
                         break_on_hyphens=False,
                     )
                     if field.key == "listColumns"
-                    else [fit_text(value, 54)]
+                    else [fit_text(value, value_width)]
                 )
-                rows.append(f"{marker}{changed} {field.label:<25} {chunks[0]:<54} {field.hint}")
-                rows.extend(f"   {'':25} {chunk:<54}" for chunk in chunks[1:])
+                if compact:
+                    rows.extend(
+                        (
+                            f"{marker}{changed} {cls._pad(field.label, table_width - 4)}",
+                            f"   {cls._pad(value, table_width - 4)}",
+                            f"   Formato: {cls._pad(field.hint, table_width - 12)}",
+                        )
+                    )
+                else:
+                    rows.append(
+                        f"{marker}{changed} {cls._pad(field.label, field_width)}  "
+                        f"{cls._pad(chunks[0], value_width)}  {fit_text(field.hint, hint_width)}"
+                    )
+                    rows.extend(
+                        f"   {' ' * field_width}  {cls._pad(chunk, value_width)}"
+                        for chunk in chunks[1:]
+                    )
         selected = modal.items[modal.selected]
         rows.extend(("", "  DESCRIPCIÓN"))
         rows.extend(
@@ -99,7 +139,15 @@ class SettingsEditor:
                 "* cambio pendiente · Esc abre el menú de salida y guardado",
             )
         )
-        return rows
+        # Ninguna fila puede forzar autowrap: el redimensionado del terminal
+        # debe cambiar la geometría, no desplazar el borde inferior del modal.
+        return [cls._pad(row, table_width).rstrip() for row in rows]
+
+    @staticmethod
+    def _pad(value: object, width: int) -> str:
+        fitted = Text(str(value))
+        fitted.truncate(max(0, width), overflow="ellipsis")
+        return fitted.plain + " " * max(0, width - fitted.cell_len)
 
     @classmethod
     def handle_key(

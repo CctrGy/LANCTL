@@ -58,7 +58,7 @@ def required_permission(arguments: list[str]) -> str:
     command = arguments[0].casefold()
     lowered = {item.casefold() for item in arguments[1:]}
     if (
-        (command == "element" and {"-delete", "--delete"} & lowered)
+        (command == "element" and {"-delete", "--delete", "delete", "del", "remove"} & lowered)
         or (command == "group" and {"-del", "--delete"} & lowered)
         or (command == "project" and "delete" in lowered)
     ):

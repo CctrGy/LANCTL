@@ -48,11 +48,14 @@ def active_arp_mac(ip: str, timeout: float = 1.0) -> str:
     return match.group(0).replace("-", ":").upper() if match else ""
 
 
-def local_ipv4() -> ipaddress.IPv4Address:
-    """Obtiene la IPv4 usada por la ruta de salida sin enviar datos."""
+def local_ipv4(network: Network | None = None) -> ipaddress.IPv4Address:
+    """Obtiene la IPv4 usada por la ruta hacia la red indicada sin enviar datos."""
+    destination = "192.0.2.1"
+    if network is not None:
+        destination = str(next(network.hosts(), network.network_address))
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        sock.connect(("192.0.2.1", 80))
+        sock.connect((destination, 80))
         return ipaddress.IPv4Address(sock.getsockname()[0])
     except OSError as error:
         from lanctl.core.errors import errors
@@ -132,11 +135,15 @@ class LanScanner:
         if progress:
             progress.phase(phase)
         results = [None] * len(values)
-        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+        executor = ThreadPoolExecutor(max_workers=self.workers)
+        futures = {}
+        try:
             futures = {
                 executor.submit(function, value): index for index, value in enumerate(values)
             }
             for future in as_completed(futures):
+                if progress and getattr(progress, "cancelled", lambda: False)():
+                    raise InterruptedError("escaneo cancelado")
                 index = futures[future]
                 result = future.result()
                 results[index] = result
@@ -148,6 +155,13 @@ class LanScanner:
                         progress.found(keys)
                 if progress:
                     progress.advance()
+        except BaseException:
+            for future in futures:
+                future.cancel()
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
+        else:
+            executor.shutdown()
         return results
 
     def _parallel_discovery(
@@ -163,8 +177,9 @@ class LanScanner:
 
         alive: set[str] = set()
         arp_macs: dict[str, str] = {}
-        with ThreadPoolExecutor(max_workers=self.workers) as executor:
-            futures = {}
+        executor = ThreadPoolExecutor(max_workers=self.workers)
+        futures = {}
+        try:
             # Los trabajos se intercalan por host: ARP puede avanzar mientras
             # el ping del mismo host espera, compartiendo el mismo límite.
             for ip in hosts:
@@ -177,6 +192,8 @@ class LanScanner:
                     )
 
             for future in as_completed(futures):
+                if progress and getattr(progress, "cancelled", lambda: False)():
+                    raise InterruptedError("escaneo cancelado")
                 method, ip = futures[future]
                 result, elapsed_ms = future.result()
                 found = bool(result)
@@ -193,6 +210,13 @@ class LanScanner:
                         progress.found(ip)
                 if progress:
                     progress.advance()
+        except BaseException:
+            for future in futures:
+                future.cancel()
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
+        else:
+            executor.shutdown()
         return alive, arp_macs
 
     def response_time_for(self, device: Device) -> float | None:
@@ -324,7 +348,7 @@ class LanScanner:
 
     def _include_local_device(self, records):
         # El equipo local no aparece en su propia caché ARP.
-        own_ip = str(local_ipv4())
+        own_ip = str(local_ipv4(self.network))
         if ipaddress.IPv4Address(own_ip) not in self.network:
             return
         own_mac = self._local_mac(own_ip)

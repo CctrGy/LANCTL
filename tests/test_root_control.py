@@ -122,12 +122,27 @@ class RootControlTests(unittest.TestCase):
             patch.object(root_control.subprocess, "Popen", return_value=process) as popen,
             patch.object(root_control.platform, "system", return_value="Windows"),
             patch.object(root_control.os, "name", "nt"),
+            patch.object(root_control, "_windows_session_zero", return_value=False),
         ):
             result = root_control.forced_view("plugins")
 
         self.assertEqual(result["pid"], 789)
-        self.assertIn("Session 0", result["warning"])
+        self.assertEqual(result["warning"], "")
         popen.assert_called_once()
+
+    def test_forced_view_does_not_claim_launch_from_windows_session_zero(self):
+        current = {"running": False, "mode": None, "pid": None, "interactive": False}
+        with (
+            patch.object(root_control, "interface_status", return_value=current),
+            patch.object(root_control, "_windows_session_zero", return_value=True),
+            patch.object(root_control.subprocess, "Popen") as popen,
+        ):
+            result = root_control.forced_view("plugins")
+
+        self.assertFalse(result["launched"])
+        self.assertFalse(result["supported"])
+        self.assertIn("Session 0", result["warning"])
+        popen.assert_not_called()
 
     def test_interface_agent_publishes_heartbeat_and_cleans_it_on_stop(self):
         with tempfile.TemporaryDirectory() as temporary:

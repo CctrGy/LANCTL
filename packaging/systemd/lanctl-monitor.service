@@ -14,10 +14,15 @@ Environment=LANCTL_SECRET_DIR=/etc/lanctl/access
 ExecStart=/usr/bin/lanctl monitor foreground
 Restart=on-failure
 RestartSec=5
+UMask=0077
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
 ReadWritePaths=/var/lib/lanctl /etc/lanctl
 
 [Install]

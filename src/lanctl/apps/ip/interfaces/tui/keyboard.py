@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
+from contextlib import contextmanager
 
 KEY_BINDINGS = {
     "F1": "Ayuda",
@@ -205,3 +206,82 @@ def read_windows_key(
         "\x1b": "ESC",
         "\x03": "ESC",
     }.get(first, first)
+
+
+POSIX_ESCAPE_KEYS = {
+    "[A": "UP",
+    "[B": "DOWN",
+    "[C": "RIGHT",
+    "[D": "LEFT",
+    "[3~": "DELETE",
+    "[5~": "PGUP",
+    "[6~": "PGDN",
+    "[Z": "SHIFT_TAB",
+    "OP": "F1",
+    "OQ": "F2",
+    "OR": "F3",
+    "OS": "F4",
+    "[15~": "F5",
+    "[18~": "F7",
+    "[20~": "F9",
+    "[24~": "F12",
+}
+
+
+def posix_key_available(stream) -> bool:
+    """Indica si existe entrada POSIX sin bloquear el ciclo de repintado."""
+
+    import select
+
+    return bool(select.select([stream], [], [], 0)[0])
+
+
+def read_posix_key(stream) -> str:
+    """Normaliza caracteres y secuencias ANSI habituales de terminales POSIX."""
+
+    import select
+
+    first = stream.read(1)
+    if first != "\x1b":
+        return {
+            "\x7f": "BACKSPACE",
+            "\x08": "CTRL_H",
+            "\x12": "CTRL_R",
+            "\x13": "CTRL_S",
+            "\x18": "CTRL_X",
+            "\x04": "CTRL_D",
+            "\x05": "CTRL_E",
+            "\x06": "CTRL_F",
+            "\x07": "CTRL_G",
+            "\x0a": "ENTER",
+            "\x0c": "CTRL_L",
+            "\x0e": "CTRL_N",
+            "\x0f": "CTRL_O",
+            "\x10": "CTRL_P",
+            "\x11": "CTRL_Q",
+            "\t": "TAB",
+            "\r": "ENTER",
+            "\x03": "ESC",
+        }.get(first, first)
+    sequence = ""
+    while len(sequence) < 5 and select.select([stream], [], [], 0.02)[0]:
+        sequence += stream.read(1)
+        if sequence in POSIX_ESCAPE_KEYS or sequence.endswith("~"):
+            break
+    return POSIX_ESCAPE_KEYS.get(sequence, "ESC")
+
+
+@contextmanager
+def posix_terminal_mode(stream):
+    """Activa lectura inmediata y restaura siempre la configuración del TTY."""
+
+    import termios
+    import tty
+
+    descriptor = stream.fileno()
+    previous = termios.tcgetattr(descriptor)
+    try:
+        tty.setcbreak(descriptor)
+        yield
+    finally:
+        termios.tcsetattr(descriptor, termios.TCSADRAIN, previous)

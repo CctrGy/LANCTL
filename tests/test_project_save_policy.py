@@ -92,8 +92,8 @@ class ProjectSavePolicyTests(unittest.TestCase):
                     return_value={"path": settings["activeProject"]},
                 ) as update,
                 patch(
-                    "lanctl.core.projects.workspace.activate_project_workspace",
-                    return_value=workspace,
+                    "lanctl.core.projects.save_policy._verify_saved_workspace",
+                    return_value={"verified": {}, "project": {"id": workspace.project_id}},
                 ),
                 patch("lanctl.core.plugins.get_plugin_manager", return_value=manager),
                 patch("lanctl.core.projects.save_policy.write_log"),
@@ -117,8 +117,8 @@ class ProjectSavePolicyTests(unittest.TestCase):
                     return_value={"path": settings["activeProject"]},
                 ) as update,
                 patch(
-                    "lanctl.core.projects.workspace.activate_project_workspace",
-                    return_value=workspace,
+                    "lanctl.core.projects.save_policy._verify_saved_workspace",
+                    return_value={"verified": {}, "project": {"id": workspace.project_id}},
                 ),
                 patch("lanctl.core.plugins.get_plugin_manager", return_value=manager),
                 patch("lanctl.core.projects.save_policy.write_log"),
@@ -157,17 +157,12 @@ class ProjectSavePolicyTests(unittest.TestCase):
                 encoding="utf-8",
             )
             database.edit_device("NAS", "description", "Cambio pendiente")
-            workspace = SimpleNamespace(project_id="project-1")
             manager = SimpleNamespace(
                 events=SimpleNamespace(emit=lambda *_args, **_kwargs: None),
                 project_registry=lambda: {"schemaVersion": 1, "plugins": []},
             )
 
             with (
-                patch(
-                    "lanctl.core.projects.workspace.activate_project_workspace",
-                    return_value=workspace,
-                ),
                 patch("lanctl.core.plugins.get_plugin_manager", return_value=manager),
                 patch("lanctl.core.projects.save_policy.write_log"),
             ):
@@ -177,6 +172,10 @@ class ProjectSavePolicyTests(unittest.TestCase):
             stored = DeviceDatabase(str(extracted.database)).resolve("NAS")
             self.assertTrue(result.saved)
             self.assertEqual(stored.description, "Cambio pendiente")
+            self.assertFalse(workspace_is_dirty(settings))
+            self.assertTrue(Path(str(project) + ".bak").is_file())
+            recovery = list((root / ".lanctl-backups").glob("Casa-*.vlf"))
+            self.assertEqual(len(recovery), 1)
 
     def test_close_consult_saves_only_after_user_confirmation(self):
         with tempfile.TemporaryDirectory() as directory:

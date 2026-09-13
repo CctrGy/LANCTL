@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import tempfile
 import threading
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -222,26 +223,37 @@ def _definition(mode: str) -> SaveModeDefinition:
     )
 
 
-def _hash_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
 def workspace_fingerprint(settings: Mapping[str, Any]) -> str | None:
     workspace = settings.get("projectWorkspace")
     if not isinstance(workspace, Mapping):
         return None
     files = [Path(str(workspace.get(key, ""))) for key in ("database", "groups")]
-    if any(not path.is_file() for path in files):
+    if not files[0].is_file():
         return None
-    digest = hashlib.sha256()
-    for path in files:
-        digest.update(path.name.encode("utf-8"))
-        digest.update(_hash_file(path).encode("ascii"))
-    return digest.hexdigest()
+    from lanctl.core.database import DeviceDatabase
+    from lanctl.core.group_database import GroupDatabase
+
+    database = DeviceDatabase(str(files[0]))
+    try:
+        devices = database.load()
+        groups = GroupDatabase(str(files[1]), database).load()
+        value = {
+            "devices": [device.to_dict() for device in devices],
+            "groups": [group.to_dict() for group in groups],
+        }
+    except ValueError:
+        # Mantiene la detección de cambios incluso para un almacén antiguo o
+        # parcialmente migrado; el guardado real seguirá validando su esquema.
+        value = {
+            "devices": json.loads(files[0].read_text(encoding="utf-8")),
+            "groups": (
+                json.loads(files[1].read_text(encoding="utf-8")) if files[1].is_file() else []
+            ),
+        }
+    canonical = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    return hashlib.sha256(canonical).hexdigest()
 
 
 def workspace_is_dirty(settings: Mapping[str, Any]) -> bool:
@@ -257,6 +269,49 @@ def workspace_is_dirty(settings: Mapping[str, Any]) -> bool:
     except (OSError, json.JSONDecodeError):
         return True
     return metadata.get("workspaceHash") != current
+
+
+def _verify_saved_workspace(result: Mapping[str, Any], settings: Mapping[str, Any]) -> dict:
+    """Valida el VLF escrito, compara su inventario y confirma el workspace."""
+
+    from lanctl.core.projects.vlf import inspect_project, verify_project
+    from lanctl.core.projects.workspace import (
+        mark_workspace_synchronized,
+        prepare_project_workspace,
+    )
+
+    verified = verify_project(result["path"])
+    project_info = inspect_project(result["path"])
+    workspace_mapping = settings.get("projectWorkspace")
+    if not isinstance(workspace_mapping, Mapping):
+        raise RuntimeError("el proyecto activo no tiene un workspace verificable")
+    expected = workspace_fingerprint(settings)
+    with tempfile.TemporaryDirectory(prefix="lanctl-project-verify-") as temporary:
+        extracted = prepare_project_workspace(
+            result["path"], root=temporary, refresh=True, discard_changes=True
+        )
+        observed = workspace_fingerprint(
+            {
+                "projectWorkspace": {
+                    "database": str(extracted.database),
+                    "groups": str(extracted.groups),
+                }
+            }
+        )
+    if expected is None or observed != expected:
+        backup = str(result.get("backup") or "")
+        if backup and Path(backup).is_file():
+            from lanctl.core.persistence import restore_backup
+
+            restore_backup(result["path"], backup)
+        raise RuntimeError(
+            "la verificación posterior al guardado no coincide con el workspace; "
+            "se ha restaurado la copia de seguridad"
+        )
+    mark_workspace_synchronized(
+        workspace_mapping, project_info=project_info, workspace_hash=expected
+    )
+    return {"verified": verified, "project": project_info}
 
 
 def save_active_project(
@@ -280,22 +335,24 @@ def save_active_project(
             return SaveResult(False, mode, trigger_value, active, "workspace-unchanged")
 
         from lanctl.core.projects.vlf import update_project
-        from lanctl.core.projects.workspace import activate_project_workspace
 
         result = update_project(active, config=settings)
-        workspace = activate_project_workspace(result["path"], refresh=True)
+        verification = _verify_saved_workspace(result, settings)
+        verified = verification["verified"]
+        project_info = verification["project"]
+        project_id = str(project_info.get("id") or "")
         try:
             from lanctl.core.plugins import get_plugin_manager
 
             get_plugin_manager().events.emit(
                 "LANCTL.Project.File.Save",
-                {"path": result["path"], "project_id": workspace.project_id},
+                {"path": result["path"], "project_id": project_id},
             )
         except (ImportError, RuntimeError, ValueError):
             pass
         write_log(
             f"PROJECT SAVE mode={mode} trigger={trigger_value} "
-            f"id={workspace.project_id} path={result['path']}"
+            f"id={project_id} checksum={verified.get('checksum', '-')} path={result['path']}"
         )
         return SaveResult(True, mode, trigger_value, result["path"], "saved")
 

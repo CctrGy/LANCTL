@@ -21,6 +21,12 @@ class DeviceDatabase:
         self.path = application_path(path)
 
     def load(self) -> list[Device]:
+        # Una interrupción entre la escritura de devices y groups deja un
+        # journal junto a esta base. Se recupera antes de exponer cualquiera
+        # de las dos mitades, incluso si el consumidor abre primero devices.
+        from lanctl.core.group_database import recover_device_group_transaction
+
+        recover_device_group_transaction(self.path)
         if not self.path.exists():
             return []
         try:
@@ -486,16 +492,50 @@ class DeviceDatabase:
 
     @transactional_method
     def edit_device(self, selector: str, field: str, value: str) -> Device:
-        if field in ("name", "alias"):
-            return self.set_value(
-                selector,
-                "NAME" if field == "name" else "ALIAS",
-                "value",
-                value,
-            )
+        devices, device = self._edit_device_in_memory(selector, field, value)
+        self._write(devices)
+        return device
 
-        devices, device = self._find(selector)
-        if field == "description":
+    def _edit_device_in_memory(
+        self,
+        selector: str,
+        field: str,
+        value: str,
+        *,
+        devices: list[Device] | None = None,
+    ) -> tuple[list[Device], Device]:
+        """Valida y modifica una instantánea sin persistirla.
+
+        La operación compuesta de ``element`` utiliza esta variante para poder
+        validar todos los campos antes de realizar una única escritura.
+        """
+
+        devices, device = self._find(selector, devices=devices)
+        if field in ("name", "alias"):
+            storage_field = "NAME" if field == "name" else "ALIAS"
+            if storage_field == "NAME":
+                deleted_field = "nameDeleted"
+            else:
+                deleted_field = "aliasDeleted"
+                if device["defaultAlias"] in ("GATEWAY", "BRODCAST"):
+                    raise ValueError(
+                        f"el alias reservado {device['defaultAlias']} no se puede modificar"
+                    )
+                if value:
+                    duplicate = next(
+                        (
+                            item
+                            for item in devices
+                            if item is not device and item["ALIAS"].casefold() == value.casefold()
+                        ),
+                        None,
+                    )
+                    if duplicate:
+                        raise ValueError(f'el alias "{value}" ya pertenece a {duplicate["MAC"]}')
+            device[storage_field] = value
+            device[deleted_field] = False
+            device.cnf = "O"
+        elif field == "description":
             if len(value) > 42:
                 raise ValueError("la descripción no puede superar 42 caracteres")
             device.description = value or "-"
@@ -508,8 +548,29 @@ class DeviceDatabase:
             device.icon_id = normalized
         else:
             raise ValueError(f"campo de elemento no editable: {field}")
-        self._write(devices)
-        return device
+        return devices, device
+
+    def _set_protocol_in_memory(
+        self,
+        selector: str,
+        protocol: str,
+        enabled: bool,
+        *,
+        devices: list[Device] | None = None,
+    ) -> tuple[list[Device], Device]:
+        from lanctl.apps.ip.domain.models import normalize_protocol
+
+        devices, device = self._find(selector, devices=devices)
+        normalized = normalize_protocol(protocol)
+        if enabled and normalized not in device.protocols:
+            device.protocols.append(normalized)
+        elif not enabled:
+            if normalized in device.credentials:
+                raise ValueError(
+                    f"el protocolo {normalized} tiene una credencial asociada; elimínala primero"
+                )
+            device.protocols = [item for item in device.protocols if item != normalized]
+        return devices, device
 
     @transactional_method
     def add_device(
@@ -567,18 +628,7 @@ class DeviceDatabase:
 
     @transactional_method
     def set_protocol(self, selector: str, protocol: str, enabled: bool) -> Device:
-        from lanctl.apps.ip.domain.models import normalize_protocol
-
-        devices, device = self._find(selector)
-        normalized = normalize_protocol(protocol)
-        if enabled and normalized not in device.protocols:
-            device.protocols.append(normalized)
-        elif not enabled:
-            device.protocols = [item for item in device.protocols if item != normalized]
-            if normalized in device.credentials:
-                raise ValueError(
-                    f"el protocolo {normalized} tiene una credencial asociada; elimínala primero"
-                )
+        devices, device = self._set_protocol_in_memory(selector, protocol, enabled)
         self._write(devices)
         return device.copy()
 

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+# Los datos de /var/lib/lanctl y los secretos de /etc/lanctl se conservan tanto
+# al eliminar como al purgar el paquete. Su borrado siempre debe ser una acción
+# explícita del administrador, fuera del ciclo de vida del paquete.
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl daemon-reload >/dev/null 2>&1 || true
+fi
+
+exit 0

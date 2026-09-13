@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import shlex
 import sys
 from collections.abc import Callable
 from dataclasses import replace
@@ -236,7 +235,9 @@ def run_managed_terminal(
         if not raw:
             continue
         try:
-            tokens = shlex.split(raw)
+            from lanctl.core.command_line import split_command_line
+
+            tokens = split_command_line(raw)
             lowered = [token.casefold() for token in tokens]
             if lowered[0] in ("exit", "quit", "salir"):
                 return 0

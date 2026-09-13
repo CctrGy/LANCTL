@@ -119,6 +119,11 @@ class AccessTests(unittest.TestCase):
             required_permission(["element", "192.0.2.1", "-delete"]),
             "system.destructive",
         )
+        for action in ("delete", "del", "remove"):
+            self.assertEqual(
+                required_permission(["element", "192.0.2.1", action]),
+                "system.destructive",
+            )
         with tempfile.TemporaryDirectory() as temporary:
             store = AccessStore(Path(temporary) / "users.json")
             auth = AuthenticationService(store)

@@ -138,6 +138,20 @@ def _command(*arguments: str) -> list[str]:
     return [sys.executable, str(Path(__file__).resolve().parents[2] / "lanctl.py"), *arguments]
 
 
+def _windows_session_zero() -> bool:
+    if os.name != "nt":
+        return False
+    try:
+        import ctypes
+
+        session_id = ctypes.c_ulong()
+        if not ctypes.windll.kernel32.ProcessIdToSessionId(os.getpid(), ctypes.byref(session_id)):
+            return False
+        return session_id.value == 0
+    except (AttributeError, OSError):
+        return False
+
+
 def forced_view(view: str) -> dict:
     normalized = view.casefold()
     if normalized not in VIEWS:
@@ -153,6 +167,16 @@ def forced_view(view: str) -> dict:
     current = interface_status()
     if current["running"] and (current.get("mode") == "tui" or normalized == current.get("mode")):
         return enqueue("view", normalized)
+    if _windows_session_zero():
+        return {
+            "launched": False,
+            "supported": False,
+            "view": normalized,
+            "warning": (
+                "El backend se ejecuta en Session 0 y no puede abrir ventanas en el "
+                "escritorio. Inicia el agente interactivo LANCTL del usuario."
+            ),
+        }
     arguments = ["--gui"] if normalized == "gui" else ["--tui", normalized]
     flags = 0
     if platform.system() == "Windows":
@@ -174,12 +198,7 @@ def forced_view(view: str) -> dict:
         "launched": True,
         "pid": process.pid,
         "view": normalized,
-        "warning": (
-            "Un servicio de Windows en Session 0 no puede mostrar ventanas en el escritorio; "
-            "usa backend=user o mantén una GUI/TUI agente abierta."
-            if os.name == "nt" and not current.get("interactive")
-            else ""
-        ),
+        "warning": "",
     }
 
 

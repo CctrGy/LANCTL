@@ -55,13 +55,7 @@ jobs:
       - name: Repository hygiene and secret guard
         run: python tools/check_repository_hygiene.py
       - name: Dependency vulnerabilities
-        # Véase docs/SECURITY.md: una API inaccesible de cryptography y la
-        # compatibilidad RSA/SHA-1 desactivada en Paramiko son excepciones
-        # temporales y acotadas.
-        run: >-
-          python -m pip_audit . --strict
-          --ignore-vuln PYSEC-2026-3552
-          --ignore-vuln PYSEC-2026-2858
+        run: python -m pip_audit . --strict
       - run: python -m compileall -q src tests
       - run: bash -n install.sh scripts/build-linux.sh
       - run: git diff --check

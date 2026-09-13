@@ -199,6 +199,11 @@ def _worker(connection, plugin_id: str, entry: str, memory_mb: int, max_calls: i
     module: ModuleType | None = None
     try:
         _install_security_policy(connection, Path(entry).resolve().parent)
+        # El arranque mediante ``spawn`` puede ser sensiblemente más lento que
+        # el presupuesto concedido al código del plugin (especialmente en
+        # Windows). Este handshake permite que el padre empiece a contar el
+        # timeout justo antes de cargar y activar código externo.
+        connection.send(("BOOTED", os.getpid()))
         module_name = "lanctl_isolated_" + plugin_id.replace(".", "_").replace("-", "_")
         loader = importlib.machinery.SourceFileLoader(module_name, entry)
         spec = importlib.util.spec_from_loader(module_name, loader)
@@ -346,12 +351,28 @@ class IsolatedPluginRuntime:
         )
         process.start()
         child.close()
-        deadline = time.monotonic() + self.timeout
+        # El presupuesto del manifiesto limita exclusivamente la carga y la
+        # activación del plugin. El bootstrap de multiprocessing es trabajo del
+        # host y dispone de un margen independiente y acotado.
+        startup_deadline = time.monotonic() + max(5.0, self.timeout)
+        activation_deadline: float | None = None
         try:
             self._job_handle = _windows_memory_job(process.pid, self.memory_mb)
-            while time.monotonic() < deadline:
-                if parent.poll(min(0.05, max(0.0, deadline - time.monotonic()))):
+            while True:
+                deadline = activation_deadline or startup_deadline
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    if activation_deadline is None:
+                        raise TimeoutError(f"timeout iniciando el proceso aislado {self.plugin_id}")
+                    raise TimeoutError(f"timeout activando el plugin aislado {self.plugin_id}")
+                if parent.poll(min(0.05, remaining)):
                     message = parent.recv()
+                    if message[0] == "BOOTED":
+                        # Un pequeño margen cubre la entrega del mensaje de
+                        # política del hijo sin convertirla erróneamente en un
+                        # timeout del host bajo carga alta.
+                        activation_deadline = time.monotonic() + self.timeout + 0.25
+                        continue
                     if message[0] == "CALL" and message[1] == "log":
                         self.audit(self.plugin_id, "ISOLATED LOG", str(message[2][0]), "OK")
                         continue
@@ -379,7 +400,6 @@ class IsolatedPluginRuntime:
                         raise PermissionError(f"incumplimiento de política: {message[1]}")
                 if not process.is_alive():
                     raise RuntimeError("el proceso aislado terminó durante la activación")
-            raise TimeoutError(f"timeout activando el plugin aislado {self.plugin_id}")
         except Exception:
             process.terminate()
             process.join(2)

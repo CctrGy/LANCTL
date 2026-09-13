@@ -100,7 +100,7 @@ def run_ephemeral(args: argparse.Namespace) -> int:
     if args.timeout <= 0:
         raise ValueError("--timeout debe ser mayor que cero")
     network = resolve_network(args.network)
-    own_ip = local_ipv4()
+    own_ip = local_ipv4(network)
     if own_ip not in network:
         raise ValueError(f"la IP local {own_ip} no pertenece al rango efímero {network}")
 

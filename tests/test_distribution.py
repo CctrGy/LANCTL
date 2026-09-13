@@ -74,9 +74,12 @@ class DistributionTests(unittest.TestCase):
         self.assertNotIn("$target/LANCTL/landemo", shell)
         self.assertIn("$PORTABLE/LANCTL/lanctl", build)
         self.assertIn("$PORTABLE/LANCTL/lanwire", build)
+        self.assertIn("packaging/portable/README-linux.txt", build)
         self.assertIn("$PKG/opt/lanctl/lanwire", build)
         self.assertIn("$PKG/usr/bin/lanwire", build)
         self.assertIn("$PKG/usr/bin/lanmon", build)
+        self.assertIn("packaging/debian/postrm", build)
+        self.assertIn("docs/BETA-TESTING.md", build)
         self.assertNotIn("$PKG/usr/bin/landemo", build)
         self.assertIn("LANCTL_DATA_DIR=/var/lib/lanctl", unit)
         self.assertIn("LANCTL_SECRET_DIR=/etc/lanctl/access", unit)
@@ -84,6 +87,14 @@ class DistributionTests(unittest.TestCase):
             "-m 0770 /etc/lanctl/access",
             (root / "packaging/debian/postinst").read_text(encoding="utf-8"),
         )
+        control = (root / "packaging/debian/control").read_text(encoding="utf-8")
+        self.assertIn("Depends: libc6", control)
+        self.assertIn("Recommends: iputils-ping, arping, smbclient, xdg-utils", control)
+        linux_readme = (root / "packaging/portable/README-linux.txt").read_text(encoding="utf-8")
+        self.assertNotIn(".exe", linux_readme)
+        self.assertIn("Raspberry Pi 5", linux_readme)
+        for documentation in ("BETA-TESTING.md", "KNOWN-ISSUES.md"):
+            self.assertTrue((root / "docs" / documentation).is_file())
 
     def test_frozen_standard_and_portable_data_roots(self):
         import lanctl.core.paths as paths
@@ -185,8 +196,8 @@ class DistributionTests(unittest.TestCase):
             self.assertIn(expected, release)
         for expected in ("pull_request", "--source=src", "pip_audit", "git diff --check"):
             self.assertIn(expected, ci)
-        self.assertIn("--ignore-vuln PYSEC-2026-3552", ci)
-        self.assertIn("--ignore-vuln PYSEC-2026-2858", ci)
+        self.assertNotIn("--ignore-vuln", ci)
+        self.assertNotIn("--ignore-vuln", release)
         app_source = "\n".join(
             path.read_text(encoding="utf-8", errors="ignore")
             for path in (root / "src").rglob("*.py")
@@ -288,6 +299,8 @@ class DistributionTests(unittest.TestCase):
         plugin_directory = next(line for line in inno.splitlines() if 'LANCTL\\plugins"' in line)
         self.assertIn("admins-full system-full", plugin_directory)
         self.assertNotIn("users-modify", plugin_directory)
+        self.assertIn('LANCTL\\plugins"" /inheritance:r', inno)
+        self.assertIn('LANCTL\\access"" /inheritance:r', inno)
 
     def test_official_windows_release_requires_authenticode_secrets(self):
         root = Path(__file__).resolve().parents[1]

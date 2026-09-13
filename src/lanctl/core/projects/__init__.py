@@ -7,6 +7,10 @@ _EXPORTS = {
     "ProjectCatalogEntry": ("lanctl.core.projects.catalog", "ProjectCatalogEntry"),
     "VLF_FORMAT_VERSION": ("lanctl.core.projects.vlf", "VLF_FORMAT_VERSION"),
     "ProjectWorkspace": ("lanctl.core.projects.workspace", "ProjectWorkspace"),
+    "ProjectChangesPendingError": (
+        "lanctl.core.projects.workspace",
+        "ProjectChangesPendingError",
+    ),
     "activate_project_workspace": ("lanctl.core.projects.workspace", "activate_project_workspace"),
     "active_project_info": ("lanctl.core.projects.current", "active_project_info"),
     "create_project": ("lanctl.core.projects.vlf", "create_project"),

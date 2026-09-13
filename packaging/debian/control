@@ -4,8 +4,9 @@ Section: net
 Priority: optional
 Architecture: @ARCH@
 Maintainer: LANCTL contributors <noreply@github.com>
-Depends: libc6, smbclient
-Recommends: xdg-utils
+Depends: libc6
+Recommends: iputils-ping, arping, smbclient, xdg-utils
+Suggests: openssh-client
 Description: LAN inventory, monitoring and controlled operations
  LANCTL manages and diagnoses trusted local networks. Remote SSH and HTTPS
  access remain disabled until explicitly configured by a local administrator.

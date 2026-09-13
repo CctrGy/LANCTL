@@ -1,4 +1,6 @@
 #!/bin/sh
 set -e
-if [ "$1" = remove ]; then systemctl disable --now lanctl-monitor.service >/dev/null 2>&1 || true; fi
+if [ "$1" = remove ] && command -v systemctl >/dev/null 2>&1; then
+    systemctl disable --now lanctl-monitor.service >/dev/null 2>&1 || true
+fi
 exit 0

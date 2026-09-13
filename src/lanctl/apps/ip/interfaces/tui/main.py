@@ -7,14 +7,14 @@ import json
 import os
 import queue
 import re
-import shlex
 import shutil
 import sqlite3
 import sys
 import tempfile
 import textwrap
+import threading
 import time
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from datetime import datetime
 from pathlib import Path
 
@@ -29,6 +29,9 @@ from lanctl.apps.ip.interfaces.tui.keyboard import (
     FOOTER_ACTIONS,
     normalize_footer_actions,
     normalize_key_bindings,
+    posix_key_available,
+    posix_terminal_mode,
+    read_posix_key,
 )
 from lanctl.apps.ip.interfaces.tui.keyboard import read_windows_key as _read_windows_key
 from lanctl.apps.ip.interfaces.tui.layout import adaptive_layout
@@ -146,6 +149,7 @@ class LanctlTui:
         self.command_suggestions: list[tuple[int, str]] = []
         self.suggestion_index = -1
         self.pending_confirmation: list[str] | None = None
+        self.pending_project_path: str | None = None
         self.active_devices: set[str] = set()
         self.response_ms: dict[str, float] = {}
         self.running = True
@@ -170,6 +174,10 @@ class LanctlTui:
         self.key_bindings = normalize_key_bindings(config.get("tuiKeyBindings"))
         self.footer_buttons = normalize_footer_actions(config.get("tuiFooterButtons"))
         self.remote_actions = queue.Queue()
+        self.scan_events = queue.Queue()
+        self._scan_cancel = threading.Event()
+        self._scan_thread: threading.Thread | None = None
+        self._read_key = None
         self.reload()
 
     @property
@@ -200,7 +208,7 @@ class LanctlTui:
     def _filtered_devices(self):
         mode, value = self.list_filter
         source = self.all_devices
-        if self.scanning:
+        if getattr(self, "scanning", False):
             source = [
                 device
                 for device in source
@@ -271,8 +279,6 @@ class LanctlTui:
         self.scroll = max(0, min(self.scroll, max(0, len(self.devices) - rows)))
 
         fields = ["IP", "responseMs", "cnf", "ALIAS", "MAC", "NAME", "GROUP", "description"]
-        if width >= 135:
-            fields.extend(("discoveryMethods", "lastSeen"))
         if width >= 170:
             fields.append("manufacturer")
         if width >= 205:
@@ -287,8 +293,6 @@ class LanctlTui:
             "NAME": "NAME",
             "GROUP": "GROUP",
             "description": "DESCRIPTION",
-            "discoveryMethods": "DETECTION",
-            "lastSeen": "LAST SEEN",
             "manufacturer": "MANUFACTURER",
             "protocols": "PROTOCOLS",
         }
@@ -299,10 +303,8 @@ class LanctlTui:
             "ALIAS": 13,
             "MAC": 17,
             "NAME": 15,
-            "GROUP": 8,
+            "GROUP": 12,
             "description": 42,
-            "discoveryMethods": 16,
-            "lastSeen": 19,
             "manufacturer": 18,
             "protocols": 12,
         }
@@ -319,8 +321,6 @@ class LanctlTui:
                 "NAME": 4,
                 "GROUP": 4,
                 "description": 4,
-                "discoveryMethods": 8,
-                "lastSeen": 12,
                 "manufacturer": 8,
                 "protocols": 7,
             },
@@ -332,8 +332,6 @@ class LanctlTui:
                 "NAME",
                 "ALIAS",
                 "GROUP",
-                "lastSeen",
-                "discoveryMethods",
                 "protocols",
                 "MAC",
                 "IP",
@@ -351,8 +349,6 @@ class LanctlTui:
                 (
                     "description",
                     "manufacturer",
-                    "lastSeen",
-                    "discoveryMethods",
                     "protocols",
                     "NAME",
                     "ALIAS",
@@ -460,7 +456,7 @@ class LanctlTui:
         project_line = (
             f"{Style.BRIGHT}{Fore.CYAN} PROYECTO {RESET} {Fore.WHITE}{project_name}{RESET}"
         )
-        if self.scanning:
+        if getattr(self, "scanning", False):
             return [
                 project_line,
                 (
@@ -635,7 +631,8 @@ class LanctlTui:
         maximum_height = modal.max_height or (36 if settings_sized else 30)
         geometry = adaptive_layout(width, height, settings=maximum_width > 100)
         body_rows = max(1, min(geometry.modal_height, maximum_height) - 7)
-        page = self._modal_page(modal)
+        content_width = max(24, min(geometry.modal_width, maximum_width) - 6)
+        page = self._modal_page(modal, content_width=content_width)
         maximum = max(0, len(page) - body_rows)
         modal.scroll = max(0, min(modal.scroll, maximum))
         visible = page[modal.scroll : modal.scroll + body_rows]
@@ -657,11 +654,16 @@ class LanctlTui:
             max_height=maximum_height,
         )
 
-    def _modal_page(self, modal: ModalState) -> list[str]:
+    def _modal_page(self, modal: ModalState, content_width: int | None = None) -> list[str]:
         if modal.kind == "settings":
             if modal.tabs and modal.tabs[modal.tab_index] == "EXIT":
                 return self._settings_exit_page(modal)
-            return SettingsEditor.render_page(modal)
+            available = content_width or 118
+            return SettingsEditor.render_page(
+                modal,
+                description_width=max(24, available - 4),
+                table_width=available,
+            )
         if modal.kind == "project_create":
             return self._project_create_page(modal)
         if modal.kind == "help" and modal.tab_index == 0:
@@ -1396,28 +1398,26 @@ class LanctlTui:
     def _read_text(self, prompt: str) -> str:
         """Lee texto visible reutilizando la fila de entrada reservada del TUI."""
 
-        if os.name != "nt":
-            raise OSError("la entrada interactiva del TUI solo está disponible en Windows")
-        from msvcrt import getwch
+        read_key = self._dialog_key_reader()
 
         characters: list[str] = []
         try:
             while True:
                 self.secret_prompt = prompt.strip() + " " + "".join(characters)
                 self.render()
-                key = getwch()
-                if key in ("\r", "\n"):
+                key = read_key()
+                if key == "ENTER":
                     return "".join(characters).strip()
-                if key == "\x1b":
+                if key == "ESC":
                     return ""
-                if key == "\x08":
+                if key == "BACKSPACE":
                     if characters:
                         characters.pop()
                     continue
-                if key in ("\x00", "\xe0"):
-                    getwch()
+                if key == "DELETE":
+                    characters.clear()
                     continue
-                if key.isprintable():
+                if len(key) == 1 and key.isprintable():
                     characters.append(key)
         finally:
             self.secret_prompt = ""
@@ -1565,34 +1565,48 @@ class LanctlTui:
     def _read_secret(self, prompt: str) -> str:
         """Solicita un secreto dentro de la fila de entrada reservada por el TUI."""
 
-        if os.name != "nt":
-            raise OSError("la entrada secreta del TUI solo está disponible en Windows")
-        from msvcrt import getwch
+        read_key = self._dialog_key_reader()
 
         self.secret_prompt = prompt.strip()
         self.render()
         characters: list[str] = []
         try:
             while True:
-                key = getwch()
-                if key in ("\r", "\n"):
+                key = read_key()
+                if key == "ENTER":
                     return "".join(characters)
-                if key == "\x03":
+                if key == "ESC":
                     raise KeyboardInterrupt
-                if key == "\x08":
+                if key == "BACKSPACE":
                     if characters:
                         characters.pop()
                     continue
-                if key in ("\x00", "\xe0"):
-                    getwch()
+                if key == "DELETE":
+                    characters.clear()
                     continue
-                if key.isprintable():
+                if len(key) == 1 and key.isprintable():
                     characters.append(key)
         finally:
             self.secret_prompt = ""
             self.render()
 
+    def _dialog_key_reader(self):
+        """Devuelve el lector semántico activo en Windows o POSIX."""
+
+        if callable(getattr(self, "_read_key", None)):
+            return self._read_key
+        if os.name == "nt":
+            from msvcrt import getwch
+
+            return lambda: _read_windows_key(getwch)
+        return lambda: read_posix_key(sys.stdin)
+
     def refresh(self) -> None:
+        """Inicia el descubrimiento sin bloquear teclado ni acciones remotas."""
+
+        if self.scanning:
+            self.messages = ["Ya hay un escaneo en curso. Pulsa Esc para cancelarlo."]
+            return
         self.scanning = True
         self.spinner_index = 0
         self.scan_current = 0
@@ -1603,7 +1617,22 @@ class LanctlTui:
         self.all_devices = self.database.load()
         self.devices = self._filtered_devices()
         self.messages = ["Buscando dispositivos en la LAN…"]
-        self.render()
+        self._scan_cancel = threading.Event()
+        self._scan_thread = threading.Thread(
+            target=self._run_refresh,
+            name="lanctl-tui-scan",
+            daemon=True,
+        )
+        self._scan_thread.start()
+
+    def cancel_refresh(self) -> None:
+        if self.scanning:
+            self._scan_cancel.set()
+            self.messages = ["Cancelando el escaneo de red…"]
+
+    def _run_refresh(self) -> None:
+        """Ejecuta el comando list en segundo plano y publica un resultado atómico."""
+
         from lanctl.apps.ip.interfaces.cli.main import build_parser
 
         captured_rows: list[dict] = []
@@ -1617,35 +1646,73 @@ class LanctlTui:
                 captured_activity.extend(activity)
 
             args.result_callback = collect_result
-            args.progress_instance = _TuiScanProgress(self)
-            args.scan_summary_callback = self.scan_summary.update
+            args.progress_instance = _TuiScanProgress(self.scan_events, self._scan_cancel)
+            args.scan_summary_callback = lambda summary: self.scan_events.put(
+                ("summary", dict(summary))
+            )
             with redirect_stdout(output_buffer), redirect_stderr(output_buffer):
                 result = args.handler(args)
-        except (OSError, ValueError, SystemExit) as error:
+        except InterruptedError:
+            result = 130
+            output_buffer.write("Escaneo cancelado por el usuario.")
+        except (OSError, RuntimeError, ValueError, sqlite3.DatabaseError, SystemExit) as error:
             result = int(error.code or 1) if isinstance(error, SystemExit) else 1
             output_buffer.write(str(error))
-        finally:
-            self.scanning = False
-            self.scan_current = 0
-            self.scan_total = 0
         output = output_buffer.getvalue().strip()
-        self.response_ms = {
+        response_ms = {
             str(row.get("MAC") or row.get("IP")): float(row["responseMs"])
             for row in captured_rows
             if row.get("responseMs") is not None
         }
-        self.active_devices = {
+        active_devices = {
             _device_key(str(row.get("MAC", "")), str(row.get("IP", "")))
             for row, active in zip(captured_rows, captured_activity)
             if active
         }
-        self.reload()
         summary = _last_meaningful_line(output)
-        self.messages = (
-            ["Escaneo completado. Pulsa F5 para actualizar de nuevo."]
-            if result == 0
-            else [summary or "Error al actualizar la LAN."]
+        self.scan_events.put(
+            (
+                "complete",
+                result,
+                summary,
+                response_ms,
+                active_devices,
+            )
         )
+
+    def _drain_scan_events(self) -> bool:
+        """Aplica eventos del worker exclusivamente desde el hilo de interfaz."""
+
+        changed = False
+        while True:
+            try:
+                event = self.scan_events.get_nowait()
+            except queue.Empty:
+                break
+            changed = True
+            kind, *payload = event
+            if kind == "begin":
+                self.scan_total = int(payload[0])
+                self.scan_current = 0
+            elif kind == "advance":
+                self.scan_current = int(payload[0])
+                self.spinner_index = (self.spinner_index + 1) % 4
+            elif kind == "found":
+                self.discovery_found(tuple(payload[0]))
+            elif kind == "summary":
+                self.scan_summary.update(payload[0])
+            elif kind == "complete":
+                result, summary, self.response_ms, self.active_devices = payload
+                self.scanning = False
+                self.scan_current = 0
+                self.scan_total = 0
+                self.reload()
+                self.messages = (
+                    ["Escaneo completado. Pulsa F5 para actualizar de nuevo."]
+                    if result == 0
+                    else [summary or "Error al actualizar la LAN."]
+                )
+        return changed
 
     def show_info(self) -> None:
         device = self.selected
@@ -1818,7 +1885,9 @@ class LanctlTui:
         self.output_index = 0
         self.output_scroll = 0
         try:
-            parts = shlex.split(raw)
+            from lanctl.core.command_line import split_command_line
+
+            parts = split_command_line(raw)
         except ValueError as error:
             self.messages = [str(error)]
             return
@@ -1918,20 +1987,25 @@ class LanctlTui:
             contextual = _inject_selected_group_element(
                 contextual, self.selected.mac or self.selected.ip
             )
-        if self.selected and command in {
-            "call",
-            "cnf",
-            "credential",
-            "open",
-            "ping",
-            "protocol",
-            "scan",
-            "search",
-            "ssh",
-            "switch",
-            "terminal",
-            "wol",
-        }:
+        if (
+            self.selected
+            and command
+            in {
+                "call",
+                "cnf",
+                "credential",
+                "open",
+                "ping",
+                "protocol",
+                "scan",
+                "search",
+                "ssh",
+                "switch",
+                "terminal",
+                "wol",
+            }
+            and (len(contextual) == 1 or contextual[1].startswith("-"))
+        ):
             contextual.insert(1, self.selected.mac or self.selected.ip)
         result, output = self._capture(contextual)
         self.reload()
@@ -2066,6 +2140,9 @@ class LanctlTui:
         self.messages = ["Consola preparada."]
 
     def handle_key(self, key: str) -> None:
+        if getattr(self, "scanning", False) and key == "ESC" and not self.modal:
+            self.cancel_refresh()
+            return
         if getattr(self, "modal", None):
             # Settings conserva su guardado específico. En los demás overlays,
             # Ctrl+S sigue siendo el guardado manual global del proyecto.
@@ -2298,6 +2375,9 @@ class LanctlTui:
         if modal.kind == "project_close":
             self._handle_project_close_key(modal, key)
             return
+        if modal.kind == "project_switch":
+            self._handle_project_switch_key(modal, key)
+            return
         if modal.kind == "project_create":
             self._handle_project_create_key(modal, key)
             return
@@ -2337,10 +2417,7 @@ class LanctlTui:
             if not item.available:
                 self.messages = [f"El proyecto ya no está disponible: {path}"]
                 return
-            result, output = self._capture(["project", "use", str(path)])
-            self.modal = None
-            self.reload()
-            self._set_command_output(output, result)
+            self._request_project_activation(path)
         elif modal.kind == "projects" and key == "CTRL_N":
             self._create_project_from_manager()
         elif modal.kind == "projects" and key == "DELETE" and modal.items:
@@ -2353,6 +2430,18 @@ class LanctlTui:
 
     def _create_project_from_manager(self) -> None:
         from lanctl.core.projects.paths import default_project_directory
+        from lanctl.core.projects.save_policy import workspace_is_dirty
+
+        if getattr(self, "scanning", False):
+            if self.modal:
+                self.modal.footer = "Cierra esta ventana y pulsa Esc para cancelar el escaneo antes de crear un proyecto"
+            return
+        if workspace_is_dirty(load_config()):
+            if self.modal:
+                self.modal.footer = (
+                    "Hay cambios pendientes · Ctrl+S guardar antes de crear otro proyecto"
+                )
+            return
 
         configured = load_config().get("projectsDirectory")
         default_root = (
@@ -2482,6 +2571,7 @@ class LanctlTui:
                     name=Path(name).stem,
                     description=description,
                     config=empty_config,
+                    initialize_reserved=False,
                 )
             path = Path(result["path"])
             ProjectCatalog().register(path)
@@ -2683,6 +2773,85 @@ class LanctlTui:
         self.modal = None
         self.running = False
 
+    def _request_project_activation(self, path: Path) -> None:
+        from lanctl.core.projects.save_policy import workspace_is_dirty
+
+        if getattr(self, "scanning", False):
+            self.messages = [
+                "Cierra esta ventana y pulsa Esc para cancelar el escaneo antes de cambiar de proyecto."
+            ]
+            if self.modal:
+                self.modal.footer = self.messages[0]
+            return
+        settings = load_config()
+        current = str(settings.get("activeProject") or "").strip()
+        target = str(path.resolve())
+        if current and Path(current).resolve() != Path(target) and workspace_is_dirty(settings):
+            self.pending_project_path = target
+            self._open_modal(
+                ModalState(
+                    kind="project_switch",
+                    title="CAMBIOS SIN GUARDAR",
+                    tabs=["Cambiar proyecto"],
+                    pages=[
+                        [
+                            "Guardar los cambios y abrir el proyecto seleccionado",
+                            "Descartar los cambios y abrir el proyecto seleccionado",
+                            "Cancelar y mantener el proyecto actual",
+                        ]
+                    ],
+                    items=["save", "discard", "cancel"],
+                    footer="↑/↓ seleccionar  Enter confirmar  Esc cancelar",
+                    max_width=90,
+                    max_height=14,
+                )
+            )
+            return
+        self._activate_project_path(target)
+
+    def _activate_project_path(self, path: str, *, discard_changes: bool = False) -> None:
+        from lanctl.core.projects.workspace import activate_project_workspace
+
+        try:
+            activate_project_workspace(path, discard_changes=discard_changes)
+            self.modal = None
+            self.reload()
+            self._set_terminal_message(f"Proyecto activado: {path}")
+        except (OSError, RuntimeError, ValueError, sqlite3.DatabaseError) as error:
+            self._set_terminal_message(f"No se pudo cambiar de proyecto: {error}")
+            self.show_project_manager()
+            if self.modal:
+                self.modal.footer = f"ERROR: {error} · Esc cerrar"
+
+    def _handle_project_switch_key(self, modal: ModalState, key: str) -> None:
+        if key == "ESC":
+            self.pending_project_path = None
+            self.show_project_manager()
+            return
+        if key in ("UP", "LEFT"):
+            modal.selected = (modal.selected - 1) % len(modal.items)
+            return
+        if key in ("DOWN", "RIGHT"):
+            modal.selected = (modal.selected + 1) % len(modal.items)
+            return
+        if key != "ENTER":
+            return
+        action = str(modal.items[modal.selected])
+        target, self.pending_project_path = self.pending_project_path, None
+        if action == "cancel" or not target:
+            self.show_project_manager()
+            return
+        if action == "save":
+            from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+
+            try:
+                save_active_project(SaveTrigger.CHANGE, force=True)
+            except (OSError, RuntimeError, ValueError, sqlite3.DatabaseError) as error:
+                modal.footer = f"ERROR al guardar: {error} · Esc cancelar"
+                self.pending_project_path = target
+                return
+        self._activate_project_path(target, discard_changes=action == "discard")
+
     def _finish_remote_user_action(self, result: int, output: str) -> None:
         cleaned = _clean_tui_output(output)
         self.messages = cleaned[-2:] if cleaned else ["Usuario remoto actualizado."]
@@ -2752,15 +2921,32 @@ class LanctlTui:
             modal.pages[1] = _project_detail(item, active)
 
     def run(self) -> int:
-        if os.name != "nt":
-            raise OSError("LANCTL TUI utiliza actualmente la entrada de teclado de Windows")
         if not _is_interactive_terminal(sys.stdin) or not _is_interactive_terminal(self.screen):
             raise OSError(
                 "LANCTL TUI necesita una terminal interactiva; usa --cli o un comando "
                 "normal cuando la entrada o la salida estén redirigidas"
             )
-        just_fix_windows_console()
-        from msvcrt import getwch, kbhit
+        if os.name == "nt":
+            just_fix_windows_console()
+            from msvcrt import getwch, kbhit
+
+            key_available = kbhit
+
+            def read_key() -> str:
+                return _read_windows_key(getwch)
+
+            terminal_mode = nullcontext()
+        else:
+
+            def key_available() -> bool:
+                return posix_key_available(sys.stdin)
+
+            def read_key() -> str:
+                return read_posix_key(sys.stdin)
+
+            terminal_mode = posix_terminal_mode(sys.stdin)
+
+        self._read_key = read_key
 
         from lanctl.apps.access.root_control import RootInterfaceAgent
 
@@ -2780,17 +2966,25 @@ class LanctlTui:
             else:
                 self.refresh()
             self.render()
-            while self.running:
-                if not self.remote_actions.empty():
-                    self._apply_remote_action(self.remote_actions.get_nowait())
-                    self.render()
-                elif kbhit():
-                    self.handle_key(_read_windows_key(getwch))
-                    self.render()
-                else:
-                    time.sleep(0.08)
+            with terminal_mode:
+                while self.running:
+                    scan_changed = self._drain_scan_events()
+                    if not self.remote_actions.empty():
+                        self._apply_remote_action(self.remote_actions.get_nowait())
+                        self.render()
+                    elif key_available():
+                        self.handle_key(read_key())
+                        self.render()
+                    elif scan_changed:
+                        self.render()
+                    else:
+                        time.sleep(0.08)
         finally:
+            self.cancel_refresh()
+            if self._scan_thread is not None and self._scan_thread.is_alive():
+                self._scan_thread.join(timeout=1.0)
             agent.stop()
+            self._read_key = None
             self.screen.write(TUI_LEAVE_SCREEN)
             self.screen.flush()
         return 0
@@ -3037,13 +3231,20 @@ def _spinner_character(index: int) -> str:
 
 
 class _TuiScanProgress:
-    """Adapta el progreso del escáner al refresco de pantalla completa."""
+    """Publica progreso thread-safe y expone cancelación cooperativa."""
 
-    def __init__(self, tui: LanctlTui) -> None:
-        self.tui = tui
+    def __init__(self, events: queue.Queue, cancel_event: threading.Event) -> None:
+        self.events = events
+        self.cancel_event = cancel_event
         self.total = 1
         self.current = 0
-        self.last_draw = 0.0
+
+    def _check_cancelled(self) -> None:
+        if self.cancel_event.is_set():
+            raise InterruptedError("escaneo cancelado")
+
+    def cancelled(self) -> bool:
+        return self.cancel_event.is_set()
 
     def begin(
         self,
@@ -3052,39 +3253,30 @@ class _TuiScanProgress:
         found_total: int = 0,
         known_identities: dict[str, str] | None = None,
     ) -> None:
+        self._check_cancelled()
         self.total = max(1, total)
         self.current = 0
-        self.tui.scan_total = self.total
-        self.tui.scan_current = 0
-        self.tui.spinner_index = 0
-        self._draw(force=True)
+        self.events.put(("begin", self.total))
 
     def phase(self, phase: str) -> None:
-        self._draw()
+        self._check_cancelled()
 
     def found(self, *keys: str) -> None:
-        self.tui.discovery_found(keys)
-        self._draw(force=True)
+        self._check_cancelled()
+        self.events.put(("found", keys))
 
     def advance(self, amount: int = 1) -> None:
+        self._check_cancelled()
         self.current = min(self.total, self.current + amount)
-        self.tui.scan_current = self.current
-        self.tui.spinner_index = (self.tui.spinner_index + 1) % 4
-        self._draw()
+        self.events.put(("advance", self.current))
 
     def complete(self) -> None:
+        self._check_cancelled()
         self.current = self.total
-        self.tui.scan_current = self.total
-        self._draw(force=True)
+        self.events.put(("advance", self.current))
 
     def clear(self) -> None:
         return
-
-    def _draw(self, force: bool = False) -> None:
-        now = time.monotonic()
-        if force or now - self.last_draw >= 0.06:
-            self.tui.render()
-            self.last_draw = now
 
 
 def _dhcp_boundary_indexes(devices, configured_range: str | None):

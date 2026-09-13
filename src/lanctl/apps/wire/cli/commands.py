@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import shlex
 from dataclasses import dataclass
 
 from lanctl.apps.wire.idf.database import IDFDatabaseManager
@@ -25,7 +24,9 @@ class CommandProcessor:
 
     def execute(self, command: str, *, selected_id: str | None = None) -> CommandResult:
         try:
-            parts = shlex.split(command)
+            from lanctl.core.command_line import split_command_line
+
+            parts = split_command_line(command)
         except ValueError as error:
             return CommandResult((f"Error de sintaxis: {error}",))
         if not parts:

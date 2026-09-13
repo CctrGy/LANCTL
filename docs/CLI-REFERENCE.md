@@ -37,6 +37,7 @@ Logical control of LAN devices and infrastructure.
 
 Arguments:
   COMANDO
+    ephemeral (-e)            Escanea activos sin leer ni guardar ningún inventario.
     list                      Escanea la LAN y muestra dispositivos activos e históricos.
     recurrent                 Consulta los elementos recurrentes conocidos por LANCTL.
     ping                      Comprueba puntualmente si un elemento responde por PING o ARP.
@@ -62,7 +63,8 @@ Arguments:
     terminal (cli)            Abre la terminal propia de un elemento según su protocolo.
     switch                    Planifica comandos Cisco filtrados, remapeados y clasificados.
     group                     Crea, edita y consulta grupos de elementos.
-    element                   Edita un elemento identificado por IP, MAC o alias.
+    element                   Edita uno o varios campos de un elemento identificado por IP, MAC o
+                              alias.
     project (projects)        Crea, actualiza e inspecciona proyectos LANCTL .vlf.
     plugin (plugins, addon, addons)
                               Gestiona complementos unificados LANCTL .lcp.
@@ -94,18 +96,27 @@ Options:
 ## `LANIP ephemeral`
 
 ```text
-Usage: LANIP ephemeral [-h] [--fast | --normal | --accurate] [--range NETWORK]
-                       [--resolve-names] [--ports PORTS] [--json]
-                       [--workers WORKERS] [--timeout TIMEOUT]
-                       [--max-hosts MAX_HOSTS]
-                       [--scan-order {ascending,descending,random}]
-```
+Usage: LANIP ephemeral [-h] [--fast | --normal | --accurate] [--range NETWORK] [--resolve-names]
+                       [--ports PORTS] [--json] [--workers WORKERS] [--timeout TIMEOUT]
+                       [--max-hosts MAX_HOSTS] [--scan-order {ascending,descending,random}]
 
-Ejecuta un escaneo real completamente aislado del proyecto y del inventario
-persistente. Solo presenta dispositivos confirmados durante la ejecución. El
-alias corto es `lanip -e`; `--ports` añade una comprobación TCP sobre los hosts
-activos. No admite `--project`, edición ni guardado y destruye la sesión en
-memoria al terminar.
+Ejecuta el descubrimiento real en una sesión aislada en memoria. No abre, modifica ni guarda proyectos o bases de dispositivos.
+
+Options:
+  -h, --help, /?              Show this help and exit.
+  --fast                      Prioriza un barrido ARP rápido.
+  --normal                    Combina ICMP, ARP y descubrimiento de servicios.
+  --accurate                  Añade reintentos y reconocimiento más profundo.
+  --range NETWORK             Rango CIDR que se explorará solo durante esta ejecución.
+  --resolve-names             Resuelve nombres sin almacenarlos.
+  --ports PORTS               Puertos TCP opcionales, por ejemplo 22,80,443.
+  --json                      Devuelve la sesión como JSON.
+  --workers WORKERS           Sondeos simultáneos.
+  --timeout TIMEOUT           Tiempo máximo base por sondeo, en segundos.
+  --max-hosts MAX_HOSTS       Límite defensivo de direcciones autorizadas.
+  --scan-order {ascending,descending,random}
+                              Orden de exploración de las direcciones.
+```
 
 ## `LANIP list`
 
@@ -860,22 +871,6 @@ Options:
   --yes                       Elimina sin solicitar confirmación.
 ```
 
-Las opciones de edición pueden combinarse en una sola orden y escribirse en
-cualquier orden. En CLI se indica el elemento explícitamente:
-
-```text
-lanip element NAS -name HomeNAS -alias NAS -description "Almacenamiento principal" -cnf O -group ASSETS -protocol ssh
-```
-
-Dentro del TUI puede omitirse el selector para aplicar todas las opciones al
-elemento resaltado:
-
-```text
-element -description "Almacenamiento principal" -alias NAS -cnf O
-```
-
-`-delete` es una operación exclusiva y no puede combinarse con ediciones.
-
 ## `LANIP project`
 
 ```text
@@ -884,7 +879,7 @@ Usage: LANIP project [-h] ACCIÓN ...
 Arguments:
   ACCIÓN
     status        Muestra el proyecto activo.
-    create        Empaqueta la LAN activa en un proyecto VLF.
+    create        Crea un proyecto VLF vacío por defecto.
     update        Actualiza datos activos conservando información complementaria.
     save          Guarda manualmente el proyecto VLF activo.
     info          Muestra los metadatos del proyecto.
@@ -911,7 +906,7 @@ Options:
 ```text
 Usage: LANIP project create [-h] [--name NAME] [--description DESCRIPTION] [--author AUTHOR]
                             [--lan-name LAN_NAME] [--location LOCATION] [--company COMPANY]
-                            [--responsible RESPONSIBLE] [--force]
+                            [--responsible RESPONSIBLE] [--clone-current] [--force]
                             file
 
 Arguments:
@@ -926,6 +921,8 @@ Options:
   --location LOCATION        Ubicación física.
   --company COMPANY          Empresa u organización.
   --responsible RESPONSIBLE  Responsable de la LAN.
+  --clone-current            Crea el proyecto copiando explícitamente el inventario y grupos
+                             activos.
   --force                    Sobrescribe un VLF existente.
 ```
 

@@ -17,6 +17,10 @@ from lanctl.core.projects.paths import resolve_project_path
 from lanctl.core.projects.vlf import inspect_project, verify_project
 
 
+class ProjectChangesPendingError(RuntimeError):
+    """Impide sobrescribir o abandonar un workspace con cambios locales."""
+
+
 @dataclass(frozen=True, slots=True)
 class ProjectWorkspace:
     """Copia de trabajo JSON asociada a un único proyecto VLF."""
@@ -30,11 +34,66 @@ class ProjectWorkspace:
 
 
 def _workspace_hash(database: Path, groups: Path) -> str:
-    digest = hashlib.sha256()
-    for path in (database, groups):
-        digest.update(path.name.encode("utf-8"))
-        digest.update(hashlib.sha256(path.read_bytes()).hexdigest().encode("ascii"))
-    return digest.hexdigest()
+    from lanctl.core.database import DeviceDatabase
+    from lanctl.core.group_database import GroupDatabase
+
+    store = DeviceDatabase(str(database))
+    value = {
+        "devices": [device.to_dict() for device in store.load()],
+        "groups": [group.to_dict() for group in GroupDatabase(str(groups), store).load()],
+    }
+    canonical = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _metadata(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def workspace_files_are_dirty(database: Path, groups: Path, metadata: Path) -> bool:
+    """Comprueba cambios sin depender de la configuración global activa."""
+
+    if not database.is_file():
+        return False
+    return _metadata(metadata).get("workspaceHash") != _workspace_hash(database, groups)
+
+
+def mark_workspace_synchronized(
+    workspace: Mapping[str, Any],
+    *,
+    project_info: Mapping[str, Any],
+    workspace_hash: str | None = None,
+) -> None:
+    """Confirma atómicamente que el VLF verificado contiene este workspace."""
+
+    database = Path(str(workspace.get("database", "")))
+    groups = Path(str(workspace.get("groups", "")))
+    metadata_value = str(workspace.get("metadata", "")).strip()
+    metadata = Path(metadata_value)
+    if not database.is_file() or not metadata_value:
+        raise FileNotFoundError("el workspace activo no está completo")
+    with locked_files((database, groups, metadata)):
+        current = _metadata(metadata)
+        current.update(
+            {
+                "schemaVersion": 1,
+                "project": str(Path(str(workspace.get("project", ""))).resolve()),
+                "projectId": str(project_info.get("id") or workspace.get("projectId") or ""),
+                "contentHash": str(project_info.get("contentHash") or ""),
+                # Usa la instantánea que se verificó. Si otro proceso escribió
+                # después, su hash será distinto y seguirá figurando pendiente.
+                "workspaceHash": workspace_hash or _workspace_hash(database, groups),
+            }
+        )
+        atomic_write_json(metadata, current)
 
 
 def _inventory_documents(project: Path) -> tuple[list[dict], list[dict]]:
@@ -88,7 +147,8 @@ def prepare_project_workspace(
     project: str | Path,
     *,
     root: str | Path | None = None,
-    refresh: bool = True,
+    refresh: bool = False,
+    discard_changes: bool = False,
 ) -> ProjectWorkspace:
     """Materializa el inventario VLF en un workspace aislado y transaccional."""
 
@@ -108,20 +168,24 @@ def prepare_project_workspace(
     groups = workspace_root / "groups.json"
     metadata = workspace_root / "workspace.json"
 
-    current: dict[str, Any] = {}
-    if metadata.is_file():
-        try:
-            value = json.loads(metadata.read_text(encoding="utf-8"))
-            current = value if isinstance(value, dict) else {}
-        except (OSError, json.JSONDecodeError):
-            current = {}
+    current = _metadata(metadata)
     synchronized = (
         database.is_file()
         and groups.is_file()
         and current.get("project") == str(source)
         and current.get("contentHash") == content_hash
     )
-    if refresh or not synchronized:
+    dirty = workspace_files_are_dirty(database, groups, metadata)
+    # Los logs y otros metadatos auxiliares también cambian contentHash. Si el
+    # inventario local tiene cambios, una reapertura normal debe conservarlos;
+    # solo un refresh explícito puede pedir reemplazarlos.
+    must_materialize = refresh or (not synchronized and not dirty)
+    if must_materialize and dirty and not discard_changes:
+        raise ProjectChangesPendingError(
+            f"el proyecto {source.name} contiene cambios sin guardar; "
+            "guárdalos o descártalos explícitamente antes de recargar"
+        )
+    if must_materialize:
         devices, group_rows = _inventory_documents(source)
         workspace_root.mkdir(parents=True, exist_ok=True)
         with locked_files((database, groups, metadata)):
@@ -153,13 +217,37 @@ def activate_project_workspace(
     *,
     config: Mapping[str, Any] | None = None,
     root: str | Path | None = None,
-    refresh: bool = True,
+    refresh: bool = False,
+    discard_changes: bool = False,
 ) -> ProjectWorkspace:
     """Selecciona un VLF y cambia el inventario activo a su copia de trabajo."""
 
     settings = dict(config or load_config())
     source = resolve_project_path(project, settings.get("projectsDirectory"))
-    workspace = prepare_project_workspace(source, root=root, refresh=refresh)
+    previous = settings.get("projectWorkspace")
+    previous_project = (
+        Path(str(previous.get("project", ""))).resolve()
+        if isinstance(previous, Mapping) and previous.get("project")
+        else None
+    )
+    if previous_project is not None and previous_project != source:
+        previous_database = Path(str(previous.get("database", "")))
+        previous_groups = Path(str(previous.get("groups", "")))
+        previous_metadata = Path(str(previous.get("metadata", "")))
+        if (
+            workspace_files_are_dirty(previous_database, previous_groups, previous_metadata)
+            and not discard_changes
+        ):
+            raise ProjectChangesPendingError(
+                f"el proyecto {previous_project.name} contiene cambios sin guardar; "
+                "guárdalos o descártalos explícitamente antes de cambiar de proyecto"
+            )
+    workspace = prepare_project_workspace(
+        source,
+        root=root,
+        refresh=refresh,
+        discard_changes=discard_changes,
+    )
 
     def select(current: dict) -> None:
         previous = current.get("projectWorkspace")
