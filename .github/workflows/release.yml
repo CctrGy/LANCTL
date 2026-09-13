@@ -107,8 +107,9 @@ jobs:
           $version = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { '${{ inputs.version }}' } else { '${{ github.ref_name }}'.TrimStart('v') }
           $setup = (Resolve-Path "dist/release/LANCTL-$version-windows-x64-setup.exe").Path
           $install = Join-Path $env:RUNNER_TEMP 'LANCTL-clean-install'
-          & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/DIR=$install"
-          if ($LASTEXITCODE -ne 0) { throw 'Clean installation failed' }
+          $setupArguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$install")
+          $installed = Start-Process -FilePath $setup -ArgumentList $setupArguments -Wait -PassThru
+          if ($installed.ExitCode -ne 0) { throw "Clean installation failed ($($installed.ExitCode))" }
           & "$install/LANCTL.exe" --version
           if ($LASTEXITCODE -ne 0) { throw 'Installed executable failed' }
           & "$install/lanmon.exe" --version
@@ -120,12 +121,12 @@ jobs:
           $sentinel = Join-Path $env:ProgramData 'LANCTL/config/release-sentinel.txt'
           New-Item -ItemType Directory -Force -Path (Split-Path $sentinel) | Out-Null
           Set-Content -LiteralPath $sentinel -Value 'preserve-release-data' -Encoding utf8
-          & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/DIR=$install"
-          if ($LASTEXITCODE -ne 0) { throw 'Clean update failed' }
+          $updated = Start-Process -FilePath $setup -ArgumentList $setupArguments -Wait -PassThru
+          if ($updated.ExitCode -ne 0) { throw "Clean update failed ($($updated.ExitCode))" }
           & "$install/lanip.exe" demo --output (Join-Path $env:RUNNER_TEMP 'LANCTL-demo')
           if ($LASTEXITCODE -ne 0) { throw 'Installed demo walkthrough failed' }
-          & "$install/unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
-          if ($LASTEXITCODE -ne 0) { throw 'Clean uninstall failed' }
+          $uninstalled = Start-Process -FilePath "$install/unins000.exe" -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait -PassThru
+          if ($uninstalled.ExitCode -ne 0) { throw "Clean uninstall failed ($($uninstalled.ExitCode))" }
           if (-not (Test-Path -LiteralPath $sentinel)) { throw 'User data was not preserved' }
           if (Test-Path -LiteralPath "$install/LANCTL.exe") { throw 'Application files remain' }
       - uses: actions/upload-artifact@v4
