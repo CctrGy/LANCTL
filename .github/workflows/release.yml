@@ -61,7 +61,7 @@ jobs:
       - run: bash -n install.sh scripts/build-linux.sh
       - run: shellcheck install.sh scripts/build-linux.sh packaging/debian/postinst packaging/debian/prerm
       - run: git diff --check
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: {name: coverage-report, path: coverage.xml, if-no-files-found: error}
 
   windows:
@@ -129,7 +129,7 @@ jobs:
           if ($uninstalled.ExitCode -ne 0) { throw "Clean uninstall failed ($($uninstalled.ExitCode))" }
           if (-not (Test-Path -LiteralPath $sentinel)) { throw 'User data was not preserved' }
           if (Test-Path -LiteralPath "$install/LANCTL.exe") { throw 'Application files remain' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-x64
           path: |
@@ -159,7 +159,7 @@ jobs:
         run: |
           version="${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}"
           ./scripts/build-linux.sh "${version#v}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-${{ matrix.arch }}
           path: |

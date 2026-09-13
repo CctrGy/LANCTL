@@ -59,7 +59,7 @@ jobs:
       - run: python -m compileall -q src tests
       - run: bash -n install.sh scripts/build-linux.sh
       - run: git diff --check
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ github.sha }}
           path: coverage.xml
