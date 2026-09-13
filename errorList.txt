@@ -686,7 +686,7 @@
 0eC65DB7D0 | 34 | src/lanctl/apps/ip/interfaces/cli/main.py | 284 | src.lanctl.apps.ip.interfaces.cli.main.main | print-error
 0eC75689DD | 37 | src/lanctl/apps/ip/infrastructure/services/lan_scanner.py | 84 | src.lanctl.apps.ip.infrastructure.services.lan_scanner.resolve_network | raise
 0eC78121D0 | 41 | src/lanctl/apps/access/firewall.py | 31 | src.lanctl.apps.access.firewall.FirewallManager.add | raise
-0eC808BD11 | 34 | src/lanctl/core/parser.py | 117 | src.lanctl.core.parser.LANCTLArgumentParser.error | print-error
+0eC808BD11 | 34 | src/lanctl/core/parser.py | 119 | src.lanctl.core.parser.LANCTLArgumentParser.error | print-error
 0eC8E19BA2 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/ephemeral.py | 133 | src.lanctl.apps.ip.interfaces.cli.commands.ephemeral.run_ephemeral | raise
 0eC8F8F53C | 33 | src/lanctl/apps/monitor/configuration.py | 128 | src.lanctl.apps.monitor.configuration.validate_profile | raise
 0eC948B61D | 42 | src/lanctl/core/recurrent_elements.py | 38 | src.lanctl.core.recurrent_elements.RecurrentElementDatabase.load | raise
@@ -835,7 +835,7 @@
 0eF2E2EA15 | 48 | src/lanctl/core/plugins/publishers.py | 27 | src.lanctl.core.plugins.publishers.TrustedPublisherStore.trust_package | raise
 0eF37CCE2C | 31 | src/lanctl/apps/access/remote.py | 108 | src.lanctl.apps.access.remote.parse_remote_command | raise
 0eF3BB11D9 | 45 | src/lanctl/apps/monitor/identity.py | 32 | src.lanctl.apps.monitor.identity.IdentityResolver.validate | raise
-0eF3CFEA4F | 41 | src/lanctl/core/parser.py | 118 | src.lanctl.core.parser.LANCTLArgumentParser.error | exit
+0eF3CFEA4F | 41 | src/lanctl/core/parser.py | 120 | src.lanctl.core.parser.LANCTLArgumentParser.error | exit
 0eF46E0703 | 31 | src/lanctl/apps/ip/infrastructure/cisco/planner.py | 32 | src.lanctl.apps.ip.infrastructure.cisco.planner.CiscoPlanner._validate | raise
 0eF4ABEA28 | 42 | src/lanctl/core/persistence.py | 123 | src.lanctl.core.persistence.verify_export | raise
 0eF518A526 | 31 | src/lanctl/apps/ip/interfaces/cli/commands/lab.py | 143 | src.lanctl.apps.ip.interfaces.cli.commands.lab.run_lab | raise
