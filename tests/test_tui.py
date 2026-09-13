@@ -313,7 +313,7 @@ class TuiTests(unittest.TestCase):
         tui._handle_project_create_key(tui.modal, "ENTER")
         self.assertEqual(tui.modal.items[0].value, "Casa")
         self.assertEqual(tui.modal.selected, 1)
-        self.assertEqual(tui.modal.items[1].value, "C:\\Projects")
+        self.assertEqual(tui.modal.items[1].value, str(Path("C:/Projects")))
 
     def test_project_switch_with_pending_changes_requires_an_explicit_decision(self):
         tui = LanctlTui.__new__(LanctlTui)

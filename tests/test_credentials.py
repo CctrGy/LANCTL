@@ -89,7 +89,12 @@ def test_dpapi_native_failure_is_raised(monkeypatch, operation):
     monkeypatch.setattr(credential_module, "os", SimpleNamespace(name="nt"))
     monkeypatch.setattr(credential_module, "_dpapi", lambda: (crypt32, _Kernel32()))
     monkeypatch.setattr(credential_module.ctypes, "get_last_error", lambda: 5, raising=False)
-    monkeypatch.setattr(credential_module.ctypes, "WinError", lambda _code: OSError("native error"))
+    monkeypatch.setattr(
+        credential_module.ctypes,
+        "WinError",
+        lambda _code: OSError("native error"),
+        raising=False,
+    )
     with pytest.raises(OSError, match="native error"):
         (protect_secret if operation == "protect" else unprotect_secret)(b"value")
 
