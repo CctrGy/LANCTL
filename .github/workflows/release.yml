@@ -48,7 +48,9 @@ jobs:
       - name: Error catalog gate
         run: python tools/generate_error_catalog.py --check
       - name: CLI reference gate
-        run: python tools/generate_cli_reference.py --check
+        run: |
+          python tools/generate_cli_reference.py
+          git diff --exit-code -- docs/CLI-REFERENCE.md
       - name: Security source gate
         run: python -m bandit -q -r src -ll -s B104
       - name: Dependency vulnerability gate
