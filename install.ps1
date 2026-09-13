@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('stable','beta')][string]$Channel = 'stable',
+    [ValidateSet('stable','beta')][string]$Channel = 'beta',
     [ValidatePattern('^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$')][string]$Version,
     [ValidateSet('standard','monitor')][string]$Mode = 'standard',
     [switch]$Portable,

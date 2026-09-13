@@ -36,12 +36,14 @@ Uso rápido:
 
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSLo install.sh https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh
-sudo bash install.sh --channel stable
+sudo bash install.sh --channel beta
 ```
 
 Descarga `install.sh` y su checksum por separado para el procedimiento
 verificable. Se admiten DEB nativos `amd64` y `arm64`; ARM64 se construye en un
-runner ARM nativo. El tarball es una alternativa portable explícita mediante
+runner ARM nativo. Cada artefacto solo se declara verificado después de probarlo
+en la arquitectura real; una validación estática no equivale a esa prueba. El
+tarball es una alternativa portable explícita mediante
 `--tarball` y no instala systemd. El DEB usa `/opt/lanctl`, `/usr/bin/lanctl`,
 `/etc/lanctl` y `/var/lib/lanctl`, y crea un usuario `lanctl` sin shell. El modo
 Monitor instala la unidad, pero no la inicia hasta que exista un proyecto activo.
@@ -50,6 +52,12 @@ La CLI ejecutada por un usuario normal guarda configuración e inventario bajo
 `XDG_CONFIG_HOME/lanctl/access`. La unidad systemd fija `LANCTL_DATA_DIR` a
 `/var/lib/lanctl` y `LANCTL_SECRET_DIR` a `/etc/lanctl/access`, evitando mezclar
 datos interactivos y datos del servicio.
+
+El DEB recomienda `iputils-ping`, `arping`, `smbclient` y `xdg-utils`. Son
+integraciones opcionales: la CLI/TUI puede arrancar sin ellas, pero las técnicas
+o acciones asociadas no estarán disponibles. El paquete conserva
+`/var/lib/lanctl` y `/etc/lanctl` incluso durante un purge; eliminarlos requiere
+una acción explícita del administrador.
 
 ## Datos, actualización y rollback
 
