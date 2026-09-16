@@ -20,6 +20,8 @@ proyectos VLF, plugins LCP y el catálogo de documentación.
 - Migración segura a documentos JSON versionados para automatización, monitorización y
   perfiles Cisco, conservando compatibilidad con datos anteriores.
 - Lectura de teclas POSIX más robusta ante secuencias fragmentadas y teclas de función.
+- Presentación homogénea de los nombres de grupos en mayúsculas y confirmaciones del TUI
+  visibles incluso con el panel CLI configurado a su altura mínima.
 
 Los binarios publicados son autocontenidos y no requieren Python.
 

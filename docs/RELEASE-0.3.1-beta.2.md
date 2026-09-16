@@ -14,6 +14,8 @@ GitHub Release con los instaladores originales.
   olvido, con alcance global o DHCP.
 - Documentos internos JSON versionados y migración de formatos anteriores.
 - Mejor reconocimiento de flechas y teclas de función en terminales POSIX.
+- Nombres de grupos normalizados visualmente en mayúsculas y mensajes de confirmación
+  conservados junto al prompt incluso con el panel CLI a su altura mínima.
 
 ## Estado de publicación
 

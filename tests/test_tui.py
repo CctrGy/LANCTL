@@ -1104,7 +1104,7 @@ class TuiTests(unittest.TestCase):
                 cnf="O",
                 alias="SW",
                 name="Switch",
-                groups=["INFRAESTRUCTURA"],
+                groups=["Infraestructura"],
                 description="-",
                 discovery_methods=["ICMP", "ARP"],
                 last_discovery="ICMP+ARP",
@@ -1389,6 +1389,48 @@ class TuiTests(unittest.TestCase):
         self.assertIn("LANCTL[-]> list", lines[1])
         self.assertEqual(tui.renderer.render_screen.call_args.kwargs["cursor_row"], 2)
         self.assertTrue(any("ListElement" in line for line in lines[2:]))
+
+    def test_cli_bottom_keeps_ctrl_s_confirmation_visible_next_to_prompt(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.modal = None
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.list_filter = ("all", "")
+        tui.devices = []
+        tui.index = 0
+        tui.history_events = []
+        tui.history_index = 0
+        tui.command_history = []
+        tui.command_history_index = 0
+        tui.output_focus = False
+        tui.output_selectable = []
+        tui.output_index = 0
+        tui.output_scroll = 0
+        tui.command_suggestions = []
+        tui.suggestion_index = -1
+        tui.messages = ["Proyecto guardado correctamente: Casa.vlf."]
+        tui.secret_prompt = ""
+        tui.scanning = False
+        tui.pending_confirmation = None
+        tui.spinner_index = 0
+        tui.command = ""
+        tui.cursor = 0
+        tui.panel_layout = "cli.bottom"
+        tui.cli_height_percent = 15
+        tui.footer_buttons = []
+        tui.key_bindings = {}
+        tui.renderer = Mock()
+        tui.screen = io.StringIO()
+        tui._dimensions = lambda: (100, 12)
+        tui._status_lines = lambda _width: ["estado uno", "estado dos", "estado tres"]
+        tui._inventory_lines = lambda _width, height: ["INVENTARIO"] * (height + 2)
+
+        tui.render()
+
+        lines = tui.renderer.render_screen.call_args.args[0]
+        self.assertIn("Proyecto guardado correctamente", lines[-3])
+        self.assertIn("LANCTL[-]>", lines[-2])
+        self.assertEqual(tui.renderer.render_screen.call_args.kwargs["cursor_row"], 11)
 
     def test_group_add_and_remove_inherit_selected_tui_element(self):
         mac = "02:00:3F:00:51:0C"

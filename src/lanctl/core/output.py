@@ -255,7 +255,8 @@ def _display_value(row: Mapping[str, object], key: str) -> str:
     if key == "responseMs":
         return "-" if value in (None, "") else f"{float(value):.1f}"
     if key in ("GROUP", "protocols", "discoveryMethods") and isinstance(value, list):
-        return ",".join(str(item) for item in value) or "-"
+        items = (str(item).upper() for item in value) if key == "GROUP" else map(str, value)
+        return ",".join(items) or "-"
     if key == "cnf":
         if isinstance(value, bool):
             return "O" if value else "X"

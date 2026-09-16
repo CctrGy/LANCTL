@@ -137,7 +137,7 @@ class OutputTests(unittest.TestCase):
                     "ALIAS": "GATEWAY",
                     "MAC": "80:23:95:AF:65:1B",
                     "NAME": "fritz.box",
-                    "GROUP": ["BASIC"],
+                    "GROUP": ["Basic"],
                     "description": "Puerta de enlace de la red",
                 }
             ],
@@ -147,6 +147,8 @@ class OutputTests(unittest.TestCase):
             rendered.splitlines()[1].split("  "),
             ["-" * 13, "-" * 3, "-" * 13, "-" * 19, "-" * 17, "-" * 12, "-" * 42],
         )
+        self.assertIn("BASIC", rendered)
+        self.assertNotIn("Basic", rendered)
 
     def test_dhcp_range_is_delimited_with_table_separators(self):
         rendered = render_records(

@@ -365,7 +365,7 @@ class LanctlTui:
                 "ALIAS": device.alias or "-",
                 "MAC": device.mac or "-",
                 "NAME": device.name or "-",
-                "GROUP": ",".join(device.groups) or "-",
+                "GROUP": ",".join(str(group).upper() for group in device.groups) or "-",
                 "description": device.description or "-",
                 "discoveryMethods": "+".join(device.discovery_methods)
                 or device.last_discovery
@@ -559,9 +559,13 @@ class LanctlTui:
         prompt_text = fit_text(f"{prompt_prefix}{prompt_value}", width)
         prompt_line = f"{Fore.LIGHTGREEN_EX}{prompt_text}{RESET}"
         status_lines = [_fit_ansi(line, width) for line in self._status_lines(width)]
-        message_rows = max(0, cli_rows - len(status_lines) - 2)
+        # Título/separador y prompt consumen dos filas del bloque CLI. Incluso
+        # en la altura mínima se reserva otra fila para el resultado de teclas
+        # como Ctrl+S; las estadísticas ceden espacio antes que ocultarlo.
+        status_lines = status_lines[: max(0, cli_rows - 3)]
+        message_rows = max(1, cli_rows - len(status_lines) - 2)
         messages = self._message_lines(width, message_rows)
-        messages.extend([""] * max(0, message_rows - len(messages)))
+        message_padding = [""] * max(0, message_rows - len(messages))
         inventory_height = max(1, list_rows - 3)
         inventory = (
             self._history_lines(width, inventory_height + 2)
@@ -583,6 +587,7 @@ class LanctlTui:
                 f"{Style.BRIGHT}{Fore.CYAN}{fit_text(cli_title, width)}{RESET}",
                 prompt_line,
                 *messages,
+                *message_padding,
                 *status_lines,
                 f"{Style.BRIGHT}{Fore.CYAN}{fit_text(list_separator, width)}{RESET}",
                 *inventory,
@@ -600,6 +605,7 @@ class LanctlTui:
                 *inventory,
                 f"{Fore.CYAN} {CLI_PANEL} {'─' * max(0, width - len(CLI_PANEL) - 2)}{RESET}",
                 *status_lines,
+                *message_padding,
                 *messages,
                 prompt_line,
             ]
