@@ -117,6 +117,26 @@ class CiscoCommandLayerTests(unittest.TestCase):
             profile = load_profile("custom", path)
             self.assertEqual(profile.resolve_port("NAS").native, "GigabitEthernet1/7")
 
+    def test_versioned_external_profile_document_is_supported(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "profiles.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "documentType": "lanctl.cisco-profiles",
+                        "profiles": [
+                            {
+                                "id": "custom",
+                                "ports": [{"id": "p1", "native": "gi1/0/1"}],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(load_profile("custom", path).resolve_port("p1").native, "gi1/0/1")
+
     def test_device_label_overlays_profile_without_changing_native_name(self):
         self.device.protocol_options["cisco-cli"] = {
             "profile": "cisco-s300-24",

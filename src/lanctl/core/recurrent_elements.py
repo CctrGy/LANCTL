@@ -33,9 +33,15 @@ class RecurrentElementDatabase:
             raise ValueError(
                 f"la base de elementos recurrentes no está codificada como UTF-8: {path}"
             ) from error
+        if isinstance(value, dict):
+            if int(value.get("schemaVersion", 0) or 0) != 1:
+                raise ValueError(f"versión de elementos recurrentes no compatible: {path}")
+            value = value.get("elements")
         if not isinstance(value, list):
             # Es contenido externo inválido, no un uso incorrecto de la API.
-            raise ValueError(f"la base de elementos recurrentes debe contener una lista: {path}")
+            raise ValueError(
+                f"la base de elementos recurrentes debe contener una sección elements: {path}"
+            )
 
         devices: list[Device] = []
         seen: set[str] = set()

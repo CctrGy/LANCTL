@@ -20,8 +20,8 @@ from lanctl.apps.ip.interfaces.tui.main import (
     _clean_tui_output,
     _compact_timestamp,
     _device_key,
+    _device_user_labels,
     _dhcp_boundary_indexes,
-    _expand_tui_widths,
     _fit_ansi,
     _function_bar,
     _help_command_entries,
@@ -39,6 +39,20 @@ from lanctl.apps.ip.interfaces.tui.modal import HelpCommand, ModalState, Setting
 
 
 class TuiTests(unittest.TestCase):
+    def test_users_column_describes_credential_accesses_not_device_capabilities(self):
+        device = SimpleNamespace(
+            protocols=["ssh", "https"],
+            credentials={"ssh": "cred_admin", "tr-064": "cred_router"},
+        )
+        self.assertEqual(
+            _device_user_labels(
+                device,
+                {"cred_admin": "admin", "cred_router": "operator"},
+            ),
+            "admin@ssh,operator@tr-064",
+        )
+        self.assertEqual(_device_user_labels(device, {}), "?@ssh,?@tr-064")
+
     def test_text_and_secret_dialogs_use_platform_independent_semantic_keys(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.secret_prompt = ""
@@ -366,6 +380,8 @@ class TuiTests(unittest.TestCase):
             tui.modal.tabs,
             [
                 "GENERAL",
+                "APARIENCIA",
+                "COLUMNAS",
                 "RED",
                 "ESCANEO",
                 "PROYECTOS",
@@ -399,9 +415,9 @@ class TuiTests(unittest.TestCase):
         tui.modal.tab_index = 0
 
         tui._handle_settings_key(tui.modal, "RIGHT")
-        self.assertEqual(tui.modal.tabs[tui.modal.tab_index], "RED")
+        self.assertEqual(tui.modal.tabs[tui.modal.tab_index], "APARIENCIA")
         selected = tui.modal.items[tui.modal.selected]
-        self.assertEqual(selected.section, "RED")
+        self.assertEqual(selected.section, "APARIENCIA")
         first_key = selected.key
         tui._handle_settings_key(tui.modal, "DOWN")
         self.assertNotEqual(tui.modal.items[tui.modal.selected].key, first_key)
@@ -939,6 +955,71 @@ class TuiTests(unittest.TestCase):
         with patch("select.select", return_value=([stream], [], [])):
             self.assertEqual(read_posix_key(stream), "F12")
 
+    def test_posix_fragmented_arrow_waits_for_complete_sequence(self):
+        class FragmentedInput:
+            def __init__(self, delay):
+                self.clock = 0.0
+                self.events = [(0.0, "\x1b"), (delay, "["), (delay, "B")]
+
+            def read(self, _size):
+                return self.events.pop(0)[1]
+
+            def select(self, streams, _write, _errors, timeout):
+                if self.events and self.events[0][0] <= self.clock + timeout:
+                    self.clock = max(self.clock, self.events[0][0])
+                    return streams, [], []
+                self.clock += timeout
+                return [], [], []
+
+        for delay in (0.03, 0.05, 0.08):
+            with self.subTest(delay=delay):
+                stream = FragmentedInput(delay)
+                with (
+                    patch("select.select", side_effect=stream.select),
+                    patch("time.monotonic", side_effect=lambda: stream.clock),
+                ):
+                    self.assertEqual(read_posix_key(stream), "DOWN")
+
+    def test_posix_ss3_arrows_and_all_function_keys_are_decoded(self):
+        sequences = {
+            "OA": "UP",
+            "OB": "DOWN",
+            "OC": "RIGHT",
+            "OD": "LEFT",
+            "OP": "F1",
+            "OQ": "F2",
+            "OR": "F3",
+            "OS": "F4",
+            "[15~": "F5",
+            "[17~": "F6",
+            "[18~": "F7",
+            "[19~": "F8",
+            "[20~": "F9",
+            "[21~": "F10",
+            "[23~": "F11",
+            "[24~": "F12",
+        }
+        for sequence, expected in sequences.items():
+            with self.subTest(sequence=sequence):
+                stream = io.StringIO("\x1b" + sequence)
+                with patch("select.select", return_value=([stream], [], [])):
+                    self.assertEqual(read_posix_key(stream), expected)
+
+    def test_posix_standalone_escape_waits_until_deadline(self):
+        stream = io.StringIO("\x1b")
+        clock = [0.0]
+
+        def unavailable(_read, _write, _errors, timeout):
+            clock[0] += timeout
+            return [], [], []
+
+        with (
+            patch("select.select", side_effect=unavailable),
+            patch("time.monotonic", side_effect=lambda: clock[0]),
+        ):
+            self.assertEqual(read_posix_key(stream), "ESC")
+        self.assertAlmostEqual(clock[0], 0.15)
+
     def test_element_help_suggestions_take_vertical_focus_from_inventory(self):
         tui = object.__new__(LanctlTui)
         tui.command = ""
@@ -1047,7 +1128,9 @@ class TuiTests(unittest.TestCase):
         self.assertNotIn("DETECTION", header)
         self.assertNotIn("LAST SEEN", header)
         self.assertIn("GROUP", header)
-        self.assertIn("INFRAESTR", Text.from_ansi(lines[2]).plain)
+        self.assertIn("USERS", header)
+        self.assertNotIn("PROTOCOLS", header)
+        self.assertIn("INFRAESTRUCTURA", Text.from_ansi(lines[2]).plain)
 
     def test_typing_after_suggestion_returns_arrows_to_cursor_control(self):
         tui = object.__new__(LanctlTui)
@@ -1265,11 +1348,47 @@ class TuiTests(unittest.TestCase):
             ["\\", "|", "/", "-", "\\", "|", "/", "-"],
         )
 
-    def test_inventory_expands_columns_to_available_width(self):
-        fields = ("IP", "description", "manufacturer")
-        widths = {"IP": 15, "description": 42, "manufacturer": 18}
-        _expand_tui_widths(widths, fields, available=100, gap=2)
-        self.assertEqual(sum(widths.values()) + 4, 100)
+    def test_cli_top_places_prompt_on_second_terminal_row(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.modal = None
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.list_filter = ("all", "")
+        tui.devices = []
+        tui.index = 0
+        tui.history_events = []
+        tui.history_index = 0
+        tui.command_history = []
+        tui.command_history_index = 0
+        tui.output_focus = False
+        tui.output_selectable = []
+        tui.output_index = 0
+        tui.output_scroll = 0
+        tui.command_suggestions = []
+        tui.suggestion_index = -1
+        tui.messages = ["salida del comando"]
+        tui.secret_prompt = ""
+        tui.scanning = False
+        tui.pending_confirmation = None
+        tui.spinner_index = 0
+        tui.command = "list"
+        tui.cursor = 4
+        tui.panel_layout = "cli.top"
+        tui.cli_height_percent = 30
+        tui.footer_buttons = []
+        tui.key_bindings = {}
+        tui.renderer = Mock()
+        tui.screen = io.StringIO()
+        tui._dimensions = lambda: (100, 30)
+        tui._status_lines = lambda _width: []
+        tui._inventory_lines = lambda _width, height: ["INVENTARIO"] * (height + 2)
+
+        tui.render()
+
+        lines = tui.renderer.render_screen.call_args.args[0]
+        self.assertIn("LANCTL[-]> list", lines[1])
+        self.assertEqual(tui.renderer.render_screen.call_args.kwargs["cursor_row"], 2)
+        self.assertTrue(any("ListElement" in line for line in lines[2:]))
 
     def test_group_add_and_remove_inherit_selected_tui_element(self):
         mac = "02:00:3F:00:51:0C"

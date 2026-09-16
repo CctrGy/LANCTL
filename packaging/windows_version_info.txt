@@ -15,13 +15,13 @@ VSVersionInfo(
         u'040904B0',
         [
           StringStruct(u'CompanyName', u'LANCTL Project'),
-          StringStruct(u'FileDescription', u'LANCTL - LAN Control 0.3.1 Beta 1'),
-          StringStruct(u'FileVersion', u'0.3.1.1'),
+          StringStruct(u'FileDescription', u'LANCTL - LAN Control 0.3.1 Beta 2'),
+          StringStruct(u'FileVersion', u'0.3.1.2'),
           StringStruct(u'InternalName', u'LANCTL'),
           StringStruct(u'LegalCopyright', u'Copyright © 2026 Victor'),
           StringStruct(u'OriginalFilename', u'LANCTL.exe'),
           StringStruct(u'ProductName', u'LANCTL'),
-          StringStruct(u'ProductVersion', u'0.3.1-beta.1')
+          StringStruct(u'ProductVersion', u'0.3.1-beta.2')
         ]
       )
     ]),

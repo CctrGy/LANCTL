@@ -4,7 +4,14 @@ from rich.text import Text
 
 from lanctl.apps.ip.interfaces.tui.controllers import ManagerController, SettingsEditor
 from lanctl.apps.ip.interfaces.tui.keyboard import KEY_BINDINGS, read_windows_key
-from lanctl.apps.ip.interfaces.tui.layout import adaptive_layout
+from lanctl.apps.ip.interfaces.tui.layout import (
+    adaptive_layout,
+    allocate_column_widths,
+    normalize_cli_percent,
+    normalize_column_specs,
+    normalize_panel_layout,
+    panel_rows,
+)
 from lanctl.apps.ip.interfaces.tui.modal import ModalState, SettingField
 from lanctl.apps.ip.interfaces.tui.render import RichTuiRenderer
 
@@ -24,6 +31,42 @@ def test_adaptive_layout_snapshots() -> None:
             layout.modal_height,
             layout.body_rows,
         ) == expected
+
+
+def test_panel_layout_and_vertical_proportion_are_bounded() -> None:
+    assert normalize_panel_layout("cli_arriba") == "cli.top"
+    assert normalize_panel_layout("cli_abajo") == "cli.bottom"
+    assert panel_rows(60, 30) == (41, 18)
+    assert normalize_cli_percent("15%") == 15
+
+
+def test_column_allocator_keeps_ip_and_mac_fixed_and_fills_available_width() -> None:
+    fields = ("IP", "responseMs", "cnf", "ALIAS", "MAC", "NAME", "GROUP", "description")
+    widths = allocate_column_widths(
+        fields,
+        available=158,
+        gap=2,
+        specs={"GROUP": "20%", "description": "25%"},
+    )
+    assert widths["IP"] == 15
+    assert widths["MAC"] == 17
+    assert widths["GROUP"] >= 5
+    assert sum(widths.values()) + 2 * (len(fields) - 1) == 158
+
+
+def test_fixed_columns_reject_percentage_customization() -> None:
+    try:
+        normalize_column_specs({"IP": "20%"})
+    except ValueError as error:
+        assert "15ch" in str(error)
+    else:
+        raise AssertionError("IP no debe aceptar una anchura porcentual")
+
+
+def test_legacy_protocol_column_weight_migrates_to_users() -> None:
+    specs = normalize_column_specs({"protocols": "14%"})
+    assert specs["users"] == "14%"
+    assert "protocols" not in specs
 
 
 def test_screen_snapshot_pads_every_row_and_erases_adjacent_residue() -> None:

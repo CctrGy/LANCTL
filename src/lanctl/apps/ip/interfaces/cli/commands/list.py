@@ -17,6 +17,7 @@ from lanctl.apps.ip.interfaces.cli.commands.recurrent import run_recurrent
 from lanctl.core.config import load_config
 from lanctl.core.console import ok
 from lanctl.core.database import DeviceDatabase
+from lanctl.core.device_retention import apply_retention, with_session_devices
 from lanctl.core.group_database import GroupDatabase
 from lanctl.core.output import write_records
 from lanctl.core.progress import ScanProgress
@@ -199,6 +200,9 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
         progress=bool(config.get("progress", True)),
         configured_profile=config.get("scanProfile", "normal"),
         configured_discovery=config.get("discovery", "hybrid"),
+        disconnected_retention=config.get("disconnectedRetention", "permanent"),
+        disconnected_retention_target=config.get("disconnectedRetentionTarget", "unconfirmed"),
+        disconnected_retention_scope=config.get("disconnectedRetentionScope", "all"),
     )
 
 
@@ -281,7 +285,7 @@ def run_list(args: argparse.Namespace) -> int:
     groups_path = (
         str(lab_repository.root / "inventory" / "groups.json") if lab_active else args.groups
     )
-    registered_devices = database.load()
+    registered_devices = with_session_devices(database.path, database.load())
     registered_total = len(registered_devices)
     registered_identities = {}
     for index, device in enumerate(registered_devices):
@@ -330,11 +334,22 @@ def run_list(args: argparse.Namespace) -> int:
             record.last_discovery = "+".join(confirmed_methods)
             record.last_seen = seen_at
 
-    devices = database.upsert(records)
-    GroupDatabase(groups_path, database).ensure_basic(devices)
+    devices = database.preview(records, _devices=registered_devices)
+    activity = active_flags(devices, records, scanner)
+    retention = apply_retention(
+        database.path,
+        devices,
+        activity,
+        mode=args.disconnected_retention,
+        target=args.disconnected_retention_target,
+        scope=args.disconnected_retention_scope,
+        dhcp_range=args.dhcp_range,
+    )
+    database.save_devices(retention.persistent)
+    GroupDatabase(groups_path, database).ensure_basic(retention.persistent)
     # El ajuste de grupos básicos puede reescribir la base; se vuelve a cargar
     # el resultado antes de filtrar y presentar el inventario.
-    devices = database.load()
+    devices = with_session_devices(database.path, database.load())
     from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
 
     save_active_project(SaveTrigger.SCAN)

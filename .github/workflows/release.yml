@@ -8,7 +8,7 @@ on:
       version:
         description: Version without v prefix
         required: true
-        default: 0.3.1-beta.1
+        default: 0.3.1-beta.2
 
 permissions:
   contents: read
@@ -53,6 +53,8 @@ jobs:
           # Se regenera para que una diferencia de plataforma quede visible en el log.
           python tools/generate_cli_reference.py
           git diff --exit-code -- docs/CLI-REFERENCE.md
+      - name: Web reference gate
+        run: python tools/generate_web_reference.py --check
       - name: Security source gate
         run: python -m bandit -q -r src -ll -s B104
       - name: Dependency vulnerability gate

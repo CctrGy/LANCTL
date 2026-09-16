@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Referencia completa de launchers, comandos, proyectos, plugins y formatos de LANCTL.">
+  <title>LANCTL Reference</title>
+  <link rel="stylesheet" href="assets/reference.css">
+</head>
+<body>
+  <a class="skip-link" href="#catalog">Saltar al catálogo</a>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Inicio de LANCTL Reference">
+      <img src="../assets/lanctl-icon-v3.png" alt="" width="44" height="44">
+      <span><strong>LANCTL</strong><small>REFERENCE</small></span>
+    </a>
+    <nav aria-label="Navegación principal">
+      <a href="#catalog">Referencia</a>
+      <a href="../README.md">Guía</a>
+      <a href="../docs/CLI-REFERENCE.md">CLI</a>
+      <a href="https://github.com/CctrGy/LANCTL">GitHub</a>
+    </nav>
+    <span id="version" class="version"></span>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">DOCUMENTACIÓN TÉCNICA</p>
+      <h1 id="page-title">LANCTL Reference</h1>
+      <p>Encuentra cada launcher, comando, grupo, proyecto, plugin y documento de la suite.</p>
+      <label class="search-box">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <span class="sr-only">Buscar en la referencia</span>
+        <input id="search" type="search" placeholder="Filtrar por nombre, categoría, opción o descripción…" autocomplete="off">
+        <kbd>/</kbd>
+      </label>
+    </section>
+
+    <section class="shortcuts" aria-labelledby="shortcut-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">ACCESOS RÁPIDOS</p><h2 id="shortcut-title">Explorar por categoría</h2></div>
+        <span id="result-count" aria-live="polite"></span>
+      </div>
+      <div id="category-list" class="category-list"></div>
+    </section>
+
+    <section id="catalog" class="catalog" aria-labelledby="catalog-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">ÍNDICE</p><h2 id="catalog-title">Referencia completa</h2></div>
+        <button id="clear-filters" class="text-button" type="button">Mostrar todo</button>
+      </div>
+      <div id="active-filter" class="active-filter" hidden></div>
+      <div id="entries"></div>
+      <div id="empty-state" class="empty-state" hidden>
+        <strong>No hay coincidencias.</strong>
+        <span>Prueba con otro comando, opción o categoría.</span>
+      </div>
+    </section>
+  </main>
+
+  <aside id="detail" class="detail" aria-hidden="true" aria-labelledby="detail-title">
+    <button id="close-detail" class="close-button" type="button" aria-label="Cerrar detalle">×</button>
+    <div id="detail-content"></div>
+  </aside>
+  <div id="backdrop" class="backdrop" hidden></div>
+
+  <footer>
+    <span>LANCTL Reference · Generada desde el código del proyecto</span>
+    <a href="https://github.com/CctrGy/LANCTL/issues">Informar de un error</a>
+  </footer>
+
+  <script src="catalog.js"></script>
+  <script src="assets/reference.js"></script>
+</body>
+</html>

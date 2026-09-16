@@ -9,6 +9,23 @@ from lanctl.core.recurrent_elements import RecurrentElementDatabase
 
 
 class RecurrentElementDatabaseTests(unittest.TestCase):
+    def test_versioned_catalog_document_is_supported(self):
+        with tempfile.TemporaryDirectory() as directory:
+            resource = Path(directory) / "recurrent.json"
+            resource.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "documentType": "lanctl.recurrent-elements",
+                        "elements": [{"MAC": "5E:8C:B3:08:05:D4", "NAME": "Movil"}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with patch("lanctl.core.recurrent_elements.application_path", return_value=resource):
+                device = RecurrentElementDatabase().load()[0]
+        self.assertEqual(device.name, "Movil")
+
     def test_catalog_index_is_reused_after_first_load(self):
         with tempfile.TemporaryDirectory() as directory:
             resource = Path(directory) / "recurrent.json"

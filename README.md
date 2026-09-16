@@ -3,8 +3,23 @@
 Suite CLI/TUI para descubrir, inventariar, diagnosticar y administrar
 infraestructuras LAN desde Windows, Linux y Raspberry Pi OS.
 
-> Versión actual: **0.3.1-beta.1**. Es una beta: conserva copias de seguridad
+La [LANCTL Reference](reference/index.html) ofrece un índice web con búsqueda,
+sintaxis, opciones y ejemplos de todos los launchers y comandos, además de
+proyectos VLF, plugins LCP y el catálogo de documentación.
+
+> Versión actual: **0.3.1-beta.2**. Es una beta: conserva copias de seguridad
 > de los proyectos y no la utilices como única fuente de inventario.
+
+### Cambios de 0.3.1-beta.2
+
+- Nueva LANCTL Reference, generada desde los parsers y documentos reales del proyecto.
+- Diseño configurable del TUI: posición y altura del panel CLI y anchuras de columnas.
+- La columna `USERS` relaciona credenciales y protocolos sin mostrar secretos.
+- Políticas configurables para conservar, ocultar durante la sesión u olvidar dispositivos
+  desconectados, con protección de `GATEWAY` y `BRODCAST`.
+- Migración segura a documentos JSON versionados para automatización, monitorización y
+  perfiles Cisco, conservando compatibilidad con datos anteriores.
+- Lectura de teclas POSIX más robusta ante secuencias fragmentadas y teclas de función.
 
 Los binarios publicados son autocontenidos y no requieren Python.
 
@@ -297,11 +312,11 @@ ignora vulnerabilidades conocidas.
 ## Compilación
 
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.1-beta.1
+.\scripts\build-windows.ps1 -Version 0.3.1-beta.2
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.1-beta.1
+./scripts/build-linux.sh 0.3.1-beta.2
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.

@@ -34,7 +34,16 @@ from lanctl.apps.ip.interfaces.tui.keyboard import (
     read_posix_key,
 )
 from lanctl.apps.ip.interfaces.tui.keyboard import read_windows_key as _read_windows_key
-from lanctl.apps.ip.interfaces.tui.layout import adaptive_layout
+from lanctl.apps.ip.interfaces.tui.layout import (
+    DEFAULT_COLUMN_SPECS,
+    adaptive_layout,
+    allocate_column_widths,
+    minimum_terminal_width,
+    normalize_cli_percent,
+    normalize_column_specs,
+    normalize_panel_layout,
+    panel_rows,
+)
 from lanctl.apps.ip.interfaces.tui.managers import (
     plugin_detail as _plugin_detail,
 )
@@ -49,7 +58,7 @@ from lanctl.apps.ip.interfaces.tui.modal import HelpCommand, ModalState, Setting
 from lanctl.apps.ip.interfaces.tui.render import RichTuiRenderer
 from lanctl.core.config import load_config
 from lanctl.core.database import DeviceDatabase
-from lanctl.core.layout import fit_text, shrink_widths, terminal_columns, terminal_rows
+from lanctl.core.layout import fit_text, terminal_columns, terminal_rows
 from lanctl.core.output import (
     CNF_COLORS,
     DARK_CNF_COLORS,
@@ -173,6 +182,10 @@ class LanctlTui:
         self.startup_modal = startup_modal.casefold() if startup_modal else None
         self.key_bindings = normalize_key_bindings(config.get("tuiKeyBindings"))
         self.footer_buttons = normalize_footer_actions(config.get("tuiFooterButtons"))
+        self.panel_layout = normalize_panel_layout(config.get("tuiPanelLayout", "cli.bottom"))
+        self.cli_height_percent = normalize_cli_percent(config.get("tuiCliHeightPercent", 28))
+        self.column_widths = normalize_column_specs(config.get("tuiColumnWidths"))
+        self.credential_users = _credential_user_map(config)
         self.remote_actions = queue.Queue()
         self.scan_events = queue.Queue()
         self._scan_cancel = threading.Event()
@@ -194,7 +207,13 @@ class LanctlTui:
         self.dhcp_range = config.get("dhcpRange")
         self.key_bindings = normalize_key_bindings(config.get("tuiKeyBindings"))
         self.footer_buttons = normalize_footer_actions(config.get("tuiFooterButtons"))
-        self.all_devices = self.database.load()
+        self.panel_layout = normalize_panel_layout(config.get("tuiPanelLayout", "cli.bottom"))
+        self.cli_height_percent = normalize_cli_percent(config.get("tuiCliHeightPercent", 28))
+        self.column_widths = normalize_column_specs(config.get("tuiColumnWidths"))
+        self.credential_users = _credential_user_map(config)
+        from lanctl.core.device_retention import with_session_devices
+
+        self.all_devices = with_session_devices(self.database.path, self.database.load())
         self.devices = self._filtered_devices()
         if identity:
             self.index = next(
@@ -282,7 +301,22 @@ class LanctlTui:
         if width >= 170:
             fields.append("manufacturer")
         if width >= 205:
-            fields.append("protocols")
+            fields.append("users")
+        gap = 1 if width < 100 else 2
+        for optional in (
+            "users",
+            "manufacturer",
+            "description",
+            "GROUP",
+            "NAME",
+            "ALIAS",
+            "responseMs",
+            "cnf",
+        ):
+            if minimum_terminal_width(fields, gap) <= width:
+                break
+            if optional in fields:
+                fields.remove(optional)
         fields = tuple(fields)
         labels = {
             "IP": "IP",
@@ -294,73 +328,14 @@ class LanctlTui:
             "GROUP": "GROUP",
             "description": "DESCRIPTION",
             "manufacturer": "MANUFACTURER",
-            "protocols": "PROTOCOLS",
+            "users": "USERS",
         }
-        widths = {
-            "IP": 15,
-            "responseMs": 6,
-            "cnf": 3,
-            "ALIAS": 13,
-            "MAC": 17,
-            "NAME": 15,
-            "GROUP": 12,
-            "description": 42,
-            "manufacturer": 18,
-            "protocols": 12,
-        }
-        widths = {field: widths[field] for field in fields}
-        gap = 1 if width < 100 else 2
-        widths, too_narrow = shrink_widths(
-            widths,
-            {
-                "IP": 7,
-                "responseMs": 4,
-                "cnf": 3,
-                "ALIAS": 4,
-                "MAC": 8,
-                "NAME": 4,
-                "GROUP": 4,
-                "description": 4,
-                "manufacturer": 8,
-                "protocols": 7,
-            },
+        widths = allocate_column_widths(
             fields,
             max(20, width - 2),
-            (
-                "description",
-                "manufacturer",
-                "NAME",
-                "ALIAS",
-                "GROUP",
-                "protocols",
-                "MAC",
-                "IP",
-                "responseMs",
-            ),
-            gap=gap,
+            gap,
+            getattr(self, "column_widths", DEFAULT_COLUMN_SPECS),
         )
-        if too_narrow:
-            gap = 1
-            widths, _ = shrink_widths(
-                widths,
-                {field: 1 for field in fields},
-                fields,
-                max(20, width - 2),
-                (
-                    "description",
-                    "manufacturer",
-                    "protocols",
-                    "NAME",
-                    "ALIAS",
-                    "GROUP",
-                    "MAC",
-                    "IP",
-                    "responseMs",
-                    "cnf",
-                ),
-                gap=gap,
-            )
-        _expand_tui_widths(widths, fields, width - 2, gap)
 
         def header_cell(field: str) -> str:
             value = fit_text(labels[field], widths[field])
@@ -397,7 +372,10 @@ class LanctlTui:
                 or "-",
                 "lastSeen": _compact_timestamp(device.last_seen),
                 "manufacturer": device.manufacturer or "-",
-                "protocols": ",".join(device.protocols) or "-",
+                "users": _device_user_labels(
+                    device,
+                    getattr(self, "credential_users", {}),
+                ),
             }
 
             marker = f"{Style.BRIGHT}{Fore.WHITE}{'▶' if selected else ' '}{RESET} "
@@ -495,6 +473,51 @@ class LanctlTui:
             ),
         ]
 
+    def _message_lines(self, width: int, rows: int) -> list[str]:
+        if rows <= 0:
+            return []
+        if self.output_focus and self.output_selectable:
+            selected_line = self.output_selectable[self.output_index]
+            if selected_line < self.output_scroll:
+                self.output_scroll = selected_line
+            elif selected_line >= self.output_scroll + rows:
+                self.output_scroll = selected_line - rows + 1
+            visible = self.messages[self.output_scroll : self.output_scroll + rows]
+            rendered = []
+            for offset, message in enumerate(visible):
+                absolute = self.output_scroll + offset
+                selected = absolute == selected_line
+                marker = "▶ " if selected else "  "
+                background = Back.LIGHTBLACK_EX if selected else ""
+                intensity = Style.BRIGHT if selected else ""
+                rendered.append(
+                    f"{background}{intensity}{Fore.WHITE}{fit_text(marker + message, width)}{RESET}"
+                )
+            return rendered
+        if self.command_suggestions:
+            selected_line = (
+                self.command_suggestions[self.suggestion_index][0]
+                if self.suggestion_index >= 0
+                else -1
+            )
+            start = max(0, selected_line - rows + 1) if selected_line >= rows else 0
+            start = min(start, max(0, len(self.messages) - rows))
+            rendered = []
+            for absolute in range(start, min(len(self.messages), start + rows)):
+                message = self.messages[absolute]
+                selected = absolute == selected_line
+                marker = "▶ " if selected else "  "
+                background = Back.LIGHTBLACK_EX if selected else ""
+                intensity = Style.BRIGHT if selected else ""
+                rendered.append(
+                    f"{background}{intensity}{Fore.WHITE}{fit_text(marker + message, width)}{RESET}"
+                )
+            return rendered[-rows:]
+        wrapped: list[str] = []
+        for message in self.messages[-max(12, rows) :]:
+            wrapped.extend(textwrap.wrap(message, width=max(1, width - 2)) or [""])
+        return [f" {fit_text(message, width - 1)}" for message in wrapped[-rows:]]
+
     def render(self) -> None:
         width, height = self._dimensions()
         width = max(20, width)
@@ -504,13 +527,11 @@ class LanctlTui:
         if self.detail_lines:
             self._render_detail(width, height)
             return
-        compact = height < 20 or width < 70
-        message_rows = 12 if not compact else 7
-        # Además del título, separador y estado, se reservan exactamente las
-        # dos filas finales para el prompt y la barra de teclas. Con el panel
-        # de ayuda lleno, una fila menos hacía que el prompt quedara debajo de
-        # la posición ANSI calculada para el cursor.
-        list_height = max(3, height - message_rows - 9)
+        list_rows, cli_rows = panel_rows(
+            height,
+            getattr(self, "cli_height_percent", 28),
+        )
+        panel_layout = normalize_panel_layout(getattr(self, "panel_layout", "cli.bottom"))
         title = f" LANCTL TUI {__version__} "
         mode, value = self.list_filter
         filter_name = f"{mode}:{value}" if value else mode
@@ -523,69 +544,6 @@ class LanctlTui:
                 f" {LIST_ELEMENT_PANEL} [{filter_name}] "
                 f"{self.index + 1 if self.devices else 0}/{len(self.devices)} "
             )
-        title_space = max(0, width - len(title) - len(counter))
-        title_content = (
-            f"{title}{'─' * title_space}{counter}"
-            if len(title) + len(counter) <= width
-            else fit_text(f"{title}{counter}", width)
-        )
-        lines = [
-            f"{Style.BRIGHT}{Fore.CYAN}{title_content}{RESET}",
-            *(
-                self._history_lines(width, list_height)
-                if self.view_state == "history"
-                else self._command_history_lines(width, list_height)
-                if self.view_state == "command-history"
-                else self._inventory_lines(width, list_height)
-            ),
-            f"{Fore.CYAN} {CLI_PANEL} {'─' * max(0, width - len(CLI_PANEL) - 2)}{RESET}",
-            *(_fit_ansi(line, width) for line in self._status_lines(width)),
-        ]
-        if self.output_focus and self.output_selectable:
-            selected_line = self.output_selectable[self.output_index]
-            if selected_line < self.output_scroll:
-                self.output_scroll = selected_line
-            elif selected_line >= self.output_scroll + message_rows:
-                self.output_scroll = selected_line - message_rows + 1
-            visible_output = self.messages[self.output_scroll : self.output_scroll + message_rows]
-            for offset, message in enumerate(visible_output):
-                absolute = self.output_scroll + offset
-                selected = absolute == selected_line
-                marker = "▶ " if selected else "  "
-                background = Back.LIGHTBLACK_EX if selected else ""
-                intensity = Style.BRIGHT if selected else ""
-                lines.append(
-                    f"{background}{intensity}{Fore.WHITE}{fit_text(marker + message, width)}{RESET}"
-                )
-        elif self.command_suggestions:
-            selected_line = (
-                self.command_suggestions[self.suggestion_index][0]
-                if self.suggestion_index >= 0
-                else -1
-            )
-            start = 0
-            if selected_line >= message_rows:
-                start = selected_line - message_rows + 1
-            start = min(start, max(0, len(self.messages) - message_rows))
-            wrapped = []
-            for absolute in range(start, min(len(self.messages), start + message_rows)):
-                message = self.messages[absolute]
-                selected = absolute == selected_line
-                marker = "▶ " if selected else "  "
-                background = Back.LIGHTBLACK_EX if selected else ""
-                intensity = Style.BRIGHT if selected else ""
-                wrapped.append(
-                    f"{background}{intensity}{Fore.WHITE}{fit_text(marker + message, width)}{RESET}"
-                )
-            lines.extend(wrapped[-message_rows:])
-        else:
-            wrapped: list[str] = []
-            for message in self.messages[-12:]:
-                wrapped.extend(textwrap.wrap(message, width=max(1, width - 2)) or [""])
-            for message in wrapped[-message_rows:]:
-                lines.append(f" {fit_text(message, width - 1)}")
-        while len(lines) < height - 2:
-            lines.append("")
         secret_prompt = getattr(self, "secret_prompt", "")
         prompt_label = (
             "SECRETO"
@@ -599,12 +557,60 @@ class LanctlTui:
         prompt_prefix = f"LANCTL[{prompt_label}]> "
         prompt_value = secret_prompt if secret_prompt else self.command
         prompt_text = fit_text(f"{prompt_prefix}{prompt_value}", width)
-        lines.append(f"{Fore.LIGHTGREEN_EX}{prompt_text}{RESET}")
+        prompt_line = f"{Fore.LIGHTGREEN_EX}{prompt_text}{RESET}"
+        status_lines = [_fit_ansi(line, width) for line in self._status_lines(width)]
+        message_rows = max(0, cli_rows - len(status_lines) - 2)
+        messages = self._message_lines(width, message_rows)
+        messages.extend([""] * max(0, message_rows - len(messages)))
+        inventory_height = max(1, list_rows - 3)
+        inventory = (
+            self._history_lines(width, inventory_height + 2)
+            if self.view_state == "history"
+            else self._command_history_lines(width, inventory_height + 2)
+            if self.view_state == "command-history"
+            else self._inventory_lines(width, inventory_height)
+        )
+        inventory = list(inventory[: max(0, list_rows - 1)])
+        inventory.extend([""] * max(0, list_rows - 1 - len(inventory)))
+
+        if panel_layout == "cli.top":
+            cli_title = (
+                f"{title}{'─' * max(0, width - len(title) - len(CLI_PANEL) - 2)} {CLI_PANEL} "
+            )
+            list_separator = f" {counter.strip()} "
+            list_separator += "─" * max(0, width - len(list_separator))
+            lines = [
+                f"{Style.BRIGHT}{Fore.CYAN}{fit_text(cli_title, width)}{RESET}",
+                prompt_line,
+                *messages,
+                *status_lines,
+                f"{Style.BRIGHT}{Fore.CYAN}{fit_text(list_separator, width)}{RESET}",
+                *inventory,
+            ]
+            cursor_row = 2
+        else:
+            title_space = max(0, width - len(title) - len(counter))
+            title_content = (
+                f"{title}{'─' * title_space}{counter}"
+                if len(title) + len(counter) <= width
+                else fit_text(f"{title}{counter}", width)
+            )
+            lines = [
+                f"{Style.BRIGHT}{Fore.CYAN}{title_content}{RESET}",
+                *inventory,
+                f"{Fore.CYAN} {CLI_PANEL} {'─' * max(0, width - len(CLI_PANEL) - 2)}{RESET}",
+                *status_lines,
+                *messages,
+                prompt_line,
+            ]
+            cursor_row = height - 1
         keys = _function_bar(
             width,
             getattr(self, "footer_buttons", None),
             getattr(self, "key_bindings", None),
         )
+        lines = lines[: height - 1]
+        lines.extend([""] * max(0, height - 1 - len(lines)))
         lines.append(keys)
         cursor_offset = len(prompt_value) if self.secret_prompt else self.cursor
         cursor_column = min(width, len(prompt_prefix) + cursor_offset + 1)
@@ -614,7 +620,7 @@ class LanctlTui:
             lines,
             width=width,
             height=height,
-            cursor_row=height - 1,
+            cursor_row=cursor_row,
             cursor_column=cursor_column,
         )
 
@@ -814,6 +820,9 @@ class LanctlTui:
                 return ",".join(footer_buttons)
             if key.startswith("tuiFooter."):
                 return "on" if key.removeprefix("tuiFooter.") in footer_buttons else "off"
+            if key.startswith("tuiColumn."):
+                name = key.removeprefix("tuiColumn.")
+                return str(config.get("tuiColumnWidths", DEFAULT_COLUMN_SPECS).get(name, ""))
             value = config.get(key, fallback)
             if isinstance(value, bool):
                 return "on" if value else "off"
@@ -829,6 +838,37 @@ class LanctlTui:
                 "--list-fields",
                 "separadas por comas",
                 "Define qué columnas aparecen en la lista normal y en el inventario del TUI, respetando el orden indicado.",
+            ),
+            (
+                "APARIENCIA",
+                "tuiPanelLayout",
+                "Posición del CLI",
+                "--tui-layout",
+                "cli.top | cli.bottom",
+                "Coloca el prompt y la salida del CLI por encima o por debajo de la ventana ListElement.",
+            ),
+            (
+                "APARIENCIA",
+                "tuiCliHeightPercent",
+                "Proporción del CLI",
+                "--tui-cli-percent",
+                "15-75 %",
+                "Porcentaje vertical reservado al CLI. ListElement siempre conserva como mínimo el 25% de las filas.",
+            ),
+            *tuple(
+                (
+                    "COLUMNAS",
+                    f"tuiColumn.{name}",
+                    name,
+                    "--tui-column",
+                    "caracteres" if name in {"IP", "MAC"} else "peso %",
+                    (
+                        f"Anchura fija de {name}; esta columna conserva todos sus caracteres."
+                        if name in {"IP", "MAC"}
+                        else f"Peso relativo de {name}. LANCTL aplica automáticamente sus límites mínimo y máximo."
+                    ),
+                )
+                for name in DEFAULT_COLUMN_SPECS
             ),
             (
                 "RED",
@@ -909,6 +949,30 @@ class LanctlTui:
                 "--service-identification",
                 "on | off",
                 "Intenta reconocer servicios y protocolos expuestos por los dispositivos encontrados.",
+            ),
+            (
+                "ESCANEO",
+                "disconnectedRetention",
+                "Retención al desconectar",
+                "--disconnected-retention",
+                "permanent | session | forget",
+                "Decide si los elementos ausentes se conservan siempre, solo durante la sesión o se olvidan tras el escaneo.",
+            ),
+            (
+                "ESCANEO",
+                "disconnectedRetentionTarget",
+                "Objetivo de retención",
+                "--disconnected-target",
+                "unconfirmed | all",
+                "Limita la regla a elementos no reconocidos con CNF=X o la aplica a cualquier elemento desconectado.",
+            ),
+            (
+                "ESCANEO",
+                "disconnectedRetentionScope",
+                "Alcance de retención",
+                "--disconnected-scope",
+                "all | dhcp",
+                "Aplica la regla en toda la red o únicamente a direcciones incluidas en el rango DHCP configurado.",
             ),
             (
                 "PROYECTOS",
@@ -1259,12 +1323,16 @@ class LanctlTui:
             "scanOrder": ("ascending", "descending", "random"),
             "progress": ("on", "off"),
             "serviceIdentification": ("on", "off"),
+            "disconnectedRetention": ("permanent", "session", "forget"),
+            "disconnectedRetentionTarget": ("unconfirmed", "all"),
+            "disconnectedRetentionScope": ("all", "dhcp"),
             "projectSaveMode": tuple(item.mode for item in available_save_modes()),
             "logCleanupEnabled": ("on", "off"),
             "remoteAccessEnabled": ("on", "off"),
             "remoteAccessPasswordAuthentication": ("on", "off"),
             "remoteAccessBackend": ("service", "user"),
             "remoteAccessForcedView": ("off", "gui", "tui", "plugins", "projects", "settings"),
+            "tuiPanelLayout": ("cli.bottom", "cli.top"),
         }
         for field in fields:
             field.choices = choices.get(field.key, ())
@@ -1277,6 +1345,8 @@ class LanctlTui:
                 field.choices = ("on", "off")
         tabs = [
             "GENERAL",
+            "APARIENCIA",
+            "COLUMNAS",
             "RED",
             "ESCANEO",
             "PROYECTOS",
@@ -2893,6 +2963,10 @@ class LanctlTui:
                 if field.visible != field.original_visible:
                     argv.extend(("--tui-footer-button", f"{action}={field.visible.casefold()}"))
                 continue
+            if field.key.startswith("tuiColumn."):
+                name = field.key.removeprefix("tuiColumn.")
+                argv.extend((field.option, f"{name}={value}"))
+                continue
             if field.key.startswith("tuiFixed."):
                 action = field.key.removeprefix("tuiFixed.")
                 argv.extend(("--tui-footer-button", f"{action}={field.visible.casefold()}"))
@@ -3025,6 +3099,33 @@ def _is_interactive_terminal(stream) -> bool:
         return bool(stream.isatty())
     except (AttributeError, OSError, ValueError):
         return False
+
+
+def _credential_user_map(config: dict) -> dict[str, str]:
+    """Carga únicamente usuarios seguros; nunca expone contraseñas al TUI."""
+
+    from lanctl.core.credentials import CredentialStore
+
+    try:
+        metadata = CredentialStore(
+            str(config.get("credentials", "data/lc/.credentials"))
+        ).metadata()
+    except (OSError, ValueError):
+        return {}
+    return {
+        str(entry.get("credentialId", "")): str(entry.get("username", "")).strip()
+        for entry in metadata
+        if str(entry.get("credentialId", "")).strip()
+    }
+
+
+def _device_user_labels(device, usernames: dict[str, str]) -> str:
+    credentials = getattr(device, "credentials", {}) or {}
+    labels = [
+        f"{usernames.get(reference) or '?'}@{protocol}"
+        for protocol, reference in credentials.items()
+    ]
+    return ",".join(labels) or "-"
 
 
 def _device_key(mac: str, ip: str) -> str:
@@ -3188,41 +3289,6 @@ def _translate_tui_element(parts: list[str], selected: str) -> list[str]:
     if not values:
         raise ValueError(f"falta el valor para element {parts[option_index]}")
     return ["element", target, action, *values]
-
-
-def _expand_tui_widths(
-    widths: dict[str, int], fields: tuple[str, ...], available: int, gap: int
-) -> None:
-    """Distribuye el ancho sobrante para que el inventario ocupe la ventana."""
-    used = sum(widths.values()) + gap * max(0, len(fields) - 1)
-    surplus = max(0, available - used)
-    limits = {
-        "description": 42,
-        "manufacturer": 26,
-        "lastSeen": 25,
-        "discoveryMethods": 22,
-        "protocols": 18,
-        "NAME": 20,
-        "ALIAS": 18,
-        "GROUP": 12,
-    }
-    for field in (
-        "description",
-        "manufacturer",
-        "discoveryMethods",
-        "lastSeen",
-        "NAME",
-        "ALIAS",
-        "protocols",
-        "GROUP",
-    ):
-        if not surplus or field not in widths:
-            continue
-        growth = min(surplus, max(0, limits[field] - widths[field]))
-        widths[field] += growth
-        surplus -= growth
-    if surplus and "description" in widths:
-        widths["description"] += surplus
 
 
 def _spinner_character(index: int) -> str:

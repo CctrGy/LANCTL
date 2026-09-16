@@ -58,6 +58,20 @@ class DataMigrationTests(unittest.TestCase):
                 config["projects"]["workspace"]["databases"]["devices"],
                 "data/lc/projects/workspaces/default/database/devices.json",
             )
+            expected_documents = {
+                "automation/recurrent-elements.json": "lanctl.recurrent-elements",
+                "automation/wol-sequences.json": "lanctl.wol-sequences",
+                "config/cisco_profiles.json": "lanctl.cisco-profiles",
+                "projects/workspaces/default/monitoring/profiles.json": ("lanctl.monitor-profiles"),
+                "projects/workspaces/default/monitoring/assignments.json": (
+                    "lanctl.monitor-assignments"
+                ),
+            }
+            for relative, document_type in expected_documents.items():
+                with self.subTest(document=relative):
+                    document = json.loads((root / relative).read_text(encoding="utf-8"))
+                    self.assertEqual(document["schemaVersion"], 1)
+                    self.assertEqual(document["documentType"], document_type)
 
     def test_bootstrap_does_not_overwrite_existing_data(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -87,7 +101,9 @@ class DataMigrationTests(unittest.TestCase):
             ):
                 ensure_data_layout()
             recovered = root / "automation/recurrent-elements.json"
-            self.assertIn("00:11:22:33:44:55", recovered.read_text(encoding="utf-8"))
+            document = json.loads(recovered.read_text(encoding="utf-8"))
+            self.assertEqual(document["documentType"], "lanctl.recurrent-elements")
+            self.assertEqual(document["elements"][0]["MAC"], "00:11:22:33:44:55")
 
     def test_legacy_directory_is_copied_without_deleting_original(self):
         with tempfile.TemporaryDirectory() as temporary:

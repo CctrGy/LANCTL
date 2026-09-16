@@ -213,6 +213,14 @@ POSIX_ESCAPE_KEYS = {
     "[B": "DOWN",
     "[C": "RIGHT",
     "[D": "LEFT",
+    "OA": "UP",
+    "OB": "DOWN",
+    "OC": "RIGHT",
+    "OD": "LEFT",
+    "[H": "HOME",
+    "[F": "END",
+    "OH": "HOME",
+    "OF": "END",
     "[3~": "DELETE",
     "[5~": "PGUP",
     "[6~": "PGDN",
@@ -221,11 +229,22 @@ POSIX_ESCAPE_KEYS = {
     "OQ": "F2",
     "OR": "F3",
     "OS": "F4",
+    "[11~": "F1",
+    "[12~": "F2",
+    "[13~": "F3",
+    "[14~": "F4",
     "[15~": "F5",
+    "[17~": "F6",
     "[18~": "F7",
+    "[19~": "F8",
     "[20~": "F9",
+    "[21~": "F10",
+    "[23~": "F11",
     "[24~": "F12",
 }
+
+POSIX_ESCAPE_TIMEOUT = 0.15
+POSIX_ESCAPE_MAX_LENGTH = max(map(len, POSIX_ESCAPE_KEYS))
 
 
 def posix_key_available(stream) -> bool:
@@ -236,10 +255,11 @@ def posix_key_available(stream) -> bool:
     return bool(select.select([stream], [], [], 0)[0])
 
 
-def read_posix_key(stream) -> str:
+def read_posix_key(stream, *, escape_timeout: float = POSIX_ESCAPE_TIMEOUT) -> str:
     """Normaliza caracteres y secuencias ANSI habituales de terminales POSIX."""
 
     import select
+    import time
 
     first = stream.read(1)
     if first != "\x1b":
@@ -264,7 +284,11 @@ def read_posix_key(stream) -> str:
             "\x03": "ESC",
         }.get(first, first)
     sequence = ""
-    while len(sequence) < 5 and select.select([stream], [], [], 0.02)[0]:
+    deadline = time.monotonic() + max(0.0, escape_timeout)
+    while len(sequence) < POSIX_ESCAPE_MAX_LENGTH:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or not select.select([stream], [], [], remaining)[0]:
+            break
         sequence += stream.read(1)
         if sequence in POSIX_ESCAPE_KEYS or sequence.endswith("~"):
             break

@@ -13,13 +13,30 @@ from lanctl.apps.ip.interfaces.tui.keyboard import (
     normalize_key_bindings,
     validate_key_bindings,
 )
+from lanctl.apps.ip.interfaces.tui.layout import (
+    DEFAULT_COLUMN_SPECS,
+    PANEL_LAYOUTS,
+    normalize_cli_percent,
+    normalize_column_spec,
+    normalize_column_specs,
+    normalize_panel_layout,
+)
 from lanctl.core.config import (
     CONFIG_PATH,
+    canonical_config,
     load_config,
     normalize_dhcp_range,
     save_config,
 )
 from lanctl.core.console import ok
+from lanctl.core.device_retention import (
+    RETENTION_MODES,
+    RETENTION_SCOPES,
+    RETENTION_TARGETS,
+    normalize_retention_mode,
+    normalize_retention_scope,
+    normalize_retention_target,
+)
 from lanctl.core.file_transaction import transactional_file
 from lanctl.core.output import normalize_columns
 
@@ -74,6 +91,21 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         "--service-identification",
         choices=("on", "off"),
         help="Activa o desactiva el reconocimiento de servicios en scan.",
+    )
+    command.add_argument(
+        "--disconnected-retention",
+        choices=RETENTION_MODES,
+        help="Persistencia de desconectados: permanent, session o forget.",
+    )
+    command.add_argument(
+        "--disconnected-target",
+        choices=RETENTION_TARGETS,
+        help="Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).",
+    )
+    command.add_argument(
+        "--disconnected-scope",
+        choices=RETENTION_SCOPES,
+        help="Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).",
     )
     command.add_argument("--workers", type=int, help="Concurrencia predeterminada de los escaneos.")
     command.add_argument(
@@ -161,6 +193,22 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         help="Asigna una tecla a una acción del TUI. Puede repetirse.",
     )
     command.add_argument(
+        "--tui-layout",
+        choices=PANEL_LAYOUTS,
+        help="Coloca el CLI arriba (cli.top) o abajo (cli.bottom).",
+    )
+    command.add_argument(
+        "--tui-cli-percent",
+        metavar="15-75",
+        help="Porcentaje vertical reservado al CLI; ListElement conserva al menos 25%%.",
+    )
+    command.add_argument(
+        "--tui-column",
+        action="append",
+        metavar="COLUMNA=TAMAÑO",
+        help="Peso de columna (GROUP=15%%); IP=15ch y MAC=17ch son fijas.",
+    )
+    command.add_argument(
         "--tui-footer-buttons",
         metavar="ACCIONES",
         help="Acciones visibles en la barra inferior, separadas por comas; usa all para todas.",
@@ -186,6 +234,9 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.scan_profile is None
         and args.progress is None
         and args.service_identification is None
+        and args.disconnected_retention is None
+        and args.disconnected_target is None
+        and args.disconnected_scope is None
         and args.workers is None
         and args.timeout is None
         and args.scan_order is None
@@ -207,10 +258,13 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.remote_backend is None
         and args.remote_forced_view is None
         and args.tui_key is None
+        and args.tui_layout is None
+        and args.tui_cli_percent is None
+        and args.tui_column is None
         and args.tui_footer_buttons is None
         and args.tui_footer_button is None
     ):
-        print(json.dumps(config, indent=2, ensure_ascii=False))
+        print(json.dumps(canonical_config(config), indent=2, ensure_ascii=False))
         print(f"\nArchivo: {CONFIG_PATH.resolve()}")
         return 0
 
@@ -269,6 +323,15 @@ def run_settings(args: argparse.Namespace) -> int:
     if args.service_identification is not None:
         config["serviceIdentification"] = args.service_identification == "on"
         changes.append(f"Identificación de servicios: {args.service_identification}")
+    if args.disconnected_retention is not None:
+        config["disconnectedRetention"] = normalize_retention_mode(args.disconnected_retention)
+        changes.append(f"Retención de desconectados: {config['disconnectedRetention']}")
+    if args.disconnected_target is not None:
+        config["disconnectedRetentionTarget"] = normalize_retention_target(args.disconnected_target)
+        changes.append(f"Objetivo de retención: {config['disconnectedRetentionTarget']}")
+    if args.disconnected_scope is not None:
+        config["disconnectedRetentionScope"] = normalize_retention_scope(args.disconnected_scope)
+        changes.append(f"Alcance de retención: {config['disconnectedRetentionScope']}")
     if args.workers is not None:
         if args.workers < 1:
             raise ValueError("workers debe ser mayor que cero")
@@ -370,6 +433,26 @@ def run_settings(args: argparse.Namespace) -> int:
             bindings[action] = key
         config["tuiKeyBindings"] = validate_key_bindings(bindings)
         changes.append("Atajos TUI actualizados")
+
+    if args.tui_layout is not None:
+        config["tuiPanelLayout"] = normalize_panel_layout(args.tui_layout)
+        changes.append(f"Distribución TUI: {config['tuiPanelLayout']}")
+    if args.tui_cli_percent is not None:
+        config["tuiCliHeightPercent"] = normalize_cli_percent(args.tui_cli_percent)
+        changes.append(f"Altura del CLI: {config['tuiCliHeightPercent']}%")
+    if args.tui_column:
+        columns = normalize_column_specs(config.get("tuiColumnWidths"))
+        canonical = {name.casefold(): name for name in DEFAULT_COLUMN_SPECS}
+        canonical["protocols"] = "users"
+        for assignment in args.tui_column:
+            raw_name, separator, raw_value = assignment.partition("=")
+            name = canonical.get(raw_name.strip().casefold())
+            if not separator or not name:
+                choices = ", ".join(DEFAULT_COLUMN_SPECS)
+                raise ValueError(f"tui-column debe usar COLUMNA=TAMAÑO; columnas: {choices}")
+            columns[name] = normalize_column_spec(name, raw_value)
+        config["tuiColumnWidths"] = columns
+        changes.append("Proporciones de columnas TUI actualizadas")
 
     if args.tui_footer_buttons is not None:
         requested = [part.strip() for part in args.tui_footer_buttons.split(",")]

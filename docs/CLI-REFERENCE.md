@@ -256,7 +256,10 @@ Options:
 Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]
                       [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]
                       [--scan-profile {fast,normal,accurate}] [--progress {on,off}]
-                      [--service-identification {on,off}] [--workers WORKERS] [--timeout TIMEOUT]
+                      [--service-identification {on,off}]
+                      [--disconnected-retention {permanent,session,forget}]
+                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]
+                      [--workers WORKERS] [--timeout TIMEOUT]
                       [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]
                       [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]
                       [--log DIRECTORIO] [--error-log-level 1-59]
@@ -266,8 +269,9 @@ Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp
                       [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]
                       [--remote-backend {service,user}]
                       [--remote-forced-view {off,gui,tui,plugins,projects,settings}]
-                      [--tui-key ACCIÓN=TECLA] [--tui-footer-buttons ACCIONES]
-                      [--tui-footer-button ACCIÓN=on|off]
+                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]
+                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]
+                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]
 
 Options:
   -h, --help                  Show this help and exit.
@@ -285,6 +289,12 @@ Options:
   --progress {on,off}         Activa o desactiva el progreso interactivo.
   --service-identification {on,off}
                               Activa o desactiva el reconocimiento de servicios en scan.
+  --disconnected-retention {permanent,session,forget}
+                              Persistencia de desconectados: permanent, session o forget.
+  --disconnected-target {unconfirmed,all}
+                              Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).
+  --disconnected-scope {all,dhcp}
+                              Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).
   --workers WORKERS           Concurrencia predeterminada de los escaneos.
   --timeout TIMEOUT           Timeout predeterminado por operación de red.
   --scan-order {ascending,descending,random}
@@ -320,6 +330,12 @@ Options:
   --remote-forced-view {off,gui,tui,plugins,projects,settings}
                               Vista predeterminada para root forced-view.
   --tui-key ACCIÓN=TECLA      Asigna una tecla a una acción del TUI. Puede repetirse.
+  --tui-layout {cli.bottom,cli.top}
+                              Coloca el CLI arriba (cli.top) o abajo (cli.bottom).
+  --tui-cli-percent 15-75     Porcentaje vertical reservado al CLI; ListElement conserva al menos
+                              25%.
+  --tui-column COLUMNA=TAMAÑO
+                              Peso de columna (GROUP=15%); IP=15ch y MAC=17ch son fijas.
   --tui-footer-buttons ACCIONES
                               Acciones visibles en la barra inferior, separadas por comas; usa all
                               para todas.

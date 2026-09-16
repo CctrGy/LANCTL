@@ -46,7 +46,14 @@ def load_profiles(path: str | Path = PROFILE_PATH) -> dict[str, SwitchProfile]:
     source = application_path(path)
     if source.exists():
         raw = json.loads(source.read_text(encoding="utf-8"))
-        values = raw.get("profiles", raw) if isinstance(raw, dict) else raw
+        if isinstance(raw, dict) and "schemaVersion" in raw:
+            if int(raw.get("schemaVersion", 0) or 0) != 1:
+                raise ValueError(f"versión de perfiles Cisco no compatible: {source}")
+            values = raw.get("profiles")
+        else:
+            values = raw.get("profiles", raw) if isinstance(raw, dict) else raw
+            if values == {}:
+                values = []
         if not isinstance(values, list):
             raise ValueError(f"perfiles Cisco no válidos: {source}")
         for value in values:

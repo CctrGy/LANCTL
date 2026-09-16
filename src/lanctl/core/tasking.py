@@ -77,14 +77,28 @@ class JsonStore:
 
     def load(self) -> dict:
         if not self.path.exists():
-            return {"sequences": {}, "runs": {}}
+            return self.default_document()
         value = json.loads(self.path.read_text(encoding="utf-8"))
         if not isinstance(value, dict):
             raise ValueError("el almacén de tareas debe ser un objeto JSON")
+        if "schemaVersion" in value and int(value.get("schemaVersion", 0) or 0) != 1:
+            raise ValueError("versión del almacén de tareas no compatible")
+        value.setdefault("schemaVersion", 1)
+        value.setdefault("documentType", "lanctl.wol-sequences")
         value.setdefault("sequences", {})
         value.setdefault("runs", {})
         return value
 
+    @staticmethod
+    def default_document() -> dict:
+        return {
+            "schemaVersion": 1,
+            "documentType": "lanctl.wol-sequences",
+            "sequences": {},
+            "runs": {},
+        }
+
     @transactional_method
     def save(self, value: dict) -> None:
+        value = {**self.default_document(), **value}
         atomic_write_json(self.path, value)

@@ -110,6 +110,9 @@ local settings = clink.argmatcher()
         "-discovery" .. discovery, "--discovery" .. discovery,
         "--scan-profile" .. profiles, "--progress" .. on_off,
         "--service-identification" .. on_off,
+        "--disconnected-retention" .. values({ "permanent", "session", "forget" }),
+        "--disconnected-target" .. values({ "unconfirmed", "all" }),
+        "--disconnected-scope" .. values({ "all", "dhcp" }),
         "--workers" .. history_value("Workers"), "--timeout" .. history_value("Segundos"),
         "--scan-order" .. scan_orders,
         "--max-hosts" .. history_value("Máximo"), "--database" .. file_arg,
@@ -132,6 +135,9 @@ local settings = clink.argmatcher()
         "--remote-backend" .. values({ "service", "user" }),
         "--remote-forced-view" .. values({ "off", "gui", "tui", "plugins", "projects", "settings" }),
         "--tui-key" .. history_value("ACCIÓN=TECLA"),
+        "--tui-layout" .. values({ "cli.bottom", "cli.top" }),
+        "--tui-cli-percent" .. history_value("15-75"),
+        "--tui-column" .. history_value("COLUMNA=TAMAÑO"),
         "--tui-footer-buttons" .. history_value("ACCIONES"),
         "--tui-footer-button" .. history_value("ACCIÓN=on|off")
     }):nofiles()

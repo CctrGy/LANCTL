@@ -42,14 +42,35 @@ INITIAL_JSON_FILES = {
             "editable": False,
         }
     ],
-    "data/lc/recurrent-elements.json": [],
+    "data/lc/recurrent-elements.json": {
+        "schemaVersion": 1,
+        "documentType": "lanctl.recurrent-elements",
+        "elements": [],
+    },
     "data/lc/plugins.registry": {},
-    "data/lc/wol-sequences.json": {"sequences": {}, "runs": {}},
+    "data/lc/wol-sequences.json": {
+        "schemaVersion": 1,
+        "documentType": "lanctl.wol-sequences",
+        "sequences": {},
+        "runs": {},
+    },
     "data/lc/projects/workspaces/default/monitoring/sessions.json": {},
     "data/lc/projects/workspaces/default/monitoring/incidents.json": [],
-    "data/lc/projects/workspaces/default/monitoring/profiles.json": {},
-    "data/lc/projects/workspaces/default/monitoring/assignments.json": {},
-    "data/lc/cisco_profiles.json": {},
+    "data/lc/projects/workspaces/default/monitoring/profiles.json": {
+        "schemaVersion": 1,
+        "documentType": "lanctl.monitor-profiles",
+        "profiles": {},
+    },
+    "data/lc/projects/workspaces/default/monitoring/assignments.json": {
+        "schemaVersion": 1,
+        "documentType": "lanctl.monitor-assignments",
+        "assignments": [],
+    },
+    "data/lc/cisco_profiles.json": {
+        "schemaVersion": 1,
+        "documentType": "lanctl.cisco-profiles",
+        "profiles": [],
+    },
     "data/lc/projects/workspaces/default/physical/idf.db": {
         "format": "LANWRE-IDF-DB",
         "version": 1,
@@ -76,12 +97,93 @@ def ensure_data_layout() -> Path:
             joined = ", ".join(str(path) for path in conflicts[:5])
             raise ValueError(f"migración detenida por conflictos de datos legacy: {joined}")
         _create_initial_files()
+        _upgrade_structured_documents()
         from lanctl.core.persistence import migrate_schema
 
         migrate_schema(root / "config" / "storage-schema.json")
         if not marker.exists():
             atomic_write_text(marker, "LANCTL-DATA-V2\n", encoding="ascii")
     return root.resolve()
+
+
+def _upgrade_structured_documents() -> None:
+    """Migra catálogos de configuración legacy a documentos versionados."""
+
+    upgrades = {
+        "data/lc/recurrent-elements.json": _upgrade_recurrent_elements,
+        "data/lc/wol-sequences.json": _upgrade_wol_sequences,
+        "data/lc/cisco_profiles.json": _upgrade_cisco_profiles,
+        "data/lc/projects/workspaces/default/monitoring/profiles.json": (
+            lambda value: _upgrade_named_collection(
+                value, "lanctl.monitor-profiles", "profiles", {}
+            )
+        ),
+        "data/lc/projects/workspaces/default/monitoring/assignments.json": (
+            lambda value: _upgrade_named_collection(
+                value, "lanctl.monitor-assignments", "assignments", []
+            )
+        ),
+    }
+    for resource, upgrade in upgrades.items():
+        path = application_path(resource)
+        if not path.exists():
+            continue
+        with locked_file(path):
+            import json
+
+            current = json.loads(path.read_text(encoding="utf-8"))
+            normalized = upgrade(current)
+            if normalized != current:
+                atomic_write_json(path, normalized)
+
+
+def _upgrade_named_collection(value, document_type: str, key: str, empty):
+    if isinstance(value, dict) and "schemaVersion" in value:
+        return value
+    collection = value.get(key, empty) if isinstance(value, dict) else value
+    if collection in ({}, []) and collection != empty:
+        collection = deepcopy(empty)
+    return {
+        "schemaVersion": 1,
+        "documentType": document_type,
+        key: collection,
+    }
+
+
+def _upgrade_recurrent_elements(value):
+    if isinstance(value, dict) and "schemaVersion" in value:
+        return value
+    elements = value if isinstance(value, list) else value.get("elements", [])
+    return {
+        "schemaVersion": 1,
+        "documentType": "lanctl.recurrent-elements",
+        "elements": elements,
+    }
+
+
+def _upgrade_wol_sequences(value):
+    if isinstance(value, dict) and "schemaVersion" in value:
+        return value
+    value = value if isinstance(value, dict) else {}
+    return {
+        "schemaVersion": 1,
+        "documentType": "lanctl.wol-sequences",
+        "sequences": value.get("sequences", {}),
+        "runs": value.get("runs", {}),
+    }
+
+
+def _upgrade_cisco_profiles(value):
+    if isinstance(value, dict) and "schemaVersion" in value:
+        return value
+    profiles = value.get("profiles", value) if isinstance(value, dict) else value
+    if profiles == {}:
+        profiles = []
+    return {
+        "schemaVersion": 1,
+        "documentType": "lanctl.cisco-profiles",
+        "profiles": profiles,
+    }
 
 
 def _migrate_misplaced_root_state(root: Path) -> None:
