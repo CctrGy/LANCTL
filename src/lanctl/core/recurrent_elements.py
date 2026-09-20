@@ -34,8 +34,15 @@ class RecurrentElementDatabase:
                 f"la base de elementos recurrentes no está codificada como UTF-8: {path}"
             ) from error
         if isinstance(value, dict):
-            if int(value.get("schemaVersion", 0) or 0) != 1:
+            try:
+                schema_version = int(value.get("schemaVersion", 0) or 0)
+            except (TypeError, ValueError) as error:
+                raise ValueError(f"versión de elementos recurrentes no válida: {path}") from error
+            if schema_version != 1:
                 raise ValueError(f"versión de elementos recurrentes no compatible: {path}")
+            document_type = value.get("documentType")
+            if document_type not in (None, "lanctl.recurrent-elements"):
+                raise ValueError(f"tipo de documento de elementos recurrentes no válido: {path}")
             value = value.get("elements")
         if not isinstance(value, list):
             # Es contenido externo inválido, no un uso incorrecto de la API.

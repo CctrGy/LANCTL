@@ -153,6 +153,16 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         help="Intervalo de automatic.timeToSave en minutos (mínimo 0.1).",
     )
     command.add_argument(
+        "--cli-exit-save-prompt",
+        choices=("on", "off"),
+        help="Consulta si se guarda al terminar cada comando individual de consola.",
+    )
+    command.add_argument(
+        "--cli-command-chaining",
+        choices=("on", "off"),
+        help="Permite encadenar órdenes con ; dentro de la CLI interactiva.",
+    )
+    command.add_argument(
         "-log-cleanup",
         "--log-cleanup",
         choices=("on", "off"),
@@ -248,6 +258,8 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.projects_directory is None
         and args.save_mode is None
         and args.save_interval is None
+        and args.cli_exit_save_prompt is None
+        and args.cli_command_chaining is None
         and args.log_cleanup is None
         and args.log_retention_days is None
         and args.remote_access is None
@@ -289,6 +301,12 @@ def run_settings(args: argparse.Namespace) -> int:
             raise ValueError("save-interval debe ser de al menos 0.1 minutos")
         config["projectSaveIntervalMinutes"] = args.save_interval
         changes.append(f"Intervalo de guardado: {args.save_interval:g} minutos")
+    if args.cli_exit_save_prompt is not None:
+        config["cliPromptSaveOnCommandExit"] = args.cli_exit_save_prompt == "on"
+        changes.append(f"Consulta de guardado al terminar comando: {args.cli_exit_save_prompt}")
+    if args.cli_command_chaining is not None:
+        config["cliCommandChaining"] = args.cli_command_chaining == "on"
+        changes.append(f"Comandos encadenados en CLI: {args.cli_command_chaining}")
     if args.network_range is not None:
         try:
             network = ipaddress.ip_network(args.network_range, strict=False)

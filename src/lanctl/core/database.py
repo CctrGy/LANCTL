@@ -539,6 +539,19 @@ class DeviceDatabase:
             if len(value) > 42:
                 raise ValueError("la descripción no puede superar 42 caracteres")
             device.description = value or "-"
+        elif field == "ip":
+            try:
+                normalized_ip = str(ipaddress.IPv4Address(value.strip()))
+            except ipaddress.AddressValueError as error:
+                raise ValueError(f"dirección IPv4 no válida: {value}") from error
+            duplicate = next(
+                (item for item in devices if item is not device and item.ip == normalized_ip),
+                None,
+            )
+            if duplicate:
+                owner = duplicate.alias or duplicate.name or duplicate.mac or duplicate.device_id
+                raise ValueError(f"la IP {normalized_ip} ya pertenece a {owner}")
+            device.ip = normalized_ip
         elif field == "cnf":
             device.cnf = normalize_cnf(value)
         elif field == "icon":
@@ -579,8 +592,16 @@ class DeviceDatabase:
         name: str = "",
         alias: str = "",
         description: str = "-",
+        ip: str = "-",
     ) -> Device:
         normalized_mac = normalize_mac(mac)
+        if ip == "-":
+            normalized_ip = "-"
+        else:
+            try:
+                normalized_ip = str(ipaddress.IPv4Address(ip.strip()))
+            except ipaddress.AddressValueError as error:
+                raise ValueError(f"dirección IPv4 no válida: {ip}") from error
         if len(description) > 42:
             raise ValueError("la descripción no puede superar 42 caracteres")
         if alias.upper() in ("GATEWAY", "BRODCAST"):
@@ -589,11 +610,13 @@ class DeviceDatabase:
         devices = self.load()
         if any(device.mac == normalized_mac for device in devices):
             raise ValueError(f"ya existe un elemento con la MAC {normalized_mac}")
+        if normalized_ip != "-" and any(device.ip == normalized_ip for device in devices):
+            raise ValueError(f"la IP {normalized_ip} ya está en uso")
         if alias and any(device.alias.casefold() == alias.casefold() for device in devices):
             raise ValueError(f"el alias {alias} ya está en uso")
 
         device = Device(
-            ip="-",
+            ip=normalized_ip,
             cnf="O" if name or alias else "X",
             mac=normalized_mac,
             name=name,

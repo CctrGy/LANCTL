@@ -203,6 +203,70 @@ class GuiIntegrationTests(unittest.TestCase):
                     (saved.alias, saved.name, saved.description), ("SW-GUI", "Core", "Desde GUI")
                 )
 
+    def test_gui_can_undo_and_redo_a_saved_manual_edit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            database_path = str(root / "devices.json")
+            database = DeviceDatabase(database_path)
+            device = database.add_device(
+                "AA:BB:CC:DD:EE:F1", name="Original", alias="OLD", description="Inicial"
+            )
+            config = {
+                "database": database_path,
+                "groups": str(root / "groups.json"),
+                "credentials": str(root / "credentials"),
+            }
+            with patch("lanctl.apps.ip.interfaces.gui.main.load_config", return_value=config):
+                api = GuiApi()
+                updated = api.update_device(
+                    device.device_id,
+                    {"alias": "NEW", "name": "Editado", "description": "Cambio"},
+                )
+                self.assertTrue(updated["editHistory"]["canUndo"])
+                undone = api.undo_edit()
+                restored = database.resolve(device.device_id)
+                self.assertEqual(
+                    (restored.alias, restored.name, restored.description),
+                    ("OLD", "Original", "Inicial"),
+                )
+                self.assertTrue(undone["editHistory"]["canRedo"])
+                redone = api.redo_edit()
+                saved = database.resolve(device.device_id)
+
+            self.assertTrue(redone["ok"], redone.get("error"))
+            self.assertEqual(
+                (saved.alias, saved.name, saved.description), ("NEW", "Editado", "Cambio")
+            )
+
+    def test_gui_undo_refuses_to_overwrite_a_later_change(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            database_path = str(root / "devices.json")
+            database = DeviceDatabase(database_path)
+            device = database.add_device("AA:BB:CC:DD:EE:F2", alias="OLD")
+            config = {
+                "database": database_path,
+                "groups": str(root / "groups.json"),
+                "credentials": str(root / "credentials"),
+            }
+            with patch("lanctl.apps.ip.interfaces.gui.main.load_config", return_value=config):
+                api = GuiApi()
+                api.update_device(device.device_id, {"alias": "GUI"})
+                database.edit_device(device.device_id, "alias", "EXTERNO")
+                result = api.undo_edit()
+
+            self.assertFalse(result["ok"])
+            self.assertIn("cambió después", result["error"])
+            self.assertEqual(database.resolve(device.device_id).alias, "EXTERNO")
+
+    def test_gui_exposes_undo_controls_and_shortcuts(self):
+        html = (ROOT / "gui/index.html").read_text(encoding="utf-8")
+        javascript = (ROOT / "gui/app.js").read_text(encoding="utf-8")
+        self.assertIn('id="undo-edit"', html)
+        self.assertIn('id="redo-edit"', html)
+        self.assertIn('call(direction==="undo"?"undo_edit":"redo_edit")', javascript)
+        self.assertIn("event.metaKey", javascript)
+
     def test_gui_delete_requires_confirmation_and_removes_group_references(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

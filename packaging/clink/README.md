@@ -1,7 +1,9 @@
 # Integración de LANCTL con Clink
 
-`lanctl.lua` registra completado contextual para `lanctl`, `LANCTL.exe`, `als`
-y `als.exe`. Todos los comandos se completan directamente desde la raíz.
+`lanctl.lua`, compatible con LANCTL 0.3.1-beta.3, registra completado contextual
+para `lanctl`, `lanip`, el alias histórico `als` y los ejecutables especializados
+`lanwire`, `lanrack`, `lanaccess` y `lanmon`, incluidas sus variantes `.exe`.
+El orquestador completa además cada launcher y su alias corto.
 
 El completado incluye las acciones y opciones de `history`, `monitor`,
 `radmin`, `smb` y `wol`, además de los comandos clásicos. La prueba de

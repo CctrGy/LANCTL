@@ -1,0 +1,1 @@
+{"extensions":[{"id":"lanctl.integration.terminal.command","type":"command","specification":{"name":"terminal-integration","help":"Perfiles y terminal preferida: help, status, create, remove, configure, open.","action":"function.call","function":"TerminalIntegration.Profile.Command.Run"}}]}

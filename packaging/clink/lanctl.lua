@@ -1,4 +1,5 @@
 -- Autocompletado de LANCTL para Clink 1.3.23 o posterior.
+-- Compatible con LANCTL 0.3.1-beta.3.
 -- Desarrollo: clink installscripts <ruta>\packaging\clink
 -- Instalación: <directorio-de-instalación>\clink\lanctl.lua
 
@@ -124,6 +125,8 @@ local settings = clink.argmatcher()
         "--save-mode" .. values({ "list", "manual", "manual.inCloseConsult", "automatic.toClose", "automatic.toScan", "automatic.timeToSave", "automatic.allChanges" }),
         "-save-interval" .. history_value("Minutos"),
         "--save-interval" .. history_value("Minutos"),
+        "--cli-exit-save-prompt" .. on_off,
+        "--cli-command-chaining" .. on_off,
         "-log-cleanup" .. on_off, "--log-cleanup" .. on_off,
         "-log-retention-days" .. history_value("Días"),
         "--log-retention-days" .. history_value("Días"),
@@ -167,10 +170,11 @@ local scan = clink.argmatcher()
 
 local element = clink.argmatcher()
     :addarg({ fromhistory = true, hint = "IP, MAC o alias" })
-    :addarg({ "edit", "cnf", "name", "description", "alias", "group", "protocol", "delete", "del", "remove" })
+    :addarg({ "edit", "ip", "cnf", "name", "description", "alias", "group", "protocol", "delete", "del", "remove" })
     :addarg({ fromhistory = true, hint = "Valor" })
     :addflags({
         "-h", "--help", "/?", "-add" .. history_value("MAC"),
+        "-ip" .. history_value("IPv4"), "--ip" .. history_value("IPv4"),
         "-name" .. history_value("Nombre"), "--name" .. history_value("Nombre"),
         "-alias" .. history_value("Alias"), "--alias" .. history_value("Alias"),
         "-description" .. history_value("Descripción"), "--description" .. history_value("Descripción"),
@@ -460,8 +464,51 @@ local root_commands = {
     "lanwire" .. lanwire, "wire" .. lanwire, "lab" .. lab
 }
 
-clink.argmatcher("lanctl", "lanctl.exe", "als", "als.exe")
-    :addarg(root_commands)
+local function configure_lanip(matcher)
+    return matcher
+        :addarg(root_commands)
+        :addflags({
+            "-h", "--help", "/?", "--version", "--quiet", "--verbose", "--gui", "--cli", "-tui", "--tui",
+            "-project" .. file_arg, "--project" .. file_arg
+        })
+        :nofiles()
+end
+
+local function passthrough(hint)
+    return clink.argmatcher()
+        :addarg({ fromhistory = true, hint = hint })
+        :addflags(help_flags)
+        :loop()
+end
+
+-- `lanip` y el alias histórico `als` comparten el árbol completo de LANIP.
+configure_lanip(clink.argmatcher("lanip", "lanip.exe", "als", "als.exe"))
+
+-- Los ejecutables especializados conservan sus argumentos libres; sus comandos
+-- se completan también al invocarlos desde el orquestador principal.
+clink.argmatcher("lanwire", "lanwire.exe"):addarg({ fromhistory = true, hint = "Comando LANWIRE" }):addflags(help_flags):loop()
+clink.argmatcher("lanrack", "lanrack.exe"):addarg({ fromhistory = true, hint = "Comando LANRACK" }):addflags(help_flags):loop()
+clink.argmatcher("lanaccess", "lanaccess.exe"):addarg({ fromhistory = true, hint = "Comando LANACCESS" }):addflags(help_flags):loop()
+clink.argmatcher("lanmon", "lanmon.exe"):addarg({ fromhistory = true, hint = "Comando LANMON" }):addflags(help_flags):loop()
+
+local suite_commands = {}
+for _, command in ipairs(root_commands) do
+    table.insert(suite_commands, command)
+end
+local suite_launchers = {
+    "lanip" .. configure_lanip(clink.argmatcher()),
+    "ip" .. configure_lanip(clink.argmatcher()),
+    "lanwire" .. passthrough("Comando LANWIRE"), "wire" .. passthrough("Comando LANWIRE"),
+    "lanrack" .. passthrough("Comando LANRACK"), "rack" .. passthrough("Comando LANRACK"),
+    "lanaccess" .. passthrough("Comando LANACCESS"), "access" .. passthrough("Comando LANACCESS"),
+    "lanmon" .. passthrough("Comando LANMON"), "monitor" .. passthrough("Comando LANMON")
+}
+for _, launcher in ipairs(suite_launchers) do
+    table.insert(suite_commands, launcher)
+end
+
+clink.argmatcher("lanctl", "lanctl.exe", "LANCTL.exe")
+    :addarg(suite_commands)
     :addflags({
         "-h", "--help", "/?", "--version", "--quiet", "--verbose", "--gui", "--cli", "-tui", "--tui",
         "-project" .. file_arg, "--project" .. file_arg

@@ -9,7 +9,6 @@ from colorama import Fore, Style
 from lanctl.core.console import ok
 from lanctl.core.plugins.manager import get_plugin_manager
 from lanctl.core.plugins.package import build_package, verify_package
-from lanctl.core.plugins.publishers import TrustedPublisherStore
 from lanctl.core.resources import bundled_path
 
 
@@ -212,19 +211,19 @@ def _revoke(args) -> int:
 
 
 def _publisher_list(args) -> int:
-    print(json.dumps(TrustedPublisherStore().list(), ensure_ascii=False, indent=2))
+    print(json.dumps(get_plugin_manager().publishers.list(), ensure_ascii=False, indent=2))
     return 0
 
 
 def _publisher_trust(args) -> int:
-    entry = TrustedPublisherStore().trust_package(args.file, args.name)
+    entry = get_plugin_manager().publishers.trust_package(args.file, args.name)
     ok("EDITOR CONFIABLE", entry["name"])
     print(f" Huella : {entry['fingerprint']}")
     return 0
 
 
 def _publisher_revoke(args) -> int:
-    if not TrustedPublisherStore().revoke(args.fingerprint):
+    if not get_plugin_manager().publishers.revoke(args.fingerprint):
         raise ValueError("huella de editor no encontrada")
     ok("EDITOR REVOCADO", args.fingerprint)
     return 0

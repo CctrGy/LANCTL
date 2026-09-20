@@ -48,6 +48,40 @@ def test_chained_element_validation_is_all_or_nothing(tmp_path: Path) -> None:
     assert groups.load()[0].members == []
 
 
+def test_manual_element_can_be_created_with_an_ip(tmp_path: Path) -> None:
+    database, _groups = stores(tmp_path)
+
+    device = database.add_device(
+        "AA-BB-CC-DD-EE-FF",
+        ip="192.168.1.44",
+        alias="SENSOR",
+    )
+
+    assert device.ip == "192.168.1.44"
+    assert database.resolve("SENSOR").mac == "AA:BB:CC:DD:EE:FF"
+
+
+def test_element_ip_can_be_corrected_atomically(tmp_path: Path) -> None:
+    database, groups = stores(tmp_path)
+
+    updated = groups.edit_device_fields("OLD", [("ip", "192.168.1.99")])
+
+    assert updated.ip == "192.168.1.99"
+    assert database.resolve("OLD").ip == "192.168.1.99"
+
+
+def test_element_ip_rejects_invalid_and_duplicate_addresses(tmp_path: Path) -> None:
+    database, groups = stores(tmp_path)
+    database.add_device("AA:BB:CC:DD:EE:FF", ip="192.168.1.44")
+
+    with pytest.raises(ValueError, match="IPv4 no válida"):
+        groups.edit_device_fields("OLD", [("ip", "192.168.1.999")])
+    with pytest.raises(ValueError, match="ya pertenece"):
+        groups.edit_device_fields("OLD", [("ip", "192.168.1.44")])
+
+    assert database.resolve("OLD").ip == "192.168.1.10"
+
+
 def test_pair_commit_restores_both_files_when_second_write_fails(tmp_path: Path) -> None:
     database, groups = stores(tmp_path)
     before_devices = database.path.read_bytes()

@@ -97,6 +97,10 @@ DOCUMENT_DEFAULTS = {
         "safeMode": False,
     },
     "localization": {"language": "en", "languagesDirectory": "data/lc/languages"},
+    "cli": {
+        "promptSaveOnCommandExit": False,
+        "commandChaining": True,
+    },
     "network": {
         "range": None,
         "dhcpRange": None,
@@ -252,6 +256,8 @@ DEFAULTS = {
     "pluginSafeMode": False,
     "language": "en",
     "languagesDirectory": "data/lc/languages",
+    "cliPromptSaveOnCommandExit": False,
+    "cliCommandChaining": True,
     "iconsDirectory": "data/lc/icons",
     "logCleanupEnabled": False,
     "logRetentionDays": 90,
@@ -356,6 +362,8 @@ _LEGACY_PATHS = {
     "pluginSafeMode": ("plugins", "safeMode"),
     "language": ("localization", "language"),
     "languagesDirectory": ("localization", "languagesDirectory"),
+    "cliPromptSaveOnCommandExit": ("cli", "promptSaveOnCommandExit"),
+    "cliCommandChaining": ("cli", "commandChaining"),
     "range": ("network", "range"),
     "dhcpRange": ("network", "dhcpRange"),
     "tr064Port": ("network", "tr064Port"),

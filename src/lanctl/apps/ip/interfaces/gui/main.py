@@ -8,7 +8,7 @@ import json
 import re
 import subprocess
 import sys
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from threading import RLock
@@ -36,6 +36,20 @@ from lanctl.core.resources import bundled_path
 from lanctl.shared.assets.icons import get_icon_manager
 
 
+@dataclass(frozen=True)
+class GuiEdit:
+    device_id: str
+    device_label: str
+    before: dict[str, str]
+    after: dict[str, str]
+
+
+@dataclass
+class GuiEditHistory:
+    undo: list[GuiEdit] = field(default_factory=list)
+    redo: list[GuiEdit] = field(default_factory=list)
+
+
 class GuiApi:
     """Small allow-listed bridge between the WebView and LANCTL's core."""
 
@@ -44,6 +58,7 @@ class GuiApi:
         self._window = None
         self._response_ms: dict[str, float | None] = {}
         self._activity: dict[str, bool] = {}
+        self._edit_histories: dict[str, GuiEditHistory] = {}
         try:
             self._local_ip = str(local_ipv4())
         except (OSError, ValueError):
@@ -215,22 +230,51 @@ class GuiApi:
             unknown = set(values) - allowed
             if unknown:
                 raise ValueError(f"campos GUI no editables: {', '.join(sorted(unknown))}")
-            database = self._database()
+            config = load_config()
+            database = DeviceDatabase(config["database"])
             device = database.resolve(selector)
-            current_selector = device.device_id
-            for field in ("alias", "name", "description"):
-                if field in values:
-                    device = database.edit_device(
-                        current_selector, field, str(values[field]).strip()
-                    )
+            before = self._editable_snapshot(device)
+            edits: list[tuple[str, str]] = []
+            for field_name in ("alias", "name", "description"):
+                if field_name in values:
+                    value = str(values[field_name]).strip()
+                    if field_name == "description":
+                        value = value or "-"
+                    if value != before[field_name]:
+                        edits.append((field_name, value))
             if "icon" in values:
                 icon_id = str(values["icon"]).strip().casefold()
                 if icon_id:
                     get_icon_manager().get(icon_id)
-                device = database.edit_device(current_selector, "icon", icon_id)
-            return {"device": self._serialize(device), **self._inventory_payload()}
+                if icon_id != before["icon"]:
+                    edits.append(("icon", icon_id))
+            if edits:
+                device = self._groups(config, database).edit_device_fields(device.device_id, edits)
+                after = self._editable_snapshot(device)
+                changed = [key for key in before if before[key] != after[key]]
+                edit = GuiEdit(
+                    device_id=device.device_id,
+                    device_label=device.alias or device.name or device.ip or device.mac,
+                    before={key: before[key] for key in changed},
+                    after={key: after[key] for key in changed},
+                )
+                history = self._edit_history(database)
+                history.undo.append(edit)
+                del history.undo[:-100]
+                history.redo.clear()
+            return {
+                "device": self._serialize(device),
+                "message": "Elemento actualizado" if edits else "No había cambios que guardar",
+                **self._inventory_payload(),
+            }
 
         return self._respond(operation)
+
+    def undo_edit(self) -> dict:
+        return self._respond(lambda: self._apply_edit_history(undo=True))
+
+    def redo_edit(self) -> dict:
+        return self._respond(lambda: self._apply_edit_history(undo=False))
 
     def delete_device(self, selector: str, confirmed: bool = False) -> dict:
         """Elimina un elemento desde la GUI conservando las protecciones del núcleo."""
@@ -241,6 +285,7 @@ class GuiApi:
             config = load_config()
             database = DeviceDatabase(config["database"])
             deleted = GroupDatabase(config["groups"], database).delete_device(selector)
+            self._discard_device_history(database, deleted.device_id)
             label = deleted.alias or deleted.name or deleted.ip or deleted.mac
             write_log(f"GUI DELETE element={deleted.device_id} mac={deleted.mac} label={label}")
             return {
@@ -626,6 +671,82 @@ class GuiApi:
     def _database() -> DeviceDatabase:
         return DeviceDatabase(load_config()["database"])
 
+    @staticmethod
+    def _groups(config: dict, database: DeviceDatabase) -> GroupDatabase:
+        groups_path = config.get("groups") or str(database.path.with_name("groups.json"))
+        return GroupDatabase(groups_path, database)
+
+    @staticmethod
+    def _editable_snapshot(device) -> dict[str, str]:
+        return {
+            "alias": device.alias,
+            "name": device.name,
+            "description": device.description,
+            "icon": device.icon_id,
+            "cnf": device.cnf,
+        }
+
+    def _edit_history(self, database: DeviceDatabase | None = None) -> GuiEditHistory:
+        database = database or self._database()
+        key = str(database.path.resolve()).casefold()
+        return self._edit_histories.setdefault(key, GuiEditHistory())
+
+    def _edit_history_payload(self) -> dict:
+        history = self._edit_history()
+        return {
+            "canUndo": bool(history.undo),
+            "canRedo": bool(history.redo),
+            "undoLabel": self._edit_label(history.undo[-1]) if history.undo else "",
+            "redoLabel": self._edit_label(history.redo[-1]) if history.redo else "",
+        }
+
+    @staticmethod
+    def _edit_label(edit: GuiEdit) -> str:
+        labels = {
+            "alias": "alias",
+            "name": "nombre",
+            "description": "descripción",
+            "icon": "icono",
+            "cnf": "CNF",
+        }
+        fields = ", ".join(labels[key] for key in edit.after if key != "cnf")
+        return f"{fields or 'estado'} de {edit.device_label}"
+
+    def _apply_edit_history(self, *, undo: bool) -> dict:
+        config = load_config()
+        database = DeviceDatabase(config["database"])
+        history = self._edit_history(database)
+        source, destination = (history.undo, history.redo) if undo else (history.redo, history.undo)
+        if not source:
+            raise ValueError(
+                "no hay ediciones que deshacer" if undo else "no hay ediciones que rehacer"
+            )
+        edit = source[-1]
+        device = database.resolve(edit.device_id)
+        current = self._editable_snapshot(device)
+        expected = edit.after if undo else edit.before
+        if any(current.get(key) != value for key, value in expected.items()):
+            raise ValueError("no se puede aplicar: el elemento cambió después de esta edición")
+        target = edit.before if undo else edit.after
+        order = ("alias", "name", "description", "icon", "cnf")
+        changes = [
+            (key, target[key]) for key in order if key in target and current[key] != target[key]
+        ]
+        device = self._groups(config, database).edit_device_fields(edit.device_id, changes)
+        source.pop()
+        destination.append(edit)
+        action = "Deshecho" if undo else "Rehecho"
+        return {
+            **self._inventory_payload(),
+            "selectedId": device.device_id,
+            "message": f"{action}: {self._edit_label(edit)}",
+        }
+
+    def _discard_device_history(self, database: DeviceDatabase, device_id: str) -> None:
+        history = self._edit_history(database)
+        history.undo[:] = [edit for edit in history.undo if edit.device_id != device_id]
+        history.redo[:] = [edit for edit in history.redo if edit.device_id != device_id]
+
     def _inventory_payload(self, query: str = "") -> dict:
         devices = [self._serialize(device) for device in self._database().load()]
         wanted = str(query or "").strip().casefold()
@@ -648,6 +769,7 @@ class GuiApi:
         active = sum(device["active"] for device in devices)
         return {
             "devices": devices,
+            "editHistory": self._edit_history_payload(),
             "summary": {
                 "total": len(devices),
                 "active": active,

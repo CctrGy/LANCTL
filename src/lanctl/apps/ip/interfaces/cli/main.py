@@ -163,9 +163,26 @@ def build_parser(
     return parser
 
 
+def _should_close_active_project(interactive_launch: bool, settings: dict) -> bool:
+    """Evita preguntas de cierre en comandos no interactivos salvo petición expresa."""
+
+    from lanctl.core.projects.save_policy import SaveMode, normalize_save_mode
+
+    mode = normalize_save_mode(str(settings.get("projectSaveMode", SaveMode.MANUAL.value)))
+    prompt_allowed = bool(settings.get("cliPromptSaveOnCommandExit", False))
+    return not (
+        not interactive_launch
+        and mode == SaveMode.MANUAL_CLOSE_CONSULT.value
+        and not prompt_allowed
+    )
+
+
 def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
+    interactive_launch = not arguments or any(
+        argument in ("--cli", "--gui", "--tui", "-tui") for argument in arguments
+    )
     if arguments and arguments[0] == "-e":
         arguments[0] = "ephemeral"
     ephemeral_requested = "ephemeral" in arguments
@@ -204,6 +221,13 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
         parser = build_parser(include_plugin_commands=True, program_name=program_name)
         args = parser.parse_args(arguments)
         project_independent = bool(getattr(args, "project_independent", False))
+        if plugins_active and (args.tui or (not args.command and not args.cli and not args.gui)):
+            from lanctl.core.terminal_integration import route_tui
+
+            if route_tui(manager, arguments):
+                # The child owns project activation and session persistence.
+                project_independent = True
+                return 0
         if plugins_active:
             mode = (
                 "tui"
@@ -289,9 +313,12 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
             try:
                 if autosave_scheduler is not None:
                     autosave_scheduler.stop()
+                from lanctl.core.config import load_config
                 from lanctl.core.projects.save_policy import close_active_project
 
-                close_active_project()
+                settings = load_config()
+                if _should_close_active_project(interactive_launch, settings):
+                    close_active_project()
             except Exception as error:  # noqa: BLE001 - el cierre no debe ocultar el resultado
                 write_log(f"PROJECT AUTOSAVE CLOSE ERROR detail={error}")
 

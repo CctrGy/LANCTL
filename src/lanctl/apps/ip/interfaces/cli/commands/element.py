@@ -8,7 +8,7 @@ from lanctl.core.database import DeviceDatabase
 from lanctl.core.group_database import GroupDatabase
 from lanctl.core.output import write_records
 
-FIELDS = ("cnf", "name", "description", "alias", "group", "protocol")
+FIELDS = ("ip", "cnf", "name", "description", "alias", "group", "protocol")
 DELETE_ACTIONS = ("delete", "del", "remove")
 
 
@@ -34,6 +34,7 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
     command.add_argument(
         "-name", "--name", dest="new_name", help="Asigna NAME al elemento indicado."
     )
+    command.add_argument("-ip", "--ip", dest="new_ip", help="Asigna una dirección IPv4.")
     command.add_argument(
         "-alias", "--alias", dest="new_alias", help="Asigna ALIAS al elemento indicado."
     )
@@ -80,10 +81,12 @@ def run_element(args: argparse.Namespace) -> int:
             or args.delete_requested
         ):
             raise ValueError(
-                "usa: element -add MAC [-name NAME] [-alias ALIAS] [-description DESCRIPTION]"
+                "usa: element -add MAC [-ip IP] [-name NAME] [-alias ALIAS] "
+                "[-description DESCRIPTION]"
             )
         device = database.add_device(
             args.add,
+            ip=args.new_ip or "-",
             name=args.new_name or "",
             alias=args.new_alias or "",
             description=args.new_description or "-",
@@ -98,6 +101,7 @@ def run_element(args: argparse.Namespace) -> int:
         raise ValueError("indica un elemento o usa element -add MAC")
 
     option_edits = [
+        ("ip", args.new_ip),
         ("name", args.new_name),
         ("alias", args.new_alias),
         ("description", args.new_description),
@@ -113,7 +117,7 @@ def run_element(args: argparse.Namespace) -> int:
     elif requested_edits and (args.action or args.values):
         raise ValueError(
             "no mezcles la sintaxis posicional con opciones; usa varias opciones "
-            "-name/-alias/-description/-cnf/-group/-protocol"
+            "-ip/-name/-alias/-description/-cnf/-group/-protocol"
         )
 
     if requested_edits:

@@ -20,6 +20,8 @@
     <section class="commandbar">
       <button id="scan-network" class="primary" data-component-id="lanctl.primary-action">↻ Escanear red</button>
       <button id="refresh-devices" data-component-id="lanctl.secondary-action">Actualizar inventario</button>
+      <button id="undo-edit" title="Deshacer última edición (Ctrl+Z)" disabled>↶ Deshacer</button>
+      <button id="redo-edit" title="Rehacer última edición (Ctrl+Y)" disabled>↷ Rehacer</button>
       <details class="column-menu"><summary>Columnas</summary><div id="column-options"></div></details>
       <label class="search">⌕<input id="device-search" placeholder="Filtrar por IP, MAC, alias, nombre, fabricante o grupo"></label>
       <div class="summary" data-component-id="lanctl.status-cards">

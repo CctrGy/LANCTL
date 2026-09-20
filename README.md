@@ -7,12 +7,15 @@ La [LANCTL Reference](reference/index.html) ofrece un índice web con búsqueda,
 sintaxis, opciones y ejemplos de todos los launchers y comandos, además de
 proyectos VLF, plugins LCP y el catálogo de documentación.
 
-> Versión actual: **0.3.1-beta.2**. Es una beta: conserva copias de seguridad
-> de los proyectos y no la utilices como única fuente de inventario.
+> Versión actual: **0.3.1-beta.3**. Es una beta de prueba sin garantía de
+> estabilidad: conserva copias de seguridad de los proyectos y no la utilices
+> como única fuente de inventario.
 
-### Cambios de 0.3.1-beta.2
+### Cambios de 0.3.1-beta.3
 
-- Nueva LANCTL Reference, generada desde los parsers y documentos reales del proyecto.
+- LANCTL Reference reorganizada por categorías y por acciones, con guías paso a paso.
+- Cada entrada de Reference indica la versión en la que fue verificada y admite
+  límites de compatibilidad para comandos incorporados o retirados.
 - Diseño configurable del TUI: posición y altura del panel CLI y anchuras de columnas.
 - La columna `USERS` relaciona credenciales y protocolos sin mostrar secretos.
 - Políticas configurables para conservar, ocultar durante la sesión u olvidar dispositivos
@@ -73,13 +76,44 @@ LANCTL incluye:
 
 ### Windows
 
+Instalación remota en una sola línea desde GitHub —selecciona la beta más
+reciente publicada—:
+
 ```powershell
-Invoke-WebRequest https://github.com/CctrGy/LANCTL/releases/download/vVERSION/install.ps1 -OutFile install.ps1
-Invoke-WebRequest https://github.com/CctrGy/LANCTL/releases/download/vVERSION/SHA256SUMS.txt -OutFile SHA256SUMS.txt
-Get-FileHash .\install.ps1 -Algorithm SHA256
-# Compara el hash con SHA256SUMS.txt antes de ejecutar:
+irm https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.ps1 | iex
+```
+
+Para ejecutar remotamente el instalador conservado en la Release y fijar
+exactamente `0.3.1-beta.1` en una sola línea:
+
+```powershell
+& ([scriptblock]::Create((irm 'https://github.com/CctrGy/LANCTL/releases/download/v0.3.1-beta.1/install.ps1'))) -Version '0.3.1-beta.1'
+```
+
+Para instalar automáticamente la beta más reciente publicada:
+
+```powershell
+Invoke-WebRequest https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.ps1 -OutFile install.ps1
 .\install.ps1 -Channel beta
 ```
+
+Para instalar exactamente la versión estable conservada `0.3.1-beta.1`, descarga
+el instalador y su suma desde esa misma Release, comprueba el script y fija la
+versión al ejecutarlo:
+
+```powershell
+$version = '0.3.1-beta.1'
+$base = "https://github.com/CctrGy/LANCTL/releases/download/v$version"
+Invoke-WebRequest "$base/install.ps1" -OutFile install.ps1
+Invoke-WebRequest "$base/SHA256SUMS.txt" -OutFile SHA256SUMS.txt
+$expected = ((Select-String -Path .\SHA256SUMS.txt -Pattern '  install\.ps1$').Line -split '\s+')[0]
+$actual = (Get-FileHash .\install.ps1 -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actual -ne $expected) { throw 'El hash SHA-256 de install.ps1 no coincide' }
+.\install.ps1 -Version $version
+```
+
+Añade `-Portable` al último comando si prefieres el ZIP portable. El propio
+script vuelve a verificar mediante SHA-256 el Setup o ZIP antes de instalarlo.
 
 La distribución ofrece un Setup x64 y un ZIP portable. La instalación estándar
 coloca los seis ejecutables en `C:\Program Files\LANCTL` y puede añadirlos al
@@ -87,11 +121,40 @@ coloca los seis ejecutables en `C:\Program Files\LANCTL` y puede añadirlos al
 
 ### Linux y Raspberry Pi OS
 
+Instalación remota en una sola línea de la beta más reciente publicada:
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh | sudo bash -s -- --channel beta
+```
+
+Para fijar exactamente `0.3.1-beta.1` usando el script de esa Release:
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://github.com/CctrGy/LANCTL/releases/download/v0.3.1-beta.1/install.sh | sudo bash -s -- --version 0.3.1-beta.1
+```
+
+Para instalar automáticamente la beta más reciente publicada:
+
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSLo install.sh \
   https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh
 sudo bash install.sh --channel beta
 ```
+
+Para instalar exactamente `0.3.1-beta.1` mediante el paquete DEB:
+
+```sh
+version='0.3.1-beta.1'
+base="https://github.com/CctrGy/LANCTL/releases/download/v${version}"
+curl --proto '=https' --tlsv1.2 -fsSLo install.sh "${base}/install.sh"
+curl --proto '=https' --tlsv1.2 -fsSLo SHA256SUMS.txt "${base}/SHA256SUMS.txt"
+grep '  install.sh$' SHA256SUMS.txt | sha256sum --check --strict -
+sudo bash install.sh --version "$version"
+```
+
+El script selecciona automáticamente `amd64` o `arm64` y verifica el paquete
+antes de instalarlo. Añade `--tarball` al último comando para una instalación
+portable en `/opt` que no instala el servicio de monitorización.
 
 Se generan DEB y tarballs portables nativos para `amd64` y `arm64`.
 Raspberry Pi OS debe ser de 64 bits para el artefacto ARM64. El DEB instala en
@@ -313,12 +376,18 @@ ignora vulnerabilidades conocidas.
 
 ## Compilación
 
+En Windows, desde el repositorio descargado, `install.cmd` compila la copia
+local y abre el instalador. En PowerShell usa `./install.cmd`. También admite
+`build` (solo compilar), `remote` (instalar desde GitHub) y `-DryRun` (ver el
+plan sin ejecutar). Consulta [repositoryTerminal](repositoryTerminal/README.md)
+para requisitos y ejemplos. No cambia la versión ni realiza Git/push.
+
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.1-beta.2
+.\scripts\build-windows.ps1 -Version 0.3.1-beta.3
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.1-beta.2
+./scripts/build-linux.sh 0.3.1-beta.3
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.
@@ -363,3 +432,9 @@ Todos los comandos admiten `-h`, `--help` y `/?`.
 
 El repositorio todavía no incluye una licencia explícita. Hasta que se añada,
 se mantienen todos los derechos sobre el código.
+
+## Ayuda y referencia
+
+Accede a **[LANCTL Reference](reference/index.html)** para consultar la ayuda
+interactiva de launchers, comandos, grupos, proyectos, plugins, expansiones y
+archivos de documentación.

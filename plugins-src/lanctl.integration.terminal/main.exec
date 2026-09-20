@@ -1,0 +1,150 @@
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+from lanctl.core.file_transaction import update_json
+from lanctl.core.plugins.contracts import FunctionResult
+
+GUIDS = {"cli": "{ac6018e9-f096-46b8-b07c-21ef081c0097}",
+         "tui": "{6109fa11-780a-420b-b156-dd9ef19814ab}"}
+NAMES = {"cli": "LANCTL", "tui": "LANIP"}
+OWNER = "lanctl.integration.terminal"
+
+
+def directory():
+    if os.name != "nt":
+        raise OSError("Este proveedor requiere Windows")
+    return Path(os.environ["LOCALAPPDATA"]) / "LANCTL" / "terminal-integration"
+
+
+def preferences():
+    path = directory() / "preferences.json"
+    value = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    if not isinstance(value, dict) or value.get("terminal", "inherited") not in {"inherited", "windows-terminal"}:
+        raise ValueError("Configuracion de terminal invalida")
+    return value
+
+
+def executable(mode):
+    name = "lanctl.exe" if mode == "cli" else "lanip.exe"
+    candidates = [Path(sys.executable).parent / name,
+                  Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "LANCTL" / name]
+    found = shutil.which(name)
+    if found:
+        candidates.append(Path(found))
+    for path in candidates:
+        if path.is_file():
+            return str(path.resolve())
+    raise FileNotFoundError("Instala los launchers LANCTL antes de crear perfiles")
+
+
+def fragment(mode):
+    return Path(os.environ["LOCALAPPDATA"]) / "Microsoft/Windows Terminal/Fragments/LANCTL-Integration" / (mode + ".json")
+
+
+def conflicts(name, target):
+    local = Path(os.environ["LOCALAPPDATA"])
+    settings = list((local / "Packages").glob("Microsoft.WindowsTerminal*/LocalState/settings.json"))
+    settings += [local / "Microsoft/Windows Terminal/settings.json",
+                 local / "Microsoft/Windows Terminal Preview/settings.json"]
+    for root in [local, Path(os.environ.get("ProgramData", "C:/ProgramData"))]:
+        settings += list((root / "Microsoft/Windows Terminal/Fragments").rglob("*.json"))
+    import re
+    for path in settings:
+        if path != target and path.is_file() and re.search(r'"name"\s*:\s*"' + re.escape(name) + '"', path.read_text(encoding="utf-8-sig"), re.I):
+            raise ValueError("Ya existe un perfil personal o externo: " + name + "; no se modifica")
+
+
+def create(mode):
+    directory()
+    target = fragment(mode)
+    conflicts(NAMES[mode], target)
+    profile = {"guid": GUIDS[mode], "name": NAMES[mode], "hidden": False,
+               "commandline": subprocess.list2cmdline([executable(mode), "--cli" if mode == "cli" else "--tui"]),
+               "startingDirectory": "%USERPROFILE%", "icon": executable(mode)}
+    def replace(value):
+        if value and value.get("lanctlOwner") != OWNER:
+            raise ValueError("El fragmento no pertenece a este plugin")
+        value.clear()
+        value.update({"lanctlOwner": OWNER, "profiles": [profile]})
+    update_json(target, dict, replace)
+    return str(target)
+
+
+def remove(mode):
+    directory()
+    target = fragment(mode)
+    if target.exists():
+        value = json.loads(target.read_text(encoding="utf-8-sig"))
+        if value.get("lanctlOwner") != OWNER:
+            raise ValueError("El fragmento no pertenece a este plugin")
+        # Preserve the previous fragment for recovery; Terminal only reads JSON.
+        target.replace(target.with_suffix(".json.removed"))
+    return "Perfil retirado; copia .json.removed conservada"
+
+
+def launch(mode, arguments=None):
+    directory()
+    wt = shutil.which("wt.exe")
+    if not wt:
+        raise FileNotFoundError("Windows Terminal (wt.exe) no esta disponible")
+    args = list(arguments) if arguments is not None else ["--cli" if mode == "cli" else "--tui"]
+    # wt treats semicolons as command separators, even without a shell.
+    if any(";" in item or "\n" in item or "\r" in item for item in args):
+        raise ValueError("Argumentos no representables con seguridad en Windows Terminal")
+    command = [wt, "-w", "new", "new-tab", "--inheritEnvironment", "--title", NAMES[mode],
+               "--startingDirectory", os.getcwd(), executable(mode), *args]
+    env = dict(os.environ, LANCTL_TERMINAL_RELAUNCHED="1")
+    result = subprocess.run(command, env=env, check=False)
+    if result.returncode:
+        raise RuntimeError("Windows Terminal rechazo la apertura")
+    return "Apertura solicitada a Windows Terminal"
+
+
+def activate(api):
+    def failure(error, point):
+        event = api.errors.interpolate(error, origin=point, code="TERMINAL.INTEGRATION.FAILED", level=43, print_output=False)
+        return FunctionResult(False, "TERMINAL.INTEGRATION.FAILED", event.terminal_message())
+
+    def route(arguments):
+        if os.name != "nt" or os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_TTY") or os.environ.get("LANCTL_TERMINAL_RELAUNCHED") or os.environ.get("WT_SESSION"):
+            return FunctionResult(True, data={"relaunched": False})
+        try:
+            if preferences().get("terminal", "inherited") == "inherited":
+                return FunctionResult(True, data={"relaunched": False})
+            launch("tui", arguments)
+            api.log("TERMINAL OPEN", "tui")
+            return FunctionResult(True, data={"relaunched": True})
+        except (OSError, ValueError, RuntimeError) as error:
+            return failure(error, "Runtime.Terminal.Open")
+
+    def command(arguments):
+        try:
+            action = arguments[0] if arguments else "help"
+            if action == "help":
+                return FunctionResult(True, message="terminal-integration: status | create cli|tui | remove cli|tui | configure inherited|windows-terminal | open cli|tui")
+            directory()
+            if action == "status" and len(arguments) == 1:
+                return FunctionResult(True, message=json.dumps({"wt": shutil.which("wt.exe"), "preferences": preferences()}, ensure_ascii=False))
+            if len(arguments) != 2:
+                raise ValueError("Consulta terminal-integration help")
+            value = arguments[1]
+            if action == "configure" and value in {"inherited", "windows-terminal"}:
+                def replace(config):
+                    config.update({"schemaVersion": 1, "terminal": value})
+                update_json(directory() / "preferences.json", dict, replace)
+                message = "Terminal preferida: " + value
+            elif action in {"create", "remove", "open"} and value in NAMES:
+                message = {"create": create, "remove": remove, "open": launch}[action](value)
+            else:
+                raise ValueError("Accion o valor no valido")
+            api.log("TERMINAL " + action.upper(), value)
+            return FunctionResult(True, message=message)
+        except (OSError, ValueError, RuntimeError) as error:
+            return failure(error, "Profile.Command.Run")
+
+    api.functions.register("TerminalIntegration.Profile.Command.Run", command, FunctionResult)
+    api.functions.register("TerminalIntegration.Runtime.Tui.Route", route, FunctionResult)

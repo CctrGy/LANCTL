@@ -8,14 +8,15 @@
   <link rel="stylesheet" href="assets/reference.css">
 </head>
 <body>
-  <a class="skip-link" href="#catalog">Saltar al catálogo</a>
+  <a class="skip-link" href="#categories">Saltar al contenido</a>
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Inicio de LANCTL Reference">
       <img src="../assets/lanctl-icon-v3.png" alt="" width="44" height="44">
       <span><strong>LANCTL</strong><small>REFERENCE</small></span>
     </a>
     <nav aria-label="Navegación principal">
-      <a href="#catalog">Referencia</a>
+      <a href="#categories">Categorías</a>
+      <a href="#actions">Acciones</a>
       <a href="../README.md">Guía</a>
       <a href="../docs/CLI-REFERENCE.md">CLI</a>
       <a href="https://github.com/CctrGy/LANCTL">GitHub</a>
@@ -36,7 +37,7 @@
       </label>
     </section>
 
-    <section class="shortcuts" aria-labelledby="shortcut-title">
+    <section id="categories" class="shortcuts" aria-labelledby="shortcut-title">
       <div class="section-heading">
         <div><p class="eyebrow">ACCESOS RÁPIDOS</p><h2 id="shortcut-title">Explorar por categoría</h2></div>
         <span id="result-count" aria-live="polite"></span>
@@ -44,10 +45,21 @@
       <div id="category-list" class="category-list"></div>
     </section>
 
-    <section id="catalog" class="catalog" aria-labelledby="catalog-title">
+    <section id="actions" class="actions" aria-labelledby="actions-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">GUÍAS PASO A PASO</p>
+          <h2 id="actions-title">Explorar por acciones</h2>
+        </div>
+      </div>
+      <p class="section-intro">Elige lo que quieres conseguir. Cada guía reúne preparación, comandos, comprobaciones y enlaces a la referencia técnica.</p>
+      <div id="workflow-list" class="workflow-list"></div>
+    </section>
+
+    <section id="catalog" class="catalog" aria-labelledby="catalog-title" hidden>
       <div class="section-heading">
         <div><p class="eyebrow">ÍNDICE</p><h2 id="catalog-title">Referencia completa</h2></div>
-        <button id="clear-filters" class="text-button" type="button">Mostrar todo</button>
+        <button id="clear-filters" class="text-button" type="button">Volver al inicio</button>
       </div>
       <div id="active-filter" class="active-filter" hidden></div>
       <div id="entries"></div>

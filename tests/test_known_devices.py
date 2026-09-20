@@ -9,6 +9,18 @@ from lanctl.core.recurrent_elements import RecurrentElementDatabase
 
 
 class RecurrentElementDatabaseTests(unittest.TestCase):
+    def test_legacy_list_catalog_is_supported(self):
+        with tempfile.TemporaryDirectory() as directory:
+            resource = Path(directory) / "recurrent.json"
+            resource.write_text(
+                json.dumps([{"MAC": "5E:8C:B3:08:05:D4", "ALIAS": "VM1"}]),
+                encoding="utf-8",
+            )
+            with patch("lanctl.core.recurrent_elements.application_path", return_value=resource):
+                device = RecurrentElementDatabase().load()[0]
+
+        self.assertEqual(device.alias, "VM1")
+
     def test_versioned_catalog_document_is_supported(self):
         with tempfile.TemporaryDirectory() as directory:
             resource = Path(directory) / "recurrent.json"
@@ -48,6 +60,44 @@ class RecurrentElementDatabaseTests(unittest.TestCase):
         self.assertEqual(first.name, "Movil")
         self.assertEqual(cached.name, "Movil")
         self.assertIsNot(first, cached)
+
+    def test_versioned_catalog_rejects_wrong_document_type_without_erasing_it(self):
+        with tempfile.TemporaryDirectory() as directory:
+            resource = Path(directory) / "recurrent.json"
+            payload = {
+                "schemaVersion": 1,
+                "documentType": "lanctl.other-document",
+                "elements": [],
+            }
+            resource.write_text(json.dumps(payload), encoding="utf-8")
+            original = resource.read_bytes()
+
+            with (
+                patch("lanctl.core.recurrent_elements.application_path", return_value=resource),
+                self.assertRaisesRegex(ValueError, "tipo de documento"),
+            ):
+                RecurrentElementDatabase().load()
+
+            self.assertEqual(resource.read_bytes(), original)
+
+    def test_versioned_catalog_requires_an_elements_list(self):
+        with tempfile.TemporaryDirectory() as directory:
+            resource = Path(directory) / "recurrent.json"
+            resource.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "documentType": "lanctl.recurrent-elements",
+                        "elements": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with (
+                patch("lanctl.core.recurrent_elements.application_path", return_value=resource),
+                self.assertRaisesRegex(ValueError, "sección elements"),
+            ):
+                RecurrentElementDatabase().load()
 
     def test_upsert_reads_the_inventory_only_once(self):
         with tempfile.TemporaryDirectory() as directory:

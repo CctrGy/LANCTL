@@ -12,12 +12,22 @@ from lanctl.apps.ip.interfaces.cli.commands.modes import (
     _selected_command,
     run_global_cli,
 )
-from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.apps.ip.interfaces.cli.main import _should_close_active_project, build_parser
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.group_database import GroupDatabase
 
 
 class LanctlModeTests(unittest.TestCase):
+    def test_non_interactive_command_does_not_prompt_on_close_by_default(self):
+        settings = {
+            "projectSaveMode": "manual.inCloseConsult",
+            "cliPromptSaveOnCommandExit": False,
+        }
+        self.assertFalse(_should_close_active_project(False, settings))
+        self.assertTrue(_should_close_active_project(True, settings))
+        settings["cliPromptSaveOnCommandExit"] = True
+        self.assertTrue(_should_close_active_project(False, settings))
+
     def test_project_without_action_reports_the_active_project(self):
         args = build_parser().parse_args(["project"])
         output = io.StringIO()
@@ -158,6 +168,28 @@ class LanctlModeTests(unittest.TestCase):
         self.assertEqual(
             dispatched,
             [["scan", "AA:BB:CC:DD:EE:FF", "--ports", "22"]],
+        )
+
+    def test_global_cli_executes_semicolon_chained_commands(self):
+        values = iter(["element A -cnf O; element B -cnf X", "exit"])
+        dispatched = []
+        with (
+            patch(
+                "lanctl.apps.ip.interfaces.cli.commands.modes.load_config",
+                return_value={"database": "db.json", "cliCommandChaining": True},
+            ),
+            patch("lanctl.apps.ip.interfaces.cli.commands.modes.DeviceDatabase"),
+            patch(
+                "lanctl.apps.ip.interfaces.cli.main.main",
+                side_effect=lambda argv: dispatched.append(argv) or 0,
+            ),
+        ):
+            result = run_global_cli(input_fn=lambda _prompt: next(values))
+
+        self.assertEqual(result, 0)
+        self.assertEqual(
+            dispatched,
+            [["element", "A", "-cnf", "O"], ["element", "B", "-cnf", "X"]],
         )
 
     def test_info_displays_the_selected_element(self):

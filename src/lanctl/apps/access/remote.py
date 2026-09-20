@@ -222,6 +222,8 @@ class RemoteGuiApi:
         "get_device_details": ("scan.run", "get_device_details"),
         "wake_device": ("wol.send", "wake_device"),
         "update_device": ("system.configure", "update_device"),
+        "undo_edit": ("system.configure", "undo_edit"),
+        "redo_edit": ("system.configure", "redo_edit"),
         "delete_device": ("system.destructive", "delete_device"),
         "use_project": ("project.manage", "use_project"),
         "save_project": ("project.manage", "save_project"),

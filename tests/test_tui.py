@@ -107,6 +107,69 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(started, [tui._run_refresh])
         self.assertIn("Ya hay un escaneo", tui.messages[0])
 
+    def test_failed_scan_postprocessing_restores_last_valid_activity(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        previous_active = {"AA:BB:CC:DD:EE:FF"}
+        previous_response = {"AA:BB:CC:DD:EE:FF": 12.5}
+        previous_summary = {
+            "profile": "normal",
+            "discovery": "hybrid",
+            "active": 1,
+            "total": 2,
+            "icmp": 1,
+            "arp": 1,
+            "cache": 0,
+            "shown": 2,
+        }
+        tui.scan_events = queue.Queue()
+        tui.scan_events.put(
+            (
+                "complete",
+                1,
+                "[ERROR] recurrent-elements no válido",
+                {},
+                set(),
+                True,
+            )
+        )
+        tui.scanning = True
+        tui.scan_current = 510
+        tui.scan_total = 510
+        tui.active_devices = {"transitorio"}
+        tui.response_ms = {"transitorio": 1.0}
+        tui.scan_summary = {"profile": "transitorio"}
+        tui._scan_previous_state = (
+            previous_active,
+            previous_response,
+            previous_summary,
+        )
+        tui.scan_error = ""
+        tui.scan_error_after_discovery = False
+        tui.reload = Mock()
+
+        self.assertTrue(tui._drain_scan_events())
+
+        self.assertEqual(tui.active_devices, previous_active)
+        self.assertEqual(tui.response_ms, previous_response)
+        self.assertEqual(tui.scan_summary, previous_summary)
+        self.assertTrue(tui.scan_error_after_discovery)
+        self.assertIn("procesamiento", " ".join(tui.messages).casefold())
+        tui.reload.assert_called_once_with()
+
+    def test_failed_scan_status_never_claims_there_was_no_scan(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        tui.project_info = {"name": "Casa"}
+        tui.scanning = False
+        tui.scan_summary = {}
+        tui.scan_error = "fallo de persistencia"
+        tui.scan_error_after_discovery = True
+
+        rendered = " ".join(tui._status_lines(100))
+
+        self.assertIn("ERROR DE ESCANEO", rendered)
+        self.assertIn("Procesamiento/guardado fallido", rendered)
+        self.assertNotIn("Sin escaneo en esta sesión", rendered)
+
     def test_status_identifies_the_active_project(self):
         tui = LanctlTui.__new__(LanctlTui)
         tui.project_info = {"name": "Casa"}

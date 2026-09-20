@@ -4,6 +4,33 @@ import os
 import shlex
 
 
+def split_command_chain(command: str) -> list[str]:
+    """Divide órdenes separadas por ``;`` sin romper texto entre comillas."""
+
+    commands: list[str] = []
+    current: list[str] = []
+    quote = ""
+    for character in command:
+        if character in ('"', "'"):
+            if not quote:
+                quote = character
+            elif quote == character:
+                quote = ""
+        if character == ";" and not quote:
+            value = "".join(current).strip()
+            if value:
+                commands.append(value)
+            current = []
+        else:
+            current.append(character)
+    if quote:
+        raise ValueError("hay una comilla sin cerrar en la línea de comandos")
+    value = "".join(current).strip()
+    if value:
+        commands.append(value)
+    return commands
+
+
 def split_command_line(command: str) -> list[str]:
     """Divide una orden interactiva respetando las rutas nativas de Windows."""
 

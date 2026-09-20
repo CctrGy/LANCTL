@@ -79,7 +79,8 @@ TUI_ELEMENT_HELP = (
     "ELEMENT · gestión simplificada dentro del TUI",
     "  element                         Muestra el elemento seleccionado",
     "  element OBJETIVO                Selecciona por IP, MAC o alias",
-    "  element -add MAC [opciones]     Añade un elemento",
+    "  element -add MAC [-ip IP] [...] Añade un elemento no detectado",
+    "  element -ip DIRECCION           Corrige o asigna la IPv4",
     "  element -name TEXTO             Cambia el nombre",
     "  element -alias TEXTO            Cambia el alias",
     "  element -description TEXTO      Cambia la descripción",
@@ -96,11 +97,12 @@ TUI_ELEMENT_SUGGESTIONS = (
     (1, "element "),
     (2, "element "),
     (3, "element -add "),
-    (4, "element -name "),
-    (5, "element -alias "),
-    (6, "element -description "),
-    (7, "element -group "),
-    (8, "element -cnf "),
+    (4, "element -ip "),
+    (5, "element -name "),
+    (6, "element -alias "),
+    (7, "element -description "),
+    (8, "element -group "),
+    (9, "element -cnf "),
     (9, "element -delete"),
 )
 
@@ -168,6 +170,11 @@ class LanctlTui:
         self.scan_total = 0
         self.scan_visible_devices: set[str] = set()
         self.scan_summary: dict[str, object] = {}
+        self.scan_error = ""
+        self.scan_error_after_discovery = False
+        self._scan_previous_state: tuple[set[str], dict[str, float], dict[str, object]] | None = (
+            None
+        )
         self.detail_lines: list[str] = []
         self.detail_scroll = 0
         self.view_state = "inventory"
@@ -443,6 +450,18 @@ class LanctlTui:
                     f"{len(self.scan_visible_devices)}{RESET}"
                 ),
                 f"{Fore.LIGHTBLACK_EX}La lista se completa en tiempo real.{RESET}",
+            ]
+        scan_error = getattr(self, "scan_error", "")
+        if scan_error:
+            phase = (
+                "Procesamiento/guardado fallido"
+                if getattr(self, "scan_error_after_discovery", False)
+                else "Descubrimiento fallido"
+            )
+            return [
+                project_line,
+                f"{Style.BRIGHT}{Fore.RED} ERROR DE ESCANEO {RESET} {phase}",
+                f"{Fore.YELLOW}Se conserva el último estado válido; los datos no están actualizados.{RESET}",
             ]
         summary = self.scan_summary
         if not summary:
@@ -1005,6 +1024,22 @@ class LanctlTui:
                 "Minutos entre guardados cuando SaveMode está configurado como automatic.timeToSave.",
             ),
             (
+                "AVANZADO",
+                "cliPromptSaveOnCommandExit",
+                "Consultar guardado por comando",
+                "--cli-exit-save-prompt",
+                "on | off",
+                "Pregunta si se guarda al finalizar cada comando lanzado desde CMD. Desactivado evita bloquear scripts y órdenes consecutivas.",
+            ),
+            (
+                "AVANZADO",
+                "cliCommandChaining",
+                "Encadenar comandos CLI",
+                "--cli-command-chaining",
+                "on | off",
+                "Permite ejecutar varias órdenes en una línea de la CLI interactiva separándolas con punto y coma.",
+            ),
+            (
                 "ALMACENAMIENTO",
                 "database",
                 "Base de elementos",
@@ -1333,6 +1368,8 @@ class LanctlTui:
             "disconnectedRetentionTarget": ("unconfirmed", "all"),
             "disconnectedRetentionScope": ("all", "dhcp"),
             "projectSaveMode": tuple(item.mode for item in available_save_modes()),
+            "cliPromptSaveOnCommandExit": ("on", "off"),
+            "cliCommandChaining": ("on", "off"),
             "logCleanupEnabled": ("on", "off"),
             "remoteAccessEnabled": ("on", "off"),
             "remoteAccessPasswordAuthentication": ("on", "off"),
@@ -1684,12 +1721,19 @@ class LanctlTui:
             self.messages = ["Ya hay un escaneo en curso. Pulsa Esc para cancelarlo."]
             return
         self.scanning = True
+        self._scan_previous_state = (
+            set(getattr(self, "active_devices", set())),
+            dict(getattr(self, "response_ms", {})),
+            dict(getattr(self, "scan_summary", {})),
+        )
         self.spinner_index = 0
         self.scan_current = 0
         self.scan_total = 0
         self.scan_visible_devices = set()
         self.scan_summary = {}
         self.active_devices = set()
+        self.scan_error = ""
+        self.scan_error_after_discovery = False
         self.all_devices = self.database.load()
         self.devices = self._filtered_devices()
         self.messages = ["Buscando dispositivos en la LAN…"]
@@ -1714,6 +1758,7 @@ class LanctlTui:
         captured_rows: list[dict] = []
         captured_activity: list[bool] = []
         output_buffer = io.StringIO()
+        progress = _TuiScanProgress(self.scan_events, self._scan_cancel)
         try:
             args = build_parser().parse_args(["list", "--no-progress"])
 
@@ -1722,7 +1767,7 @@ class LanctlTui:
                 captured_activity.extend(activity)
 
             args.result_callback = collect_result
-            args.progress_instance = _TuiScanProgress(self.scan_events, self._scan_cancel)
+            args.progress_instance = progress
             args.scan_summary_callback = lambda summary: self.scan_events.put(
                 ("summary", dict(summary))
             )
@@ -1733,7 +1778,27 @@ class LanctlTui:
             output_buffer.write("Escaneo cancelado por el usuario.")
         except (OSError, RuntimeError, ValueError, sqlite3.DatabaseError, SystemExit) as error:
             result = int(error.code or 1) if isinstance(error, SystemExit) else 1
-            output_buffer.write(str(error))
+            if isinstance(error, SystemExit):
+                output_buffer.write(str(error))
+            else:
+                from lanctl.core.errors import errors
+
+                event = errors.from_exception(
+                    error,
+                    origin="LANCTL.TUI.Network.Scan",
+                    code=(
+                        "TUI.SCAN.POSTPROCESS_FAILED"
+                        if progress.current >= progress.total
+                        else "TUI.SCAN.DISCOVERY_FAILED"
+                    ),
+                    level=38,
+                    details={
+                        "discoveryCompleted": progress.current >= progress.total,
+                        "found": len(self.scan_visible_devices),
+                    },
+                    print_output=False,
+                )
+                output_buffer.write(event.terminal_message())
         output = output_buffer.getvalue().strip()
         response_ms = {
             str(row.get("MAC") or row.get("IP")): float(row["responseMs"])
@@ -1753,6 +1818,7 @@ class LanctlTui:
                 summary,
                 response_ms,
                 active_devices,
+                progress.current >= progress.total,
             )
         )
 
@@ -1778,15 +1844,35 @@ class LanctlTui:
             elif kind == "summary":
                 self.scan_summary.update(payload[0])
             elif kind == "complete":
-                result, summary, self.response_ms, self.active_devices = payload
+                result, summary, response_ms, active_devices, discovery_completed = payload
                 self.scanning = False
                 self.scan_current = 0
                 self.scan_total = 0
+                if result == 0:
+                    self.response_ms = response_ms
+                    self.active_devices = active_devices
+                    self.scan_error = ""
+                    self.scan_error_after_discovery = False
+                else:
+                    previous = getattr(self, "_scan_previous_state", None)
+                    if previous is not None:
+                        self.active_devices, self.response_ms, self.scan_summary = previous
+                    self.scan_error = summary or "Error al actualizar la LAN."
+                    self.scan_error_after_discovery = bool(discovery_completed)
+                self._scan_previous_state = None
                 self.reload()
                 self.messages = (
                     ["Escaneo completado. Pulsa F5 para actualizar de nuevo."]
                     if result == 0
-                    else [summary or "Error al actualizar la LAN."]
+                    else [
+                        self.scan_error,
+                        (
+                            "El descubrimiento terminó, pero falló su procesamiento o guardado. "
+                            "Se conserva el último estado válido."
+                            if discovery_completed
+                            else "El descubrimiento no terminó. Se conserva el último estado válido."
+                        ),
+                    ]
                 )
         return changed
 
@@ -3235,6 +3321,9 @@ def _translate_tui_element(parts: list[str], selected: str) -> list[str]:
         return list(parts)
 
     option_map = {
+        "-ip": "ip",
+        "--ip": "ip",
+        "ip": "ip",
         "-name": "name",
         "--name": "name",
         "name": "name",
