@@ -435,6 +435,6 @@ se mantienen todos los derechos sobre el código.
 
 ## Ayuda y referencia
 
-Accede a **[LANCTL Reference](reference/index.html)** para consultar la ayuda
+Accede a **[LANCTL Reference](https://cctrgy.github.io/lanctl/reference/)** para consultar la ayuda
 interactiva de launchers, comandos, grupos, proyectos, plugins, expansiones y
 archivos de documentación.
