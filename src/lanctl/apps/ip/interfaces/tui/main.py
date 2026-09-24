@@ -84,6 +84,7 @@ TUI_ELEMENT_HELP = (
     "  element -name TEXTO             Cambia el nombre",
     "  element -alias TEXTO            Cambia el alias",
     "  element -description TEXTO      Cambia la descripción",
+    "  element -idf ABC-012            Asigna el identificador físico IDF",
     "  element -group GRUPO            Añade al grupo",
     "  element -cnf O|X|-|S|F          F fija la selección en el TUI",
     "  element -delete                 Elimina tras confirmación",
@@ -101,9 +102,10 @@ TUI_ELEMENT_SUGGESTIONS = (
     (5, "element -name "),
     (6, "element -alias "),
     (7, "element -description "),
-    (8, "element -group "),
-    (9, "element -cnf "),
-    (9, "element -delete"),
+    (8, "element -idf "),
+    (9, "element -group "),
+    (10, "element -cnf "),
+    (11, "element -delete"),
 )
 
 
@@ -275,6 +277,38 @@ class LanctlTui:
         label = f"{mode}:{value}" if value else mode
         self.messages = [f"Filtro de lista: {label} | {len(self.devices)} elementos"]
         return True
+
+    def cycle_list_view(self) -> None:
+        """Alterna las vistas rápidas disponibles para el inventario con Tab.
+
+        Los grupos se generan a partir del inventario actual, por lo que no se
+        necesita un selector adicional ni se persiste un filtro temporal.
+        """
+
+        groups = sorted(
+            {
+                str(group).strip().upper()
+                for device in self.all_devices
+                for group in device.groups
+                if str(group).strip()
+            }
+        )
+        views = [
+            ("all", ""),
+            ("connected", ""),
+            ("disconnected", ""),
+            *(("group", group) for group in groups),
+        ]
+        if self.dhcp_range:
+            views.extend((("dhcp", ""), ("statics", "")))
+
+        try:
+            position = views.index(self.list_filter)
+        except ValueError:
+            position = -1
+        mode, value = views[(position + 1) % len(views)]
+        parts = ["--" + mode] if mode != "group" else ["--group", value]
+        self.configure_list(parts)
 
     def move(self, delta: int) -> None:
         if self.selected and self.selected.cnf == "F":
@@ -672,7 +706,7 @@ class LanctlTui:
             title=(
                 f"{modal.title} / MENU[{modal.tabs[modal.tab_index]}]"
                 f"{' / EDITANDO' if modal.editing else ''}"
-                if modal.kind == "settings" and modal.tabs
+                if modal.kind in {"settings", "info"} and modal.tabs
                 else modal.title
             ),
             tabs=modal.tabs,
@@ -697,6 +731,18 @@ class LanctlTui:
             )
         if modal.kind == "project_create":
             return self._project_create_page(modal)
+        if modal.kind == "info" and modal.tabs[modal.tab_index] != "Puertos":
+            available = content_width or 88
+            return [
+                *SettingsEditor.render_page(
+                    modal,
+                    description_width=max(24, available - 4),
+                    table_width=available,
+                ),
+                "",
+                "  OBSERVACIONES Y DATOS REGISTRADOS",
+                *modal.page,
+            ]
         if modal.kind == "help" and modal.tab_index == 0:
             lines = []
             for index, entry in enumerate(modal.items):
@@ -1883,7 +1929,7 @@ class LanctlTui:
             return
         self.messages = ["Obteniendo informacion completa del elemento..."]
         self.render()
-        result, output = self._capture(
+        _result, output = self._capture(
             [
                 "scan",
                 device.mac or device.ip,
@@ -1895,10 +1941,18 @@ class LanctlTui:
         try:
             payload = json.loads(output)
         except (json.JSONDecodeError, TypeError):
-            self._set_command_output(output, result)
-            return
+            payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        element = payload.get("element")
+        if not isinstance(element, dict):
+            element = {}
         observation = payload.get("observation", {})
+        if not isinstance(observation, dict):
+            observation = {}
         identification = observation.get("identification", {}) or {}
+        if not isinstance(identification, dict):
+            identification = {}
         match = observation.get("identityMatch")
 
         def shown(value) -> str:
@@ -1907,11 +1961,48 @@ class LanctlTui:
         identity = [
             f"  Estado: {'ACTIVO' if observation.get('reachable') else 'NO DETECTADO'}",
             f"  ID estable: {shown(device.device_id)}",
-            f"  CNF: {shown(device.cnf)}",
             f"  IP registrada: {shown(device.ip)}",
             f"  MAC registrada: {shown(device.mac)}",
             f"  MAC observada: {shown(observation.get('observed_mac'))}",
             f"  Coincidencia: {'Si' if match is True else 'NO' if match is False else '-'}",
+        ]
+        identity_fields = [
+            SettingField(
+                "cnf", "CNF", "-cnf", device.cnf, device.cnf,
+                "O, X, -, S o F", "Identidad",
+                "Estado de reconocimiento del elemento.", ("O", "X", "-", "S", "F"),
+            ),
+            SettingField(
+                "alias", "ALIAS", "-alias", device.alias, device.alias,
+                "texto único", "Identidad", "Alias corto asignado por el usuario.",
+            ),
+            SettingField(
+                "name", "NAME", "-name", device.name, device.name,
+                "texto", "Identidad", "Nombre legible del elemento.",
+            ),
+            SettingField(
+                "description", "DESCRIPTION", "-description", device.description, device.description,
+                "máximo 42", "Identidad", "Descripción breve del elemento.",
+            ),
+            SettingField(
+                "idf", "IDF", "-idf", getattr(device, "idf", ""), getattr(device, "idf", ""),
+                "AB-12 a ABCDE-12345", "Identidad",
+                "Identificador físico manual y único, compartido conceptualmente con LANWIRE.",
+            ),
+            SettingField(
+                "group", "AÑADIR GRUPO", "-group", "", "",
+                "nombre de grupo", "Clasificación",
+                "Añade el elemento a un grupo; los existentes aparecen debajo.",
+            ),
+            SettingField(
+                "ip", "IP", "-ip", device.ip, device.ip,
+                "IPv4 única", "Red", "Dirección IPv4 registrada para este elemento.",
+            ),
+            SettingField(
+                "protocol", "PROTOCOLO", "-protocol", "", "",
+                "ssh o del ssh", "Accesos",
+                "Activa un protocolo; escribe del NOMBRE para desactivarlo.",
+            ),
         ]
         classification = [
             f"  Alias: {shown(device.alias)}",
@@ -1919,7 +2010,7 @@ class LanctlTui:
             f"  Nombre: {shown(device.name)}",
             f"  Hostname detectado: {shown(observation.get('hostname') or device.default_name)}",
             f"  Descripcion: {shown(device.description)}",
-            f"  Fabricante: {shown(payload.get('element', {}).get('manufacturer') or device.manufacturer)}",
+            f"  Fabricante: {shown(element.get('manufacturer') or device.manufacturer)}",
             f"  Tipo probable: {shown(identification.get('device_type'))}",
             f"  Confianza: {shown(identification.get('confidence'))}",
             f"  Evidencias: {shown('; '.join(identification.get('evidence', [])))}",
@@ -1961,8 +2052,10 @@ class LanctlTui:
                 title=f"INFO · {device.alias or device.name or device.ip or device.mac}",
                 tabs=["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
                 pages=[identity, classification, network, access, ports],
+                items=identity_fields,
+                footer="←/→ sección  ↑/↓ campo  Tab editar  F2/Esc cerrar",
                 max_width=90,
-                max_height=26,
+                max_height=30,
             )
         )
 
@@ -2216,7 +2309,7 @@ class LanctlTui:
         if not device:
             return {}
         return {
-            "idf": device.device_id,
+            "idf": getattr(device, "idf", ""),
             "mac": device.mac,
             "ip": device.ip,
             "cnf": device.cnf,
@@ -2400,6 +2493,9 @@ class LanctlTui:
         if key in ("UP", "DOWN") and getattr(self, "command_suggestions", []):
             self._move_suggestion(-1 if key == "UP" else 1)
             return
+        if key == "TAB":
+            self.cycle_list_view()
+            return
         action = self._action_for_key(key)
         if key == "UP":
             self.move(-1)
@@ -2543,10 +2639,10 @@ class LanctlTui:
         if modal.kind == "project_create":
             self._handle_project_create_key(modal, key)
             return
-        if key in ("ESC", "F1") and not (key == "F1" and modal.kind != "help"):
-            self.modal = None
+        if modal.kind == "info":
+            self._handle_info_key(modal, key)
             return
-        if key == "F2" and modal.kind == "info":
+        if key in ("ESC", "F1") and not (key == "F1" and modal.kind != "help"):
             self.modal = None
             return
         if key == "LEFT":
@@ -2589,6 +2685,91 @@ class LanctlTui:
                 self.show_plugin_manager()
             elif modal.kind == "projects":
                 self.show_project_manager()
+
+    def _handle_info_key(self, modal: ModalState, key: str) -> None:
+        """Edita la identidad visible sin confundir el IDF con el UUID interno."""
+
+        if key == "F2" and not modal.editing:
+            self.modal = None
+            return
+        if modal.tabs[modal.tab_index] == "Puertos":
+            if key in ("ESC", "F2"):
+                self.modal = None
+            elif key == "LEFT":
+                modal.change_tab(-1)
+            elif key == "RIGHT":
+                modal.change_tab(1)
+            elif key == "UP":
+                modal.scroll -= 1
+            elif key == "DOWN":
+                modal.scroll += 1
+            elif key == "PGUP":
+                modal.scroll -= 10
+            elif key == "PGDN":
+                modal.scroll += 10
+            return
+
+        # F2 durante una edición equivale a cancelar el valor en curso; evita
+        # cerrar la ficha y perder de forma silenciosa lo que se estaba tecleando.
+        effective_key = "ESC" if key == "F2" and modal.editing else key
+        field = modal.items[modal.selected]
+        was_editing = modal.editing
+        previous_value = field.value
+        SettingsEditor.handle_key(
+            modal,
+            effective_key,
+            close=lambda: setattr(self, "modal", None),
+            open_remote_users=lambda: None,
+        )
+        if not (was_editing and effective_key in ("TAB", "SHIFT_TAB") and not modal.editing):
+            return
+        if field.value == field.original:
+            return
+
+        device = self.selected
+        selector = device.device_id or device.mac or device.ip
+        try:
+            if field.key == "group":
+                from lanctl.core.config import load_config
+                from lanctl.core.group_database import GroupDatabase
+
+                _, updated = GroupDatabase(load_config()["groups"], self.database).add(
+                    field.value, selector
+                )
+            elif field.key == "protocol":
+                parts = field.value.split()
+                if not parts:
+                    raise ValueError("indica un protocolo")
+                remove = len(parts) == 2 and parts[0].casefold() in {"del", "delete", "remove"}
+                if len(parts) > 2 or (len(parts) == 2 and not remove):
+                    raise ValueError("usa NOMBRE o del NOMBRE")
+                updated = self.database.set_protocol(selector, parts[-1], not remove)
+            else:
+                updated = self.database.edit_device(selector, field.key, field.value)
+        except (KeyError, OSError, ValueError) as error:
+            field.value = previous_value
+            modal.footer = f"No se pudo guardar: {error} · Tab editar · F2/Esc cerrar"
+            return
+        if field.key == "group":
+            modal.pages[1] = [
+                f"  Grupos: {', '.join(updated.groups) or '-'}"
+                if line.startswith("  Grupos:") else line
+                for line in modal.pages[1]
+            ]
+        elif field.key == "protocol":
+            modal.pages[3] = [
+                f"  Protocolos: {', '.join(updated.protocols) or '-'}"
+                if line.startswith("  Protocolos:") else line
+                for line in modal.pages[3]
+            ]
+        if field.key in {"group", "protocol"}:
+            field.value = field.original = ""
+            device.groups = updated.groups
+            device.protocols = updated.protocols
+        else:
+            field.original = field.value
+            setattr(device, field.key, getattr(updated, field.key))
+        modal.footer = f"{field.label} guardado · ←/→ sección  ↑/↓ campo  Tab editar  F2/Esc cerrar"
 
     def _create_project_from_manager(self) -> None:
         from lanctl.core.projects.paths import default_project_directory
@@ -3339,6 +3520,9 @@ def _translate_tui_element(parts: list[str], selected: str) -> list[str]:
         "-cnf": "cnf",
         "--cnf": "cnf",
         "cnf": "cnf",
+        "-idf": "idf",
+        "--idf": "idf",
+        "idf": "idf",
         "-protocol": "protocol",
         "--protocol": "protocol",
         "protocol": "protocol",

@@ -785,11 +785,110 @@ class TuiTests(unittest.TestCase):
 
         self.assertEqual(tui.modal.kind, "info")
         self.assertEqual(len(tui.modal.tabs), 5)
-        self.assertEqual((tui.modal.max_width, tui.modal.max_height), (90, 26))
+        self.assertEqual((tui.modal.max_width, tui.modal.max_height), (90, 30))
+        self.assertEqual(
+            [field.key for field in tui.modal.items],
+            ["cnf", "alias", "name", "description", "idf", "group", "ip", "protocol"],
+        )
+        self.assertEqual(tui.modal.items[4].hint, "AB-12 a ABCDE-12345")
+        tui.modal.tab_index = 2
+        self.assertIn("IP", "\n".join(tui._modal_page(tui.modal)))
+        tui.modal.tab_index = 4
         ports = "\n".join(tui.modal.pages[4])
         self.assertIn("Puertos abiertos: 2", ports)
         self.assertIn("443", ports)
         self.assertIn("22", ports)
+        tui._capture = lambda _argv: (1, "escaneo no disponible")
+        tui.show_info()
+        self.assertEqual(tui.modal.kind, "info")
+        self.assertIn("IP", [field.label for field in tui.modal.items])
+
+    def test_f2_identity_editor_persists_physical_idf(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        device = SimpleNamespace(
+            device_id="dev_test", mac="AA:BB:CC:DD:EE:FF", ip="192.168.1.10", idf=""
+        )
+        tui.devices = [device]
+        tui.index = 0
+        tui.database = Mock()
+        tui.database.edit_device.return_value = SimpleNamespace(idf="AB-12")
+        modal = ModalState(
+            "info",
+            "INFO",
+            ["Identidad"],
+            [[]],
+            selected=0,
+            items=[SettingField("idf", "IDF", "-idf", "", "", "AB-12", "Identidad")],
+        )
+        tui.modal = modal
+
+        tui._handle_info_key(modal, "TAB")
+        for character in "ab-12":
+            tui._handle_info_key(modal, character)
+        tui._handle_info_key(modal, "TAB")
+
+        tui.database.edit_device.assert_called_once_with("dev_test", "idf", "ab-12")
+        self.assertEqual(device.idf, "AB-12")
+
+    def test_f2_edits_ip_and_protocol_in_their_own_sections(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        device = SimpleNamespace(
+            device_id="dev_test", mac="AA:BB:CC:DD:EE:FF", ip="192.168.1.10",
+            groups=[], protocols=[],
+        )
+        tui.devices = [device]
+        tui.index = 0
+        tui.database = Mock()
+        tui.database.edit_device.return_value = SimpleNamespace(ip="192.168.1.20")
+        tui.database.set_protocol.return_value = SimpleNamespace(groups=[], protocols=["ssh"])
+        modal = ModalState(
+            "info", "INFO", ["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
+            [[], [], [], ["  Protocolos: -"], []],
+            items=[
+                SettingField("ip", "IP", "-ip", device.ip, device.ip, section="Red"),
+                SettingField("protocol", "PROTOCOLO", "-protocol", "", "", section="Accesos"),
+            ],
+        )
+        tui.modal = modal
+        modal.tab_index = 2
+        tui._handle_info_key(modal, "TAB")
+        modal.items[0].value = "192.168.1.20"
+        tui._handle_info_key(modal, "TAB")
+        tui.database.edit_device.assert_called_once_with("dev_test", "ip", "192.168.1.20")
+        self.assertEqual(device.ip, "192.168.1.20")
+
+        modal.tab_index = 3
+        modal.selected = 1
+        tui._handle_info_key(modal, "TAB")
+        modal.items[1].value = "ssh"
+        tui._handle_info_key(modal, "TAB")
+        tui.database.set_protocol.assert_called_once_with("dev_test", "ssh", True)
+        self.assertEqual(device.protocols, ["ssh"])
+        self.assertIn("ssh", "\n".join(modal.pages[3]))
+
+    def test_f2_adds_a_group_from_classification(self):
+        tui = LanctlTui.__new__(LanctlTui)
+        device = SimpleNamespace(device_id="dev_test", mac="AA:BB:CC:DD:EE:FF", ip="192.168.1.10", groups=[])
+        tui.devices = [device]
+        tui.index = 0
+        tui.database = Mock()
+        modal = ModalState(
+            "info", "INFO", ["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
+            [[], ["  Grupos: -"], [], [], []], tab_index=1,
+            items=[SettingField("group", "AÑADIR GRUPO", "-group", "", "", section="Clasificación")],
+        )
+        tui.modal = modal
+        with (
+            patch("lanctl.core.config.load_config", return_value={"groups": "groups.json"}),
+            patch("lanctl.core.group_database.GroupDatabase") as groups,
+        ):
+            groups.return_value.add.return_value = (Mock(), SimpleNamespace(groups=["LAB"], protocols=[]))
+            tui._handle_info_key(modal, "TAB")
+            modal.items[0].value = "LAB"
+            tui._handle_info_key(modal, "TAB")
+            groups.return_value.add.assert_called_once_with("LAB", "dev_test")
+        self.assertEqual(device.groups, ["LAB"])
+        self.assertIn("  Grupos: LAB", modal.pages[1])
 
     def test_modal_freezes_background_and_consumes_navigation(self):
         tui = LanctlTui.__new__(LanctlTui)
@@ -930,6 +1029,40 @@ class TuiTests(unittest.TestCase):
         self.assertEqual(_parse_list_filter(["-group", "mam"]), ("group", "MAM"))
         self.assertEqual(_parse_list_filter(["-dhcp"]), ("dhcp", ""))
         self.assertEqual(_parse_list_filter(["-statics"]), ("statics", ""))
+
+    def test_tab_cycles_inventory_views_and_includes_groups(self):
+        tui = object.__new__(LanctlTui)
+        tui.all_devices = [
+            SimpleNamespace(groups=["Infraestructura"]),
+            SimpleNamespace(groups=["IoT", "infraestructura"]),
+        ]
+        tui.dhcp_range = "192.168.1.2-192.168.1.254"
+        tui.list_filter = ("all", "")
+        calls = []
+        tui.configure_list = lambda parts: calls.append(parts)
+
+        tui.cycle_list_view()
+        self.assertEqual(calls, [["--connected"]])
+        tui.list_filter = ("disconnected", "")
+        tui.cycle_list_view()
+        self.assertEqual(calls[-1], ["--group", "INFRAESTRUCTURA"])
+        tui.list_filter = ("group", "IOT")
+        tui.cycle_list_view()
+        self.assertEqual(calls[-1], ["--dhcp"])
+
+    def test_tab_in_inventory_cycles_the_list_view(self):
+        tui = object.__new__(LanctlTui)
+        tui.scanning = False
+        tui.modal = None
+        tui.detail_lines = []
+        tui.view_state = "inventory"
+        tui.output_focus = False
+        tui.command_suggestions = []
+        tui.cycle_list_view = Mock()
+
+        tui.handle_key("TAB")
+
+        tui.cycle_list_view.assert_called_once_with()
 
     def test_activity_identity_prefers_mac_and_supports_ip_only_rows(self):
         self.assertEqual(_device_key("aa:bb:cc:dd:ee:ff", "192.168.1.4"), "mac:AA:BB:CC:DD:EE:FF")

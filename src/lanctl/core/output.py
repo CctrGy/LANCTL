@@ -32,6 +32,7 @@ FIELDS = (
     "lastSeen",
     "responseMs",
     "openPorts",
+    "idf",
 )
 TABLE_COLUMNS = (
     ("IP", "IP"),
@@ -61,6 +62,7 @@ TABLE_HARD_MIN_WIDTHS = {
     "description": 8,
     "manufacturer": 8,
     "deviceId": 8,
+    "idf": 7,
     "protocols": 7,
     "discovery": 8,
     "discoveryMethods": 8,
@@ -81,6 +83,7 @@ SHRINK_PRIORITY = (
     "discovery",
     "protocols",
     "deviceId",
+    "idf",
     "IP",
     "MAC",
     "responseMs",
@@ -88,6 +91,7 @@ SHRINK_PRIORITY = (
 )
 MANUFACTURER_COLUMN = ("manufacturer", "manufacturer")
 EXTRA_COLUMNS = (
+    ("idf", "idf"),
     ("device-id", "deviceId"),
     ("protocols", "protocols"),
     ("discovery", "discovery"),
@@ -110,6 +114,7 @@ FIELD_COLORS = {
     "description": Fore.LIGHTWHITE_EX,
     "manufacturer": Fore.LIGHTWHITE_EX,
     "deviceId": Fore.LIGHTWHITE_EX,
+    "idf": Fore.LIGHTWHITE_EX,
     "protocols": Fore.LIGHTCYAN_EX,
     "users": Fore.LIGHTCYAN_EX,
     "discovery": Fore.LIGHTCYAN_EX,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,6 +10,7 @@ from typing import Any
 
 from lanctl.apps.wire.idf import IDF, IDFSize
 from lanctl.apps.wire.path import application_directory, application_path
+from lanctl.apps.wire.topology import apply_prefix_defaults
 from lanctl.apps.wire.xfile import atomic_write_bytes, locked_file, read, update_json, write_json
 
 DATABASE_FORMAT = "LANWRE-IDF-DB"
@@ -47,24 +49,45 @@ class IDFDatabaseManager:
         with locked_file(self.path):
             if not self.path.exists():
                 write_json(self.path, _empty_database())
-        self._load()
+            database = read(self.path)
+            self._validate_database(database)
+            changed = False
+            for record in database["records"].values():
+                data = record.get("data") or {}
+                updated = apply_prefix_defaults(record["prefix"], data)
+                if updated != data:
+                    record["data"] = updated
+                    record["updated_at"] = self._timestamp()
+                    changed = True
+            if changed:
+                write_json(self.path, database)
         return self.path.resolve()
 
     def create(
-        self, prefix: str, *, size: IDFSize | str | None = None, data: dict[str, Any] | None = None
+        self,
+        prefix: str,
+        *,
+        size: IDFSize | str | None = None,
+        number_width: int | None = None,
+        data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Reserva automáticamente el primer número libre de un prefijo."""
         normalized_prefix = prefix.strip().upper()
-        resolved_size = IDF.build(normalized_prefix, 0, size).size
+        template = IDF.build(normalized_prefix, 0, size, number_width=number_width)
         created: dict[str, Any] = {}
 
         def reserve(database: dict[str, Any]) -> None:
             nonlocal created
             self._validate_database(database)
             records = database["records"]
-            maximum = 99 if resolved_size is IDFSize.SHORT else 9999
+            maximum = 10**template.number_width - 1
             for number in range(maximum + 1):
-                candidate = IDF.build(normalized_prefix, number, resolved_size)
+                candidate = IDF.build(
+                    normalized_prefix,
+                    number,
+                    size,
+                    number_width=template.number_width,
+                )
                 if candidate.value not in records:
                     created = self._new_record(candidate, data)
                     records[candidate.value] = created
@@ -108,6 +131,15 @@ class IDFDatabaseManager:
         normalized = self._normalize_prefix(prefix)
         return [record for record in records if record["prefix"] == normalized]
 
+    def list_group(self, group: str) -> list[dict[str, Any]]:
+        """Filtra por grupo lógico sin acoplarlo al identificador físico."""
+        from lanctl.apps.wire.topology import groups_for
+
+        normalized = group.strip().upper()
+        if not normalized:
+            raise ValueError("el grupo no puede estar vacío")
+        return [record for record in self.all() if normalized in groups_for(record)]
+
     def define_prefix(self, prefix: str, name: str, description: str = "") -> dict[str, str]:
         """Crea o actualiza la definición humana de un juego de letras."""
         normalized = self._normalize_prefix(prefix)
@@ -121,7 +153,35 @@ class IDFDatabaseManager:
 
         def store(database: dict[str, Any]) -> None:
             self._validate_database(database)
+            existing = database.setdefault("prefixes", {}).get(normalized, {})
+            if existing.get("type_profile"):
+                definition["type_profile"] = existing["type_profile"]
             database.setdefault("prefixes", {})[normalized] = definition
+
+        update_json(self.path, _empty_database, store)
+        return deepcopy(definition)
+
+    def define_prefix_profile(
+        self, prefix: str, profile: str, *, name: str = "", description: str = ""
+    ) -> dict[str, str]:
+        """Asigna a un juego de letras el perfil usado por futuros IDF."""
+        from lanctl.apps.wire.topology import build_new_idf_data
+
+        normalized = self._normalize_prefix(prefix)
+        canonical = build_new_idf_data(profile)["subtype"]
+        definition: dict[str, str] = {}
+
+        def store(database: dict[str, Any]) -> None:
+            nonlocal definition
+            self._validate_database(database)
+            existing = database.setdefault("prefixes", {}).get(normalized, {})
+            definition = {
+                "prefix": normalized,
+                "name": name.strip() or existing.get("name") or canonical,
+                "description": description.strip() or existing.get("description", ""),
+                "type_profile": canonical,
+            }
+            database["prefixes"][normalized] = definition
 
         update_json(self.path, _empty_database, store)
         return deepcopy(definition)
@@ -160,6 +220,23 @@ class IDFDatabaseManager:
             if identifier.value not in database["records"]:
                 raise KeyError(identifier.value)
             record = database["records"][identifier.value]
+            old_ports = set((record.get("data") or {}).get("ports") or {})
+            new_ports = set(data.get("ports") or {})
+            removed_ports = old_ports - new_ports
+            if removed_ports:
+                connected = {
+                    endpoint.get("port")
+                    for candidate in database["records"].values()
+                    if (candidate.get("data") or {}).get("type") == "wire"
+                    for endpoint in (candidate.get("data") or {}).get("endpoints", [])
+                    if isinstance(endpoint, dict)
+                    and endpoint.get("device") == identifier.value
+                    and endpoint.get("port") in removed_ports
+                }
+                if connected:
+                    raise ValueError(
+                        "desconecta antes los puertos: " + ", ".join(sorted(connected))
+                    )
             record["data"] = deepcopy(data)
             record["updated_at"] = self._timestamp()
             updated = deepcopy(record)
@@ -167,7 +244,66 @@ class IDFDatabaseManager:
         update_json(self.path, _empty_database, replace)
         return updated
 
+    def edit_port(
+        self, value: str | IDF, port: str, *, name: str | None = None, position: int | None = None
+    ) -> dict[str, Any]:
+        """Renombra o reordena un puerto y sus enlaces en una escritura atómica."""
+        identifier = value if isinstance(value, IDF) else IDF.parse(value)
+        updated: dict[str, Any] = {}
+
+        def edit(database: dict[str, Any]) -> None:
+            nonlocal updated
+            self._validate_database(database)
+            record = database["records"].get(identifier.value)
+            if record is None:
+                raise KeyError(identifier.value)
+            data = record.get("data") or {}
+            ports = data.get("ports") or {}
+            if port not in ports:
+                raise ValueError(f"puerto inexistente: {port}")
+            new_name = name.strip() if name is not None else port
+            if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", new_name):
+                raise ValueError("el nombre del puerto debe usar letras, números, _ o -")
+            if new_name != port and "FIBER" in {port, new_name}:
+                raise ValueError("FIBER es un nombre fijo reservado para el puerto de fibra")
+            if new_name != port and new_name in ports:
+                raise ValueError(f"ya existe el puerto {new_name}")
+            if position is not None and not 1 <= position <= len(ports):
+                raise ValueError(f"la posición debe estar entre 1 y {len(ports)}")
+            items = [
+                (new_name if key == port else key, deepcopy(item)) for key, item in ports.items()
+            ]
+            if position is not None:
+                moved = next(item for item in items if item[0] == new_name)
+                items.remove(moved)
+                items.insert(position - 1, moved)
+            data["ports"] = dict(items)
+            record["data"] = data
+            record["updated_at"] = self._timestamp()
+            if new_name != port:
+                for candidate in database["records"].values():
+                    wire_data = candidate.get("data") or {}
+                    if wire_data.get("type") != "wire":
+                        continue
+                    for endpoint in wire_data.get("endpoints", []):
+                        if (
+                            endpoint.get("device") == identifier.value
+                            and endpoint.get("port") == port
+                        ):
+                            endpoint["port"] = new_name
+                            candidate["updated_at"] = self._timestamp()
+            updated = deepcopy(record)
+
+        update_json(self.path, _empty_database, edit)
+        return updated
+
     def delete(self, value: str | IDF) -> dict[str, Any]:
+        """Elimina un elemento y limpia las referencias físicas que deja atrás.
+
+        Un equipo puede aparecer como extremo de varios cables o como ubicación
+        de otro elemento. Todo se resuelve en la misma escritura atómica para
+        que la topología no conserve enlaces colgantes.
+        """
         identifier = value if isinstance(value, IDF) else IDF.parse(value)
         deleted: dict[str, Any] = {}
 
@@ -178,6 +314,21 @@ class IDFDatabaseManager:
                 deleted = database["records"].pop(identifier.value)
             except KeyError as error:
                 raise KeyError(identifier.value) from error
+            for record in database["records"].values():
+                data = record.get("data")
+                if not isinstance(data, dict):
+                    continue
+                if isinstance(data.get("endpoints"), list):
+                    data["endpoints"] = [
+                        endpoint
+                        for endpoint in data["endpoints"]
+                        if not isinstance(endpoint, dict)
+                        or endpoint.get("device") != identifier.value
+                    ]
+                location = data.get("location")
+                if isinstance(location, dict) and location.get("rack") == identifier.value:
+                    location["rack"] = None
+                record["updated_at"] = self._timestamp()
 
         update_json(self.path, _empty_database, remove)
         return deepcopy(deleted)
@@ -190,8 +341,8 @@ class IDFDatabaseManager:
     @staticmethod
     def _normalize_prefix(prefix: str) -> str:
         normalized = prefix.strip().upper()
-        if len(normalized) not in (2, 4) or not normalized.isascii() or not normalized.isalpha():
-            raise ValueError("el prefijo debe contener 2 o 4 letras ASCII")
+        if not 2 <= len(normalized) <= 5 or not normalized.isascii() or not normalized.isalpha():
+            raise ValueError("el prefijo debe contener entre 2 y 5 letras ASCII")
         return normalized
 
     @staticmethod
@@ -199,10 +350,12 @@ class IDFDatabaseManager:
         timestamp = IDFDatabaseManager._timestamp()
         return {
             "id": identifier.value,
-            "size": identifier.size.value,
+            "size": identifier.size.value if identifier.size else "custom",
+            "prefix_width": identifier.prefix_width,
+            "number_width": identifier.number_width,
             "prefix": identifier.prefix,
             "number": identifier.number,
-            "data": deepcopy(data or {}),
+            "data": apply_prefix_defaults(identifier.prefix, data),
             "created_at": timestamp,
             "updated_at": timestamp,
         }

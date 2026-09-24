@@ -170,7 +170,7 @@ local scan = clink.argmatcher()
 
 local element = clink.argmatcher()
     :addarg({ fromhistory = true, hint = "IP, MAC o alias" })
-    :addarg({ "edit", "ip", "cnf", "name", "description", "alias", "group", "protocol", "delete", "del", "remove" })
+    :addarg({ "edit", "ip", "cnf", "name", "description", "alias", "idf", "group", "protocol", "delete", "del", "remove" })
     :addarg({ fromhistory = true, hint = "Valor" })
     :addflags({
         "-h", "--help", "/?", "-add" .. history_value("MAC"),
@@ -179,6 +179,7 @@ local element = clink.argmatcher()
         "-alias" .. history_value("Alias"), "--alias" .. history_value("Alias"),
         "-description" .. history_value("Descripción"), "--description" .. history_value("Descripción"),
         "-cnf" .. cnf_states, "--cnf" .. cnf_states,
+        "-idf" .. history_value("AB-12"), "--idf" .. history_value("AB-12"),
         "-group" .. history_value("Grupo"), "--group" .. history_value("Grupo"),
         "-protocol" .. protocols, "--protocol" .. protocols,
         "-delete", "--delete", "--database" .. file_arg, "--groups" .. file_arg, "--yes"

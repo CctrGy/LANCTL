@@ -135,6 +135,7 @@ class DeviceDatabase:
                     "nameDeleted": bool(record.get("nameDeleted", False)),
                     "aliasDeleted": bool(record.get("aliasDeleted", False)),
                     "deviceId": str(record.get("deviceId", "")),
+                    "idf": str(record.get("idf", "")),
                     "protocols": list(record.get("protocols", [])),
                     "credentials": dict(record.get("credentials", {})),
                     "protocolOptions": dict(record.get("protocolOptions", {})),
@@ -162,6 +163,7 @@ class DeviceDatabase:
                 )
                 incoming["aliasDeleted"] = previous["aliasDeleted"]
                 incoming.device_id = previous.device_id
+                incoming.idf = previous.idf
                 incoming.protocols = list(previous.protocols)
                 incoming.credentials = dict(previous.credentials)
                 incoming.protocol_options = {
@@ -405,6 +407,7 @@ class DeviceDatabase:
             or device["IP"] == selector
             or device["ALIAS"].casefold() == selector.casefold()
             or device.device_id.casefold() == selector.casefold()
+            or (device.idf and device.idf.casefold() == selector.casefold())
         ]
         if not matches:
             raise ValueError(f"no existe ningún dispositivo para: {selector}")
@@ -439,6 +442,7 @@ class DeviceDatabase:
             or (normalized_mac and device.mac.upper() == normalized_mac)
             or (device.alias and device.alias.casefold() == folded)
             or (device.name and device.name.casefold() == folded)
+            or (device.idf and device.idf.casefold() == folded)
         ]
         if not matches:
             raise ValueError(f"no se encontró ningún dispositivo para: {selector}")
@@ -554,6 +558,22 @@ class DeviceDatabase:
             device.ip = normalized_ip
         elif field == "cnf":
             device.cnf = normalize_cnf(value)
+        elif field == "idf":
+            from lanctl.apps.wire.idf import IDF
+
+            normalized_idf = str(IDF.parse(value)) if value.strip() else ""
+            duplicate = next(
+                (
+                    item
+                    for item in devices
+                    if item is not device and item.idf.casefold() == normalized_idf.casefold()
+                ),
+                None,
+            )
+            if duplicate:
+                owner = duplicate.alias or duplicate.name or duplicate.mac or duplicate.device_id
+                raise ValueError(f"el IDF {normalized_idf} ya pertenece a {owner}")
+            device.idf = normalized_idf
         elif field == "icon":
             normalized = value.strip().casefold()
             if normalized and not normalized.startswith("device."):
@@ -593,6 +613,7 @@ class DeviceDatabase:
         alias: str = "",
         description: str = "-",
         ip: str = "-",
+        idf: str = "",
     ) -> Device:
         normalized_mac = normalize_mac(mac)
         if ip == "-":
@@ -606,6 +627,10 @@ class DeviceDatabase:
             raise ValueError("la descripción no puede superar 42 caracteres")
         if alias.upper() in ("GATEWAY", "BRODCAST"):
             raise ValueError(f"el alias {alias.upper()} está reservado")
+        if idf:
+            from lanctl.apps.wire.idf import IDF
+
+            idf = str(IDF.parse(idf))
 
         devices = self.load()
         if any(device.mac == normalized_mac for device in devices):
@@ -614,6 +639,8 @@ class DeviceDatabase:
             raise ValueError(f"la IP {normalized_ip} ya está en uso")
         if alias and any(device.alias.casefold() == alias.casefold() for device in devices):
             raise ValueError(f"el alias {alias} ya está en uso")
+        if idf and any(device.idf.casefold() == idf.casefold() for device in devices):
+            raise ValueError(f"el IDF {idf} ya está en uso")
 
         device = Device(
             ip=normalized_ip,
@@ -622,6 +649,7 @@ class DeviceDatabase:
             name=name,
             alias=alias,
             description=description or "-",
+            idf=idf,
         )
         devices.append(device)
         self._write(devices)

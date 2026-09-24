@@ -6,6 +6,8 @@ from typing import Any
 
 from rich.text import Text
 
+from lanctl.apps.wire.topology import groups_for
+
 
 def port_connections(records: list[dict[str, Any]]) -> dict[tuple[str, str], str]:
     connections: dict[tuple[str, str], str] = {}
@@ -336,14 +338,24 @@ def element_sidebar(
     *,
     selected_port: str | None = None,
     selected_endpoint: int = 0,
+    general_selected: bool = False,
 ) -> Text:
     data = record.get("data") or {}
     element_type = str(data.get("type", "element"))
     lines = [element_type.removeprefix("device.").replace("_", " ").title()]
+    if data.get("subtype"):
+        lines.append(f"profile: {data['subtype']}")
+    if general_selected:
+        lines.extend(("> DATOS DEL ELEMENTO", "Enter: editar datos generales", ""))
     if data.get("name"):
         lines.append(str(data["name"]))
     if data.get("ip"):
         lines.append(f"ip: {data['ip']}")
+    if data.get("lanipDevice"):
+        lines.append(f"LANIP: {data['lanipDevice']}")
+    groups = sorted(groups_for(record))
+    if groups:
+        lines.append(f"groups: {'/'.join(groups)}")
     if element_type == "rack":
         units = max(0, int(data.get("size_units", 0)))
         # En los racks esta columna funciona como leyenda física: cada línea
@@ -390,7 +402,7 @@ def element_sidebar(
             connector = (
                 "SFP/DAC"
                 if port.get("kind") == "wire.dac"
-                else "SFP"
+                else "Fibra"
                 if port.get("kind") == "wire.fiber"
                 else "RJ45"
             )
@@ -400,10 +412,11 @@ def element_sidebar(
                     f"PORT {selected_port}{'*' if _special_port(port) else ''}",
                     f"connector: {connector}",
                     f"medium: {port.get('kind', '-')}",
-                    f"poe: {'yes' if port.get('poe') else 'no'}",
-                    f"wire: {wire}",
                 )
             )
+            if port.get("poe"):
+                lines.append("POE")
+            lines.append(f"wire: {wire}")
             lines.extend(("", "Enter: open cable"))
     elif element_type == "wire":
         sides = cable_sides(record)
@@ -417,7 +430,7 @@ def element_sidebar(
         for index, side in enumerate(sides):
             marker = ">" if index == selected_endpoint else " "
             lines.append(f"{marker} {_side_label(side) if side else '(free)'}")
-        lines.extend(("", "←/→: select side", "Enter: open device", "Backspace: back"))
+        lines.extend(("", "←/→: select side", "F3/Enter: open device", "Backspace: back"))
     return Text("\n".join(lines), style="white")
 
 

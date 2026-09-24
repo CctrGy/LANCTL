@@ -42,3 +42,13 @@ def test_catalog_contains_low_level_and_non_raise_control_points():
     assert any(int(row[1]) < 20 for row in rows)
     kinds = {row[5] for row in rows}
     assert {"diagnostic", "return-error", "print-error", "exit"} <= kinds
+
+
+def test_literal_runtime_error_ids_are_cataloged():
+    from lanctl.core.error_catalog import find_error
+    from lanctl.core.errors import make_error_id
+
+    identifier = make_error_id("LANCTL.Monitor.Restart.Stop", "MONITOR.RESTART.STOP_TIMEOUT")
+    entry = find_error(identifier, CATALOG)
+    assert entry is not None
+    assert entry.source.endswith("monitor.py")

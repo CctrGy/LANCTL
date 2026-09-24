@@ -41,6 +41,8 @@ class EventRegistry:
     ) -> None:
         if not EVENT_ID.fullmatch(event_id):
             raise ValueError(f"identificador de evento no válido: {event_id}")
+        if isinstance(version, bool) or not isinstance(version, int) or version < 1:
+            raise ValueError("la versión del evento debe ser un entero mayor o igual que 1")
         if event_id.startswith("LANCTL.") and owner != "LANCTL":
             raise PermissionError("los plugins no pueden registrar eventos en el namespace LANCTL")
         key = (event_id.casefold(), version)
@@ -49,6 +51,8 @@ class EventRegistry:
         self._definitions[key] = EventDefinition(event_id, version, contract, owner, cancelable)
 
     def get(self, event_id: str, version: int = 1) -> EventDefinition:
+        if isinstance(version, bool) or not isinstance(version, int) or version < 1:
+            raise ValueError("la versión del evento debe ser un entero mayor o igual que 1")
         try:
             return self._definitions[(event_id.casefold(), version)]
         except KeyError as error:
@@ -101,6 +105,8 @@ class EventBus:
         correlation_id: str | None = None,
     ):
         definition = self.registry.get(event_id, version)
+        if source != "LANCTL" and source.casefold() != definition.owner.casefold():
+            raise PermissionError("el emisor no es propietario del contrato de evento")
         metadata = EventMetadata(
             event_id,
             version,

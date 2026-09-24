@@ -8,7 +8,7 @@ from lanctl.core.database import DeviceDatabase
 from lanctl.core.group_database import GroupDatabase
 from lanctl.core.output import write_records
 
-FIELDS = ("ip", "cnf", "name", "description", "alias", "group", "protocol")
+FIELDS = ("ip", "cnf", "name", "description", "alias", "idf", "group", "protocol")
 DELETE_ACTIONS = ("delete", "del", "remove")
 
 
@@ -45,6 +45,9 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
         help="Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).",
     )
     command.add_argument("-cnf", "--cnf", dest="new_cnf", help="Asigna el estado CNF.")
+    command.add_argument(
+        "-idf", "--idf", dest="new_idf", help="Asigna un IDF único (2-5 letras y 2-5 dígitos)."
+    )
     command.add_argument("-group", "--group", dest="new_group", help="Añade el elemento al grupo.")
     command.add_argument(
         "-protocol", "--protocol", dest="new_protocol", help="Activa un protocolo."
@@ -78,6 +81,7 @@ def run_element(args: argparse.Namespace) -> int:
             or args.new_cnf
             or args.new_group
             or args.new_protocol
+            or args.new_idf
             or args.delete_requested
         ):
             raise ValueError(
@@ -90,6 +94,7 @@ def run_element(args: argparse.Namespace) -> int:
             name=args.new_name or "",
             alias=args.new_alias or "",
             description=args.new_description or "-",
+            idf=args.new_idf or "",
         )
         ok(
             "ANADIDO",
@@ -106,6 +111,7 @@ def run_element(args: argparse.Namespace) -> int:
         ("alias", args.new_alias),
         ("description", args.new_description),
         ("cnf", args.new_cnf),
+        ("idf", args.new_idf),
         ("group", args.new_group),
         ("protocol", args.new_protocol),
     ]

@@ -375,6 +375,16 @@ class PluginTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             registry.register("LANCTL.Network.Scan.Custom", DemoEvent, owner="demo")
 
+    def test_event_versions_are_positive_and_emitters_cannot_spoof_an_owner(self):
+        registry = EventRegistry()
+        with self.assertRaisesRegex(ValueError, "mayor o igual que 1"):
+            registry.register("Demo.Network.Scan.Begin", DemoEvent, owner="demo", version=0)
+
+        registry.register("Demo.Network.Scan.Begin", DemoEvent, owner="demo")
+        bus = EventBus(registry)
+        with self.assertRaisesRegex(PermissionError, "no es propietario"):
+            bus.emit("Demo.Network.Scan.Begin", {"value": "x"}, source="other-plugin")
+
     def test_declarative_event_schema_builds_a_typed_contract(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

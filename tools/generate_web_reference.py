@@ -10,6 +10,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+# Parser defaults can be calculated while LANCTL modules are imported.  Enable
+# the canonical documentation environment before those imports so generated
+# artifacts never capture a developer's active project or local data paths.
+os.environ["LANCTL_CANONICAL_HELP"] = "1"
+
 from lanctl import __version__  # noqa: E402
 from lanctl.apps.access.manager_cli import build_parser as access_parser  # noqa: E402
 from lanctl.apps.ip.interfaces.cli.main import build_parser as ip_parser  # noqa: E402
@@ -590,7 +595,6 @@ def document_entries() -> list[dict]:
 
 
 def generate_data() -> dict:
-    os.environ["LANCTL_CANONICAL_HELP"] = "1"
     entries: list[dict] = []
     for path, builder, recursive in ROOTS:
         parsers = parser_tree(builder(), path) if recursive else ((path, builder(), ()),)

@@ -247,11 +247,44 @@ class Collector(ast.NodeVisitor):
 
 def render_catalog() -> tuple[str, int]:
     points = []
+    runtime_events: list[tuple[str, int, str, int, str, str]] = []
     for path in sorted((ROOT / "src" / "lanctl").rglob("*.py")):
         relative = path.relative_to(ROOT).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
         collector = Collector(relative)
-        collector.visit(ast.parse(path.read_text(encoding="utf-8"), filename=relative))
+        collector.visit(tree)
         points.extend(collector.points)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not call_name(node).endswith(("errors.emit", "errors.from_exception")):
+                continue
+            arguments = {keyword.arg: keyword.value for keyword in node.keywords}
+            origin = arguments.get("origin")
+            code = arguments.get("code")
+            if not (
+                isinstance(origin, ast.Constant)
+                and isinstance(origin.value, str)
+                and isinstance(code, ast.Constant)
+                and isinstance(code.value, str)
+            ):
+                continue
+            level = arguments.get("level")
+            severity = (
+                level.value
+                if isinstance(level, ast.Constant) and isinstance(level.value, int)
+                else 42
+            )
+            runtime_events.append(
+                (
+                    make_error_id(origin.value, code.value),
+                    severity,
+                    relative,
+                    node.lineno,
+                    origin.value,
+                    "diagnostic",
+                )
+            )
     rows, identifiers = [], set()
     for point in points:
         key = f"{point.origin}.{point.kind}"
@@ -260,10 +293,14 @@ def render_catalog() -> tuple[str, int]:
             raise RuntimeError(f"colisión de identificador: {identifier}")
         identifiers.add(identifier)
         rows.append((identifier, point.level, point.path, point.line, point.origin, point.kind))
+    for row in runtime_events:
+        if row[0] not in identifiers:
+            identifiers.add(row[0])
+            rows.append(row)
     lines = [
         "# LANCTL error catalog - generated; do not edit manually",
         "# FORMAT: ERROR_ID | LEVEL | SOURCE_FILE | LINE | ORIGIN | KIND",
-        "# IDs derive from semantic point signatures; line is metadata only",
+        "# Static IDs derive from semantic points; literal runtime events use origin + code",
     ]
     lines.extend(
         f"{i} | {level:02d} | {path} | {line} | {origin} | {kind}"

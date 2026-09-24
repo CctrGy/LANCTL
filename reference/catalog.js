@@ -79,7 +79,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "Orquestador raíz de las aplicaciones de la suite LANCTL.",
-      "details": "Usage: LANCTL [-h] [--version] [--cli] [-tui] LAUNCHER ...\n\nOrquestador raíz de las aplicaciones de la suite LANCTL.\n\nArguments:\n  LAUNCHER\n    lanip (ip)        Inventario lógico, descubrimiento, IP, MAC y servicios.\n    lanwire (wire)    Cableado, puertos, paneles y topología física.\n    lanrack (rack)    Salas técnicas, racks, unidades U y equipos.\n    lanaccess (access)\n                      Usuarios, credenciales y accesos remotos.\n    lanmon (monitor)  Monitorización, eventos, incidencias e historial.\n\nOptions:\n  -h, --help          Show this help and exit.\n  --version           Muestra la versión común de la suite y termina.\n  --cli               Abre la consola principal.\n  -tui, --tui         Abre el TUI principal.",
+      "details": "Usage: LANCTL [-h] [--version] [--cli] [-tui] LAUNCHER ...\n\nOrquestador raíz de las aplicaciones de la suite LANCTL.\n\nArguments:\n  LAUNCHER\n    lanip (ip)          Inventario lógico, descubrimiento, IP, MAC y servicios.\n    lanwire (wire)      Cableado, puertos, paneles y topología física.\n    lanrack (rack)      Salas técnicas, racks, unidades U y equipos.\n    lanaccess (access)  Usuarios, credenciales y accesos remotos.\n    lanmon (monitor)    Monitorización, eventos, incidencias e historial.\n\nOptions:\n  -h, --help            Show this help and exit.\n  --version             Muestra la versión común de la suite y termina.\n  --cli                 Abre la consola principal.\n  -tui, --tui           Abre el TUI principal.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -245,7 +245,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "Logical control of LAN devices and infrastructure.",
-      "details": "Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]\n             [-project ARCHIVO.vlf]\n             COMANDO ...\n\nLogical control of LAN devices and infrastructure.\n\nArguments:\n  COMANDO\n    ephemeral (-e)            Escanea activos sin leer ni guardar ningún inventario.\n    list                      Escanea la LAN y muestra dispositivos activos e históricos.\n    recurrent                 Consulta los elementos recurrentes conocidos por LANCTL.\n    ping                      Comprueba puntualmente si un elemento responde por PING o ARP.\n    open (connect)            Abre un elemento con un cliente acorde al protocolo.\n    settings                  Consulta o modifica la configuración persistente de LANCTL.\n    call                      Resuelve un alias, una IP o una MAC a los datos del dispositivo.\n    search                    Busca dispositivos por alias, nombre, IP o MAC.\n    scan                      Inspecciona en profundidad un único elemento de la LAN.\n    cnf                       Asigna el estado CNF de un elemento por IP, MAC o alias.\n    credential (credentials, auth)\n                              Asocia credenciales cifradas a un elemento y protocolo.\n    GATEWAY (gateway)         Consulta y configura el gateway mediante TR-064.\n    downloadSettings (downloadsettings, download-settings)\n                              Alias heredado de «GATEWAY downloadSettings».\n    protocol                  Consulta o configura un protocolo de un elemento.\n    ssh                       Abre SSH o ejecuta una consulta show de solo lectura.\n    radmin                    Configura, comprueba o abre Radmin Viewer.\n    wol                       Enciende equipos mediante Wake-on-LAN y ejecuta secuencias seguras.\n    history                   Consulta eventos estructurados del proyecto VLF activo.\n    monitor                   Opera sesiones y checks del monitor LAN.\n    access                    Configura acceso remoto LAN seguro por SSH y HTTPS.\n    smb                       Descubre y abre recursos SMB de Windows.\n    terminal (cli)            Abre la terminal propia de un elemento según su protocolo.\n    switch                    Planifica comandos Cisco filtrados, remapeados y clasificados.\n    group                     Crea, edita y consulta grupos de elementos.\n    element                   Edita uno o varios campos de un elemento identificado por IP, MAC o\n                              alias.\n    project (projects)        Crea, actualiza e inspecciona proyectos LANCTL .vlf.\n    plugin (plugins, addon, addons)\n                              Gestiona complementos unificados LANCTL .lcp.\n    language (languages, lang)\n                              Manage LANCTL interface languages.\n    error (errors)            Consulta el catálogo por identificador 0eXXXXXXXX.\n    database (db)             Diagnostica y exporta datos.\n    demo                      Genera un recorrido reproducible sin depender de una red real.\n    lanwire (wire)            Abre LANWIRE o ejecuta uno de sus comandos sobre la base física\n                              compartida.\n    lab                       Gestiona redes LAN simuladas sin tráfico real.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión y termina.\n  --quiet                     Omite la salida correcta; conserva errores.\n  --verbose                   Añade diagnóstico de ejecución a stderr.\n  --gui                       Abre la GUI heredada (solo código fuente y con\n                              LANCTL_ENABLE_LEGACY_GUI=1).\n  --cli                       Open the persistent interactive LANCTL terminal.\n  -tui [VENTANA], --tui [VENTANA]\n                              Open the advanced full-screen terminal interface. Puede abrir\n                              directamente PLUGINS, PROJECTS o SETTINGS.\n  -project ARCHIVO.vlf, --project ARCHIVO.vlf\n                              Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un\n                              comando.",
+      "details": "Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]\n             [-project ARCHIVO.vlf]\n             COMANDO ...\n\nLogical control of LAN devices and infrastructure.\n\nArguments:\n  COMANDO\n    ephemeral (-e)            Escanea activos sin leer ni guardar ningún inventario.\n    list                      Escanea la LAN y muestra dispositivos activos e históricos.\n    recurrent                 Consulta los elementos recurrentes conocidos por LANCTL.\n    ping                      Comprueba puntualmente si un elemento responde por PING o ARP.\n    open (connect)            Abre un elemento con un cliente acorde al protocolo.\n    settings                  Consulta o modifica la configuración persistente de LANCTL.\n    call                      Resuelve un alias, una IP o una MAC a los datos del dispositivo.\n    search                    Busca dispositivos por alias, nombre, IP o MAC.\n    scan                      Inspecciona en profundidad un único elemento de la LAN.\n    cnf                       Asigna el estado CNF de un elemento por IP, MAC o alias.\n    credential (credentials, auth)\n                              Asocia credenciales cifradas a un elemento y protocolo.\n    GATEWAY (gateway)         Consulta y configura el gateway mediante TR-064.\n    downloadSettings (downloadsettings, download-settings)\n                              Alias heredado de «GATEWAY downloadSettings».\n    protocol                  Consulta o configura un protocolo de un elemento.\n    ssh                       Abre SSH o ejecuta una consulta show de solo lectura.\n    radmin                    Configura, comprueba o abre Radmin Viewer.\n    wol                       Enciende equipos mediante Wake-on-LAN y ejecuta secuencias seguras.\n    history                   Consulta eventos estructurados del proyecto VLF activo.\n    monitor                   Opera sesiones y checks del monitor LAN.\n    access                    Configura acceso remoto LAN seguro por SSH y HTTPS.\n    smb                       Descubre y abre recursos SMB de Windows.\n    terminal (cli)            Abre la terminal propia de un elemento según su protocolo.\n    switch                    Planifica comandos Cisco filtrados, remapeados y clasificados.\n    group                     Crea, edita y consulta grupos de elementos.\n    element                   Edita uno o varios campos de un elemento identificado por IP, MAC o\n                              alias.\n    project (projects)        Crea, actualiza e inspecciona proyectos LANCTL .vlf.\n    plugin (plugins, addon, addons)\n                              Gestiona complementos unificados LANCTL .lcp.\n    language (languages, lang)\n                              Manage LANCTL interface languages.\n    error (errors)            Consulta el catálogo por identificador 0eXXXXXXXX.\n    database (db)             Diagnostica y exporta datos.\n    demo                      Genera un recorrido reproducible sin depender de una red real.\n    lanwire (wire)            Abre LANWIRE o ejecuta uno de sus comandos sobre la base física\n                              compartida.\n    lab                       Gestiona redes LAN simuladas sin tráfico real.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión y termina.\n  --quiet                     Omite la salida correcta; conserva errores.\n  --verbose                   Añade diagnóstico de ejecución a stderr.\n  --gui                       Abre la GUI heredada (solo código fuente y con\n                              LANCTL_ENABLE_LEGACY_GUI=1).\n  --cli                       Open the persistent interactive LANCTL terminal.\n  -tui, --tui [VENTANA]       Open the advanced full-screen terminal interface. Puede abrir\n                              directamente PLUGINS, PROJECTS o SETTINGS.\n  -project, --project ARCHIVO.vlf\n                              Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un\n                              comando.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -270,7 +270,7 @@ window.LANCTL_REFERENCE = {
       "arguments": [
         {
           "choices": [],
-          "default": "accurate",
+          "default": "normal",
           "description": "Prioriza un barrido ARP rápido.",
           "flags": [
             "--fast"
@@ -281,7 +281,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "accurate",
+          "default": "normal",
           "description": "Combina ICMP, ARP y descubrimiento de servicios.",
           "flags": [
             "--normal"
@@ -292,7 +292,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "accurate",
+          "default": "normal",
           "description": "Añade reintentos y reconocimiento más profundo.",
           "flags": [
             "--accurate"
@@ -303,7 +303,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "192.168.1.0/24",
+          "default": null,
           "description": "Rango CIDR que se explorará solo durante esta ejecución.",
           "flags": [
             "--range"
@@ -425,7 +425,7 @@ window.LANCTL_REFERENCE = {
       "arguments": [
         {
           "choices": [],
-          "default": "192.168.1.0/24",
+          "default": null,
           "description": "Red CIDR. Por defecto detecta la LAN como /24.",
           "flags": [
             "--network"
@@ -436,7 +436,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -447,7 +447,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\groups.json",
+          "default": "data/lc/projects/workspaces/default/database/groups.json",
           "description": "Archivo JSON de grupos.",
           "flags": [
             "--groups"
@@ -789,7 +789,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "Realiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muestra también los equipos no detectados.",
-      "details": "Usage: LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]\n                  [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]\n                  [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]\n                  [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]\n                  [--discovery {icmp,arp,hybrid}]\n                  [--profile {fast,normal,accurate} | --fast | --normal | --accurate]\n                  [--progress | --no-progress] [--show-discovery] [--include-arp-cache]\n                  [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]\n                  [-group GRUPO] [-dhcp]\n\nRealiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muestra también los equipos no detectados.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --network NETWORK           Red CIDR. Por defecto detecta la LAN como /24.\n  --database DATABASE         Archivo JSON de elementos.\n  --groups GROUPS             Archivo JSON de grupos.\n  -f {table,json,csv,html,xml,yaml}, --format {table,json,csv,html,xml,yaml}\n                              Formato de salida (por defecto: table).\n  -o OUTPUT, --output OUTPUT  Guarda la salida en un archivo.\n  -recurrent, --recurrent     Lista los elementos recurrentes sin escanear la LAN ni mostrar IP.\n  --where WHERE               Consulta combinable, por ejemplo: \"active and group=IOT and\n                              vendor~Amazon\".\n  -w WORKERS, --workers WORKERS\n                              Comprobaciones simultáneas.\n  -t TIMEOUT, --timeout TIMEOUT\n                              Timeout base en segundos por operación y host; el perfil puede\n                              ajustarlo.\n  --scan-order {ascending,descending,random}\n                              Orden de sondeo de IP: ascending, descending o random.\n  --include-unknown           Incluye hosts activos aunque todavía no tengan MAC.\n  --resolve-names             Resuelve y guarda nombres DNS de los elementos detectados.\n  --max-hosts MAX_HOSTS       Máximo de hosts permitido en un escaneo.\n  --discovery {icmp,arp,hybrid}\n                              Método: icmp, arp activo o hybrid (por defecto según settings).\n  --profile {fast,normal,accurate}\n                              Perfil completo de escaneo: fast, normal o accurate.\n  --fast                      Escaneo ARP rápido.\n  --normal                    Escaneo híbrido equilibrado.\n  --accurate                  Escaneo profundo con varios métodos.\n  --progress                  Muestra el progreso interactivo.\n  --no-progress               Oculta el progreso.\n  --show-discovery            Añade una columna con ICMP, ARP, LOCAL, BASIC o CACHE.\n  --include-arp-cache         Importa vecinos ARP en caché como CACHE no verificada; no cuentan\n                              como activos.\n  --show-detection            Añade los métodos históricos y la fecha de última detección.\n  --active, -active, -connected, --connected, -conected\n                              Muestra solo los dispositivos activos en el escaneo actual.\n  -disconnected, --disconnected, -offline\n                              Muestra solo los dispositivos no detectados actualmente.\n  -basic, --basic             Vista reducida: IP, alias y descripción.\n  -cnf {O,X,-,S,F}, --cnf-state {O,X,-,S,F}\n                              Filtra por estado CNF: O, X, -, S o F.\n  -group GRUPO, --group GRUPO\n                              Muestra solo los elementos de un grupo.\n  -dhcp, --dhcp-only          Muestra solo IP incluidas en el rango DHCP configurado.",
+      "details": "Usage: LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]\n                  [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]\n                  [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]\n                  [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]\n                  [--discovery {icmp,arp,hybrid}] [--profile {fast,normal,accurate} | --fast |\n                  --normal | --accurate] [--progress | --no-progress] [--show-discovery]\n                  [--include-arp-cache] [--show-detection] [--active | -disconnected] [-basic]\n                  [-cnf {O,X,-,S,F}] [-group GRUPO] [-dhcp]\n\nRealiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muestra también los equipos no detectados.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --network NETWORK           Red CIDR. Por defecto detecta la LAN como /24.\n  --database DATABASE         Archivo JSON de elementos.\n  --groups GROUPS             Archivo JSON de grupos.\n  -f, --format {table,json,csv,html,xml,yaml}\n                              Formato de salida (por defecto: table).\n  -o, --output OUTPUT         Guarda la salida en un archivo.\n  -recurrent, --recurrent     Lista los elementos recurrentes sin escanear la LAN ni mostrar IP.\n  --where WHERE               Consulta combinable, por ejemplo: \"active and group=IOT and\n                              vendor~Amazon\".\n  -w, --workers WORKERS       Comprobaciones simultáneas.\n  -t, --timeout TIMEOUT       Timeout base en segundos por operación y host; el perfil puede\n                              ajustarlo.\n  --scan-order {ascending,descending,random}\n                              Orden de sondeo de IP: ascending, descending o random.\n  --include-unknown           Incluye hosts activos aunque todavía no tengan MAC.\n  --resolve-names             Resuelve y guarda nombres DNS de los elementos detectados.\n  --max-hosts MAX_HOSTS       Máximo de hosts permitido en un escaneo.\n  --discovery {icmp,arp,hybrid}\n                              Método: icmp, arp activo o hybrid (por defecto según settings).\n  --profile {fast,normal,accurate}\n                              Perfil completo de escaneo: fast, normal o accurate.\n  --fast                      Escaneo ARP rápido.\n  --normal                    Escaneo híbrido equilibrado.\n  --accurate                  Escaneo profundo con varios métodos.\n  --progress                  Muestra el progreso interactivo.\n  --no-progress               Oculta el progreso.\n  --show-discovery            Añade una columna con ICMP, ARP, LOCAL, BASIC o CACHE.\n  --include-arp-cache         Importa vecinos ARP en caché como CACHE no verificada; no cuentan\n                              como activos.\n  --show-detection            Añade los métodos históricos y la fecha de última detección.\n  --active, -active, -connected, --connected, -conected\n                              Muestra solo los dispositivos activos en el escaneo actual.\n  -disconnected, --disconnected, -offline\n                              Muestra solo los dispositivos no detectados actualmente.\n  -basic, --basic             Vista reducida: IP, alias y descripción.\n  -cnf, --cnf-state {O,X,-,S,F}\n                              Filtra por estado CNF: O, X, -, S o F.\n  -group, --group GRUPO       Muestra solo los elementos de un grupo.\n  -dhcp, --dhcp-only          Muestra solo IP incluidas en el rango DHCP configurado.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -808,7 +808,7 @@ window.LANCTL_REFERENCE = {
         "list"
       ],
       "title": "LANIP list",
-      "usage": "LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]\n                  [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]\n                  [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]\n                  [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]\n                  [--discovery {icmp,arp,hybrid}]\n                  [--profile {fast,normal,accurate} | --fast | --normal | --accurate]\n                  [--progress | --no-progress] [--show-discovery] [--include-arp-cache]\n                  [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]\n                  [-group GRUPO] [-dhcp]"
+      "usage": "LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]\n                  [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]\n                  [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]\n                  [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]\n                  [--discovery {icmp,arp,hybrid}] [--profile {fast,normal,accurate} | --fast |\n                  --normal | --accurate] [--progress | --no-progress] [--show-discovery]\n                  [--include-arp-cache] [--show-detection] [--active | -disconnected] [-basic]\n                  [-cnf {O,X,-,S,F}] [-group GRUPO] [-dhcp]"
     },
     {
       "aliases": [],
@@ -863,7 +863,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "Muestra identidades recurrentes por MAC. No incluye IP porque puede cambiar en cada LAN.",
-      "details": "Usage: LANIP recurrent [-h] -list [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT]\n\nMuestra identidades recurrentes por MAC. No incluye IP porque puede cambiar en cada LAN.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -list, --list               Lista todos los elementos recurrentes sin sus IP.\n  -f {table,json,csv,html,xml,yaml}, --format {table,json,csv,html,xml,yaml}\n                              Formato de salida (por defecto: table).\n  -o OUTPUT, --output OUTPUT  Guarda la salida en un archivo.",
+      "details": "Usage: LANIP recurrent [-h] -list [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT]\n\nMuestra identidades recurrentes por MAC. No incluye IP porque puede cambiar en cada LAN.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -list, --list               Lista todos los elementos recurrentes sin sus IP.\n  -f, --format {table,json,csv,html,xml,yaml}\n                              Formato de salida (por defecto: table).\n  -o, --output OUTPUT         Guarda la salida en un archivo.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -956,7 +956,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -1153,7 +1153,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -1716,7 +1716,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]",
-      "details": "Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.\n  -list-fields CAMPO [CAMPO ...], --list-fields CAMPO [CAMPO ...], -list CAMPO [CAMPO ...]\n                              Columnas mostradas por list, separadas por espacios o comas.\n  -dhcp-range INICIO-FIN, --dhcp-range INICIO-FIN, -dhcp INICIO-FIN\n                              Rango DHCP manual. Usa 'off' para dejarlo sin configurar.\n  -credentials ARCHIVO, --credentials ARCHIVO\n                              Ruta del almacén de credenciales cifradas.\n  -discovery {icmp,arp,hybrid}, --discovery {icmp,arp,hybrid}\n                              Método predeterminado utilizado por list.\n  --scan-profile {fast,normal,accurate}\n                              Perfil predeterminado de list: fast, normal o accurate.\n  --progress {on,off}         Activa o desactiva el progreso interactivo.\n  --service-identification {on,off}\n                              Activa o desactiva el reconocimiento de servicios en scan.\n  --disconnected-retention {permanent,session,forget}\n                              Persistencia de desconectados: permanent, session o forget.\n  --disconnected-target {unconfirmed,all}\n                              Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).\n  --disconnected-scope {all,dhcp}\n                              Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).\n  --workers WORKERS           Concurrencia predeterminada de los escaneos.\n  --timeout TIMEOUT           Timeout predeterminado por operación de red.\n  --scan-order {ascending,descending,random}\n                              Orden predeterminado de sondeo: ascending, descending o random.\n  --max-hosts MAX_HOSTS       Máximo de hosts autorizado por escaneo.\n  --database ARCHIVO          Ruta del inventario de elementos.\n  --physical-database ARCHIVO\n                              Ruta de la base física SQLite administrada exclusivamente por\n                              LANWIRE.\n  --groups ARCHIVO            Ruta de la base de grupos.\n  --log DIRECTORIO            Directorio de registros.\n  --error-log-level 1-59      Nivel mínimo de ErrorEvent escrito en el log (1 incluye diagnóstico\n                              detallado).\n  --projects-directory DIRECTORIO\n                              Carpeta predeterminada para nombres de proyecto VLF relativos.\n  -save-mode MODO, --save-mode MODO\n                              Política de guardado VLF. Usa 'list' para consultar las opciones\n                              integradas y las aportadas por plugins.\n  -save-interval MINUTOS, --save-interval MINUTOS\n                              Intervalo de automatic.timeToSave en minutos (mínimo 0.1).\n  --cli-exit-save-prompt {on,off}\n                              Consulta si se guarda al terminar cada comando individual de\n                              consola.\n  --cli-command-chaining {on,off}\n                              Permite encadenar órdenes con ; dentro de la CLI interactiva.\n  -log-cleanup {on,off}, --log-cleanup {on,off}\n                              Activa o desactiva la limpieza automática de logs antiguos.\n  -log-retention-days DÍAS, --log-retention-days DÍAS\n                              Días durante los que se conservan los archivos de log.\n  --remote-access {on,off}    Activa el acceso SSH restringido.\n  --remote-bind IP            IPv4 local de escucha SSH.\n  --remote-cidr CIDR          Red de origen autorizada.\n  --remote-port REMOTE_PORT   Puerto del servidor SSH remoto.\n  --remote-password-auth {on,off}\n                              Permite o bloquea autenticación SSH mediante contraseña.\n  --remote-backend {service,user}\n                              Ejecuta el backend como servicio persistente o proceso de usuario.\n  --remote-forced-view {off,gui,tui,plugins,projects,settings}\n                              Vista predeterminada para root forced-view.\n  --tui-key ACCIÓN=TECLA      Asigna una tecla a una acción del TUI. Puede repetirse.\n  --tui-layout {cli.bottom,cli.top}\n                              Coloca el CLI arriba (cli.top) o abajo (cli.bottom).\n  --tui-cli-percent 15-75     Porcentaje vertical reservado al CLI; ListElement conserva al menos\n                              25%.\n  --tui-column COLUMNA=TAMAÑO\n                              Peso de columna (GROUP=15%); IP=15ch y MAC=17ch son fijas.\n  --tui-footer-buttons ACCIONES\n                              Acciones visibles en la barra inferior, separadas por comas; usa all\n                              para todas.\n  --tui-footer-button ACCIÓN=on|off\n                              Muestra u oculta una acción concreta de la barra inferior. Puede\n                              repetirse.",
+      "details": "Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.\n  -list-fields, --list-fields, -list CAMPO [CAMPO ...]\n                              Columnas mostradas por list, separadas por espacios o comas.\n  -dhcp-range, --dhcp-range, -dhcp INICIO-FIN\n                              Rango DHCP manual. Usa 'off' para dejarlo sin configurar.\n  -credentials, --credentials ARCHIVO\n                              Ruta del almacén de credenciales cifradas.\n  -discovery, --discovery {icmp,arp,hybrid}\n                              Método predeterminado utilizado por list.\n  --scan-profile {fast,normal,accurate}\n                              Perfil predeterminado de list: fast, normal o accurate.\n  --progress {on,off}         Activa o desactiva el progreso interactivo.\n  --service-identification {on,off}\n                              Activa o desactiva el reconocimiento de servicios en scan.\n  --disconnected-retention {permanent,session,forget}\n                              Persistencia de desconectados: permanent, session o forget.\n  --disconnected-target {unconfirmed,all}\n                              Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).\n  --disconnected-scope {all,dhcp}\n                              Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).\n  --workers WORKERS           Concurrencia predeterminada de los escaneos.\n  --timeout TIMEOUT           Timeout predeterminado por operación de red.\n  --scan-order {ascending,descending,random}\n                              Orden predeterminado de sondeo: ascending, descending o random.\n  --max-hosts MAX_HOSTS       Máximo de hosts autorizado por escaneo.\n  --database ARCHIVO          Ruta del inventario de elementos.\n  --physical-database ARCHIVO\n                              Ruta de la base física SQLite administrada exclusivamente por\n                              LANWIRE.\n  --groups ARCHIVO            Ruta de la base de grupos.\n  --log DIRECTORIO            Directorio de registros.\n  --error-log-level 1-59      Nivel mínimo de ErrorEvent escrito en el log (1 incluye diagnóstico\n                              detallado).\n  --projects-directory DIRECTORIO\n                              Carpeta predeterminada para nombres de proyecto VLF relativos.\n  -save-mode, --save-mode MODO\n                              Política de guardado VLF. Usa 'list' para consultar las opciones\n                              integradas y las aportadas por plugins.\n  -save-interval, --save-interval MINUTOS\n                              Intervalo de automatic.timeToSave en minutos (mínimo 0.1).\n  --cli-exit-save-prompt {on,off}\n                              Consulta si se guarda al terminar cada comando individual de\n                              consola.\n  --cli-command-chaining {on,off}\n                              Permite encadenar órdenes con ; dentro de la CLI interactiva.\n  -log-cleanup, --log-cleanup {on,off}\n                              Activa o desactiva la limpieza automática de logs antiguos.\n  -log-retention-days, --log-retention-days DÍAS\n                              Días durante los que se conservan los archivos de log.\n  --remote-access {on,off}    Activa el acceso SSH restringido.\n  --remote-bind IP            IPv4 local de escucha SSH.\n  --remote-cidr CIDR          Red de origen autorizada.\n  --remote-port REMOTE_PORT   Puerto del servidor SSH remoto.\n  --remote-password-auth {on,off}\n                              Permite o bloquea autenticación SSH mediante contraseña.\n  --remote-backend {service,user}\n                              Ejecuta el backend como servicio persistente o proceso de usuario.\n  --remote-forced-view {off,gui,tui,plugins,projects,settings}\n                              Vista predeterminada para root forced-view.\n  --tui-key ACCIÓN=TECLA      Asigna una tecla a una acción del TUI. Puede repetirse.\n  --tui-layout {cli.bottom,cli.top}\n                              Coloca el CLI arriba (cli.top) o abajo (cli.bottom).\n  --tui-cli-percent 15-75     Porcentaje vertical reservado al CLI; ListElement conserva al menos\n                              25%.\n  --tui-column COLUMNA=TAMAÑO\n                              Peso de columna (GROUP=15%); IP=15ch y MAC=17ch son fijas.\n  --tui-footer-buttons ACCIONES\n                              Acciones visibles en la barra inferior, separadas por comas; usa all\n                              para todas.\n  --tui-footer-button ACCIÓN=on|off\n                              Muestra u oculta una acción concreta de la barra inferior. Puede\n                              repetirse.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -1785,7 +1785,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -1801,7 +1801,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "usage: LANIP call [-h]\n                  [-f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}]\n                  [--json] [--database DATABASE]\n                  selector",
-      "details": "Usage: LANIP call [-h]\n                  [-f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}]\n                  [--json] [--database DATABASE]\n                  selector\n\nArguments:\n  selector                    Alias, IP o MAC del dispositivo.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}, --field {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}\n                              Dato devuelto (por defecto: ip).\n  --json                      Devuelve el registro completo como JSON.\n  --database DATABASE         Archivo JSON de elementos.",
+      "details": "Usage: LANIP call [-h]\n                  [-f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}]\n                  [--json] [--database DATABASE]\n                  selector\n\nArguments:\n  selector                    Alias, IP o MAC del dispositivo.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -f, --field {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}\n                              Dato devuelto (por defecto: ip).\n  --json                      Devuelve el registro completo como JSON.\n  --database DATABASE         Archivo JSON de elementos.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -1846,7 +1846,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -1973,7 +1973,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -2032,7 +2032,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -2116,7 +2116,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -2143,7 +2143,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "usage: LANIP credential [-h] [-user USERNAME] [--database DATABASE] [--store STORE]\n                        selector [{set,list,delete}] [protocol]",
-      "details": "Usage: LANIP credential [-h] [-user USERNAME] [--database DATABASE] [--store STORE]\n                        selector [{set,list,delete}] [protocol]\n\nArguments:\n  selector                    IP, MAC o alias del elemento.\n  {set,list,delete}           Operación sobre la credencial.\n  protocol                    Protocolo, por ejemplo tr-064.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -user USERNAME, --username USERNAME\n                              Nombre de usuario remoto.\n  --database DATABASE         Archivo JSON de elementos.\n  --store STORE               Almacén cifrado de credenciales.",
+      "details": "Usage: LANIP credential [-h] [-user USERNAME] [--database DATABASE] [--store STORE]\n                        selector [{set,list,delete}] [protocol]\n\nArguments:\n  selector                    IP, MAC o alias del elemento.\n  {set,list,delete}           Operación sobre la credencial.\n  protocol                    Protocolo, por ejemplo tr-064.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -user, --username USERNAME  Nombre de usuario remoto.\n  --database DATABASE         Archivo JSON de elementos.\n  --store STORE               Almacén cifrado de credenciales.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -2224,7 +2224,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -2308,7 +2308,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -2448,7 +2448,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -2518,11 +2518,11 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "remote_command",
           "metavar": "COMANDO",
-          "required": true
+          "required": false
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -2722,7 +2722,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Opción de configuración de Radmin Viewer.",
           "flags": [
             "--database"
@@ -2779,7 +2779,7 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "words",
           "metavar": "",
-          "required": true
+          "required": false
         },
         {
           "choices": [],
@@ -3152,7 +3152,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -3190,7 +3190,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "usage: LANIP wol [-h] [-if CONDICIÓN] [--if-all CONDICIÓN] [--if-any CONDICIÓN]\n                 [--if-not CONDICIÓN] [-t SCHEDULE] [--message MESSAGE] [--force] [--cancel]\n                 [--broadcast BROADCAST] [--port PORT] [--repeat REPEAT] [--interval INTERVAL]\n                 [--wait WAIT] [--method {auto,arp,ping,port}] [--check-port CHECK_PORT]\n                 [--interface INTERFACE] [--retry RETRY] [--dry-run] [--json] [--quiet]\n                 [--group GROUP] [--all] [--yes] [--after AFTER] [--delay DELAY]\n                 [--timeout TIMEOUT] [--on-failure {stop,continue,retry}] [--cooldown COOLDOWN]\n                 [--max-attempts MAX_ATTEMPTS] [--power-transport {ssh,disabled}]\n                 [--power-platform {windows,linux}] [--power-command ACCIÓN=COMANDO]\n                 [--database DATABASE] [--store STORE] [--sequences SEQUENCES]\n                 [words ...]",
-      "details": "Usage: LANIP wol [-h] [-if CONDICIÓN] [--if-all CONDICIÓN] [--if-any CONDICIÓN]\n                 [--if-not CONDICIÓN] [-t SCHEDULE] [--message MESSAGE] [--force] [--cancel]\n                 [--broadcast BROADCAST] [--port PORT] [--repeat REPEAT] [--interval INTERVAL]\n                 [--wait WAIT] [--method {auto,arp,ping,port}] [--check-port CHECK_PORT]\n                 [--interface INTERFACE] [--retry RETRY] [--dry-run] [--json] [--quiet]\n                 [--group GROUP] [--all] [--yes] [--after AFTER] [--delay DELAY]\n                 [--timeout TIMEOUT] [--on-failure {stop,continue,retry}] [--cooldown COOLDOWN]\n                 [--max-attempts MAX_ATTEMPTS] [--power-transport {ssh,disabled}]\n                 [--power-platform {windows,linux}] [--power-command ACCIÓN=COMANDO]\n                 [--database DATABASE] [--store STORE] [--sequences SEQUENCES]\n                 [words ...]\n\nArguments:\n  words                       NAME [wakeup|status|shutdown|restart|sleep|hibernate|configure] o\n                              sequence ...\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -if CONDICIÓN, --if CONDICIÓN\n                              Condición AND adicional (repetible).\n  --if-all CONDICIÓN          Condición AND adicional.\n  --if-any CONDICIÓN          Condición OR adicional.\n  --if-not CONDICIÓN          Condición negada.\n  -t SCHEDULE, --time SCHEDULE\n                              Momento del apagado programado.\n  --message MESSAGE           Mensaje remoto, si el transporte lo admite.\n  --force                     Solicita cierre forzado al transporte.\n  --cancel                    Cancela una programación, si el transporte lo admite.\n  --broadcast BROADCAST       IPv4 de broadcast.\n  --port PORT                 Puerto UDP WOL.\n  --repeat REPEAT             Número de paquetes mágicos.\n  --interval INTERVAL         Intervalo entre paquetes.\n  --wait WAIT                 Segundos máximos de verificación.\n  --method {auto,arp,ping,port}\n                              Método de verificación.\n  --check-port CHECK_PORT     Puerto TCP de comprobación.\n  --interface INTERFACE       IPv4 local de salida.\n  --retry RETRY               Reintentos completos.\n  --dry-run                   Valida sin enviar.\n  --json                      Salida JSON estructurada.\n  --quiet                     Omite salida humana.\n  --group GROUP               Actúa sobre un grupo.\n  --all                       Actúa sobre todo el inventario.\n  --yes                       Confirma explícitamente --all.\n  --after AFTER               Dependencia de paso.\n  --delay DELAY               Espera previa del paso.\n  --timeout TIMEOUT           Timeout de paso.\n  --on-failure {stop,continue,retry}\n                              Política ante fallo.\n  --cooldown COOLDOWN         Espera mínima entre ejecuciones.\n  --max-attempts MAX_ATTEMPTS\n                              Máximo de intentos.\n  --power-transport {ssh,disabled}\n                              Transporte autorizado para apagar o reiniciar.\n  --power-platform {windows,linux}\n                              Sistema operativo remoto.\n  --power-command ACCIÓN=COMANDO\n                              Plantilla administrada ACCIÓN=COMANDO.\n  --database DATABASE         Archivo JSON de elementos.\n  --store STORE               Almacén cifrado de credenciales.\n  --sequences SEQUENCES       Archivo transaccional de secuencias.",
+      "details": "Usage: LANIP wol [-h] [-if CONDICIÓN] [--if-all CONDICIÓN] [--if-any CONDICIÓN]\n                 [--if-not CONDICIÓN] [-t SCHEDULE] [--message MESSAGE] [--force] [--cancel]\n                 [--broadcast BROADCAST] [--port PORT] [--repeat REPEAT] [--interval INTERVAL]\n                 [--wait WAIT] [--method {auto,arp,ping,port}] [--check-port CHECK_PORT]\n                 [--interface INTERFACE] [--retry RETRY] [--dry-run] [--json] [--quiet]\n                 [--group GROUP] [--all] [--yes] [--after AFTER] [--delay DELAY]\n                 [--timeout TIMEOUT] [--on-failure {stop,continue,retry}] [--cooldown COOLDOWN]\n                 [--max-attempts MAX_ATTEMPTS] [--power-transport {ssh,disabled}]\n                 [--power-platform {windows,linux}] [--power-command ACCIÓN=COMANDO]\n                 [--database DATABASE] [--store STORE] [--sequences SEQUENCES]\n                 [words ...]\n\nArguments:\n  words                       NAME [wakeup|status|shutdown|restart|sleep|hibernate|configure] o\n                              sequence ...\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -if, --if CONDICIÓN         Condición AND adicional (repetible).\n  --if-all CONDICIÓN          Condición AND adicional.\n  --if-any CONDICIÓN          Condición OR adicional.\n  --if-not CONDICIÓN          Condición negada.\n  -t, --time SCHEDULE         Momento del apagado programado.\n  --message MESSAGE           Mensaje remoto, si el transporte lo admite.\n  --force                     Solicita cierre forzado al transporte.\n  --cancel                    Cancela una programación, si el transporte lo admite.\n  --broadcast BROADCAST       IPv4 de broadcast.\n  --port PORT                 Puerto UDP WOL.\n  --repeat REPEAT             Número de paquetes mágicos.\n  --interval INTERVAL         Intervalo entre paquetes.\n  --wait WAIT                 Segundos máximos de verificación.\n  --method {auto,arp,ping,port}\n                              Método de verificación.\n  --check-port CHECK_PORT     Puerto TCP de comprobación.\n  --interface INTERFACE       IPv4 local de salida.\n  --retry RETRY               Reintentos completos.\n  --dry-run                   Valida sin enviar.\n  --json                      Salida JSON estructurada.\n  --quiet                     Omite salida humana.\n  --group GROUP               Actúa sobre un grupo.\n  --all                       Actúa sobre todo el inventario.\n  --yes                       Confirma explícitamente --all.\n  --after AFTER               Dependencia de paso.\n  --delay DELAY               Espera previa del paso.\n  --timeout TIMEOUT           Timeout de paso.\n  --on-failure {stop,continue,retry}\n                              Política ante fallo.\n  --cooldown COOLDOWN         Espera mínima entre ejecuciones.\n  --max-attempts MAX_ATTEMPTS\n                              Máximo de intentos.\n  --power-transport {ssh,disabled}\n                              Transporte autorizado para apagar o reiniciar.\n  --power-platform {windows,linux}\n                              Sistema operativo remoto.\n  --power-command ACCIÓN=COMANDO\n                              Plantilla administrada ACCIÓN=COMANDO.\n  --database DATABASE         Archivo JSON de elementos.\n  --store STORE               Almacén cifrado de credenciales.\n  --sequences SEQUENCES       Archivo transaccional de secuencias.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -3406,7 +3406,7 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "words",
           "metavar": "",
-          "required": true
+          "required": false
         },
         {
           "choices": [],
@@ -3580,7 +3580,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor-sessions.json",
+          "default": "data/lc/projects/workspaces/default/monitoring/sessions.json",
           "description": "Estado runtime de sesiones.",
           "flags": [
             "--sessions"
@@ -3591,7 +3591,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor-incidents.json",
+          "default": "data/lc/projects/workspaces/default/monitoring/incidents.json",
           "description": "Estado runtime de incidencias.",
           "flags": [
             "--incidents-store"
@@ -3602,7 +3602,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor.lock",
+          "default": "data/lc/projects/workspaces/default/monitoring/monitor.lock",
           "description": "Lock singleton del monitor.",
           "flags": [
             "--lock"
@@ -3613,7 +3613,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor.db",
+          "default": "data/lc/projects/workspaces/default/monitoring/monitor.db",
           "description": "Repositorio SQLite del monitor.",
           "flags": [
             "--monitor-db"
@@ -3624,7 +3624,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor-profiles.json",
+          "default": "data/lc/projects/workspaces/default/monitoring/profiles.json",
           "description": "Perfiles personalizados.",
           "flags": [
             "--profiles"
@@ -3635,7 +3635,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor-assignments.json",
+          "default": "data/lc/projects/workspaces/default/monitoring/assignments.json",
           "description": "Asignaciones persistentes.",
           "flags": [
             "--assignments-store"
@@ -3786,7 +3786,7 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "words",
           "metavar": "",
-          "required": true
+          "required": false
         },
         {
           "choices": [],
@@ -4141,7 +4141,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON del inventario.",
           "flags": [
             "--database"
@@ -4236,7 +4236,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -4263,7 +4263,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "usage: LANIP terminal [-h] [-p PROTOCOL] [--native] [--database DATABASE] [--store STORE] selector",
-      "details": "Usage: LANIP terminal [-h] [-p PROTOCOL] [--native] [--database DATABASE] [--store STORE] selector\n\nArguments:\n  selector                    IP, MAC o alias del elemento.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -p PROTOCOL, --protocol PROTOCOL\n                              Protocolo si hay varias terminales.\n  --native                    Usa el cliente SSH nativo sin la capa de color de LANCTL.\n  --database DATABASE         Archivo JSON de elementos.\n  --store STORE               Almacén cifrado de credenciales.",
+      "details": "Usage: LANIP terminal [-h] [-p PROTOCOL] [--native] [--database DATABASE] [--store STORE] selector\n\nArguments:\n  selector                 IP, MAC o alias del elemento.\n\nOptions:\n  -h, --help               Show this help and exit.\n  -p, --protocol PROTOCOL  Protocolo si hay varias terminales.\n  --native                 Usa el cliente SSH nativo sin la capa de color de LANCTL.\n  --database DATABASE      Archivo JSON de elementos.\n  --store STORE            Almacén cifrado de credenciales.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -4319,7 +4319,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -4357,7 +4357,7 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "arguments",
           "metavar": "COMANDO",
-          "required": true
+          "required": false
         }
       ],
       "category": "Infraestructura de red",
@@ -4477,7 +4477,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -4488,7 +4488,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\groups.json",
+          "default": "data/lc/projects/workspaces/default/database/groups.json",
           "description": "Archivo JSON de grupos.",
           "flags": [
             "--groups"
@@ -4503,8 +4503,8 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.1-beta.3"
       },
-      "description": "usage: LANIP group [-h]\n                   [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENTO | -remove ELEMENTO | -list]\n                   [--database DATABASE] [--groups GROUPS]\n                   [name]",
-      "details": "Usage: LANIP group [-h]\n                   [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENTO | -remove ELEMENTO | -list]\n                   [--database DATABASE] [--groups GROUPS]\n                   [name]\n\nArguments:\n  name                 Nombre del grupo.\n\nOptions:\n  -h, --help           Show this help and exit.\n  -new                 Crea el grupo.\n  -del                 Elimina el grupo.\n  -rename NUEVO        Renombra el grupo.\n  -description TEXTO   Edita su descripción.\n  -add ELEMENTO        Añade IP, MAC o alias.\n  -remove ELEMENTO     Retira IP, MAC o alias.\n  -list                Lista los elementos que pertenecen al grupo.\n  --database DATABASE  Archivo JSON de elementos.\n  --groups GROUPS      Archivo JSON de grupos.",
+      "description": "usage: LANIP group [-h] [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENTO |\n                   -remove ELEMENTO | -list] [--database DATABASE] [--groups GROUPS]\n                   [name]",
+      "details": "Usage: LANIP group [-h] [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENTO |\n                   -remove ELEMENTO | -list] [--database DATABASE] [--groups GROUPS]\n                   [name]\n\nArguments:\n  name                 Nombre del grupo.\n\nOptions:\n  -h, --help           Show this help and exit.\n  -new                 Crea el grupo.\n  -del                 Elimina el grupo.\n  -rename NUEVO        Renombra el grupo.\n  -description TEXTO   Edita su descripción.\n  -add ELEMENTO        Añade IP, MAC o alias.\n  -remove ELEMENTO     Retira IP, MAC o alias.\n  -list                Lista los elementos que pertenecen al grupo.\n  --database DATABASE  Archivo JSON de elementos.\n  --groups GROUPS      Archivo JSON de grupos.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -4522,7 +4522,7 @@ window.LANCTL_REFERENCE = {
         "group"
       ],
       "title": "LANIP group",
-      "usage": "LANIP group [-h]\n                   [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENTO | -remove ELEMENTO | -list]\n                   [--database DATABASE] [--groups GROUPS]\n                   [name]"
+      "usage": "LANIP group [-h] [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENTO |\n                   -remove ELEMENTO | -list] [--database DATABASE] [--groups GROUPS]\n                   [name]"
     },
     {
       "aliases": [],
@@ -4544,6 +4544,7 @@ window.LANCTL_REFERENCE = {
             "name",
             "description",
             "alias",
+            "idf",
             "group",
             "protocol",
             "delete",
@@ -4564,7 +4565,7 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "values",
           "metavar": "",
-          "required": true
+          "required": false
         },
         {
           "choices": [],
@@ -4640,6 +4641,18 @@ window.LANCTL_REFERENCE = {
         {
           "choices": [],
           "default": null,
+          "description": "Asigna un IDF único (2-5 letras y 2-5 dígitos).",
+          "flags": [
+            "-idf",
+            "--idf"
+          ],
+          "label": "-idf, --idf",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
           "description": "Añade el elemento al grupo.",
           "flags": [
             "-group",
@@ -4675,7 +4688,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Archivo JSON de elementos.",
           "flags": [
             "--database"
@@ -4686,7 +4699,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\groups.json",
+          "default": "data/lc/projects/workspaces/default/database/groups.json",
           "description": "Archivo JSON de grupos.",
           "flags": [
             "--groups"
@@ -4712,8 +4725,8 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.1-beta.3"
       },
-      "description": "usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-group NEW_GROUP]\n                     [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE] [--groups GROUPS]\n                     [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,group,protocol,delete,del,remove}]\n                     [values ...]",
-      "details": "Usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-group NEW_GROUP]\n                     [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE] [--groups GROUPS]\n                     [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,group,protocol,delete,del,remove}]\n                     [values ...]\n\nArguments:\n  selector                    IP, MAC o alias.\n  {edit,ip,cnf,name,description,alias,group,protocol,delete,del,remove}\n                              Campo o acción que se quiere editar.\n  values                      Nuevo valor.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -add MAC                    Añade un elemento nuevo utilizando su dirección MAC.\n  -name NEW_NAME, --name NEW_NAME\n                              Asigna NAME al elemento indicado.\n  -ip NEW_IP, --ip NEW_IP     Asigna una dirección IPv4.\n  -alias NEW_ALIAS, --alias NEW_ALIAS\n                              Asigna ALIAS al elemento indicado.\n  -description NEW_DESCRIPTION, --description NEW_DESCRIPTION\n                              Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).\n  -cnf NEW_CNF, --cnf NEW_CNF\n                              Asigna el estado CNF.\n  -group NEW_GROUP, --group NEW_GROUP\n                              Añade el elemento al grupo.\n  -protocol NEW_PROTOCOL, --protocol NEW_PROTOCOL\n                              Activa un protocolo.\n  -delete, --delete           Elimina completamente el elemento indicado.\n  --database DATABASE         Archivo JSON de elementos.\n  --groups GROUPS             Archivo JSON de grupos.\n  --yes                       Elimina sin solicitar confirmación.",
+      "description": "usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-idf NEW_IDF]\n                     [-group NEW_GROUP] [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE]\n                     [--groups GROUPS] [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}]\n                     [values ...]",
+      "details": "Usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-idf NEW_IDF]\n                     [-group NEW_GROUP] [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE]\n                     [--groups GROUPS] [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}]\n                     [values ...]\n\nArguments:\n  selector                    IP, MAC o alias.\n  {edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}\n                              Campo o acción que se quiere editar.\n  values                      Nuevo valor.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -add MAC                    Añade un elemento nuevo utilizando su dirección MAC.\n  -name, --name NEW_NAME      Asigna NAME al elemento indicado.\n  -ip, --ip NEW_IP            Asigna una dirección IPv4.\n  -alias, --alias NEW_ALIAS   Asigna ALIAS al elemento indicado.\n  -description, --description NEW_DESCRIPTION\n                              Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).\n  -cnf, --cnf NEW_CNF         Asigna el estado CNF.\n  -idf, --idf NEW_IDF         Asigna un IDF único (2-5 letras y 2-5 dígitos).\n  -group, --group NEW_GROUP   Añade el elemento al grupo.\n  -protocol, --protocol NEW_PROTOCOL\n                              Activa un protocolo.\n  -delete, --delete           Elimina completamente el elemento indicado.\n  --database DATABASE         Archivo JSON de elementos.\n  --groups GROUPS             Archivo JSON de grupos.\n  --yes                       Elimina sin solicitar confirmación.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -4731,7 +4744,7 @@ window.LANCTL_REFERENCE = {
         "element"
       ],
       "title": "LANIP element",
-      "usage": "LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-group NEW_GROUP]\n                     [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE] [--groups GROUPS]\n                     [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,group,protocol,delete,del,remove}]\n                     [values ...]"
+      "usage": "LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-idf NEW_IDF]\n                     [-group NEW_GROUP] [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE]\n                     [--groups GROUPS] [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}]\n                     [values ...]"
     },
     {
       "aliases": [],
@@ -5258,7 +5271,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "usage: LANIP plugin [-h] ACCIÓN ...",
-      "details": "Usage: LANIP plugin [-h] ACCIÓN ...\n\nArguments:\n  ACCIÓN\n    list       Lista complementos instalados.\n    catalog    Muestra el catálogo oficial incluido.\n    info       Muestra manifiesto, permisos y estado.\n    install    Verifica e instala un paquete .lcp desactivado.\n    enable     Concede permisos y activa un complemento.\n    disable    Desactiva el complemento.\n    reload     Recarga un complemento activo.\n    uninstall  Desinstala el complemento.\n    verify     Verifica un .lcp o plugin instalado.\n    permissions\n               Muestra permisos solicitados y concedidos.\n    revoke     Revoca permisos y confianza de un complemento.\n    publisher  Gestiona huellas Ed25519 de editores LCP confiables.\n    extensions\n               Lista extensiones para CLI, TUI y futura GUI.\n    pack       Construye un paquete .lcp desde un directorio.\n\nOptions:\n  -h, --help   Show this help and exit.",
+      "details": "Usage: LANIP plugin [-h] ACCIÓN ...\n\nArguments:\n  ACCIÓN\n    list         Lista complementos instalados.\n    catalog      Muestra el catálogo oficial incluido.\n    info         Muestra manifiesto, permisos y estado.\n    install      Verifica e instala un paquete .lcp desactivado.\n    enable       Concede permisos y activa un complemento.\n    disable      Desactiva el complemento.\n    reload       Recarga un complemento activo.\n    uninstall    Desinstala el complemento.\n    verify       Verifica un .lcp o plugin instalado.\n    permissions  Muestra permisos solicitados y concedidos.\n    revoke       Revoca permisos y confianza de un complemento.\n    publisher    Gestiona huellas Ed25519 de editores LCP confiables.\n    extensions   Lista extensiones para CLI, TUI y futura GUI.\n    pack         Construye un paquete .lcp desde un directorio.\n\nOptions:\n  -h, --help     Show this help and exit.",
       "docs": [
         "LCP.md",
         "SECURITY.md",
@@ -5733,7 +5746,7 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "permissions",
           "metavar": "PERMISO",
-          "required": true
+          "required": false
         }
       ],
       "category": "Plugins y expansiones",
@@ -6465,8 +6478,8 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.1-beta.3"
       },
-      "description": "usage: LANIP database [-h]\n                      (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip | --import ARCHIVO.zip | --restore ARCHIVO.bak)\n                      [--target {database,groups,physical}] [--yes] [--json]",
-      "details": "Usage: LANIP database [-h]\n                      (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip | --import ARCHIVO.zip | --restore ARCHIVO.bak)\n                      [--target {database,groups,physical}] [--yes] [--json]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --diagnose                  Valida los almacenes configurados.\n  --export ARCHIVO.zip        Exporta datos con hashes verificables.\n  --verify ARCHIVO.zip        Verifica una exportación sin importarla.\n  --import ARCHIVO.zip        Importa datos verificados.\n  --restore ARCHIVO.bak       Restaura un backup validado del almacén.\n  --target {database,groups,physical}\n                              Almacén que se restaura.\n  --yes                       Confirma la sustitución de datos.\n  --json                      Emite el diagnóstico como JSON.",
+      "description": "usage: LANIP database [-h] (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip |\n                      --import ARCHIVO.zip | --restore ARCHIVO.bak)\n                      [--target {database,groups,physical}] [--yes] [--json]",
+      "details": "Usage: LANIP database [-h] (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip |\n                      --import ARCHIVO.zip | --restore ARCHIVO.bak)\n                      [--target {database,groups,physical}] [--yes] [--json]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --diagnose                  Valida los almacenes configurados.\n  --export ARCHIVO.zip        Exporta datos con hashes verificables.\n  --verify ARCHIVO.zip        Verifica una exportación sin importarla.\n  --import ARCHIVO.zip        Importa datos verificados.\n  --restore ARCHIVO.bak       Restaura un backup validado del almacén.\n  --target {database,groups,physical}\n                              Almacén que se restaura.\n  --yes                       Confirma la sustitución de datos.\n  --json                      Emite el diagnóstico como JSON.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -6484,7 +6497,7 @@ window.LANCTL_REFERENCE = {
         "database"
       ],
       "title": "LANIP database",
-      "usage": "LANIP database [-h]\n                      (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip | --import ARCHIVO.zip | --restore ARCHIVO.bak)\n                      [--target {database,groups,physical}] [--yes] [--json]"
+      "usage": "LANIP database [-h] (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip |\n                      --import ARCHIVO.zip | --restore ARCHIVO.bak)\n                      [--target {database,groups,physical}] [--yes] [--json]"
     },
     {
       "aliases": [],
@@ -6619,7 +6632,7 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "arguments",
           "metavar": "ARGUMENTO",
-          "required": true
+          "required": false
         }
       ],
       "category": "Cableado y topología",
@@ -7403,7 +7416,8 @@ window.LANCTL_REFERENCE = {
     {
       "aliases": [
         "ls",
-        "del"
+        "del",
+        "map"
       ],
       "arguments": [
         {
@@ -7456,19 +7470,23 @@ window.LANCTL_REFERENCE = {
       "children": [
         "tui",
         "cli",
+        "help",
         "list",
         "seed",
         "show",
         "add",
+        "idf",
         "reserve",
+        "element",
         "delete",
+        "graph",
         "prefix"
       ],
       "compatibility": {
         "verified": "0.3.1-beta.3"
       },
       "description": "Gestión física, IDF, cableado y topología de la suite LANCTL.",
-      "details": "Usage: LANWIRE [-h] [--version] [--database ARCHIVO.db] [-tui | --cli] COMANDO ...\n\nGestión física, IDF, cableado y topología de la suite LANCTL.\n\nArguments:\n  COMANDO\n    tui                  Abre la interfaz de pantalla completa.\n    cli                  Abre la consola interactiva.\n    list (ls)            Lista los identificadores.\n    seed                 Carga la topología inicial de pruebas.\n    show                 Muestra un identificador.\n    add                  Genera el siguiente IDF.\n    reserve              Reserva un IDF.\n    delete (del)         Elimina un IDF.\n    prefix               Gestiona juegos de letras.\n\nOptions:\n  -h, --help             Show this help and exit.\n  --version              Muestra la versión común de la suite y termina.\n  --database ARCHIVO.db  Base física IDF; por defecto usa physical/idf.db en la raíz compartida.\n  -tui, --tui            Abre la interfaz de pantalla completa.\n  --cli                  Abre la consola interactiva de LANWIRE.",
+      "details": "Usage: LANWIRE [-h] [--version] [--database ARCHIVO.db] [-tui | --cli] COMANDO ...\n\nGestión física, IDF, cableado y topología de la suite LANCTL.\n\nArguments:\n  COMANDO\n    tui                  Abre la interfaz de pantalla completa.\n    cli                  Abre la consola interactiva.\n    help                 Muestra la ayuda de comandos de LANWIRE.\n    list (ls)            Lista los identificadores.\n    seed                 Carga la topología inicial de pruebas.\n    show                 Muestra un identificador.\n    add                  Genera el siguiente IDF.\n    idf                  Crea identificadores con perfil físico completo.\n    reserve              Reserva un IDF.\n    element              Consulta o actualiza los datos y puertos de un elemento.\n    delete (del)         Elimina un IDF.\n    graph (map)          Muestra la topología física.\n    prefix               Gestiona juegos de letras.\n\nOptions:\n  -h, --help             Show this help and exit.\n  --version              Muestra la versión común de la suite y termina.\n  --database ARCHIVO.db  Base física IDF; por defecto usa physical/idf.db en la raíz compartida.\n  -tui, --tui            Abre la interfaz de pantalla completa.\n  --cli                  Abre la consola interactiva de LANWIRE.",
       "docs": [
         "LANWIRE.md",
         "CLI-REFERENCE.md",
@@ -7548,6 +7566,36 @@ window.LANCTL_REFERENCE = {
       ],
       "title": "LANWIRE cli",
       "usage": "LANWIRE cli [-h]"
+    },
+    {
+      "aliases": [],
+      "arguments": [],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE help [-h]",
+      "details": "Usage: LANWIRE help [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire help --help"
+      ],
+      "group": "LANWIRE",
+      "id": "command-lanwire-help",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "help",
+      "path": [
+        "LANWIRE",
+        "help"
+      ],
+      "title": "LANWIRE help",
+      "usage": "LANWIRE help [-h]"
     },
     {
       "aliases": [],
@@ -7672,13 +7720,32 @@ window.LANCTL_REFERENCE = {
           "required": true
         },
         {
-          "choices": [],
+          "choices": [
+            "2",
+            "3",
+            "4",
+            "5"
+          ],
           "default": null,
-          "description": "Datos iniciales opcionales.",
-          "flags": [],
-          "label": "data",
-          "metavar": "CLAVE=VALOR",
-          "required": true
+          "description": "Cantidad de dígitos del contador (2 a 5).",
+          "flags": [
+            "--digits"
+          ],
+          "label": "--digits",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": "1",
+          "description": "Crea N IDF consecutivos.",
+          "flags": [
+            "-more",
+            "--more"
+          ],
+          "label": "-more, --more",
+          "metavar": "N",
+          "required": false
         }
       ],
       "category": "Cableado y topología",
@@ -7686,8 +7753,8 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.1-beta.3"
       },
-      "description": "usage: LANWIRE add [-h] prefix [CLAVE=VALOR ...]",
-      "details": "Usage: LANWIRE add [-h] prefix [CLAVE=VALOR ...]\n\nArguments:\n  prefix       Prefijo del tipo de elemento físico.\n  CLAVE=VALOR  Datos iniciales opcionales.\n\nOptions:\n  -h, --help   Show this help and exit.",
+      "description": "usage: LANWIRE add [-h] [--digits {2,3,4,5}] [-more N] prefix",
+      "details": "Usage: LANWIRE add [-h] [--digits {2,3,4,5}] [-more N] prefix\n\nArguments:\n  prefix              Prefijo del tipo de elemento físico.\n\nOptions:\n  -h, --help          Show this help and exit.\n  --digits {2,3,4,5}  Cantidad de dígitos del contador (2 a 5).\n  -more, --more N     Crea N IDF consecutivos.",
       "docs": [
         "LANWIRE.md",
         "CLI-REFERENCE.md",
@@ -7706,7 +7773,456 @@ window.LANCTL_REFERENCE = {
         "add"
       ],
       "title": "LANWIRE add",
-      "usage": "LANWIRE add [-h] prefix [CLAVE=VALOR ...]"
+      "usage": "LANWIRE add [-h] [--digits {2,3,4,5}] [-more N] prefix"
+    },
+    {
+      "aliases": [
+        "del"
+      ],
+      "arguments": [],
+      "category": "Cableado y topología",
+      "children": [
+        "list",
+        "types",
+        "show",
+        "edit",
+        "delete",
+        "new",
+        "add"
+      ],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE idf [-h] {list,types,show,edit,delete,del,new,add} ...",
+      "details": "Usage: LANWIRE idf [-h] {list,types,show,edit,delete,del,new,add} ...\n\nArguments:\n  {list,types,show,edit,delete,del,new,add}\n    list                      Lista prefijos o los IDF de uno de ellos.\n    types                     Lista los perfiles físicos disponibles.\n    show                      Consulta un prefijo o IDF.\n    edit                      Edita un prefijo o los datos de un IDF.\n    delete (del)              Elimina un IDF.\n    new                       Asigna un perfil físico a un prefijo.\n    add                       Crea un IDF del perfil asignado al prefijo.\n\nOptions:\n  -h, --help                  Show this help and exit.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire idf --help"
+      ],
+      "group": "LANWIRE",
+      "id": "command-lanwire-idf",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "idf",
+      "path": [
+        "LANWIRE",
+        "idf"
+      ],
+      "title": "LANWIRE idf",
+      "usage": "LANWIRE idf [-h] {list,types,show,edit,delete,del,new,add} ..."
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "Prefijo cuyos elementos se listan.",
+          "flags": [],
+          "label": "prefix",
+          "metavar": "",
+          "required": false
+        }
+      ],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE idf list [-h] [prefix]",
+      "details": "Usage: LANWIRE idf list [-h] [prefix]\n\nArguments:\n  prefix      Prefijo cuyos elementos se listan.\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire idf list --help"
+      ],
+      "group": "LANWIRE idf",
+      "id": "command-lanwire-idf-list",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "list",
+      "path": [
+        "LANWIRE",
+        "idf",
+        "list"
+      ],
+      "title": "LANWIRE idf list",
+      "usage": "LANWIRE idf list [-h] [prefix]"
+    },
+    {
+      "aliases": [],
+      "arguments": [],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE idf types [-h]",
+      "details": "Usage: LANWIRE idf types [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire idf types --help"
+      ],
+      "group": "LANWIRE idf",
+      "id": "command-lanwire-idf-types",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "types",
+      "path": [
+        "LANWIRE",
+        "idf",
+        "types"
+      ],
+      "title": "LANWIRE idf types",
+      "usage": "LANWIRE idf types [-h]"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "Prefijo o IDF concreto.",
+          "flags": [],
+          "label": "code",
+          "metavar": "",
+          "required": true
+        }
+      ],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE idf show [-h] code",
+      "details": "Usage: LANWIRE idf show [-h] code\n\nArguments:\n  code        Prefijo o IDF concreto.\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire idf show --help"
+      ],
+      "group": "LANWIRE idf",
+      "id": "command-lanwire-idf-show",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "show",
+      "path": [
+        "LANWIRE",
+        "idf",
+        "show"
+      ],
+      "title": "LANWIRE idf show",
+      "usage": "LANWIRE idf show [-h] code"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "Prefijo o IDF concreto.",
+          "flags": [],
+          "label": "code",
+          "metavar": "",
+          "required": true
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Datos del IDF.",
+          "flags": [],
+          "label": "data",
+          "metavar": "CAMPO=VALOR",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Nuevo perfil del prefijo.",
+          "flags": [
+            "-type"
+          ],
+          "label": "-type",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Nombre del prefijo.",
+          "flags": [
+            "-name"
+          ],
+          "label": "-name",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Alias del prefijo.",
+          "flags": [
+            "-alias"
+          ],
+          "label": "-alias",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Descripción del prefijo.",
+          "flags": [
+            "-description"
+          ],
+          "label": "-description",
+          "metavar": "",
+          "required": false
+        }
+      ],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE idf edit [-h] [-type ELEMENT_TYPE] [-name NAME] [-alias ALIAS]\n                        [-description DESCRIPTION]\n                        code [CAMPO=VALOR ...]",
+      "details": "Usage: LANWIRE idf edit [-h] [-type ELEMENT_TYPE] [-name NAME] [-alias ALIAS]\n                        [-description DESCRIPTION]\n                        code [CAMPO=VALOR ...]\n\nArguments:\n  code                      Prefijo o IDF concreto.\n  CAMPO=VALOR               Datos del IDF.\n\nOptions:\n  -h, --help                Show this help and exit.\n  -type ELEMENT_TYPE        Nuevo perfil del prefijo.\n  -name NAME                Nombre del prefijo.\n  -alias ALIAS              Alias del prefijo.\n  -description DESCRIPTION  Descripción del prefijo.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire idf edit --help"
+      ],
+      "group": "LANWIRE idf",
+      "id": "command-lanwire-idf-edit",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "edit",
+      "path": [
+        "LANWIRE",
+        "idf",
+        "edit"
+      ],
+      "title": "LANWIRE idf edit",
+      "usage": "LANWIRE idf edit [-h] [-type ELEMENT_TYPE] [-name NAME] [-alias ALIAS]\n                        [-description DESCRIPTION]\n                        code [CAMPO=VALOR ...]"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "IDF concreto; no elimina prefijos.",
+          "flags": [],
+          "label": "code",
+          "metavar": "",
+          "required": true
+        }
+      ],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE idf delete [-h] code",
+      "details": "Usage: LANWIRE idf delete [-h] code\n\nArguments:\n  code        IDF concreto; no elimina prefijos.\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire idf delete --help"
+      ],
+      "group": "LANWIRE idf",
+      "id": "command-lanwire-idf-delete",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "delete",
+      "path": [
+        "LANWIRE",
+        "idf",
+        "delete"
+      ],
+      "title": "LANWIRE idf delete",
+      "usage": "LANWIRE idf delete [-h] code"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "Prefijo para new o IDF exacto para add.",
+          "flags": [],
+          "label": "code",
+          "metavar": "",
+          "required": true
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Nombre del registro.",
+          "flags": [
+            "-name"
+          ],
+          "label": "-name",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Alias opcional.",
+          "flags": [
+            "-alias"
+          ],
+          "label": "-alias",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Descripción opcional.",
+          "flags": [
+            "-description",
+            "-descriptionn"
+          ],
+          "label": "-description, -descriptionn",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Perfil físico.",
+          "flags": [
+            "-type"
+          ],
+          "label": "-type",
+          "metavar": "",
+          "required": true
+        }
+      ],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE idf new [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION]\n                       -type ELEMENT_TYPE\n                       code",
+      "details": "Usage: LANWIRE idf new [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION]\n                       -type ELEMENT_TYPE\n                       code\n\nArguments:\n  code                        Prefijo para new o IDF exacto para add.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -name NAME                  Nombre del registro.\n  -alias ALIAS                Alias opcional.\n  -description, -descriptionn DESCRIPTION\n                              Descripción opcional.\n  -type ELEMENT_TYPE          Perfil físico.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire idf new --help"
+      ],
+      "group": "LANWIRE idf",
+      "id": "command-lanwire-idf-new",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "new",
+      "path": [
+        "LANWIRE",
+        "idf",
+        "new"
+      ],
+      "title": "LANWIRE idf new",
+      "usage": "LANWIRE idf new [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION]\n                       -type ELEMENT_TYPE\n                       code"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "Prefijo para new o IDF exacto para add.",
+          "flags": [],
+          "label": "code",
+          "metavar": "",
+          "required": true
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Nombre del registro.",
+          "flags": [
+            "-name"
+          ],
+          "label": "-name",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Alias opcional.",
+          "flags": [
+            "-alias"
+          ],
+          "label": "-alias",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Descripción opcional.",
+          "flags": [
+            "-description",
+            "-descriptionn"
+          ],
+          "label": "-description, -descriptionn",
+          "metavar": "",
+          "required": false
+        }
+      ],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE idf add [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION] code",
+      "details": "Usage: LANWIRE idf add [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION] code\n\nArguments:\n  code                        Prefijo para new o IDF exacto para add.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -name NAME                  Nombre del registro.\n  -alias ALIAS                Alias opcional.\n  -description, -descriptionn DESCRIPTION\n                              Descripción opcional.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire idf add --help"
+      ],
+      "group": "LANWIRE idf",
+      "id": "command-lanwire-idf-add",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "add",
+      "path": [
+        "LANWIRE",
+        "idf",
+        "add"
+      ],
+      "title": "LANWIRE idf add",
+      "usage": "LANWIRE idf add [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION] code"
     },
     {
       "aliases": [],
@@ -7727,7 +8243,7 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "data",
           "metavar": "CLAVE=VALOR",
-          "required": true
+          "required": false
         }
       ],
       "category": "Cableado y topología",
@@ -7756,6 +8272,55 @@ window.LANCTL_REFERENCE = {
       ],
       "title": "LANWIRE reserve",
       "usage": "LANWIRE reserve [-h] idf [CLAVE=VALOR ...]"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "IDF que se desea consultar o actualizar.",
+          "flags": [],
+          "label": "idf",
+          "metavar": "",
+          "required": true
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Campos físicos que se desean modificar.",
+          "flags": [],
+          "label": "data",
+          "metavar": "CAMPO=VALOR",
+          "required": false
+        }
+      ],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE element [-h] idf [CAMPO=VALOR ...]",
+      "details": "Usage: LANWIRE element [-h] idf [CAMPO=VALOR ...]\n\nArguments:\n  idf          IDF que se desea consultar o actualizar.\n  CAMPO=VALOR  Campos físicos que se desean modificar.\n\nOptions:\n  -h, --help   Show this help and exit.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire element --help"
+      ],
+      "group": "LANWIRE",
+      "id": "command-lanwire-element",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "element",
+      "path": [
+        "LANWIRE",
+        "element"
+      ],
+      "title": "LANWIRE element",
+      "usage": "LANWIRE element [-h] idf [CAMPO=VALOR ...]"
     },
     {
       "aliases": [],
@@ -7796,6 +8361,36 @@ window.LANCTL_REFERENCE = {
       ],
       "title": "LANWIRE delete",
       "usage": "LANWIRE delete [-h] idf"
+    },
+    {
+      "aliases": [],
+      "arguments": [],
+      "category": "Cableado y topología",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.1-beta.3"
+      },
+      "description": "usage: LANWIRE graph [-h]",
+      "details": "Usage: LANWIRE graph [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "LANWIRE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanwire graph --help"
+      ],
+      "group": "LANWIRE",
+      "id": "command-lanwire-graph",
+      "kind": "command",
+      "launcher": "LANWIRE",
+      "name": "graph",
+      "path": [
+        "LANWIRE",
+        "graph"
+      ],
+      "title": "LANWIRE graph",
+      "usage": "LANWIRE graph [-h]"
     },
     {
       "aliases": [
@@ -8174,7 +8769,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "U:\\LANCTL\\data\\lc\\projects\\workspaces\\5f4c947e-c7f2-4224-9078-ada6bad57407\\devices.json",
+          "default": "data/lc/projects/workspaces/default/database/devices.json",
           "description": "Base de elementos LANCTL.",
           "flags": [
             "--database"
@@ -8357,7 +8952,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.1-beta.3"
       },
       "description": "usage: LANACCESS set [-h] --username USERNAME element protocol",
-      "details": "Usage: LANACCESS set [-h] --username USERNAME element protocol\n\nArguments:\n  element                     IP, MAC, alias o ID del dispositivo.\n  protocol                    Protocolo asociado, por ejemplo ssh.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --username USERNAME, -user USERNAME\n                              Usuario remoto.",
+      "details": "Usage: LANACCESS set [-h] --username USERNAME element protocol\n\nArguments:\n  element                     IP, MAC, alias o ID del dispositivo.\n  protocol                    Protocolo asociado, por ejemplo ssh.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --username, -user USERNAME  Usuario remoto.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -8437,7 +9032,7 @@ window.LANCTL_REFERENCE = {
           "flags": [],
           "label": "words",
           "metavar": "",
-          "required": true
+          "required": false
         },
         {
           "choices": [],
@@ -8611,7 +9206,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor-sessions.json",
+          "default": "data/lc/projects/workspaces/default/monitoring/sessions.json",
           "description": "Estado runtime de sesiones.",
           "flags": [
             "--sessions"
@@ -8622,7 +9217,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor-incidents.json",
+          "default": "data/lc/projects/workspaces/default/monitoring/incidents.json",
           "description": "Estado runtime de incidencias.",
           "flags": [
             "--incidents-store"
@@ -8633,7 +9228,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor.lock",
+          "default": "data/lc/projects/workspaces/default/monitoring/monitor.lock",
           "description": "Lock singleton del monitor.",
           "flags": [
             "--lock"
@@ -8644,7 +9239,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor.db",
+          "default": "data/lc/projects/workspaces/default/monitoring/monitor.db",
           "description": "Repositorio SQLite del monitor.",
           "flags": [
             "--monitor-db"
@@ -8655,7 +9250,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor-profiles.json",
+          "default": "data/lc/projects/workspaces/default/monitoring/profiles.json",
           "description": "Perfiles personalizados.",
           "flags": [
             "--profiles"
@@ -8666,7 +9261,7 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
-          "default": "data/lc/monitor-assignments.json",
+          "default": "data/lc/projects/workspaces/default/monitoring/assignments.json",
           "description": "Asignaciones persistentes.",
           "flags": [
             "--assignments-store"
@@ -9427,7 +10022,7 @@ window.LANCTL_REFERENCE = {
     }
   ],
   "meta": {
-    "entryCount": 138,
+    "entryCount": 149,
     "name": "LANCTL Reference",
     "repository": "https://github.com/CctrGy/LANCTL",
     "version": "0.3.1-beta.3"

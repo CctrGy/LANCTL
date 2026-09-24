@@ -41,6 +41,30 @@ class PhysicalEntrypointTests(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertIn("vacía", output.getvalue())
 
+    def test_idf_commands_are_callable_directly_with_spaced_arguments(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database = str(Path(temporary) / "idf.db")
+
+            def call(*command: str) -> str:
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    self.assertEqual(main(["--database", database, *command]), 0)
+                return output.getvalue()
+
+            self.assertIn("idf list", call("help"))
+            self.assertIn("Prefijo FB", call("idf", "new", "FB", "-type", "wire.fiber"))
+            self.assertIn("FB", call("idf", "list"))
+            self.assertIn(
+                "Creado FB-00",
+                call("idf", "add", "FB-00", "-description", "Fibra de compañía"),
+            )
+            self.assertIn("FB-00", call("idf", "list", "FB"))
+            self.assertIn("Fibra de compañía", call("element", "FB-00"))
+            self.assertIn("wire.fiber", call("idf", "types"))
+            self.assertIn("FB-00", call("idf", "show", "FB-00"))
+            self.assertIn("Actualizado", call("idf", "edit", "FB-00", "alias=Uplink"))
+            self.assertIn("Eliminado", call("idf", "delete", "FB-00"))
+
     def test_explicit_tui_and_cli_modes_are_dispatched(self):
         with patch("lanctl.apps.wire.tui.run_tui", return_value=7) as tui:
             self.assertEqual(main(["--tui"]), 7)

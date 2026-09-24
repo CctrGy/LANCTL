@@ -927,6 +927,27 @@ class DatabaseTests(unittest.TestCase):
             aliased = database.set_alias("10:20:30:40:50:60", "SENSOR")
             self.assertEqual(aliased.cnf, "O")
 
+    def test_idf_is_manual_normalized_unique_and_preserved_by_scans(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = DeviceDatabase(str(Path(directory) / "devices.json"))
+            database.upsert(
+                [
+                    {"IP": "192.168.1.20", "MAC": "10:20:30:40:50:60"},
+                    {"IP": "192.168.1.21", "MAC": "10:20:30:40:50:61"},
+                ]
+            )
+            assigned = database.edit_device("192.168.1.20", "idf", "ab-12")
+            self.assertEqual(assigned.idf, "AB-12")
+
+            rescanned = database.upsert(
+                [{"IP": "192.168.1.30", "MAC": "10:20:30:40:50:60"}]
+            )
+            self.assertEqual(next(item for item in rescanned if item.mac.endswith("60")).idf, "AB-12")
+            with self.assertRaisesRegex(ValueError, "ya pertenece"):
+                database.edit_device("192.168.1.21", "idf", "AB-12")
+            with self.assertRaisesRegex(ValueError, "2-5 letras"):
+                database.edit_device("192.168.1.21", "idf", "equipo-1")
+
     def test_upsert_preserves_and_updates_devices(self):
         with tempfile.TemporaryDirectory() as directory:
             database = DeviceDatabase(str(Path(directory) / "devices.json"))

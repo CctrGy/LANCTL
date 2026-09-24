@@ -19,8 +19,10 @@ WINDOWS_SPECIAL_KEYS = {
     "O": "END",
     "S": "DELETE",
     ";": "F1",
-    "<": "F2",
+    "=": "F3",
     "?": "F5",
+    "A": "F7",
+    "C": "F9",
     "\x86": "F12",
 }
 
@@ -31,11 +33,13 @@ def decode_windows_key(getwch: Callable[[], str]) -> str:
         return WINDOWS_SPECIAL_KEYS.get(getwch(), "UNKNOWN")
     return {
         "\r": "ENTER",
-        "\n": "ENTER",
         "\x1b": "ESC",
-        "\x03": "ESC",
         "\x08": "BACKSPACE",
         "\t": "TAB",
+        "\x13": "CTRL_S",
+        "\x11": "CTRL_Q",
+        "\x03": "CTRL_C",
+        "\x0a": "CTRL_J",
     }.get(first, first)
 
 
@@ -63,8 +67,23 @@ def read_key(timeout: float = 0.1) -> str | None:
             "\x1b[B": "DOWN",
             "\x1b[C": "RIGHT",
             "\x1b[D": "LEFT",
+            "\x1bOP": "F1",
+            "\x1bOR": "F3",
+            "\x1b[13~": "F3",
+            "\x1b[18~": "F7",
+            "\x1b[20~": "F9",
+            "\x1b[24~": "F12",
             "\x1b[3~": "DELETE",
             "\x1b[5~": "PGUP",
             "\x1b[6~": "PGDN",
         }.get(sequence, "ESC")
-    return {"\n": "ENTER", "\x7f": "BACKSPACE", "\x03": "ESC", "\t": "TAB"}.get(first, first)
+    return {
+        "\r": "ENTER",
+        "\x7f": "BACKSPACE",
+        "\x03": "CTRL_C",
+        "\x08": "CTRL_H",
+        "\t": "TAB",
+        "\x13": "CTRL_S",
+        "\x11": "CTRL_Q",
+        "\x0a": "CTRL_J",
+    }.get(first, first)

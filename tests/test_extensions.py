@@ -42,8 +42,12 @@ class ExtensionTests(unittest.TestCase):
 
     def test_scan_profiles_apply_distinct_tradeoffs(self):
         fast, fast_timeout, fast_workers = apply_profile("fast", 1.0, 64)
+        normal, _, _ = apply_profile("normal", 1.0, 64)
         accurate, accurate_timeout, accurate_workers = apply_profile("accurate", 1.0, 64)
         self.assertEqual(fast.discovery, "arp")
+        self.assertFalse(fast.resolve_names)
+        self.assertTrue(normal.resolve_names)
+        self.assertTrue(accurate.resolve_names)
         self.assertLess(fast_timeout, accurate_timeout)
         self.assertGreater(fast_workers, accurate_workers)
         self.assertIn("wsd", accurate.extra_methods)

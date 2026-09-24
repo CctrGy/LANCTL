@@ -148,6 +148,7 @@ class Device(MutableMapping[str, Any]):
     name_deleted: bool = False
     alias_deleted: bool = False
     device_id: str = ""
+    idf: str = ""
     protocols: list[str] = field(default_factory=list)
     credentials: dict[str, str] = field(default_factory=dict)
     protocol_options: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -171,6 +172,7 @@ class Device(MutableMapping[str, Any]):
         "nameDeleted": "name_deleted",
         "aliasDeleted": "alias_deleted",
         "deviceId": "device_id",
+        "idf": "idf",
         "protocols": "protocols",
         "credentials": "credentials",
         "protocolOptions": "protocol_options",
@@ -184,6 +186,11 @@ class Device(MutableMapping[str, Any]):
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> Device:
         has_default_name = "defaultName" in value
+        raw_idf = str(value.get("idf", "")).strip()
+        if raw_idf:
+            from lanctl.apps.wire.idf import IDF
+
+            raw_idf = str(IDF.parse(raw_idf))
         alias = str(value.get("ALIAS", ""))
         raw_groups = value.get("GROUP", value.get("group", []))
         if isinstance(raw_groups, str):
@@ -210,6 +217,7 @@ class Device(MutableMapping[str, Any]):
             name_deleted=bool(value.get("nameDeleted", False)),
             alias_deleted=bool(value.get("aliasDeleted", False)),
             device_id=str(value.get("deviceId", "")),
+            idf=raw_idf,
             protocols=[normalize_protocol(str(item)) for item in value.get("protocols", [])],
             credentials={
                 normalize_protocol(str(protocol)): str(reference)

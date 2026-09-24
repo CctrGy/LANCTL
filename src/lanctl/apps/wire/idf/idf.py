@@ -8,58 +8,73 @@ from enum import Enum
 
 
 class IDFSize(str, Enum):
+    """Anchuras uniformes conservadas por compatibilidad con la API original."""
+
     SHORT = "short"
+    MEDIUM = "medium"
     LONG = "long"
+    EXTENDED = "extended"
 
 
-_PATTERNS = {
-    IDFSize.SHORT: re.compile(r"^[A-Z]{2}-[0-9]{2}$"),
-    IDFSize.LONG: re.compile(r"^[A-Z]{4}-[0-9]{4}$"),
+_PATTERN = re.compile(r"^(?P<prefix>[A-Z]{2,5})-(?P<number>[0-9]{2,5})$")
+_SIZE_WIDTHS = {
+    IDFSize.SHORT: 2,
+    IDFSize.MEDIUM: 3,
+    IDFSize.LONG: 4,
+    IDFSize.EXTENDED: 5,
 }
-_WIDTHS = {IDFSize.SHORT: (2, 2, 99), IDFSize.LONG: (4, 4, 9999)}
+_WIDTH_SIZES = {width: size for size, width in _SIZE_WIDTHS.items()}
 
 
 @dataclass(frozen=True, order=True)
 class IDF:
-    """Un identificador corto ``AB-12`` o largo ``ABCD-1234``."""
+    """Identificador físico con 2-5 letras y 2-5 dígitos.
+
+    Los anchos son independientes: tanto ``ABC-12`` como ``AB-00123`` son
+    válidos. Los formatos históricos de dos y cuatro caracteres se conservan.
+    """
 
     prefix: str
     number: int
-    size: IDFSize
+    prefix_width: int
+    number_width: int
 
     def __post_init__(self) -> None:
-        prefix_width, _, maximum = _WIDTHS[self.size]
         normalized = self.prefix.strip().upper()
-        if len(normalized) != prefix_width or not normalized.isascii() or not normalized.isalpha():
-            raise ValueError(
-                f"el prefijo {self.size.value} debe contener {prefix_width} letras ASCII"
-            )
+        if len(normalized) != self.prefix_width or not normalized.isascii() or not normalized.isalpha():
+            raise ValueError("el prefijo IDF debe contener entre 2 y 5 letras ASCII")
+        if not 2 <= self.prefix_width <= 5 or not 2 <= self.number_width <= 5:
+            raise ValueError("las partes del IDF deben tener entre 2 y 5 caracteres")
         if isinstance(self.number, bool) or not isinstance(self.number, int):
             raise TypeError("el número IDF debe ser un entero")
-        if not 0 <= self.number <= maximum:
-            raise ValueError(f"el número IDF debe estar entre 0 y {maximum}")
+        if not 0 <= self.number < 10**self.number_width:
+            raise ValueError(f"el número IDF debe estar entre 0 y {10**self.number_width - 1}")
         object.__setattr__(self, "prefix", normalized)
 
     @classmethod
-    def build(cls, prefix: str, number: int, size: IDFSize | str | None = None) -> IDF:
+    def build(
+        cls,
+        prefix: str,
+        number: int,
+        size: IDFSize | str | None = None,
+        *,
+        number_width: int | None = None,
+    ) -> IDF:
+        """Construye un IDF; ``number_width`` permite elegir dígitos independientes."""
         normalized = prefix.strip().upper()
-        resolved_size = (
-            IDFSize(size)
-            if size is not None
-            else {2: IDFSize.SHORT, 4: IDFSize.LONG}.get(len(normalized))
-        )
-        if resolved_size is None:
-            raise ValueError("el prefijo IDF debe tener 2 o 4 letras")
-        return cls(normalized, number, resolved_size)
+        prefix_width = _SIZE_WIDTHS[IDFSize(size)] if size is not None else len(normalized)
+        resolved_number_width = number_width if number_width is not None else prefix_width
+        return cls(normalized, number, prefix_width, resolved_number_width)
 
     @classmethod
     def parse(cls, value: str) -> IDF:
         normalized = value.strip().upper()
-        for size, pattern in _PATTERNS.items():
-            if pattern.fullmatch(normalized):
-                prefix, number = normalized.split("-", 1)
-                return cls(prefix, int(number), size)
-        raise ValueError("IDF no válido; se esperaba AB-12 o ABCD-1234")
+        match = _PATTERN.fullmatch(normalized)
+        if not match:
+            raise ValueError("IDF no válido; se esperaban 2-5 letras, un guion y 2-5 dígitos")
+        prefix = match.group("prefix")
+        number = match.group("number")
+        return cls(prefix, int(number), len(prefix), len(number))
 
     @classmethod
     def is_valid(cls, value: str) -> bool:
@@ -71,8 +86,14 @@ class IDF:
 
     @property
     def value(self) -> str:
-        _, number_width, _ = _WIDTHS[self.size]
-        return f"{self.prefix}-{self.number:0{number_width}d}"
+        return f"{self.prefix}-{self.number:0{self.number_width}d}"
+
+    @property
+    def size(self) -> IDFSize | None:
+        """Tamaño uniforme histórico, o ``None`` cuando los anchos difieren."""
+        if self.prefix_width == self.number_width:
+            return _WIDTH_SIZES[self.prefix_width]
+        return None
 
     def __str__(self) -> str:
         return self.value

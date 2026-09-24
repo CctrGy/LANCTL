@@ -9,9 +9,10 @@ terminales estrechas; se recomienda un mínimo de 80×24 para la demostración.
 | Tecla | Acción |
 | --- | --- |
 | `↑/↓` | Seleccionar elemento o desplazar una lista |
+| `Tab` | Alternar la vista del inventario: todos, activos, desconectados, grupos y, si está configurado, DHCP/estáticos |
 | `Enter` | Ejecutar el comando escrito o confirmar una selección |
 | `F1` | Ayuda de comandos |
-| `F2` | Identidad, clasificación, red, accesos y puertos |
+| `F2` | Ficha editable del elemento: identidad, grupos, IP y protocolos; puertos observados |
 | `F3` | Ping del elemento seleccionado |
 | `F5` | Descubrimiento y actualización |
 | `F7` | Plugin Manager |
@@ -31,6 +32,16 @@ terminales estrechas; se recomienda un mínimo de 80×24 para la demostración.
 | `Ctrl+L` | Limpiar la salida y devolver el foco al prompt |
 | `Ctrl+Q` | Iniciar el cierre seguro |
 | `Esc` | Cerrar modal o iniciar el cierre seguro |
+
+En la pestaña **Identidad** de `F2`, usa las flechas para seleccionar `CNF`,
+`ALIAS`, `NAME`, `DESCRIPTION` o `IDF`, y pulsa `Tab` para editar y confirmar.
+En **Clasificación** puedes añadir un grupo; en **Red** cambiar la IP; y en
+**Accesos** activar un protocolo (`ssh`) o desactivarlo (`del ssh`). Las
+observaciones y los puertos detectados se muestran debajo de los campos. La
+ficha se abre con los datos guardados aunque falle la consulta de red.
+El IDF es un identificador físico manual, distinto del UUID interno del dispositivo;
+acepta entre 2 y 5 letras, un guion y entre 2 y 5 dígitos (`AB-12`, `ABC-012`,
+`ABCDE-12345`); no puede repetirse y se aprovecha especialmente en LANWIRE.
 
 En Settings, `←/→` cambia de sección, `↑/↓` selecciona una variable y `Tab`
 entra o sale de edición. `Esc` cancela primero la edición activa y después abre
