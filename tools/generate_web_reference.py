@@ -568,7 +568,10 @@ def first_paragraph(path: Path) -> tuple[str, str]:
 
 def document_entries() -> list[dict]:
     entries = []
-    for path in sorted((ROOT / "docs").glob("*.md")):
+    # Path ordering follows the host filesystem: Windows compares names without
+    # case while Linux is case-sensitive.  Use one explicit cross-platform
+    # order so the committed artifact is identical on both supported systems.
+    for path in sorted((ROOT / "docs").glob("*.md"), key=lambda item: item.name.casefold()):
         title, description = first_paragraph(path)
         entries.append(
             {

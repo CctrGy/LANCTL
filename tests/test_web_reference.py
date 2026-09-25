@@ -29,6 +29,8 @@ def test_web_reference_catalog_covers_all_launchers_and_key_domains():
         "workflow-ssh-credentials",
     } <= {workflow["id"] for workflow in data["workflows"]}
     entry_ids = {entry["id"] for entry in entries}
+    document_names = [entry["name"] for entry in entries if entry["kind"] == "document"]
+    assert document_names == sorted(document_names, key=str.casefold)
     for workflow in data["workflows"]:
         assert set(workflow["related"]) <= entry_ids
         assert all((ROOT / "docs" / name).is_file() for name in workflow["docs"])
