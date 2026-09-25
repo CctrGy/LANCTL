@@ -10,11 +10,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-# Parser defaults can be calculated while LANCTL modules are imported.  Enable
-# the canonical documentation environment before those imports so generated
-# artifacts never capture a developer's active project or local data paths.
-os.environ["LANCTL_CANONICAL_HELP"] = "1"
-
 from lanctl import __version__  # noqa: E402
 from lanctl.apps.access.manager_cli import build_parser as access_parser  # noqa: E402
 from lanctl.apps.ip.interfaces.cli.main import build_parser as ip_parser  # noqa: E402
@@ -595,28 +590,40 @@ def document_entries() -> list[dict]:
 
 
 def generate_data() -> dict:
-    entries: list[dict] = []
-    for path, builder, recursive in ROOTS:
-        parsers = parser_tree(builder(), path) if recursive else ((path, builder(), ()),)
-        for parser_path, parser, _aliases in parsers:
-            entries.append(command_entry(parser_path, parser))
-    entries.extend({**entry, "compatibility": compatibility()} for entry in CONCEPTS)
-    entries.extend(document_entries())
-    categories = []
-    for entry in entries:
-        if entry["category"] not in categories:
-            categories.append(entry["category"])
-    return {
-        "meta": {
-            "name": "LANCTL Reference",
-            "version": __version__,
-            "repository": REPOSITORY,
-            "entryCount": len(entries),
-        },
-        "categories": categories,
-        "entries": entries,
-        "workflows": [{**workflow, "compatibility": compatibility()} for workflow in WORKFLOWS],
-    }
+    variables = ("LANCTL_CANONICAL_HELP", "LOGNAME", "USER", "LNAME", "USERNAME")
+    previous = {name: os.environ.get(name) for name in variables}
+    try:
+        os.environ["LANCTL_CANONICAL_HELP"] = "1"
+        for variable in variables[1:]:
+            os.environ[variable] = "user"
+        entries: list[dict] = []
+        for path, builder, recursive in ROOTS:
+            parsers = parser_tree(builder(), path) if recursive else ((path, builder(), ()),)
+            for parser_path, parser, _aliases in parsers:
+                entries.append(command_entry(parser_path, parser))
+        entries.extend({**entry, "compatibility": compatibility()} for entry in CONCEPTS)
+        entries.extend(document_entries())
+        categories = []
+        for entry in entries:
+            if entry["category"] not in categories:
+                categories.append(entry["category"])
+        return {
+            "meta": {
+                "name": "LANCTL Reference",
+                "version": __version__,
+                "repository": REPOSITORY,
+                "entryCount": len(entries),
+            },
+            "categories": categories,
+            "entries": entries,
+            "workflows": [{**workflow, "compatibility": compatibility()} for workflow in WORKFLOWS],
+        }
+    finally:
+        for name, value in previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
 
 
 def generate() -> str:

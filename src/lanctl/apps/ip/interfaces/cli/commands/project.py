@@ -19,7 +19,6 @@ from lanctl.core.projects import (
     inspect_project,
     list_project_entries,
     resolve_project_path,
-    update_project,
     verify_project,
 )
 
@@ -173,21 +172,20 @@ def _update(args) -> int:
         raise ValueError(
             "project update solo puede guardar el proyecto activo; usa project use primero"
         )
-    result = update_project(target, config=settings)
-    _set_active_project(result["path"])
-    from lanctl.core.plugins import get_plugin_manager
+    # ``update`` conserva el alias histórico, pero usa la misma transacción y
+    # verificación semántica que ``save`` y Ctrl+S.
+    from lanctl.core.projects.save_policy import save_active_project
 
-    get_plugin_manager().events.emit(
-        "LANCTL.Project.File.Save",
-        {
-            "path": result["path"],
-            "project_id": result.get("project", {}).get("id"),
-        },
-    )
-    write_log(f"PROJECT UPDATE path={result['path']}")
-    ok("ACTUALIZADO", result["path"])
-    print(f" Backup  : {result['backup']}")
-    print(f" SHA-256 : {result['checksum']}")
+    saved = save_active_project(force=True, config=settings)
+    if not saved.saved:
+        raise ValueError("no hay un proyecto activo que guardar")
+    _set_active_project(saved.path)
+    verified = verify_project(saved.path)
+    backup = str(Path(saved.path).with_suffix(Path(saved.path).suffix + ".bak"))
+    write_log(f"PROJECT UPDATE path={saved.path}")
+    ok("ACTUALIZADO", saved.path)
+    print(f" Backup  : {backup}")
+    print(f" SHA-256 : {verified['checksum']}")
     return 0
 
 

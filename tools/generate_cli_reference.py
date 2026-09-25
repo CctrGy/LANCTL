@@ -34,29 +34,47 @@ def parser_tree(parser: argparse.ArgumentParser, path: tuple[str, ...] = ("LANCT
 def generate() -> str:
     # La referencia es un artefacto multiplataforma: usa la sintaxis común
     # POSIX/Windows y documenta /? por separado, evitando diffs según el runner.
-    os.environ["LANCTL_CANONICAL_HELP"] = "1"
-    sections = [
-        "# Referencia completa del CLI LANCTL",
-        "",
-        "Documento generado automáticamente desde los parsers de la aplicación.",
-        "No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.",
-    ]
-    roots = (
-        (("LANCTL",), suite_parser(), False),
-        (("LANIP",), ip_parser(program_name="LANIP"), True),
-        (("LANWIRE",), wire_parser(), True),
-        (("LANRACK",), rack_parser(), True),
-        (("LANACCESS",), access_parser(), True),
-        (("LANMON",), monitor_parser(), True),
-    )
-    for path, root, recursive in roots:
-        parsers = parser_tree(root, path) if recursive else ((path, root),)
-        for parser_path, parser in parsers:
-            title = " ".join(parser_path)
-            sections.extend(
-                ["", f"## `{title}`", "", "```text", parser.format_help().rstrip(), "```"]
-            )
-    return "\n".join(sections) + "\n"
+    variables = ("LANCTL_CANONICAL_HELP", "LOGNAME", "USER", "LNAME", "USERNAME")
+    previous = {name: os.environ.get(name) for name in variables}
+    try:
+        os.environ["LANCTL_CANONICAL_HELP"] = "1"
+        for variable in variables[1:]:
+            os.environ[variable] = "user"
+        sections = [
+            "# Referencia completa del CLI LANCTL",
+            "",
+            "Documento generado automáticamente desde los parsers de la aplicación.",
+            "No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.",
+        ]
+        roots = (
+            (("LANCTL",), suite_parser(), False),
+            (("LANIP",), ip_parser(program_name="LANIP"), True),
+            (("LANWIRE",), wire_parser(), True),
+            (("LANRACK",), rack_parser(), True),
+            (("LANACCESS",), access_parser(), True),
+            (("LANMON",), monitor_parser(), True),
+        )
+        for path, root, recursive in roots:
+            parsers = parser_tree(root, path) if recursive else ((path, root),)
+            for parser_path, parser in parsers:
+                title = " ".join(parser_path)
+                sections.extend(
+                    [
+                        "",
+                        f"## `{title}`",
+                        "",
+                        "```text",
+                        parser.format_help().rstrip(),
+                        "```",
+                    ]
+                )
+        return "\n".join(sections) + "\n"
+    finally:
+        for name, value in previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
 
 
 def main() -> int:

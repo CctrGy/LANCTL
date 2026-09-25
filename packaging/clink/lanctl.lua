@@ -1,5 +1,5 @@
 -- Autocompletado de LANCTL para Clink 1.3.23 o posterior.
--- Compatible con LANCTL 0.3.1-beta.3.
+-- Compatible con LANCTL 0.3.2-beta.1.
 -- Desarrollo: clink installscripts <ruta>\packaging\clink
 -- Instalación: <directorio-de-instalación>\clink\lanctl.lua
 
@@ -442,6 +442,135 @@ local lab = clink.argmatcher()
         "--inactive", "--seconds", "--format", "--output"
     }):loop()
 
+-- Árbol completo de los ejecutables especializados.  Se mantiene aquí, en vez
+-- de usar passthrough, para que una versión estable congele también su contrato
+-- de terminal y no sólo el parser de Python.
+local wire_idf = clink.argmatcher():addarg({
+    "list" .. clink.argmatcher():addarg({ fromhistory = true, hint = "Prefijo opcional" }):addflags(help_flags):nofiles(),
+    "types" .. clink.argmatcher():addflags(help_flags):nofiles(),
+    "show" .. clink.argmatcher():addarg({ fromhistory = true, hint = "Prefijo o IDF" }):addflags(help_flags):nofiles(),
+    "edit" .. clink.argmatcher():addarg({ fromhistory = true, hint = "Prefijo o IDF" }):addarg({ fromhistory = true, hint = "CAMPO=VALOR" }):addflags({
+        "-h", "--help", "/?", "-type" .. history_value("Perfil físico"),
+        "-name" .. history_value("Nombre"), "-alias" .. history_value("Alias"),
+        "-description" .. history_value("Descripción")
+    }):loop(),
+    "delete" .. clink.argmatcher():addarg({ fromhistory = true, hint = "IDF" }):addflags(help_flags):nofiles(),
+    "del" .. clink.argmatcher():addarg({ fromhistory = true, hint = "IDF" }):addflags(help_flags):nofiles(),
+    "new" .. clink.argmatcher():addarg({ fromhistory = true, hint = "Prefijo" }):addflags({
+        "-h", "--help", "/?", "-type" .. history_value("Perfil físico"),
+        "-name" .. history_value("Nombre"), "-alias" .. history_value("Alias"),
+        "-description" .. history_value("Descripción"), "-descriptionn" .. history_value("Descripción")
+    }):nofiles(),
+    "add" .. clink.argmatcher():addarg({ fromhistory = true, hint = "IDF exacto" }):addflags({
+        "-h", "--help", "/?", "-name" .. history_value("Nombre"),
+        "-alias" .. history_value("Alias"), "-description" .. history_value("Descripción"),
+        "-descriptionn" .. history_value("Descripción")
+    }):nofiles()
+}):addflags(help_flags):nofiles()
+
+local wire_prefix = clink.argmatcher():addarg({
+    "list" .. clink.argmatcher():addflags(help_flags):nofiles(),
+    "ls" .. clink.argmatcher():addflags(help_flags):nofiles(),
+    "show" .. clink.argmatcher():addarg({ fromhistory = true, hint = "Letras" }):addflags(help_flags):nofiles(),
+    "set" .. clink.argmatcher():addarg({ fromhistory = true, hint = "Letras" }):addarg({ fromhistory = true, hint = "Nombre" }):addarg({ fromhistory = true, hint = "Descripción opcional" }):addflags(help_flags):nofiles(),
+    "delete" .. clink.argmatcher():addarg({ fromhistory = true, hint = "Letras" }):addflags(help_flags):nofiles(),
+    "del" .. clink.argmatcher():addarg({ fromhistory = true, hint = "Letras" }):addflags(help_flags):nofiles()
+}):addflags(help_flags):nofiles()
+
+local function configure_lanwire(matcher)
+    return matcher:addarg({
+        "tui", "cli", "help",
+        "list" .. history_value("Prefijo opcional"), "ls" .. history_value("Prefijo opcional"),
+        "seed", "show" .. history_value("IDF"),
+        "add" .. clink.argmatcher():addarg({ fromhistory = true, hint = "Prefijo" }):addflags({
+            "-h", "--help", "/?", "--digits" .. values({ "2", "3", "4", "5" }),
+            "-more" .. history_value("Cantidad"), "--more" .. history_value("Cantidad")
+        }):nofiles(),
+        "idf" .. wire_idf,
+        "reserve" .. clink.argmatcher():addarg({ fromhistory = true, hint = "IDF" }):addarg({ fromhistory = true, hint = "CLAVE=VALOR" }):addflags(help_flags):loop(),
+        "element" .. clink.argmatcher():addarg({ fromhistory = true, hint = "IDF" }):addarg({ fromhistory = true, hint = "CAMPO=VALOR" }):addflags(help_flags):loop(),
+        "delete" .. history_value("IDF"), "del" .. history_value("IDF"),
+        "graph", "map", "prefix" .. wire_prefix
+    }):addflags({
+        "-h", "--help", "/?", "--version", "--database" .. file_arg,
+        "-tui", "--tui", "--cli"
+    }):nofiles()
+end
+
+local function configure_lanrack(matcher)
+    return matcher:addarg({
+        "list", "ls", "show" .. history_value("ID o nombre del rack")
+    }):addflags({
+        "-h", "--help", "/?", "--version", "--database" .. file_arg,
+        "-tui", "--tui", "--cli"
+    }):nofiles()
+end
+
+local access_credential = clink.argmatcher():addarg({
+    "list", "show" .. history_value("ID de credencial"),
+    "delete" .. history_value("ID de credencial"),
+    "set" .. clink.argmatcher():addarg(selector):addarg(protocols):addflags({
+        "-h", "--help", "/?", "--username" .. history_value("Usuario")
+    }):nofiles(),
+    "export" .. file_arg, "import" .. file_arg,
+    "copy" .. clink.argmatcher():addarg(clink.filematches):addflags({
+        "-h", "--help", "/?", "--target-cipher" .. values({ "dpapi", "portable" })
+    }):nofiles(),
+    "recover" .. clink.argmatcher():addflags({ "-h", "--help", "/?", "--yes" }):nofiles()
+}):addflags(help_flags):nofiles()
+
+local function configure_lanaccess(matcher)
+    return matcher:addarg({
+        "list", "ls", "show" .. history_value("ID de credencial"),
+        "set" .. clink.argmatcher():addarg(selector):addarg(protocols):addflags({
+            "-h", "--help", "/?", "--username" .. history_value("Usuario"),
+            "-user" .. history_value("Usuario")
+        }):nofiles(),
+        "delete" .. history_value("ID de credencial"), "del" .. history_value("ID de credencial"),
+        "credential" .. access_credential, "doctor",
+        "settings" .. clink.argmatcher():addarg({ "show", "use-store" }):addarg(clink.filematches):addflags({ "-h", "--help", "/?", "--yes" }):nofiles(),
+        "protocol" .. clink.argmatcher():addarg({ "list", "configure" }):addarg(selector):addarg(protocols):addflags({
+            "-h", "--help", "/?", "--port" .. history_value("Puerto"),
+            "--driver" .. history_value("Driver")
+        }):nofiles(),
+        "user" .. clink.argmatcher():addarg({ "list", "add", "enable", "disable", "delete" }):addarg({ fromhistory = true, hint = "Usuario" }):addflags({
+            "-h", "--help", "/?", "--role" .. values({ "viewer", "operator", "manager", "administrator" }), "--yes"
+        }):nofiles()
+    }):addflags({
+        "-h", "--help", "/?", "--version", "--database" .. file_arg,
+        "--store" .. file_arg, "--cipher" .. values({ "auto", "dpapi", "portable" }),
+        "--scope" .. values({ "program", "windows", "project" }),
+        "--project-dir" .. dir_arg, "-tui", "--tui", "--cli"
+    }):nofiles()
+end
+
+local function configure_lanmon(matcher)
+    return matcher:addarg({
+        "logs", "events", "status", "attach", "detach", "once", "session",
+        "incidents", "incident", "service", "foreground", "configure", "profile",
+        "assign", "unassign", "assignments", "report", "ping", "scan", "identify", "health"
+    }):addflags({
+        "-h", "--help", "/?", "--version", "--cli", "--tui", "-tui",
+        "--source" .. values({ "all", "program", "project" }),
+        "--limit" .. history_value("1-1000"), "--level" .. error_log_levels,
+        "--project" .. file_arg, "--permanent", "--duration" .. history_value("Duración"),
+        "--mode" .. values({ "permanent", "temporary", "diagnostic", "once" }),
+        "--authority" .. values({ "observe", "operate", "administer" }),
+        "--json", "--yes", "--interval" .. history_value("Duración"),
+        "--every" .. history_value("Duración"), "--group" .. history_value("Grupo"),
+        "--type" .. values({ "presence", "services", "ports", "identity", "smb", "full" }),
+        "--fast", "--unknown", "--follow", "--sessions" .. file_arg,
+        "--incidents-store" .. file_arg, "--lock" .. file_arg, "--monitor-db" .. file_arg,
+        "--profiles" .. file_arg, "--assignments-store" .. file_arg,
+        "--profile" .. history_value("Perfil"),
+        "--priority" .. values({ "low", "normal", "high", "critical" }),
+        "--check" .. history_value("ping, arp o port:NN"),
+        "--presence" .. history_value("Duración"), "--discovery" .. history_value("Duración"),
+        "--services" .. history_value("Duración"), "--deep" .. history_value("Duración"),
+        "--workers" .. history_value("Workers"), "--timeout" .. history_value("Segundos")
+    }):loop()
+end
+
 local root_commands = {
     "ephemeral" .. ephemeral, "-e" .. ephemeral,
     "list" .. list, "recurrent" .. recurrent, "ping" .. ping,
@@ -485,12 +614,10 @@ end
 -- `lanip` y el alias histórico `als` comparten el árbol completo de LANIP.
 configure_lanip(clink.argmatcher("lanip", "lanip.exe", "als", "als.exe"))
 
--- Los ejecutables especializados conservan sus argumentos libres; sus comandos
--- se completan también al invocarlos desde el orquestador principal.
-clink.argmatcher("lanwire", "lanwire.exe"):addarg({ fromhistory = true, hint = "Comando LANWIRE" }):addflags(help_flags):loop()
-clink.argmatcher("lanrack", "lanrack.exe"):addarg({ fromhistory = true, hint = "Comando LANRACK" }):addflags(help_flags):loop()
-clink.argmatcher("lanaccess", "lanaccess.exe"):addarg({ fromhistory = true, hint = "Comando LANACCESS" }):addflags(help_flags):loop()
-clink.argmatcher("lanmon", "lanmon.exe"):addarg({ fromhistory = true, hint = "Comando LANMON" }):addflags(help_flags):loop()
+configure_lanwire(clink.argmatcher("lanwire", "lanwire.exe"))
+configure_lanrack(clink.argmatcher("lanrack", "lanrack.exe"))
+configure_lanaccess(clink.argmatcher("lanaccess", "lanaccess.exe"))
+configure_lanmon(clink.argmatcher("lanmon", "lanmon.exe"))
 
 local suite_commands = {}
 for _, command in ipairs(root_commands) do
@@ -499,10 +626,10 @@ end
 local suite_launchers = {
     "lanip" .. configure_lanip(clink.argmatcher()),
     "ip" .. configure_lanip(clink.argmatcher()),
-    "lanwire" .. passthrough("Comando LANWIRE"), "wire" .. passthrough("Comando LANWIRE"),
-    "lanrack" .. passthrough("Comando LANRACK"), "rack" .. passthrough("Comando LANRACK"),
-    "lanaccess" .. passthrough("Comando LANACCESS"), "access" .. passthrough("Comando LANACCESS"),
-    "lanmon" .. passthrough("Comando LANMON"), "monitor" .. passthrough("Comando LANMON")
+    "lanwire" .. configure_lanwire(clink.argmatcher()), "wire" .. configure_lanwire(clink.argmatcher()),
+    "lanrack" .. configure_lanrack(clink.argmatcher()), "rack" .. configure_lanrack(clink.argmatcher()),
+    "lanaccess" .. configure_lanaccess(clink.argmatcher()), "access" .. configure_lanaccess(clink.argmatcher()),
+    "lanmon" .. configure_lanmon(clink.argmatcher()), "monitor" .. configure_lanmon(clink.argmatcher())
 }
 for _, launcher in ipairs(suite_launchers) do
     table.insert(suite_commands, launcher)
@@ -511,7 +638,6 @@ end
 clink.argmatcher("lanctl", "lanctl.exe", "LANCTL.exe")
     :addarg(suite_commands)
     :addflags({
-        "-h", "--help", "/?", "--version", "--quiet", "--verbose", "--gui", "--cli", "-tui", "--tui",
-        "-project" .. file_arg, "--project" .. file_arg
+        "-h", "--help", "/?", "--version", "--cli", "-tui", "--tui", "--admin"
     })
     :nofiles()

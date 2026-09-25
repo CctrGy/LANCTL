@@ -566,7 +566,9 @@ class DeviceDatabase:
                 (
                     item
                     for item in devices
-                    if item is not device and item.idf.casefold() == normalized_idf.casefold()
+                    if normalized_idf
+                    and item is not device
+                    and item.idf.casefold() == normalized_idf.casefold()
                 ),
                 None,
             )

@@ -2,7 +2,12 @@ import argparse
 import unittest
 from pathlib import Path
 
+from lanctl.apps.access.manager_cli import build_parser as build_access_parser
 from lanctl.apps.ip.interfaces.cli.main import build_parser
+from lanctl.apps.rack.cli import build_parser as build_rack_parser
+from lanctl.apps.wire.cli.main import build_parser as build_wire_parser
+from lanctl.bootstrap.lanctl import build_parser as build_suite_parser
+from lanctl.bootstrap.lanmon import build_parser as build_monitor_parser
 
 
 class ClinkCompletionTests(unittest.TestCase):
@@ -19,7 +24,7 @@ class ClinkCompletionTests(unittest.TestCase):
             self.assertIn(f'clink.argmatcher("{executable}", "{executable}.exe")', self.script)
 
     def test_script_identifies_its_compatible_release(self):
-        self.assertIn("Compatible con LANCTL 0.3.1-beta.3", self.script)
+        self.assertIn("Compatible con LANCTL 0.3.2-beta.1", self.script)
 
     def test_suite_launcher_aliases_are_completed(self):
         for launcher in (
@@ -61,17 +66,43 @@ class ClinkCompletionTests(unittest.TestCase):
         self.assertIn("clink installscripts", readme)
         self.assertIn("clink uninstallscripts", readme)
 
-    def test_all_core_parser_options_are_represented(self):
-        pending = [build_parser()]
-        options = set()
-        while pending:
-            parser = pending.pop()
-            for action in parser._actions:
-                options.update(action.option_strings)
-                if isinstance(action, argparse._SubParsersAction):
-                    pending.extend(action.choices.values())
-        missing = sorted(option for option in options if f'"{option}"' not in self.script)
-        self.assertEqual(missing, [])
+    def test_all_published_parser_options_and_commands_are_represented(self):
+        roots = (
+            build_suite_parser(),
+            build_parser(),
+            build_wire_parser(),
+            build_rack_parser(),
+            build_access_parser(),
+            build_monitor_parser(),
+        )
+        for root in roots:
+            pending = [root]
+            options = set()
+            commands = set()
+            while pending:
+                parser = pending.pop()
+                for action in parser._actions:
+                    options.update(action.option_strings)
+                    if isinstance(action, argparse._SubParsersAction):
+                        commands.update(action.choices)
+                        pending.extend(action.choices.values())
+            missing_options = sorted(
+                option for option in options if f'"{option}"' not in self.script
+            )
+            missing_commands = sorted(
+                command for command in commands if f'"{command}"' not in self.script
+            )
+            with self.subTest(parser=root.prog):
+                self.assertEqual(missing_options, [])
+                self.assertEqual(missing_commands, [])
+
+    def test_stable_release_rules_freeze_the_clink_contract(self):
+        rules = (Path(__file__).resolve().parents[1] / "docs/DEVELOPMENT-RULES.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("tests/test_clink.py", rules)
+        self.assertIn("Windows y Linux", rules)
+        self.assertIn("sistemas Apple quedan", rules)
 
 
 if __name__ == "__main__":

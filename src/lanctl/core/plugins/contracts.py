@@ -63,6 +63,14 @@ class DeviceRemoteEvent(EventContract):
 
 
 @dataclass(frozen=True, slots=True)
+class VaultOperationEvent(EventContract):
+    """Never carries paths, usernames, passwords, keys or decrypted entries."""
+
+    operation: str
+    count: int
+
+
+@dataclass(frozen=True, slots=True)
 class NetworkLabEvent(EventContract):
     scenario_id: str
     seed: int | None = None

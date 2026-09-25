@@ -41,7 +41,11 @@ class IDF:
 
     def __post_init__(self) -> None:
         normalized = self.prefix.strip().upper()
-        if len(normalized) != self.prefix_width or not normalized.isascii() or not normalized.isalpha():
+        if (
+            len(normalized) != self.prefix_width
+            or not normalized.isascii()
+            or not normalized.isalpha()
+        ):
             raise ValueError("el prefijo IDF debe contener entre 2 y 5 letras ASCII")
         if not 2 <= self.prefix_width <= 5 or not 2 <= self.number_width <= 5:
             raise ValueError("las partes del IDF deben tener entre 2 y 5 caracteres")

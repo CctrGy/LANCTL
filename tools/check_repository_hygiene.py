@@ -28,6 +28,7 @@ FORBIDDEN_SUFFIXES = {
     ".sqlite",
     ".sqlite3",
     ".vlf",
+    ".vault",
 }
 FORBIDDEN_PARTS = {"credentials", "data", "secrets"}
 SECRET_PATTERNS = {

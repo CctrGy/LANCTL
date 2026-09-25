@@ -7,11 +7,20 @@ La [LANCTL Reference](reference/index.html) ofrece un índice web con búsqueda,
 sintaxis, opciones y ejemplos de todos los launchers y comandos, además de
 proyectos VLF, plugins LCP y el catálogo de documentación.
 
-> Versión actual: **0.3.1-beta.3**. Es una beta de prueba sin garantía de
+> Versión actual: **0.3.2-beta.1**. Es una beta de prueba sin garantía de
 > estabilidad: conserva copias de seguridad de los proyectos y no la utilices
 > como única fuente de inventario.
 
-### Cambios de 0.3.1-beta.3
+### Cambios de 0.3.2-beta.1
+
+- LANACCESS amplía la gestión CLI/TUI de credenciales y almacenes cifrados portables.
+- LANMON separa sus comandos y añade un visor de registros de programa y proyecto.
+- LANWIRE incorpora las mejoras de topología, paneles e interconexiones de experimental.
+- El guardado de proyectos compara semánticamente los miembros de grupos para evitar
+  restauraciones incorrectas por diferencias de orden.
+- Referencias, completado de terminal y controles de calidad actualizados.
+
+### Mejoras previas de 0.3.1-beta.3
 
 - LANCTL Reference reorganizada por categorías y por acciones, con guías paso a paso.
 - Cada entrada de Reference indica la versión en la que fue verificada y admite
@@ -27,6 +36,12 @@ proyectos VLF, plugins LCP y el catálogo de documentación.
   visibles incluso con el panel CLI configurado a su altura mínima.
 
 Los binarios publicados son autocontenidos y no requieren Python.
+
+Las normas de ramas, compatibilidad, errores, distribución del código y
+publicación de instaladores están centralizadas en
+[`docs/DEVELOPMENT-RULES.md`](docs/DEVELOPMENT-RULES.md).
+Las herramientas externas de análisis y arquitectura se explican en
+[`docs/DEVELOPMENT-TOOLS.md`](docs/DEVELOPMENT-TOOLS.md).
 
 ## Aplicaciones
 
@@ -383,11 +398,11 @@ plan sin ejecutar). Consulta [repositoryTerminal](repositoryTerminal/README.md)
 para requisitos y ejemplos. No cambia la versión ni realiza Git/push.
 
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.1-beta.3
+.\scripts\build-windows.ps1 -Version 0.3.2-beta.1
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.1-beta.3
+./scripts/build-linux.sh 0.3.2-beta.1
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.

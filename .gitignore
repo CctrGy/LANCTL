@@ -14,6 +14,19 @@ tmp/
 .venv/
 venv/
 
+# Herramientas de análisis instaladas fuera del proyecto
+node_modules/
+.scannerwork/
+.sonar/
+.sonarlint/
+.structurizr/
+.tool-cache/
+.tool-reports/
+.project-local/
+project.cmd
+sonar-report.json
+madge-report.json
+
 # Packaging and build artifacts
 build/
 dist/
@@ -37,6 +50,7 @@ data/als/
 *.log
 *.credentials
 *.credentials.*
+*.vault
 
 # Bases de datos y estado de ejecución (también fuera de data/lc)
 *.db

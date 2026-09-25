@@ -61,6 +61,15 @@ def test_manual_element_can_be_created_with_an_ip(tmp_path: Path) -> None:
     assert database.resolve("SENSOR").mac == "AA:BB:CC:DD:EE:FF"
 
 
+def test_clear_idf_with_other_unassigned_devices(tmp_path: Path) -> None:
+    database, groups = stores(tmp_path)
+    database.add_device("AA:BB:CC:DD:EE:FF", alias="OTHER")
+    groups.edit_device_fields("OLD", [("idf", "SW-01")])
+    groups.edit_device_fields("OLD", [("idf", "")])
+    assert database.resolve("OLD").idf == ""
+    assert database.resolve("OTHER").idf == ""
+
+
 def test_element_ip_can_be_corrected_atomically(tmp_path: Path) -> None:
     database, groups = stores(tmp_path)
 

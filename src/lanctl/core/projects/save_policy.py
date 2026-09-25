@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import tempfile
 import threading
@@ -237,23 +236,16 @@ def workspace_fingerprint(settings: Mapping[str, Any]) -> str | None:
     try:
         devices = database.load()
         groups = GroupDatabase(str(files[1]), database).load()
-        value = {
-            "devices": [device.to_dict() for device in devices],
-            "groups": [group.to_dict() for group in groups],
-        }
+        device_rows = [device.to_dict() for device in devices]
+        group_rows = [group.to_dict() for group in groups]
     except ValueError:
         # Mantiene la detección de cambios incluso para un almacén antiguo o
         # parcialmente migrado; el guardado real seguirá validando su esquema.
-        value = {
-            "devices": json.loads(files[0].read_text(encoding="utf-8")),
-            "groups": (
-                json.loads(files[1].read_text(encoding="utf-8")) if files[1].is_file() else []
-            ),
-        }
-    canonical = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
-    return hashlib.sha256(canonical).hexdigest()
+        device_rows = json.loads(files[0].read_text(encoding="utf-8"))
+        group_rows = json.loads(files[1].read_text(encoding="utf-8")) if files[1].is_file() else []
+    from lanctl.core.projects.fingerprint import inventory_fingerprint
+
+    return inventory_fingerprint(device_rows, group_rows)
 
 
 def workspace_is_dirty(settings: Mapping[str, Any]) -> bool:
@@ -271,7 +263,12 @@ def workspace_is_dirty(settings: Mapping[str, Any]) -> bool:
     return metadata.get("workspaceHash") != current
 
 
-def _verify_saved_workspace(result: Mapping[str, Any], settings: Mapping[str, Any]) -> dict:
+def _verify_saved_workspace(
+    result: Mapping[str, Any],
+    settings: Mapping[str, Any],
+    *,
+    expected: str | None = None,
+) -> dict:
     """Valida el VLF escrito, compara su inventario y confirma el workspace."""
 
     from lanctl.core.projects.vlf import inspect_project, verify_project
@@ -285,7 +282,7 @@ def _verify_saved_workspace(result: Mapping[str, Any], settings: Mapping[str, An
     workspace_mapping = settings.get("projectWorkspace")
     if not isinstance(workspace_mapping, Mapping):
         raise RuntimeError("el proyecto activo no tiene un workspace verificable")
-    expected = workspace_fingerprint(settings)
+    expected = expected or workspace_fingerprint(settings)
     with tempfile.TemporaryDirectory(prefix="lanctl-project-verify-") as temporary:
         extracted = prepare_project_workspace(
             result["path"], root=temporary, refresh=True, discard_changes=True
@@ -300,13 +297,19 @@ def _verify_saved_workspace(result: Mapping[str, Any], settings: Mapping[str, An
         )
     if expected is None or observed != expected:
         backup = str(result.get("backup") or "")
+        restored = False
         if backup and Path(backup).is_file():
             from lanctl.core.persistence import restore_backup
 
             restore_backup(result["path"], backup)
-        raise RuntimeError(
-            "la verificación posterior al guardado no coincide con el workspace; "
+            restored = True
+        outcome = (
             "se ha restaurado la copia de seguridad"
+            if restored
+            else "no había una copia de seguridad disponible para restaurar"
+        )
+        raise RuntimeError(
+            "la verificación posterior al guardado no coincide con el workspace; " + outcome
         )
     mark_workspace_synchronized(
         workspace_mapping, project_info=project_info, workspace_hash=expected
@@ -334,10 +337,22 @@ def save_active_project(
         if not force and not workspace_is_dirty(settings):
             return SaveResult(False, mode, trigger_value, active, "workspace-unchanged")
 
+        from lanctl.core.file_transaction import locked_files
         from lanctl.core.projects.vlf import update_project
 
-        result = update_project(active, config=settings)
-        verification = _verify_saved_workspace(result, settings)
+        workspace = settings.get("projectWorkspace")
+        if not isinstance(workspace, Mapping):
+            raise RuntimeError("el proyecto activo no tiene un workspace verificable")
+        database = Path(str(workspace.get("database", "")))
+        groups = Path(str(workspace.get("groups", "")))
+        # La instantánea esperada y la creación del VLF comparten los mismos
+        # locks que las bases. Otro proceso solo podrá escribir después; ese
+        # cambio seguirá apareciendo pendiente en vez de quedar falsamente
+        # confirmado por un hash calculado demasiado tarde.
+        with locked_files((database, groups, Path(active))):
+            expected = workspace_fingerprint(settings)
+            result = update_project(active, config=settings)
+            verification = _verify_saved_workspace(result, settings, expected=expected)
         verified = verification["verified"]
         project_info = verification["project"]
         project_id = str(project_info.get("id") or "")

@@ -106,10 +106,29 @@ class CredentialStore:
         path: str,
         protect: Callable[[bytes], bytes] = protect_secret,
         unprotect: Callable[[bytes], bytes] = unprotect_secret,
+        *,
+        cipher: str = "auto",
+        password: str | None = None,
     ):
         self.path = application_path(path)
         self._protect = protect
         self._unprotect = unprotect
+        if cipher not in {"auto", "dpapi", "portable"}:
+            raise ValueError("proveedor de cifrado no disponible")
+        self.cipher = cipher
+        self._password = password
+
+    def _vault_password(self) -> str:
+        if self._password is None:
+            from lanctl.core.secret_input import read_secret
+
+            self._password = read_secret("Contraseña del almacén cifrado: ")
+            if not self.path.exists() and self._password != read_secret(
+                "Repite la contraseña del nuevo almacén: "
+            ):
+                self._password = None
+                raise ValueError("las contraseñas no coinciden; almacén no creado")
+        return self._password
 
     @staticmethod
     def identifier(device_id: str, protocol: str) -> str:
@@ -120,18 +139,52 @@ class CredentialStore:
         if not self.path.exists():
             return {"version": 1, "entries": {}}
         try:
+            from lanctl.core.vault_crypto import MAGIC, MAX_BYTES, decrypt
+
+            if self.path.stat().st_size > MAX_BYTES * 3:
+                raise ValueError("almacén demasiado grande")
             encrypted = base64.b64decode(self.path.read_bytes().strip(), validate=True)
-            value = json.loads(self._unprotect(encrypted).decode("utf-8"))
+            portable = encrypted.startswith(MAGIC)
+            actual = "portable" if portable else "dpapi"
+            if self.cipher not in {"auto", actual}:
+                raise ValueError("el cifrado no coincide; utiliza export/import para convertir")
+            self.cipher = actual
+            clear = (
+                decrypt(encrypted, self._vault_password())
+                if portable
+                else self._unprotect(encrypted)
+            )
+            value = json.loads(clear.decode("utf-8"))
         except (ValueError, UnicodeError, json.JSONDecodeError) as error:
             raise ValueError(f"almacén de credenciales inválido: {self.path}") from error
-        if value.get("version") != 1 or not isinstance(value.get("entries"), dict):
+        if (
+            not isinstance(value, dict)
+            or value.get("version") != 1
+            or not isinstance(value.get("entries"), dict)
+        ):
             raise ValueError(f"formato de credenciales no compatible: {self.path}")
+        for identifier, entry in value["entries"].items():
+            if (
+                not isinstance(entry, dict)
+                or not all(
+                    isinstance(entry.get(key), str)
+                    for key in ("deviceId", "protocol", "username", "password")
+                )
+                or identifier != self.identifier(entry["deviceId"], entry["protocol"])
+            ):
+                raise ValueError("entrada de credencial inválida")
         return value
 
     @transactional_method
     def _save(self, value: dict) -> None:
         clear = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
-        encoded = base64.b64encode(self._protect(clear))
+        from lanctl.core.vault_crypto import encrypt
+
+        encoded = base64.b64encode(
+            encrypt(clear, self._vault_password())
+            if self.cipher == "portable"
+            else self._protect(clear)
+        )
         atomic_write_bytes(self.path, encoded + b"\n")
 
     @transactional_method

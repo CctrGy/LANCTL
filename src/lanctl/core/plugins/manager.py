@@ -76,7 +76,10 @@ class PluginManager:
         self.discover()
 
     def _register_core_events(self) -> None:
+        from lanctl.core.plugins.contracts import VaultOperationEvent
+
         definitions = (
+            ("LANCTL.Access.Vault.Completed", VaultOperationEvent, False),
             ("LANCTL.Core.Lifecycle.Startup", LifecycleEvent, False),
             ("LANCTL.Core.Lifecycle.Shutdown", LifecycleEvent, False),
             ("LANCTL.Project.File.Open", ProjectFileEvent, False),

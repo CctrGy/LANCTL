@@ -5,8 +5,8 @@ from __future__ import annotations
 import sys
 
 from lanctl import __version__
-from lanctl.apps.ip.interfaces.cli.commands.monitor import register_monitor_command
-from lanctl.apps.ip.interfaces.cli.main import configure_utf8_stdio
+from lanctl.apps.monitor.commands import register_monitor_command
+from lanctl.bootstrap.lanctl import configure_utf8_stdio
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 
 
@@ -30,14 +30,65 @@ def build_parser() -> LANCTLArgumentParser:
         help="Muestra la versión común de la suite y termina.",
     )
     register_monitor_command(_StandaloneCommand(parser))
+    for action in parser._actions:
+        if action.dest == "words":
+            action.help = "logs, events, status, attach, detach, once, session, incidents, service o foreground."
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--cli", action="store_true", help="Abre la consola de eventos.")
+    mode.add_argument(
+        "--tui", "-tui", action="store_true", help="Abre el visor tabular de eventos."
+    )
+    parser.add_argument(
+        "--source", choices=("all", "program", "project"), default="all", help="Origen para logs."
+    )
+    parser.add_argument("--limit", type=int, default=100, help="Máximo de eventos (1-1000).")
+    parser.add_argument(
+        "--level", type=int, default=1, help="Nivel mínimo (1-59); conserva líneas sin nivel."
+    )
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def _main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
     args = build_parser().parse_args(arguments or ["status"])
+    if args.cli or args.tui:
+        from lanctl.apps.monitor.interfaces import event_console
+
+        return event_console(project=args.project, tui=args.tui)
+    if args.words == ["logs"]:
+        import json
+
+        from lanctl.apps.monitor.event_view import read_events
+        from lanctl.core.config import load_config
+
+        print(
+            json.dumps(
+                read_events(
+                    load_config(),
+                    project=args.project,
+                    source=args.source,
+                    limit=args.limit,
+                    minimum=args.level,
+                ),
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
+        return 0
     return args.handler(args)
+
+
+def main(argv: list[str] | None = None) -> int:
+    from lanctl.core.errors import errors
+
+    try:
+        return _main(argv)
+    except (OSError, ValueError) as exc:
+        errors.from_exception(
+            exc, origin="LANCTL.Monitor.CLI.Command", code="MONITOR.COMMAND.FAILED", level=42
+        )
+        return 2
 
 
 __all__ = ["main"]

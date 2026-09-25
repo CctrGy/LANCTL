@@ -219,6 +219,11 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("dependency-review-action", security)
         self.assertIn("generate_cli_reference.py --check", ci)
         self.assertIn("generate_cli_reference.py --check", release)
+        self.assertIn("branches: ['stable/**']", release)
+        self.assertIn('version="${GITHUB_REF_NAME#stable/}"', release)
+        self.assertIn('python scripts/verify-version.py "$version"', release)
+        self.assertIn("tag_name: v${{ needs.prepare.outputs.version }}", release)
+        self.assertIn("stable_branch != 'true'", release)
         # Dependabot es opcional: el repositorio puede desactivarlo para evitar
         # ramas automáticas sin rebajar las puertas de CI y seguridad anteriores.
 

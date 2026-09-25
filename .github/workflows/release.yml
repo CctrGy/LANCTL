@@ -3,12 +3,13 @@ name: Build release artifacts
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+    branches: ['stable/**']
   workflow_dispatch:
     inputs:
       version:
         description: Version without v prefix
         required: true
-        default: 0.3.1-beta.3
+        default: 0.3.2-beta.1
 
 permissions:
   contents: read
@@ -16,8 +17,42 @@ permissions:
 env:
   PYTHON_VERSION: '3.11'
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      stable_branch: ${{ steps.release.outputs.stable_branch }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: release
+        name: Resolve and validate release version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            version='${{ inputs.version }}'
+            stable_branch=false
+          elif [[ "${GITHUB_REF}" == refs/heads/stable/* ]]; then
+            version="${GITHUB_REF_NAME#stable/}"
+            stable_branch=true
+          else
+            version="${GITHUB_REF_NAME#v}"
+            stable_branch=false
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+            echo "Invalid release version: $version" >&2
+            exit 1
+          fi
+          python scripts/verify-version.py "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "stable_branch=$stable_branch" >> "$GITHUB_OUTPUT"
+
   validate:
+    needs: prepare
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +102,7 @@ jobs:
         with: {name: coverage-report, path: coverage.xml, if-no-files-found: error}
 
   windows:
-    needs: validate
+    needs: [prepare, validate]
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -96,7 +131,7 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          $version = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { '${{ inputs.version }}' } else { '${{ github.ref_name }}'.TrimStart('v') }
+          $version = '${{ needs.prepare.outputs.version }}'
           $buildArguments = @{ Version = $version }
           if ($env:LANCTL_SIGNING_CERTIFICATE_THUMBPRINT) {
             $buildArguments.SigningCertificateThumbprint = $env:LANCTL_SIGNING_CERTIFICATE_THUMBPRINT
@@ -106,7 +141,7 @@ jobs:
       - name: Clean Windows install, update, demo and uninstall
         shell: pwsh
         run: |
-          $version = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { '${{ inputs.version }}' } else { '${{ github.ref_name }}'.TrimStart('v') }
+          $version = '${{ needs.prepare.outputs.version }}'
           $setup = (Resolve-Path "dist/release/LANCTL-$version-windows-x64-setup.exe").Path
           $install = Join-Path $env:RUNNER_TEMP 'LANCTL-clean-install'
           $setupArguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$install")
@@ -141,7 +176,7 @@ jobs:
           if-no-files-found: error
 
   linux:
-    needs: validate
+    needs: [prepare, validate]
     strategy:
       fail-fast: false
       matrix:
@@ -159,8 +194,7 @@ jobs:
       - run: python -m pip install -e . pyinstaller==6.21.0
       - name: Build native package
         run: |
-          version="${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}"
-          ./scripts/build-linux.sh "${version#v}"
+          ./scripts/build-linux.sh "${{ needs.prepare.outputs.version }}"
       - uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}
@@ -170,7 +204,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: [windows, linux]
+    needs: [prepare, windows, linux]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -184,7 +218,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with: {name: linux-arm64, path: dist/release}
       - run: cp install.ps1 install.sh dist/release/
-      - run: python scripts/release-metadata.py "${GITHUB_REF_NAME#v}" "$GITHUB_SHA" dist/release
+      - run: python scripts/release-metadata.py "${{ needs.prepare.outputs.version }}" "$GITHUB_SHA" dist/release
       - run: python scripts/generate-hashes.py dist/release
       - run: python scripts/verify-release.py dist/release
       - name: Optional detached signing
@@ -199,6 +233,9 @@ jobs:
           fi
       - uses: softprops/action-gh-release@v2
         with:
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: LANCTL ${{ needs.prepare.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ needs.prepare.outputs.stable_branch != 'true' && contains(needs.prepare.outputs.version, '-') }}
           generate_release_notes: true
           files: dist/release/*

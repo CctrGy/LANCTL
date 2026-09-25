@@ -6,7 +6,7 @@ No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.
 ## `LANCTL`
 
 ```text
-Usage: LANCTL [-h] [--version] [--cli] [-tui] LAUNCHER ...
+Usage: LANCTL [-h] [--version] [--cli] [-tui] [--admin] LAUNCHER ...
 
 Orquestador raíz de las aplicaciones de la suite LANCTL.
 
@@ -18,12 +18,15 @@ Arguments:
     lanaccess (access)
                       Usuarios, credenciales y accesos remotos.
     lanmon (monitor)  Monitorización, eventos, incidencias e historial.
+    plugin            Administración compartida de la suite.
+    settings          Administración compartida de la suite.
 
 Options:
   -h, --help          Show this help and exit.
   --version           Muestra la versión común de la suite y termina.
   --cli               Abre la consola principal.
   -tui, --tui         Abre el TUI principal.
+  --admin             Solicita UAC explícitamente para un launcher instalado en Windows.
 ```
 
 ## `LANIP`
@@ -264,6 +267,7 @@ Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp
                       [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]
                       [--log DIRECTORIO] [--error-log-level 1-59]
                       [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]
+                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]
                       [-log-cleanup {on,off}] [-log-retention-days DÍAS]
                       [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]
                       [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]
@@ -315,6 +319,11 @@ Options:
                               integradas y las aportadas por plugins.
   -save-interval MINUTOS, --save-interval MINUTOS
                               Intervalo de automatic.timeToSave en minutos (mínimo 0.1).
+  --cli-exit-save-prompt {on,off}
+                              Consulta si se guarda al terminar cada comando individual de
+                              consola.
+  --cli-command-chaining {on,off}
+                              Permite encadenar órdenes con ; dentro de la CLI interactiva.
   -log-cleanup {on,off}, --log-cleanup {on,off}
                               Activa o desactiva la limpieza automática de logs antiguos.
   -log-retention-days DÍAS, --log-retention-days DÍAS
@@ -852,17 +861,17 @@ Options:
 ## `LANIP element`
 
 ```text
-Usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-alias NEW_ALIAS]
-                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-group NEW_GROUP]
-                     [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE] [--groups GROUPS]
-                     [--yes]
+Usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]
+                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-idf NEW_IDF]
+                     [-group NEW_GROUP] [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE]
+                     [--groups GROUPS] [--yes]
                      [selector]
-                     [{edit,cnf,name,description,alias,group,protocol,delete,del,remove}]
+                     [{edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}]
                      [values ...]
 
 Arguments:
   selector                    IP, MAC o alias.
-  {edit,cnf,name,description,alias,group,protocol,delete,del,remove}
+  {edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}
                               Campo o acción que se quiere editar.
   values                      Nuevo valor.
 
@@ -871,12 +880,15 @@ Options:
   -add MAC                    Añade un elemento nuevo utilizando su dirección MAC.
   -name NEW_NAME, --name NEW_NAME
                               Asigna NAME al elemento indicado.
+  -ip NEW_IP, --ip NEW_IP     Asigna una dirección IPv4.
   -alias NEW_ALIAS, --alias NEW_ALIAS
                               Asigna ALIAS al elemento indicado.
   -description NEW_DESCRIPTION, --description NEW_DESCRIPTION
                               Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).
   -cnf NEW_CNF, --cnf NEW_CNF
                               Asigna el estado CNF.
+  -idf NEW_IDF, --idf NEW_IDF
+                              Asigna un IDF único (2-5 letras y 2-5 dígitos).
   -group NEW_GROUP, --group NEW_GROUP
                               Añade el elemento al grupo.
   -protocol NEW_PROTOCOL, --protocol NEW_PROTOCOL
@@ -1611,12 +1623,16 @@ Arguments:
   COMANDO
     tui                  Abre la interfaz de pantalla completa.
     cli                  Abre la consola interactiva.
+    help                 Muestra la ayuda de comandos de LANWIRE.
     list (ls)            Lista los identificadores.
     seed                 Carga la topología inicial de pruebas.
     show                 Muestra un identificador.
     add                  Genera el siguiente IDF.
+    idf                  Crea identificadores con perfil físico completo.
     reserve              Reserva un IDF.
+    element              Consulta o actualiza los datos y puertos de un elemento.
     delete (del)         Elimina un IDF.
+    graph (map)          Muestra la topología física.
     prefix               Gestiona juegos de letras.
 
 Options:
@@ -1640,6 +1656,15 @@ Options:
 
 ```text
 Usage: LANWIRE cli [-h]
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANWIRE help`
+
+```text
+Usage: LANWIRE help [-h]
 
 Options:
   -h, --help  Show this help and exit.
@@ -1681,14 +1706,133 @@ Options:
 ## `LANWIRE add`
 
 ```text
-Usage: LANWIRE add [-h] prefix [CLAVE=VALOR ...]
+Usage: LANWIRE add [-h] [--digits {2,3,4,5}] [-more N] prefix
 
 Arguments:
-  prefix       Prefijo del tipo de elemento físico.
-  CLAVE=VALOR  Datos iniciales opcionales.
+  prefix              Prefijo del tipo de elemento físico.
 
 Options:
-  -h, --help   Show this help and exit.
+  -h, --help          Show this help and exit.
+  --digits {2,3,4,5}  Cantidad de dígitos del contador (2 a 5).
+  -more N, --more N   Crea N IDF consecutivos.
+```
+
+## `LANWIRE idf`
+
+```text
+Usage: LANWIRE idf [-h] {list,types,show,edit,delete,del,new,add} ...
+
+Arguments:
+  {list,types,show,edit,delete,del,new,add}
+    list                      Lista prefijos o los IDF de uno de ellos.
+    types                     Lista los perfiles físicos disponibles.
+    show                      Consulta un prefijo o IDF.
+    edit                      Edita un prefijo o los datos de un IDF.
+    delete (del)              Elimina un IDF.
+    new                       Asigna un perfil físico a un prefijo.
+    add                       Crea un IDF del perfil asignado al prefijo.
+
+Options:
+  -h, --help                  Show this help and exit.
+```
+
+## `LANWIRE idf list`
+
+```text
+Usage: LANWIRE idf list [-h] [prefix]
+
+Arguments:
+  prefix      Prefijo cuyos elementos se listan.
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANWIRE idf types`
+
+```text
+Usage: LANWIRE idf types [-h]
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANWIRE idf show`
+
+```text
+Usage: LANWIRE idf show [-h] code
+
+Arguments:
+  code        Prefijo o IDF concreto.
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANWIRE idf edit`
+
+```text
+Usage: LANWIRE idf edit [-h] [-type ELEMENT_TYPE] [-name NAME] [-alias ALIAS]
+                        [-description DESCRIPTION]
+                        code [CAMPO=VALOR ...]
+
+Arguments:
+  code                      Prefijo o IDF concreto.
+  CAMPO=VALOR               Datos del IDF.
+
+Options:
+  -h, --help                Show this help and exit.
+  -type ELEMENT_TYPE        Nuevo perfil del prefijo.
+  -name NAME                Nombre del prefijo.
+  -alias ALIAS              Alias del prefijo.
+  -description DESCRIPTION  Descripción del prefijo.
+```
+
+## `LANWIRE idf delete`
+
+```text
+Usage: LANWIRE idf delete [-h] code
+
+Arguments:
+  code        IDF concreto; no elimina prefijos.
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANWIRE idf new`
+
+```text
+Usage: LANWIRE idf new [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION] -type
+                       ELEMENT_TYPE
+                       code
+
+Arguments:
+  code                        Prefijo para new o IDF exacto para add.
+
+Options:
+  -h, --help                  Show this help and exit.
+  -name NAME                  Nombre del registro.
+  -alias ALIAS                Alias opcional.
+  -description DESCRIPTION, -descriptionn DESCRIPTION
+                              Descripción opcional.
+  -type ELEMENT_TYPE          Perfil físico.
+```
+
+## `LANWIRE idf add`
+
+```text
+Usage: LANWIRE idf add [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION] code
+
+Arguments:
+  code                        Prefijo para new o IDF exacto para add.
+
+Options:
+  -h, --help                  Show this help and exit.
+  -name NAME                  Nombre del registro.
+  -alias ALIAS                Alias opcional.
+  -description DESCRIPTION, -descriptionn DESCRIPTION
+                              Descripción opcional.
 ```
 
 ## `LANWIRE reserve`
@@ -1704,6 +1848,19 @@ Options:
   -h, --help   Show this help and exit.
 ```
 
+## `LANWIRE element`
+
+```text
+Usage: LANWIRE element [-h] idf [CAMPO=VALOR ...]
+
+Arguments:
+  idf          IDF que se desea consultar o actualizar.
+  CAMPO=VALOR  Campos físicos que se desean modificar.
+
+Options:
+  -h, --help   Show this help and exit.
+```
+
 ## `LANWIRE delete`
 
 ```text
@@ -1711,6 +1868,15 @@ Usage: LANWIRE delete [-h] idf
 
 Arguments:
   idf         IDF que se desea eliminar.
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANWIRE graph`
+
+```text
+Usage: LANWIRE graph [-h]
 
 Options:
   -h, --help  Show this help and exit.
@@ -1823,23 +1989,35 @@ Options:
 ## `LANACCESS`
 
 ```text
-Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE] [-tui | --cli]
-                 {list,ls,show,set,delete,del} ...
+Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]
+                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]
+                 [--project-dir PROJECT_DIR] [-tui | --cli]
+                 {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ...
 
 Gestiona credenciales cifradas del entorno LANCTL.
 
 Arguments:
-  {list,ls,show,set,delete,del}
+  {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
     list (ls)                 Lista metadatos; nunca secretos.
     show                      Muestra metadatos de una credencial.
     set                       Crea o actualiza una credencial.
     delete (del)              Elimina una credencial.
+    credential                Gestión, transporte y recuperación de credenciales.
+    doctor                    Comprueba vínculos y permisos sin cambiar datos.
+    settings                  Muestra o selecciona el almacén compartido.
+    protocol                  Resumen por protocolos del almacén.
+    user                      Usuarios del acceso remoto; no cuentas de Windows.
 
 Options:
   -h, --help                  Show this help and exit.
   --version                   Muestra la versión común de la suite y termina.
   --database DATABASE         Base de elementos LANCTL.
   --store STORE               Almacén cifrado de credenciales.
+  --cipher {auto,dpapi,portable}
+                              Proveedor de cifrado; portable pide contraseña.
+  --scope {program,windows,project}
+                              Ubicación; no cambia permisos ni copia secretos automáticamente.
+  --project-dir PROJECT_DIR   Directorio del proyecto para su almacén independiente.
   -tui, --tui                 Abre la interfaz de pantalla completa.
   --cli                       Abre la consola interactiva.
 ```
@@ -1892,6 +2070,176 @@ Options:
   -h, --help     Show this help and exit.
 ```
 
+## `LANACCESS credential`
+
+```text
+Usage: LANACCESS credential [-h] {list,show,delete,set,export,import,copy,recover} ...
+
+Arguments:
+  {list,show,delete,set,export,import,copy,recover}
+    list                      Lista metadatos.
+    show                      show por identificador.
+    delete                    delete por identificador.
+    set                       Guarda y vincula una credencial.
+    export                    Transporta un almacén cifrado; nunca texto plano.
+    import                    Transporta un almacén cifrado; nunca texto plano.
+    copy                      Copia a otro almacén y verifica; origen conservado.
+    recover                   Repara referencias ausentes; no elimina ni sobrescribe secretos.
+
+Options:
+  -h, --help                  Show this help and exit.
+```
+
+## `LANACCESS credential list`
+
+```text
+Usage: LANACCESS credential list [-h]
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANACCESS credential show`
+
+```text
+Usage: LANACCESS credential show [-h] credential_id
+
+Arguments:
+  credential_id
+
+Options:
+  -h, --help     Show this help and exit.
+```
+
+## `LANACCESS credential delete`
+
+```text
+Usage: LANACCESS credential delete [-h] credential_id
+
+Arguments:
+  credential_id
+
+Options:
+  -h, --help     Show this help and exit.
+```
+
+## `LANACCESS credential set`
+
+```text
+Usage: LANACCESS credential set [-h] --username USERNAME element protocol
+
+Arguments:
+  element
+  protocol
+
+Options:
+  -h, --help           Show this help and exit.
+  --username USERNAME
+```
+
+## `LANACCESS credential export`
+
+```text
+Usage: LANACCESS credential export [-h] file
+
+Arguments:
+  file
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANACCESS credential import`
+
+```text
+Usage: LANACCESS credential import [-h] file
+
+Arguments:
+  file
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANACCESS credential copy`
+
+```text
+Usage: LANACCESS credential copy [-h] [--target-cipher {dpapi,portable}] file
+
+Arguments:
+  file
+
+Options:
+  -h, --help                  Show this help and exit.
+  --target-cipher {dpapi,portable}
+```
+
+## `LANACCESS credential recover`
+
+```text
+Usage: LANACCESS credential recover [-h] [--yes]
+
+Options:
+  -h, --help  Show this help and exit.
+  --yes       Aplica reparaciones; por defecto sólo diagnostica.
+```
+
+## `LANACCESS doctor`
+
+```text
+Usage: LANACCESS doctor [-h]
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANACCESS settings`
+
+```text
+Usage: LANACCESS settings [-h] [--yes] [{show,use-store}] [file]
+
+Arguments:
+  {show,use-store}
+  file
+
+Options:
+  -h, --help        Show this help and exit.
+  --yes             Confirma cambiar el almacén configurado sin mover secretos.
+```
+
+## `LANACCESS protocol`
+
+```text
+Usage: LANACCESS protocol [-h] [--port PORT] [--driver DRIVER]
+                          [{list,configure}] [element] [protocol]
+
+Arguments:
+  {list,configure}
+  element
+  protocol
+
+Options:
+  -h, --help        Show this help and exit.
+  --port PORT       Puerto 1-65535.
+  --driver DRIVER   Driver del protocolo.
+```
+
+## `LANACCESS user`
+
+```text
+Usage: LANACCESS user [-h] [--role {viewer,operator,manager,administrator}] [--yes]
+                      {list,add,enable,disable,delete} [username]
+
+Arguments:
+  {list,add,enable,disable,delete}
+  username
+
+Options:
+  -h, --help                  Show this help and exit.
+  --role {viewer,operator,manager,administrator}
+  --yes                       Confirma eliminación.
+```
+
 ## `LANMON`
 
 ```text
@@ -1904,14 +2252,15 @@ Usage: LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DUR
               [--profiles PROFILES] [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]
               [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]
               [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]
-              [--timeout TIMEOUT]
+              [--timeout TIMEOUT] [--cli | --tui] [--source {all,program,project}] [--limit LIMIT]
+              [--level LEVEL]
               [words ...]
 
 Monitorización, eventos e incidencias de la suite LANCTL.
 
 Arguments:
-  words                       attach, detach, status, once, session, incidents, incident, service
-                              o foreground.
+  words                       logs, events, status, attach, detach, once, session, incidents,
+                              service o foreground.
 
 Options:
   -h, --help                  Show this help and exit.
@@ -1951,4 +2300,10 @@ Options:
   --deep DEEP                 Intervalo profundo.
   --workers WORKERS           Workers del perfil.
   --timeout TIMEOUT           Timeout del perfil.
+  --cli                       Abre la consola de eventos.
+  --tui, -tui                 Abre el visor tabular de eventos.
+  --source {all,program,project}
+                              Origen para logs.
+  --limit LIMIT               Máximo de eventos (1-1000).
+  --level LEVEL               Nivel mínimo (1-59); conserva líneas sin nivel.
 ```

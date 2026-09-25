@@ -20,7 +20,8 @@ lanctl rack --tui
 
 ## LANACCESS
 
-`LANACCESS` administra el almacén cifrado DPAPI que ya utiliza `LANIP`. Lista
+`LANACCESS` administra el almacén cifrado que ya utiliza `LANIP` (DPAPI o
+portable AES-GCM/Scrypt con contraseña). Lista
 solo identificadores, elementos, protocolos y usuarios; nunca imprime las
 contraseñas. Al eliminar una credencial también retira sus referencias del
 inventario lógico.
@@ -35,3 +36,10 @@ lanctl access --tui
 
 `LANIP` conserva las acciones operativas como abrir SSH. Para ello obtiene la
 credencial mediante su referencia compartida, sin asumir la gestión del almacén.
+
+## LANMON y administración ampliada
+
+LANMON mantiene sus comandos en `apps/monitor/commands.py` y ofrece un visor
+CLI/TUI de registros del programa y auditorías del proyecto. Véase
+[Administración de LANACCESS y LANMON](ACCESS-MONITOR-MANAGEMENT.md) para
+comandos, ubicaciones, transporte cifrado, permisos y limitaciones.

@@ -833,8 +833,11 @@ class TuiTests(unittest.TestCase):
     def test_f2_edits_ip_and_protocol_in_their_own_sections(self):
         tui = LanctlTui.__new__(LanctlTui)
         device = SimpleNamespace(
-            device_id="dev_test", mac="AA:BB:CC:DD:EE:FF", ip="192.168.1.10",
-            groups=[], protocols=[],
+            device_id="dev_test",
+            mac="AA:BB:CC:DD:EE:FF",
+            ip="192.168.1.10",
+            groups=[],
+            protocols=[],
         )
         tui.devices = [device]
         tui.index = 0
@@ -842,7 +845,9 @@ class TuiTests(unittest.TestCase):
         tui.database.edit_device.return_value = SimpleNamespace(ip="192.168.1.20")
         tui.database.set_protocol.return_value = SimpleNamespace(groups=[], protocols=["ssh"])
         modal = ModalState(
-            "info", "INFO", ["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
+            "info",
+            "INFO",
+            ["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
             [[], [], [], ["  Protocolos: -"], []],
             items=[
                 SettingField("ip", "IP", "-ip", device.ip, device.ip, section="Red"),
@@ -868,21 +873,31 @@ class TuiTests(unittest.TestCase):
 
     def test_f2_adds_a_group_from_classification(self):
         tui = LanctlTui.__new__(LanctlTui)
-        device = SimpleNamespace(device_id="dev_test", mac="AA:BB:CC:DD:EE:FF", ip="192.168.1.10", groups=[])
+        device = SimpleNamespace(
+            device_id="dev_test", mac="AA:BB:CC:DD:EE:FF", ip="192.168.1.10", groups=[]
+        )
         tui.devices = [device]
         tui.index = 0
         tui.database = Mock()
         modal = ModalState(
-            "info", "INFO", ["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
-            [[], ["  Grupos: -"], [], [], []], tab_index=1,
-            items=[SettingField("group", "AÑADIR GRUPO", "-group", "", "", section="Clasificación")],
+            "info",
+            "INFO",
+            ["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
+            [[], ["  Grupos: -"], [], [], []],
+            tab_index=1,
+            items=[
+                SettingField("group", "AÑADIR GRUPO", "-group", "", "", section="Clasificación")
+            ],
         )
         tui.modal = modal
         with (
             patch("lanctl.core.config.load_config", return_value={"groups": "groups.json"}),
             patch("lanctl.core.group_database.GroupDatabase") as groups,
         ):
-            groups.return_value.add.return_value = (Mock(), SimpleNamespace(groups=["LAB"], protocols=[]))
+            groups.return_value.add.return_value = (
+                Mock(),
+                SimpleNamespace(groups=["LAB"], protocols=[]),
+            )
             tui._handle_info_key(modal, "TAB")
             modal.items[0].value = "LAB"
             tui._handle_info_key(modal, "TAB")

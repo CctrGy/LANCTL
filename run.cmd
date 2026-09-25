@@ -6,5 +6,6 @@ for %%P in ("%~dp0.venv\Scripts\python.exe" "%~dp0.venv311\Scripts\python.exe") 
         "%%~P" -c "import sys" >nul 2>nul && set "LANCTL_PYTHON=%%~P"
     )
 )
+setlocal DisableDelayedExpansion
 "%LANCTL_PYTHON%" "%~dp0lanctl.py" %*
 exit /b %errorlevel%

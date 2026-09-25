@@ -1968,39 +1968,84 @@ class LanctlTui:
         ]
         identity_fields = [
             SettingField(
-                "cnf", "CNF", "-cnf", device.cnf, device.cnf,
-                "O, X, -, S o F", "Identidad",
-                "Estado de reconocimiento del elemento.", ("O", "X", "-", "S", "F"),
+                "cnf",
+                "CNF",
+                "-cnf",
+                device.cnf,
+                device.cnf,
+                "O, X, -, S o F",
+                "Identidad",
+                "Estado de reconocimiento del elemento.",
+                ("O", "X", "-", "S", "F"),
             ),
             SettingField(
-                "alias", "ALIAS", "-alias", device.alias, device.alias,
-                "texto único", "Identidad", "Alias corto asignado por el usuario.",
+                "alias",
+                "ALIAS",
+                "-alias",
+                device.alias,
+                device.alias,
+                "texto único",
+                "Identidad",
+                "Alias corto asignado por el usuario.",
             ),
             SettingField(
-                "name", "NAME", "-name", device.name, device.name,
-                "texto", "Identidad", "Nombre legible del elemento.",
+                "name",
+                "NAME",
+                "-name",
+                device.name,
+                device.name,
+                "texto",
+                "Identidad",
+                "Nombre legible del elemento.",
             ),
             SettingField(
-                "description", "DESCRIPTION", "-description", device.description, device.description,
-                "máximo 42", "Identidad", "Descripción breve del elemento.",
+                "description",
+                "DESCRIPTION",
+                "-description",
+                device.description,
+                device.description,
+                "máximo 42",
+                "Identidad",
+                "Descripción breve del elemento.",
             ),
             SettingField(
-                "idf", "IDF", "-idf", getattr(device, "idf", ""), getattr(device, "idf", ""),
-                "AB-12 a ABCDE-12345", "Identidad",
+                "idf",
+                "IDF",
+                "-idf",
+                getattr(device, "idf", ""),
+                getattr(device, "idf", ""),
+                "AB-12 a ABCDE-12345",
+                "Identidad",
                 "Identificador físico manual y único, compartido conceptualmente con LANWIRE.",
             ),
             SettingField(
-                "group", "AÑADIR GRUPO", "-group", "", "",
-                "nombre de grupo", "Clasificación",
+                "group",
+                "AÑADIR GRUPO",
+                "-group",
+                "",
+                "",
+                "nombre de grupo",
+                "Clasificación",
                 "Añade el elemento a un grupo; los existentes aparecen debajo.",
             ),
             SettingField(
-                "ip", "IP", "-ip", device.ip, device.ip,
-                "IPv4 única", "Red", "Dirección IPv4 registrada para este elemento.",
+                "ip",
+                "IP",
+                "-ip",
+                device.ip,
+                device.ip,
+                "IPv4 única",
+                "Red",
+                "Dirección IPv4 registrada para este elemento.",
             ),
             SettingField(
-                "protocol", "PROTOCOLO", "-protocol", "", "",
-                "ssh o del ssh", "Accesos",
+                "protocol",
+                "PROTOCOLO",
+                "-protocol",
+                "",
+                "",
+                "ssh o del ssh",
+                "Accesos",
                 "Activa un protocolo; escribe del NOMBRE para desactivarlo.",
             ),
         ]
@@ -2753,13 +2798,15 @@ class LanctlTui:
         if field.key == "group":
             modal.pages[1] = [
                 f"  Grupos: {', '.join(updated.groups) or '-'}"
-                if line.startswith("  Grupos:") else line
+                if line.startswith("  Grupos:")
+                else line
                 for line in modal.pages[1]
             ]
         elif field.key == "protocol":
             modal.pages[3] = [
                 f"  Protocolos: {', '.join(updated.protocols) or '-'}"
-                if line.startswith("  Protocolos:") else line
+                if line.startswith("  Protocolos:")
+                else line
                 for line in modal.pages[3]
             ]
         if field.key in {"group", "protocol"}:

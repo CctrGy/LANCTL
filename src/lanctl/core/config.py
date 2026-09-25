@@ -599,6 +599,12 @@ def load_config() -> dict:
     """
     from lanctl.core.data_migration import migrate_config_paths
 
+    # Los generadores de ayuda y referencia deben ser reproducibles aunque
+    # otro módulo haya calculado CONFIG_PATH antes de activar el modo canónico.
+    # Nunca incorporan el proyecto, usuario o rutas privadas de la máquina.
+    if os.environ.get("LANCTL_CANONICAL_HELP") == "1":
+        return _document_to_legacy(deepcopy(DOCUMENT_DEFAULTS))
+
     if not CONFIG_PATH.exists():
         from lanctl.core.errors import errors
 

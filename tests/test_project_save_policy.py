@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from lanctl.apps.ip.domain.models import Device, Group
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.projects.save_policy import (
     SaveMode,
@@ -21,6 +22,56 @@ from lanctl.core.projects.workspace import prepare_project_workspace
 
 
 class ProjectSavePolicyTests(unittest.TestCase):
+    def _group_workspace(self, root: Path) -> tuple[dict, Path]:
+        project = root / "Casa.vlf"
+        database_path = root / "devices.json"
+        groups_path = root / "groups.json"
+        metadata = root / "workspace.json"
+        first = Device(
+            ip="192.0.2.11",
+            mac="02:00:00:00:00:01",
+            alias="FIRST",
+            groups=["TEST"],
+            device_id="dev_z",
+        )
+        second = Device(
+            ip="192.0.2.12",
+            mac="02:00:00:00:00:02",
+            alias="SECOND",
+            groups=["TEST"],
+            device_id="dev_a",
+        )
+        database_path.write_text(json.dumps([first.to_dict(), second.to_dict()]), encoding="utf-8")
+        groups_path.write_text(
+            json.dumps(
+                [
+                    Group(
+                        "TEST",
+                        members=[first.mac, second.mac],
+                    ).to_dict()
+                ]
+            ),
+            encoding="utf-8",
+        )
+        settings = {
+            "database": str(database_path),
+            "groups": str(groups_path),
+            "activeProject": str(project),
+            "projectSaveMode": SaveMode.MANUAL.value,
+            "projectWorkspace": {
+                "project": str(project),
+                "database": str(database_path),
+                "groups": str(groups_path),
+                "metadata": str(metadata),
+            },
+        }
+        create_project(project, name="Casa", config=settings)
+        metadata.write_text(
+            json.dumps({"workspaceHash": "outdated"}),
+            encoding="utf-8",
+        )
+        return settings, project
+
     def _workspace(self, root: Path, mode: str, *, dirty: bool = True) -> dict:
         database = root / "devices.json"
         groups = root / "groups.json"
@@ -176,6 +227,67 @@ class ProjectSavePolicyTests(unittest.TestCase):
             self.assertTrue(Path(str(project) + ".bak").is_file())
             recovery = list((root / ".lanctl-backups").glob("Casa-*.vlf"))
             self.assertEqual(len(recovery), 1)
+
+    def test_group_member_order_does_not_fail_real_save_or_reopen(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            settings, project = self._group_workspace(root)
+            manager = SimpleNamespace(
+                events=SimpleNamespace(emit=lambda *_args, **_kwargs: None),
+                project_registry=lambda: {"schemaVersion": 1, "plugins": []},
+            )
+
+            with (
+                patch("lanctl.core.plugins.get_plugin_manager", return_value=manager),
+                patch("lanctl.core.projects.save_policy.write_log"),
+            ):
+                result = save_active_project(force=True, config=settings)
+
+            reopened = prepare_project_workspace(
+                project,
+                root=root / "reopened",
+                refresh=True,
+                discard_changes=True,
+            )
+            reopened_groups = json.loads(reopened.groups.read_text(encoding="utf-8"))
+            self.assertTrue(result.saved)
+            self.assertEqual(
+                set(reopened_groups[0]["members"]),
+                {"02:00:00:00:00:01", "02:00:00:00:00:02"},
+            )
+            self.assertFalse(workspace_is_dirty(settings))
+
+    def test_real_semantic_mismatch_restores_exact_previous_project(self):
+        from lanctl.core.projects.vlf import update_project as real_update_project
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            settings, project = self._group_workspace(root)
+            original = project.read_bytes()
+            wrong_groups = root / "wrong-groups.json"
+            wrong_groups.write_text(
+                json.dumps([Group("TEST", members=[]).to_dict()]),
+                encoding="utf-8",
+            )
+
+            def write_mismatched_project(path, *, config):
+                mismatched = dict(config)
+                mismatched["groups"] = str(wrong_groups)
+                mismatched["projectWorkspace"] = dict(config["projectWorkspace"])
+                mismatched["projectWorkspace"]["groups"] = str(wrong_groups)
+                return real_update_project(path, config=mismatched)
+
+            with (
+                patch(
+                    "lanctl.core.projects.vlf.update_project",
+                    side_effect=write_mismatched_project,
+                ),
+                self.assertRaisesRegex(RuntimeError, "no coincide con el workspace"),
+            ):
+                save_active_project(force=True, config=settings)
+
+            self.assertEqual(project.read_bytes(), original)
+            self.assertTrue(workspace_is_dirty(settings))
 
     def test_close_consult_saves_only_after_user_confirmation(self):
         with tempfile.TemporaryDirectory() as directory:

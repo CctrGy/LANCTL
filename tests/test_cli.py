@@ -939,10 +939,10 @@ class DatabaseTests(unittest.TestCase):
             assigned = database.edit_device("192.168.1.20", "idf", "ab-12")
             self.assertEqual(assigned.idf, "AB-12")
 
-            rescanned = database.upsert(
-                [{"IP": "192.168.1.30", "MAC": "10:20:30:40:50:60"}]
+            rescanned = database.upsert([{"IP": "192.168.1.30", "MAC": "10:20:30:40:50:60"}])
+            self.assertEqual(
+                next(item for item in rescanned if item.mac.endswith("60")).idf, "AB-12"
             )
-            self.assertEqual(next(item for item in rescanned if item.mac.endswith("60")).idf, "AB-12")
             with self.assertRaisesRegex(ValueError, "ya pertenece"):
                 database.edit_device("192.168.1.21", "idf", "AB-12")
             with self.assertRaisesRegex(ValueError, "2-5 letras"):

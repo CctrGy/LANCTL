@@ -1,0 +1,10 @@
+{
+  "fileExtensions": ["js"],
+  "excludeRegExp": ["(^|/)vendor/", "(^|/)node_modules/"],
+  "layout": "dot",
+  "rankdir": "LR",
+  "backgroundColor": "#101820",
+  "nodeColor": "#86b7ff",
+  "cyclicNodeColor": "#ff6b6b",
+  "edgeColor": "#718096"
+}

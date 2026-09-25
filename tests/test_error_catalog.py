@@ -6,6 +6,15 @@ from pathlib import Path
 CATALOG = Path(__file__).resolve().parents[1] / "errorList.txt"
 
 
+def test_ast_signatures_preserve_empty_fields_across_python_versions():
+    import ast
+
+    from tools.generate_error_catalog import stable_ast_dump
+
+    node = ast.parse("raise ValueError('example')").body[0].exc
+    assert stable_ast_dump(node) == "Call(Name('ValueError', Load()), [Constant('example')], [])"
+
+
 def _rows():
     return [
         line.split(" | ")
@@ -51,4 +60,4 @@ def test_literal_runtime_error_ids_are_cataloged():
     identifier = make_error_id("LANCTL.Monitor.Restart.Stop", "MONITOR.RESTART.STOP_TIMEOUT")
     entry = find_error(identifier, CATALOG)
     assert entry is not None
-    assert entry.source.endswith("monitor.py")
+    assert entry.source == "src/lanctl/apps/monitor/commands.py"

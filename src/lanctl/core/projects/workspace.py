@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import sqlite3
 import tempfile
@@ -38,14 +37,12 @@ def _workspace_hash(database: Path, groups: Path) -> str:
     from lanctl.core.group_database import GroupDatabase
 
     store = DeviceDatabase(str(database))
-    value = {
-        "devices": [device.to_dict() for device in store.load()],
-        "groups": [group.to_dict() for group in GroupDatabase(str(groups), store).load()],
-    }
-    canonical = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
+    from lanctl.core.projects.fingerprint import inventory_fingerprint
+
+    return inventory_fingerprint(
+        [device.to_dict() for device in store.load()],
+        [group.to_dict() for group in GroupDatabase(str(groups), store).load()],
     )
-    return hashlib.sha256(canonical).hexdigest()
 
 
 def _metadata(path: Path) -> dict[str, Any]:

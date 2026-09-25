@@ -37,6 +37,10 @@ def test_web_reference_catalog_covers_all_launchers_and_key_domains():
 def test_web_reference_artifact_is_current_and_self_contained():
     artifact = ROOT / "reference" / "catalog.js"
     assert artifact.read_text(encoding="utf-8") == generate()
+    portable_artifact = artifact.read_text(encoding="utf-8").replace("\\\\", "\\")
+    assert str(ROOT) not in portable_artifact
+    assert str(Path.home()) not in portable_artifact
+    assert '"default": "user"' in portable_artifact
     html = (ROOT / "reference" / "index.html").read_text(encoding="utf-8")
     assert "catalog.js" in html
     assert "Explorar por acciones" in html

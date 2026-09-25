@@ -1,6 +1,6 @@
 #define MyAppName "LANCTL"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.3.1-beta.3"
+  #define MyAppVersion "0.3.2-beta.1"
 #endif
 #ifndef BuildRoot
   #define BuildRoot "..\..\dist"
@@ -70,12 +70,16 @@ Name: "{group}\LANCTL CLI"; Filename: "{app}\LANCTL.exe"; Parameters: "--cli"; W
 Name: "{group}\LANIP"; Filename: "{app}\lanip.exe"; Parameters: "--tui"; WorkingDir: "{app}"
 Name: "{group}\LANWIRE Physical"; Filename: "{app}\lanwire.exe"; WorkingDir: "{app}"
 Name: "{group}\LANMON Monitor"; Filename: "{app}\lanmon.exe"; WorkingDir: "{app}"
+Name: "{group}\LANMON Events"; Filename: "{app}\lanmon.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: eventviewer
+Name: "{group}\LANACCESS Administrator (UAC)"; Filename: "{app}\LANCTL.exe"; Parameters: "--admin lanaccess --tui"; WorkingDir: "{app}"; Tasks: accessadmin
 Name: "{group}\LANRACK Viewer"; Filename: "{app}\lanrack.exe"; WorkingDir: "{app}"
 Name: "{group}\LANACCESS Credentials"; Filename: "{app}\lanaccess.exe"; WorkingDir: "{app}"
 Name: "{autodesktop}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Tasks]
 Name: desktopicon; Description: "Crear acceso directo de LANCTL TUI en el escritorio"; Flags: unchecked
+Name: eventviewer; Description: "Crear acceso directo al visor de eventos LANMON"; Flags: unchecked
+Name: accessadmin; Description: "Crear acceso LANACCESS administrativo (solicita UAC al abrir; no eleva el resto de programas)"; Flags: unchecked
 
 [Registry]
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: NeedsAddPath('{app}'); Components: path
@@ -85,6 +89,7 @@ Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environmen
 Filename: "{sys}\icacls.exe"; Parameters: """{commonappdata}\LANCTL\access"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"""; Flags: runhidden waituntilterminated
 Filename: "{sys}\icacls.exe"; Parameters: """{commonappdata}\LANCTL\plugins"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"""; Flags: runhidden waituntilterminated
 Filename: "{app}\LANCTL.exe"; Parameters: "monitor service install --yes"; Components: monitor; Flags: runhidden waituntilterminated; StatusMsg: "Instalando el servicio permanente LANCTL Monitor..."
+Filename: "{app}\lanaccess.exe"; Parameters: "--tui"; Description: "Abrir LANACCESS para configurar credenciales del usuario (sin guardarlas en el instalador)"; Flags: postinstall unchecked skipifsilent runasoriginaluser
 
 [UninstallRun]
 Filename: "{app}\LANCTL.exe"; Parameters: "monitor service uninstall --yes"; Flags: runhidden waituntilterminated; RunOnceId: "LANCTLMonitorService"

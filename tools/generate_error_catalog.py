@@ -13,6 +13,14 @@ from lanctl.core.errors import make_error_id  # noqa: E402
 OUTPUT = ROOT / "errorList.txt"
 
 
+def stable_ast_dump(node: ast.AST) -> str:
+    """Preserve Python 3.10-3.12 signatures when newer AST dumps omit empty lists."""
+    options = {"annotate_fields": False, "include_attributes": False}
+    if sys.version_info >= (3, 13):
+        options["show_empty"] = True
+    return ast.dump(node, **options)
+
+
 @dataclass(frozen=True)
 class Point:
     path: str
@@ -190,7 +198,11 @@ class Collector(ast.NodeVisitor):
         self.path, self.scope, self.points, self.occurrences = path, [], [], {}
 
     def _add(self, node: ast.AST, kind: str, signature: str) -> None:
-        module = self.path.removesuffix(".py").replace("/", ".")
+        # Relocation must not rename the published identities of monitor errors.
+        identity_path = {
+            "src/lanctl/apps/monitor/commands.py": "src/lanctl/apps/ip/interfaces/cli/commands/monitor.py",
+        }.get(self.path, self.path)
+        module = identity_path.removesuffix(".py").replace("/", ".")
         origin = ".".join([module, *self.scope]) if self.scope else module
         occurrence_key = (origin, kind, signature)
         ordinal = self.occurrences.get(occurrence_key, 0) + 1
@@ -213,26 +225,18 @@ class Collector(ast.NodeVisitor):
     visit_AsyncFunctionDef = visit_FunctionDef
 
     def visit_Raise(self, node):
-        signature = (
-            ast.dump(node.exc, annotate_fields=False, include_attributes=False)
-            if node.exc is not None
-            else "reraised-exception"
-        )
+        signature = stable_ast_dump(node.exc) if node.exc is not None else "reraised-exception"
         self._add(node, "raise", signature)
         self.generic_visit(node)
 
     def visit_Call(self, node):
         name = call_name(node)
         if name in {"sys.exit", "exit", "quit"} or name.endswith(".exit"):
-            self._add(node, "exit", ast.dump(node, annotate_fields=False, include_attributes=False))
+            self._add(node, "exit", stable_ast_dump(node))
         elif name.endswith(("errors.emit", "errors.from_exception")):
-            self._add(
-                node, "diagnostic", ast.dump(node, annotate_fields=False, include_attributes=False)
-            )
+            self._add(node, "diagnostic", stable_ast_dump(node))
         elif name.endswith("print_error"):
-            self._add(
-                node, "print-error", ast.dump(node, annotate_fields=False, include_attributes=False)
-            )
+            self._add(node, "print-error", stable_ast_dump(node))
         self.generic_visit(node)
 
     def visit_Return(self, node):
@@ -240,7 +244,7 @@ class Collector(ast.NodeVisitor):
             self._add(
                 node,
                 "return-error",
-                ast.dump(node.value, annotate_fields=False, include_attributes=False),
+                stable_ast_dump(node.value),
             )
         self.generic_visit(node)
 
