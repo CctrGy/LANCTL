@@ -1,0 +1,474 @@
+[
+  {
+    "name": "start",
+    "command": [
+      "{python}",
+      "{root}/lanctl.py"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "terminal"
+    ]
+  },
+  {
+    "name": "lanip",
+    "command": [
+      "{python}",
+      "{root}/lanip.py"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "terminal"
+    ]
+  },
+  {
+    "name": "lanwire",
+    "command": [
+      "{python}",
+      "{root}/lanwire.py"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "terminal"
+    ]
+  },
+  {
+    "name": "lanrack",
+    "command": [
+      "{python}",
+      "{root}/lanrack.py"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "terminal"
+    ]
+  },
+  {
+    "name": "lanaccess",
+    "command": [
+      "{python}",
+      "{root}/lanaccess.py"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "terminal"
+    ]
+  },
+  {
+    "name": "lanmon",
+    "command": [
+      "{python}",
+      "{root}/lanmon.py"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "terminal"
+    ]
+  },
+  {
+    "name": "cli",
+    "command": [
+      "{python}",
+      "{root}/lanctl.py",
+      "--cli"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "terminal"
+    ]
+  },
+  {
+    "name": "lanctl-tui",
+    "command": [
+      "{python}",
+      "{root}/lanctl.py",
+      "--tui"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "terminal"
+    ]
+  },
+  {
+    "name": "help-full",
+    "command": [
+      "{python}",
+      "{root}/fullHelp.py"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "build-legacy",
+    "command": [
+      "{python}",
+      "-m",
+      "PyInstaller",
+      "--noconfirm",
+      "--clean",
+      "LANCTL.spec"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "resources": [
+      "build"
+    ]
+  },
+  {
+    "name": "repository-build",
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "{root}/repositoryTerminal/repository.ps1",
+      "build"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "build",
+      "installation"
+    ]
+  },
+  {
+    "name": "repository-build-plan",
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "{root}/repositoryTerminal/repository.ps1",
+      "build",
+      "-DryRun"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "repository-install",
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "{root}/repositoryTerminal/repository.ps1",
+      "install"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "build",
+      "installation"
+    ]
+  },
+  {
+    "name": "repository-install-plan",
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "{root}/repositoryTerminal/repository.ps1",
+      "install",
+      "-DryRun"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "repository-remote",
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "{root}/repositoryTerminal/repository.ps1",
+      "remote"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "io": "inherit",
+    "resources": [
+      "build",
+      "installation"
+    ]
+  },
+  {
+    "name": "repository-remote-plan",
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "{root}/repositoryTerminal/repository.ps1",
+      "remote",
+      "-DryRun"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "repository-help",
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "{root}/repositoryTerminal/repository.ps1",
+      "help"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "terminal-profile",
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "{root}/repositoryTerminal/terminal-profile.ps1"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "resources": [
+      "terminal-profile"
+    ]
+  },
+  {
+    "name": "terminal-profile-plan",
+    "command": [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "{root}/repositoryTerminal/terminal-profile.ps1",
+      "-DryRun"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "terminal-sign",
+    "command": [
+      "{python}",
+      "{root}/repositoryTerminal/sign-terminal-plugin.py"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "resources": [
+      "signing"
+    ]
+  },
+  {
+    "name": "tree",
+    "command": [
+      "git",
+      "ls-files",
+      "--cached",
+      "--others",
+      "--exclude-standard"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "version",
+    "command": [
+      "git",
+      "log",
+      "-1",
+      "--format=%h %D"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "python-info",
+    "command": [
+      "{python}",
+      "-c",
+      "import sys; print(sys.executable); print(sys.version)"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "test-isolated",
+    "command": [
+      "{python}",
+      "-m",
+      "pytest",
+      "-k",
+      "not (test_installed_legacy_data_is_copied_out_of_program_files or test_frozen_standard_and_portable_data_roots or test_frozen_program_data_is_separate_from_executable or test_source_paths_do_not_depend_on_current_directory or test_data_path_uses_configured_root)"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "resources": [
+      "python-environment"
+    ]
+  },
+  {
+    "name": "lint",
+    "command": [
+      "{python}",
+      "-m",
+      "ruff",
+      "check",
+      "."
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0
+  },
+  {
+    "name": "environment-install-dev",
+    "command": [
+      "{python}",
+      "-m",
+      "pip",
+      "install",
+      "-e",
+      "{root}[dev]"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {},
+    "instance": "block",
+    "timeout": 0,
+    "resources": [
+      "python-environment"
+    ]
+  },
+  {
+    "name": "test-paths",
+    "command": [
+      "{python}",
+      "-m",
+      "pytest",
+      "-k",
+      "test_installed_legacy_data_is_copied_out_of_program_files or test_frozen_standard_and_portable_data_roots or test_frozen_program_data_is_separate_from_executable or test_source_paths_do_not_depend_on_current_directory or test_data_path_uses_configured_root"
+    ],
+    "cwd": "{root}",
+    "args": [],
+    "environment": {
+      "LANCTL_DATA_DIR": "",
+      "LANWRE_DATA_DIR": ""
+    },
+    "instance": "block",
+    "timeout": 0,
+    "resources": [
+      "python-environment"
+    ]
+  },
+  {
+    "name": "test",
+    "steps": [
+      "test-isolated",
+      "test-paths"
+    ],
+    "mode": "sequence"
+  }
+]

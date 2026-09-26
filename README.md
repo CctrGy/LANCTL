@@ -1,5 +1,9 @@
 # LANCTL
 
+La integración de desarrollo con ProjectDock está documentada en
+[Gestión del repositorio con ProjectDock](repositoryTerminal/projectdock/README.md).
+La migración conserva los accesos anteriores mientras se valida su equivalencia.
+
 Suite CLI/TUI para descubrir, inventariar, diagnosticar y administrar
 infraestructuras LAN desde Windows, Linux y Raspberry Pi OS.
 

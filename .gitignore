@@ -23,6 +23,9 @@ node_modules/
 .tool-cache/
 .tool-reports/
 .project-local/
+.project/
+.project-setup-*/
+/run.exe
 project.cmd
 sonar-report.json
 madge-report.json
