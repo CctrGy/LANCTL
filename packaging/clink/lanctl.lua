@@ -1,5 +1,5 @@
 -- Autocompletado de LANCTL para Clink 1.3.23 o posterior.
--- Compatible con LANCTL 0.3.2-beta.1.
+-- Compatible con LANCTL 0.3.2-beta.4.
 -- Desarrollo: clink installscripts <ruta>\packaging\clink
 -- Instalación: <directorio-de-instalación>\clink\lanctl.lua
 
@@ -493,7 +493,7 @@ local function configure_lanwire(matcher)
         "graph", "map", "prefix" .. wire_prefix
     }):addflags({
         "-h", "--help", "/?", "--version", "--database" .. file_arg,
-        "-tui", "--tui", "--cli"
+        "-tui", "--tui", "--cli", "-cli"
     }):nofiles()
 end
 
@@ -502,7 +502,7 @@ local function configure_lanrack(matcher)
         "list", "ls", "show" .. history_value("ID o nombre del rack")
     }):addflags({
         "-h", "--help", "/?", "--version", "--database" .. file_arg,
-        "-tui", "--tui", "--cli"
+        "-tui", "--tui", "--cli", "-cli"
     }):nofiles()
 end
 
@@ -540,7 +540,7 @@ local function configure_lanaccess(matcher)
         "-h", "--help", "/?", "--version", "--database" .. file_arg,
         "--store" .. file_arg, "--cipher" .. values({ "auto", "dpapi", "portable" }),
         "--scope" .. values({ "program", "windows", "project" }),
-        "--project-dir" .. dir_arg, "-tui", "--tui", "--cli"
+        "--project-dir" .. dir_arg, "-tui", "--tui", "--cli", "-cli"
     }):nofiles()
 end
 
@@ -550,7 +550,7 @@ local function configure_lanmon(matcher)
         "incidents", "incident", "service", "foreground", "configure", "profile",
         "assign", "unassign", "assignments", "report", "ping", "scan", "identify", "health"
     }):addflags({
-        "-h", "--help", "/?", "--version", "--cli", "--tui", "-tui",
+        "-h", "--help", "/?", "--version", "--cli", "-cli", "--tui", "-tui",
         "--source" .. values({ "all", "program", "project" }),
         "--limit" .. history_value("1-1000"), "--level" .. error_log_levels,
         "--project" .. file_arg, "--permanent", "--duration" .. history_value("Duración"),
@@ -598,7 +598,7 @@ local function configure_lanip(matcher)
     return matcher
         :addarg(root_commands)
         :addflags({
-            "-h", "--help", "/?", "--version", "--quiet", "--verbose", "--gui", "--cli", "-tui", "--tui",
+            "-h", "--help", "/?", "--version", "--quiet", "--verbose", "--gui", "--cli", "-cli", "-tui", "--tui",
             "-project" .. file_arg, "--project" .. file_arg
         })
         :nofiles()
@@ -638,6 +638,6 @@ end
 clink.argmatcher("lanctl", "lanctl.exe", "LANCTL.exe")
     :addarg(suite_commands)
     :addflags({
-        "-h", "--help", "/?", "--version", "--cli", "-tui", "--tui", "--admin"
+        "-h", "--help", "/?", "--version", "--cli", "-cli", "-tui", "--tui", "--admin"
     })
     :nofiles()

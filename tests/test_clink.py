@@ -24,7 +24,7 @@ class ClinkCompletionTests(unittest.TestCase):
             self.assertIn(f'clink.argmatcher("{executable}", "{executable}.exe")', self.script)
 
     def test_script_identifies_its_compatible_release(self):
-        self.assertIn("Compatible con LANCTL 0.3.2-beta.1", self.script)
+        self.assertIn("Compatible con LANCTL 0.3.2-beta.4", self.script)
 
     def test_suite_launcher_aliases_are_completed(self):
         for launcher in (

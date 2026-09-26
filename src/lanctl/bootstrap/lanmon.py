@@ -34,7 +34,7 @@ def build_parser() -> LANCTLArgumentParser:
         if action.dest == "words":
             action.help = "logs, events, status, attach, detach, once, session, incidents, service o foreground."
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--cli", action="store_true", help="Abre la consola de eventos.")
+    mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola de comandos.")
     mode.add_argument(
         "--tui", "-tui", action="store_true", help="Abre el visor tabular de eventos."
     )
@@ -53,9 +53,20 @@ def _main(argv: list[str] | None = None) -> int:
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
     args = build_parser().parse_args(arguments or ["status"])
     if args.cli or args.tui:
-        from lanctl.apps.monitor.interfaces import event_console
+        from lanctl.core.interactive_console import command_console
 
-        return event_console(project=args.project, tui=args.tui)
+        prefix = ["--project", args.project] if args.project else []
+        return command_console(
+            "LANMON",
+            lambda words: main([*prefix, *words]),
+            tui=args.tui,
+            overview=(
+                "logs: registros de programa y proyecto\n"
+                "events: eventos del monitor · status: estado\n"
+                "incidents: incidencias · service: gestión de servicio\n"
+                "help: todas las opciones. Ningún servicio se inicia al abrir este panel."
+            ),
+        )
     if args.words == ["logs"]:
         import json
 

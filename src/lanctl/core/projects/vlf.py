@@ -243,6 +243,7 @@ def update_project(path: str | Path, *, config: Mapping | None = None) -> dict:
         config=config,
         identity=info,
         template=source,
+        initialize_reserved=False,
     )
     if backup.exists():
         backup.unlink()

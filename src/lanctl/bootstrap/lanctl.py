@@ -41,8 +41,9 @@ def build_parser() -> LANCTLArgumentParser:
         version=f"%(prog)s {__version__}",
         help="Muestra la versión común de la suite y termina.",
     )
-    parser.add_argument("--cli", action="store_true", help="Abre la consola principal.")
-    parser.add_argument("-tui", "--tui", action="store_true", help="Abre el TUI principal.")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola principal.")
+    mode.add_argument("-tui", "--tui", action="store_true", help="Abre el TUI principal.")
     parser.add_argument(
         "--admin",
         action="store_true",
@@ -52,7 +53,7 @@ def build_parser() -> LANCTLArgumentParser:
     for name, (alias, description) in _LAUNCHERS.items():
         child = launchers.add_parser(name, aliases=[alias], help=description, add_help=False)
         child.add_argument("arguments", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
-    for name in ("plugin", "settings"):
+    for name in ("plugin", "settings", "language"):
         child = launchers.add_parser(
             name, help="Administración compartida de la suite.", add_help=False
         )
@@ -95,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
                 exc, origin="LANCTL.Suite.Access.Elevate", code="SUITE.ELEVATION.DENIED", level=46
             )
             return 2
-    if arguments and arguments[0] in {"plugin", "settings"}:
+    if arguments and arguments[0] in {"plugin", "settings", "language"}:
         # Compatibility adapter; shared services remain the single source of state.
         from lanctl.bootstrap.lanip import main as ip_main
 
@@ -107,8 +108,13 @@ def main(argv: list[str] | None = None) -> int:
         return build_parser().parse_args(arguments)
     if arguments and arguments[0].casefold() in launcher_names:
         return _run_launcher(arguments[0].casefold(), arguments[1:])
-    if not arguments or arguments[0] in {"--cli", "--tui", "-tui"}:
-        from lanctl.bootstrap.lanip import main as ip_main
+    if not arguments or arguments[0] in {"--cli", "-cli", "--tui", "-tui"}:
+        from lanctl.apps.suite.interfaces import run_console
 
-        return ip_main(arguments)
-    return build_parser().parse_args(arguments)
+        args = build_parser().parse_args(arguments)
+        if args.launcher:
+            build_parser().error("usa lanctl LAUNCHER --cli o --tui")
+        return run_console(tui=args.tui)
+    parser = build_parser()
+    parser.parse_args(arguments)
+    parser.error("indica un launcher o utiliza --cli / --tui")

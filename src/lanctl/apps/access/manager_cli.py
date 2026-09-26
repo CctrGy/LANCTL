@@ -59,7 +59,7 @@ def build_parser() -> LANCTLArgumentParser:
     mode.add_argument(
         "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
     )
-    mode.add_argument("--cli", action="store_true", help="Abre la consola interactiva.")
+    mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola interactiva.")
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("list", aliases=["ls"], help="Lista metadatos; nunca secretos.")
     show = commands.add_parser("show", help="Muestra metadatos de una credencial.")

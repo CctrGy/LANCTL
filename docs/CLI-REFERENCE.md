@@ -6,7 +6,7 @@ No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.
 ## `LANCTL`
 
 ```text
-Usage: LANCTL [-h] [--version] [--cli] [-tui] [--admin] LAUNCHER ...
+Usage: LANCTL [-h] [--version] [--cli | -tui] [--admin] LAUNCHER ...
 
 Orquestador raíz de las aplicaciones de la suite LANCTL.
 
@@ -20,11 +20,12 @@ Arguments:
     lanmon (monitor)  Monitorización, eventos, incidencias e historial.
     plugin            Administración compartida de la suite.
     settings          Administración compartida de la suite.
+    language          Administración compartida de la suite.
 
 Options:
   -h, --help          Show this help and exit.
   --version           Muestra la versión común de la suite y termina.
-  --cli               Abre la consola principal.
+  --cli, -cli         Abre la consola principal.
   -tui, --tui         Abre el TUI principal.
   --admin             Solicita UAC explícitamente para un launcher instalado en Windows.
 ```
@@ -87,7 +88,7 @@ Options:
   --verbose                   Añade diagnóstico de ejecución a stderr.
   --gui                       Abre la GUI heredada (solo código fuente y con
                               LANCTL_ENABLE_LEGACY_GUI=1).
-  --cli                       Open the persistent interactive LANCTL terminal.
+  --cli, -cli                 Open the persistent interactive LANCTL terminal.
   -tui [VENTANA], --tui [VENTANA]
                               Open the advanced full-screen terminal interface. Puede abrir
                               directamente PLUGINS, PROJECTS o SETTINGS.
@@ -1640,7 +1641,7 @@ Options:
   --version              Muestra la versión común de la suite y termina.
   --database ARCHIVO.db  Base física IDF; por defecto usa physical/idf.db en la raíz compartida.
   -tui, --tui            Abre la interfaz de pantalla completa.
-  --cli                  Abre la consola interactiva de LANWIRE.
+  --cli, -cli            Abre la consola interactiva de LANWIRE.
 ```
 
 ## `LANWIRE tui`
@@ -1962,7 +1963,7 @@ Options:
   --version              Muestra la versión común de la suite y termina.
   --database ARCHIVO.db  Base física IDF compartida.
   -tui, --tui            Abre la interfaz de pantalla completa.
-  --cli                  Abre la consola interactiva.
+  --cli, -cli            Abre la consola interactiva.
 ```
 
 ## `LANRACK list`
@@ -2019,7 +2020,7 @@ Options:
                               Ubicación; no cambia permisos ni copia secretos automáticamente.
   --project-dir PROJECT_DIR   Directorio del proyecto para su almacén independiente.
   -tui, --tui                 Abre la interfaz de pantalla completa.
-  --cli                       Abre la consola interactiva.
+  --cli, -cli                 Abre la consola interactiva.
 ```
 
 ## `LANACCESS list`
@@ -2300,7 +2301,7 @@ Options:
   --deep DEEP                 Intervalo profundo.
   --workers WORKERS           Workers del perfil.
   --timeout TIMEOUT           Timeout del perfil.
-  --cli                       Abre la consola de eventos.
+  --cli, -cli                 Abre la consola de comandos.
   --tui, -tui                 Abre el visor tabular de eventos.
   --source {all,program,project}
                               Origen para logs.

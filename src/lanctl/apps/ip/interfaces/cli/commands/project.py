@@ -165,9 +165,7 @@ def _create(args) -> int:
 def _update(args) -> int:
     settings = load_config()
     active = str(settings.get("activeProject") or "").strip()
-    target = Path(args.file).expanduser()
-    if target.suffix.casefold() != ".vlf":
-        target = target.with_suffix(".vlf")
+    target = resolve_project_path(args.file, settings.get("projectsDirectory"))
     if not active or target.resolve() != Path(active).expanduser().resolve():
         raise ValueError(
             "project update solo puede guardar el proyecto activo; usa project use primero"

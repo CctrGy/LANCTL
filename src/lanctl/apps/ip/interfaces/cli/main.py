@@ -134,6 +134,7 @@ def build_parser(
     )
     parser.add_argument(
         "--cli",
+        "-cli",
         action="store_true",
         help=t("LANCTL.CORE.APP.CLI_HELP"),
     )
@@ -181,7 +182,7 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
     interactive_launch = not arguments or any(
-        argument in ("--cli", "--gui", "--tui", "-tui") for argument in arguments
+        argument in ("--cli", "-cli", "--gui", "--tui", "-tui") for argument in arguments
     )
     if arguments and arguments[0] == "-e":
         arguments[0] = "ephemeral"

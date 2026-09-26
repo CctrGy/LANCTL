@@ -41,7 +41,9 @@ def build_parser() -> LANCTLArgumentParser:
     mode.add_argument(
         "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
     )
-    mode.add_argument("--cli", action="store_true", help="Abre la consola interactiva de LANWIRE.")
+    mode.add_argument(
+        "--cli", "-cli", action="store_true", help="Abre la consola interactiva de LANWIRE."
+    )
 
     subcommands = parser.add_subparsers(dest="command", metavar="COMANDO")
     subcommands.add_parser("tui", help="Abre la interfaz de pantalla completa.")

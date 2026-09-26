@@ -1,5 +1,7 @@
 # LANCTL
 
+Interfaces de los seis launchers: [CLI y TUI](docs/LAUNCHER-INTERFACES.md).
+
 La integración de desarrollo con ProjectDock está documentada en
 [Gestión del repositorio con ProjectDock](repositoryTerminal/projectdock/README.md).
 La migración conserva los accesos anteriores mientras se valida su equivalencia.
@@ -11,11 +13,11 @@ La [LANCTL Reference](reference/index.html) ofrece un índice web con búsqueda,
 sintaxis, opciones y ejemplos de todos los launchers y comandos, además de
 proyectos VLF, plugins LCP y el catálogo de documentación.
 
-> Versión actual: **0.3.2-beta.1**. Es una beta de prueba sin garantía de
-> estabilidad: conserva copias de seguridad de los proyectos y no la utilices
-> como única fuente de inventario.
+> Versión actual: **0.3.2-beta.4**, destinada al canal estable por decisión del
+> propietario, conservando el sufijo beta. Consulta las [notas y limitaciones](docs/RELEASE-0.3.2-beta.4.md).
+> Conserva copias de seguridad; no utilices el programa como única fuente de inventario.
 
-### Cambios de 0.3.2-beta.1
+### Cambios de 0.3.2-beta.4
 
 - LANACCESS amplía la gestión CLI/TUI de credenciales y almacenes cifrados portables.
 - LANMON separa sus comandos y añade un visor de registros de programa y proyecto.
@@ -402,11 +404,11 @@ plan sin ejecutar). Consulta [repositoryTerminal](repositoryTerminal/README.md)
 para requisitos y ejemplos. No cambia la versión ni realiza Git/push.
 
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.2-beta.1
+.\scripts\build-windows.ps1 -Version 0.3.2-beta.4
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.2-beta.1
+./scripts/build-linux.sh 0.3.2-beta.4
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.

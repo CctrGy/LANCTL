@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import shutil
 import sys
+from contextlib import contextmanager
 
 from rich.console import Console
 
@@ -47,3 +48,16 @@ class ManagementScreen:
         if self.active:
             sys.stdout.write("\x1b[?1049l\x1b[?25h")
             sys.stdout.flush()
+
+    @contextmanager
+    def suspended(self):
+        """Give nested interactive programs native streams and their own screen."""
+        if self.active:
+            sys.stdout.write("\x1b[?1049l\x1b[?25h")
+            sys.stdout.flush()
+        try:
+            yield
+        finally:
+            if self.active:
+                sys.stdout.write("\x1b[?1049h\x1b[H")
+                sys.stdout.flush()

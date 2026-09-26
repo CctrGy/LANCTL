@@ -38,7 +38,7 @@ def build_parser() -> LANCTLArgumentParser:
     mode.add_argument(
         "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
     )
-    mode.add_argument("--cli", action="store_true", help="Abre la consola interactiva.")
+    mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola interactiva.")
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("list", aliases=["ls"], help="Lista los racks disponibles.")
     show = commands.add_parser("show", help="Muestra un rack y sus ocupantes.")
@@ -54,36 +54,7 @@ def _print_rack(rack: dict) -> None:
 
 
 def run_tui(service: RackService) -> int:
-    print("\x1b[2J\x1b[H", end="")
-    while True:
-        print("\x1b[H", end="")
-        print(f"LANRACK TUI {__version__}\n")
-        racks = service.list()
-        if not racks:
-            print("No hay racks definidos en la base física de LANWIRE.")
-        for index, rack in enumerate(racks, 1):
-            print(
-                f"[{index}] {rack['id']:<10} {rack['name']:<24} {rack['units']:>2}U  {len(rack['occupants'])} elementos"
-            )
-        try:
-            choice = input("\nNúmero/ID del rack, R para refrescar o Q para salir: \x1b[J").strip()
-        except (EOFError, KeyboardInterrupt):
-            return 0
-        if choice.casefold() in {"q", "quit", "exit"}:
-            return 0
-        if choice.casefold() in {"", "r"}:
-            continue
-        identifier = (
-            racks[int(choice) - 1]["id"]
-            if choice.isdigit() and 0 < int(choice) <= len(racks)
-            else choice
-        )
-        try:
-            print("\x1b[H", end="")
-            _print_rack(service.get(identifier))
-        except ValueError as error:
-            print(f"Error: {error}")
-        input("\nPulsa Intro para volver…\x1b[J")
+    return _console(service, tui=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -104,23 +75,38 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def run_cli(service: RackService) -> int:
-    print(f"LANRACK CLI {__version__} | list, show ID, exit")
-    while True:
-        try:
-            value = input("LANRACK> ").strip().split()
-        except (EOFError, KeyboardInterrupt):
-            return 0
-        if not value:
-            continue
-        if value[0].casefold() in {"exit", "quit"}:
-            return 0
-        try:
-            if value[0].casefold() in {"list", "ls"}:
-                for rack in service.list():
-                    _print_rack(rack)
-            elif value[0].casefold() == "show" and len(value) == 2:
-                _print_rack(service.get(value[1]))
-            else:
-                print("Usa: list | show ID | exit")
-        except ValueError as error:
-            print(f"Error: {error}")
+    return _console(service)
+
+
+def _console(service: RackService, *, tui=False) -> int:
+    from lanctl.core.interactive_console import command_console
+
+    def dispatch(words):
+        args = build_parser().parse_args(words)
+        if args.command in {"list", "ls"}:
+            for rack in service.list():
+                _print_rack(rack)
+        elif args.command == "show":
+            _print_rack(service.get(args.rack))
+        else:
+            build_parser().print_help()
+        return 0
+
+    def overview():
+        rows = service.list()
+        inventory = "\n".join(
+            f"{row['id']:<12} {row['name']} · {row['units']}U · {len(row['occupants'])} elementos"
+            for row in rows
+        )
+        return (
+            (inventory or "No hay racks definidos en LANWIRE.")
+            + "\n\nlist: listar · show ID: unidades y ocupantes · R: refrescar\nLa edición física pertenece a LANWIRE."
+        )
+
+    return command_console(
+        "LANRACK",
+        dispatch,
+        tui=tui,
+        overview=overview,
+        shortcuts={"r": ["list"]},
+    )

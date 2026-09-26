@@ -9,7 +9,7 @@ on:
       version:
         description: Version without v prefix
         required: true
-        default: 0.3.2-beta.1
+        default: 0.3.2-beta.4
 
 permissions:
   contents: read
@@ -238,4 +238,5 @@ jobs:
           target_commitish: ${{ github.sha }}
           prerelease: ${{ needs.prepare.outputs.stable_branch != 'true' && contains(needs.prepare.outputs.version, '-') }}
           generate_release_notes: true
+          body_path: docs/RELEASE-${{ needs.prepare.outputs.version }}.md
           files: dist/release/*
