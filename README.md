@@ -459,3 +459,8 @@ se mantienen todos los derechos sobre el código.
 Accede a **[LANCTL Reference](https://cctrgy.github.io/lanctl/reference/)** para consultar la ayuda
 interactiva de launchers, comandos, grupos, proyectos, plugins, expansiones y
 archivos de documentación.
+
+## Apoya el proyecto
+
+Si LANCTL te resulta útil, puedes seguir y apoyar su desarrollo en
+[CctrGy Donations](https://cctrgy.github.io/donations.html).
