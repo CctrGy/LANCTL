@@ -97,7 +97,7 @@ class LanctlModeTests(unittest.TestCase):
             {"path": str(Path(project_path)), "project_id": "project-casa"},
         )
 
-    def test_gui_is_disabled_without_the_legacy_development_switch(self):
+    def test_gui_opens_without_the_legacy_development_switch(self):
         from lanctl.apps.ip.interfaces.cli.main import main
 
         with (
@@ -110,10 +110,10 @@ class LanctlModeTests(unittest.TestCase):
             patch("lanctl.apps.ip.interfaces.cli.main.load_plugin_safe_mode", return_value=True),
             patch("lanctl.core.plugins.get_plugin_manager"),
             patch("lanctl.apps.ip.interfaces.cli.main.write_log"),
-            patch("lanctl.apps.ip.interfaces.cli.main.print_error") as output,
+            patch("lanctl.apps.ip.interfaces.gui.desktop.run_gui", return_value=0) as gui,
         ):
-            self.assertEqual(main(["--gui"]), 2)
-        self.assertIn("congelada", output.call_args.args[0])
+            self.assertEqual(main(["--gui"]), 0)
+        gui.assert_called_once_with()
 
     def test_cli_flag_is_registered_without_a_scope(self):
         args = build_parser().parse_args(["--cli"])

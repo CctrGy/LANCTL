@@ -68,6 +68,7 @@ Type: files; Name: "{app}\landemo.exe"
 Name: "{group}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"
 Name: "{group}\LANCTL CLI"; Filename: "{app}\LANCTL.exe"; Parameters: "--cli"; WorkingDir: "{app}"
 Name: "{group}\LANIP"; Filename: "{app}\lanip.exe"; Parameters: "--tui"; WorkingDir: "{app}"
+Name: "{group}\LANIP GUI"; Filename: "{app}\lanip.exe"; Parameters: "--gui"; WorkingDir: "{app}"; Tasks: ipgui
 Name: "{group}\LANWIRE Physical"; Filename: "{app}\lanwire.exe"; WorkingDir: "{app}"
 Name: "{group}\LANMON Monitor"; Filename: "{app}\lanmon.exe"; WorkingDir: "{app}"
 Name: "{group}\LANMON Events"; Filename: "{app}\lanmon.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: eventviewer
@@ -77,6 +78,7 @@ Name: "{group}\LANACCESS Credentials"; Filename: "{app}\lanaccess.exe"; WorkingD
 Name: "{autodesktop}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Tasks]
+Name: ipgui; Description: "Crear acceso directo a la interfaz gráfica de LANIP (requiere WebView2)"; Flags: unchecked
 Name: desktopicon; Description: "Crear acceso directo de LANCTL TUI en el escritorio"; Flags: unchecked
 Name: eventviewer; Description: "Crear acceso directo al visor de eventos LANMON"; Flags: unchecked
 Name: accessadmin; Description: "Crear acceso LANACCESS administrativo (solicita UAC al abrir; no eleva el resto de programas)"; Flags: unchecked

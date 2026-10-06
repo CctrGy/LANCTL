@@ -321,6 +321,7 @@ class GuiApi:
                         self._activity[device_id] = bool(active)
 
             args.result_callback = capture
+            args.progress_instance = getattr(self, "_scan_progress", None)
             with (
                 contextlib.redirect_stdout(io.StringIO()),
                 contextlib.redirect_stderr(io.StringIO()),

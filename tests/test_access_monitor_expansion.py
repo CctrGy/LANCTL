@@ -162,7 +162,15 @@ def test_lanmon_logs_cli(tmp_path, capsys):
         from argparse import Namespace
 
         parser.return_value.parse_args.return_value = Namespace(
-            cli=False, tui=False, words=["logs"], project=None, source="all", limit=10, level=1
+            cli=False,
+            tui=False,
+            words=["logs"],
+            project=None,
+            source="all",
+            limit=10,
+            level=1,
+            window=False,
+            follow=False,
         )
         assert main(["logs"]) == 0
     assert json.loads(capsys.readouterr().out) == []

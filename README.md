@@ -2,6 +2,10 @@
 
 Interfaces de los seis launchers: [CLI y TUI](docs/LAUNCHER-INTERFACES.md).
 
+Nueva interfaz de escritorio de LANIP en desarrollo: [GUI de LANIP](docs/LANIP-GUI.md).
+Se ejecuta desde esta copia del código con `python lanip.py --gui`; no forma
+parte de los instaladores de 0.3.2-beta.4 ya publicados.
+
 La integración de desarrollo con ProjectDock está documentada en
 [Gestión del repositorio con ProjectDock](repositoryTerminal/projectdock/README.md).
 La migración conserva los accesos anteriores mientras se valida su equivalencia.
@@ -77,10 +81,9 @@ Los comandos de un dominio no se mezclan con los demás. `list`, `scan`,
 
 ## Estado actual
 
-El desarrollo activo se centra en CLI y TUI. La antigua GUI está congelada, no
-se empaqueta y no forma parte de los binarios publicados. Solo puede ejecutarse
-desde código con el extra `gui` y `LANCTL_ENABLE_LEGACY_GUI=1`; consulta
-[LEGACY-GUI.md](docs/LEGACY-GUI.md).
+CLI y TUI siguen siendo independientes. La nueva GUI de LANIP se ejecuta
+desde código con el extra `gui` y `lanip --gui`, sin variable de habilitación.
+Todavía no está en los binarios publicados; consulta [LANIP-GUI.md](docs/LANIP-GUI.md).
 
 LANCTL incluye:
 

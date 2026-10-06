@@ -21,6 +21,7 @@ Arguments:
     plugin            Administración compartida de la suite.
     settings          Administración compartida de la suite.
     language          Administración compartida de la suite.
+    backend           Administración compartida de la suite.
 
 Options:
   -h, --help          Show this help and exit.
@@ -86,8 +87,7 @@ Options:
   --version                   Muestra la versión y termina.
   --quiet                     Omite la salida correcta; conserva errores.
   --verbose                   Añade diagnóstico de ejecución a stderr.
-  --gui                       Abre la GUI heredada (solo código fuente y con
-                              LANCTL_ENABLE_LEGACY_GUI=1).
+  --gui                       Abre la interfaz gráfica de LANIP.
   --cli, -cli                 Open the persistent interactive LANCTL terminal.
   -tui [VENTANA], --tui [VENTANA]
                               Open the advanced full-screen terminal interface. Puede abrir
@@ -2254,7 +2254,7 @@ Usage: LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DUR
               [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]
               [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]
               [--timeout TIMEOUT] [--cli | --tui] [--source {all,program,project}] [--limit LIMIT]
-              [--level LEVEL]
+              [--window] [--level LEVEL]
               [words ...]
 
 Monitorización, eventos e incidencias de la suite LANCTL.
@@ -2306,5 +2306,6 @@ Options:
   --source {all,program,project}
                               Origen para logs.
   --limit LIMIT               Máximo de eventos (1-1000).
+  --window                    Abre logs en otra terminal y sigue el registro común.
   --level LEVEL               Nivel mínimo (1-59); conserva líneas sin nivel.
 ```

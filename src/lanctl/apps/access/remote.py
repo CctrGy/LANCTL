@@ -189,6 +189,10 @@ class LanctlCommandAdapter:
             payload = root_status()
         elif action == "refresh" and len(arguments) == 1:
             payload = enqueue("refresh")
+        elif action == "refresh" and len(arguments) == 3 and arguments[1] == "--session":
+            payload = enqueue("refresh", session_id=arguments[2])
+        elif action == "forced-view" and len(arguments) == 4 and arguments[2] == "--session":
+            payload = forced_view(arguments[1], session_id=arguments[3])
         elif action == "forced-view" and len(arguments) in (1, 2):
             if len(arguments) == 2:
                 view = arguments[1]

@@ -3362,6 +3362,14 @@ class LanctlTui:
             self.render()
             with terminal_mode:
                 while self.running:
+                    if (
+                        getattr(self, "_external_data_pending", False)
+                        and not self.modal
+                        and not getattr(self, "scanning", False)
+                    ):
+                        self._external_data_pending = False
+                        self._apply_remote_action({"action": "data-changed"})
+                        self.render()
                     scan_changed = self._drain_scan_events()
                     if not self.remote_actions.empty():
                         self._apply_remote_action(self.remote_actions.get_nowait())
@@ -3385,9 +3393,12 @@ class LanctlTui:
 
     def _apply_remote_action(self, command: dict) -> None:
         action = command.get("action")
-        if action == "refresh":
+        if action in {"data-changed", "refresh"}:
+            if self.modal or getattr(self, "scanning", False):
+                self._external_data_pending = True
+                return
             self.reload()
-            self.messages = ["Inventario actualizado por una sesión SSH remota."]
+            self.messages = ["Inventario sincronizado: cambios de otra sesión."]
             return
         if action != "view":
             return

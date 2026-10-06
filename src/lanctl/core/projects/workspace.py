@@ -186,6 +186,29 @@ def prepare_project_workspace(
         devices, group_rows = _inventory_documents(source)
         workspace_root.mkdir(parents=True, exist_ok=True)
         with locked_files((database, groups, metadata)):
+            if str(inspect_project(source).get("contentHash") or "") != content_hash:
+                raise ProjectChangesPendingError(
+                    "el archivo de proyecto cambió durante la apertura; vuelve a intentarlo"
+                )
+            # Recheck inside the lock: another launcher may have edited while
+            # the archive was being read. Discard must not erase its work.
+            dirty = workspace_files_are_dirty(database, groups, metadata)
+            if dirty:
+                from lanctl.core.session import current_session
+
+                session = current_session()
+                others = session.coordinator.sessions() if session else []
+                shared = any(
+                    item["id"] != session.id
+                    and item.get("project")
+                    and Path(item["project"]).resolve() == source
+                    for item in others
+                )
+                if not discard_changes or shared:
+                    raise ProjectChangesPendingError(
+                        "no se puede reemplazar un workspace con cambios pendientes "
+                        "mientras otra sesión utiliza el proyecto; guarda o cierra esa sesión"
+                    )
             atomic_write_json(database, devices)
             atomic_write_json(groups, group_rows)
             atomic_write_json(

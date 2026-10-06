@@ -90,6 +90,9 @@ class ProjectAutosaveScheduler:
     """Temporizador cooperativo para sesiones persistentes de LANCTL."""
 
     def __init__(self) -> None:
+        from lanctl.core.session import current_session
+
+        self._session = current_session()
         self._stop = threading.Event()
         self._thread = threading.Thread(
             target=self._run,
@@ -107,6 +110,12 @@ class ProjectAutosaveScheduler:
             self._thread.join(timeout=1.0)
 
     def _run(self) -> None:
+        from lanctl.core.session import bind_session
+
+        with bind_session(self._session):
+            self._run_bound()
+
+    def _run_bound(self) -> None:
         while not self._stop.is_set():
             settings = load_config()
             try:

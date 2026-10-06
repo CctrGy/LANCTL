@@ -13,6 +13,7 @@ from lanctl import __version__
 from lanctl.core.errors import LanctlError
 from lanctl.core.log_cleanup import run_automatic_log_cleanup
 from lanctl.core.logger import write_log
+from lanctl.core.session import coordinated_launcher
 
 # El registro usa nombres importables para que `lanctl --version` no cargue
 # drivers de red, GUI, SSH y plugins antes de saber qué modo se ha solicitado.
@@ -130,7 +131,7 @@ def build_parser(
     parser.add_argument(
         "--gui",
         action="store_true",
-        help=(f"Abre la GUI heredada (solo código fuente y con {_LEGACY_GUI_ENV}=1)."),
+        help="Abre la interfaz gráfica de LANIP.",
     )
     parser.add_argument(
         "--cli",
@@ -178,6 +179,7 @@ def _should_close_active_project(interactive_launch: bool, settings: dict) -> bo
     )
 
 
+@coordinated_launcher("lanip")
 def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
@@ -264,13 +266,7 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
 
             autosave_scheduler = start_autosave_scheduler()
         if args.gui:
-            if not legacy_gui_enabled():
-                print_error(
-                    "La GUI está congelada y no forma parte de la distribución. "
-                    f"En desarrollo puede habilitarse con {_LEGACY_GUI_ENV}=1."
-                )
-                return 2
-            from lanctl.apps.ip.interfaces.gui.main import run_gui
+            from lanctl.apps.ip.interfaces.gui.desktop import run_gui
 
             return run_gui()
         if args.tui or (not args.command and not args.cli):

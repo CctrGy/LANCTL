@@ -109,7 +109,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.11', cache: pip}
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e . pyinstaller==6.21.0
+      - run: python -m pip install -e ".[gui]" pyinstaller==6.21.0
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
       - name: Import optional Authenticode certificate

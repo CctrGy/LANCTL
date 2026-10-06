@@ -88,13 +88,14 @@ window.LANCTL_REFERENCE = {
         "lanmon",
         "plugin",
         "settings",
-        "language"
+        "language",
+        "backend"
       ],
       "compatibility": {
         "verified": "0.3.2-beta.4"
       },
       "description": "Orquestador raíz de las aplicaciones de la suite LANCTL.",
-      "details": "Usage: LANCTL [-h] [--version] [--cli | -tui] [--admin] LAUNCHER ...\n\nOrquestador raíz de las aplicaciones de la suite LANCTL.\n\nArguments:\n  LAUNCHER\n    lanip (ip)        Inventario lógico, descubrimiento, IP, MAC y servicios.\n    lanwire (wire)    Cableado, puertos, paneles y topología física.\n    lanrack (rack)    Salas técnicas, racks, unidades U y equipos.\n    lanaccess (access)\n                      Usuarios, credenciales y accesos remotos.\n    lanmon (monitor)  Monitorización, eventos, incidencias e historial.\n    plugin            Administración compartida de la suite.\n    settings          Administración compartida de la suite.\n    language          Administración compartida de la suite.\n\nOptions:\n  -h, --help          Show this help and exit.\n  --version           Muestra la versión común de la suite y termina.\n  --cli, -cli         Abre la consola principal.\n  -tui, --tui         Abre el TUI principal.\n  --admin             Solicita UAC explícitamente para un launcher instalado en Windows.",
+      "details": "Usage: LANCTL [-h] [--version] [--cli | -tui] [--admin] LAUNCHER ...\n\nOrquestador raíz de las aplicaciones de la suite LANCTL.\n\nArguments:\n  LAUNCHER\n    lanip (ip)        Inventario lógico, descubrimiento, IP, MAC y servicios.\n    lanwire (wire)    Cableado, puertos, paneles y topología física.\n    lanrack (rack)    Salas técnicas, racks, unidades U y equipos.\n    lanaccess (access)\n                      Usuarios, credenciales y accesos remotos.\n    lanmon (monitor)  Monitorización, eventos, incidencias e historial.\n    plugin            Administración compartida de la suite.\n    settings          Administración compartida de la suite.\n    language          Administración compartida de la suite.\n    backend           Administración compartida de la suite.\n\nOptions:\n  -h, --help          Show this help and exit.\n  --version           Muestra la versión común de la suite y termina.\n  --cli, -cli         Abre la consola principal.\n  -tui, --tui         Abre el TUI principal.\n  --admin             Solicita UAC explícitamente para un launcher instalado en Windows.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -171,7 +172,7 @@ window.LANCTL_REFERENCE = {
         {
           "choices": [],
           "default": null,
-          "description": "Abre la GUI heredada (solo código fuente y con LANCTL_ENABLE_LEGACY_GUI=1).",
+          "description": "Abre la interfaz gráfica de LANIP.",
           "flags": [
             "--gui"
           ],
@@ -261,7 +262,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.2-beta.4"
       },
       "description": "Logical control of LAN devices and infrastructure.",
-      "details": "Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]\n             [-project ARCHIVO.vlf]\n             COMANDO ...\n\nLogical control of LAN devices and infrastructure.\n\nArguments:\n  COMANDO\n    ephemeral (-e)            Escanea activos sin leer ni guardar ningún inventario.\n    list                      Escanea la LAN y muestra dispositivos activos e históricos.\n    recurrent                 Consulta los elementos recurrentes conocidos por LANCTL.\n    ping                      Comprueba puntualmente si un elemento responde por PING o ARP.\n    open (connect)            Abre un elemento con un cliente acorde al protocolo.\n    settings                  Consulta o modifica la configuración persistente de LANCTL.\n    call                      Resuelve un alias, una IP o una MAC a los datos del dispositivo.\n    search                    Busca dispositivos por alias, nombre, IP o MAC.\n    scan                      Inspecciona en profundidad un único elemento de la LAN.\n    cnf                       Asigna el estado CNF de un elemento por IP, MAC o alias.\n    credential (credentials, auth)\n                              Asocia credenciales cifradas a un elemento y protocolo.\n    GATEWAY (gateway)         Consulta y configura el gateway mediante TR-064.\n    downloadSettings (downloadsettings, download-settings)\n                              Alias heredado de «GATEWAY downloadSettings».\n    protocol                  Consulta o configura un protocolo de un elemento.\n    ssh                       Abre SSH o ejecuta una consulta show de solo lectura.\n    radmin                    Configura, comprueba o abre Radmin Viewer.\n    wol                       Enciende equipos mediante Wake-on-LAN y ejecuta secuencias seguras.\n    history                   Consulta eventos estructurados del proyecto VLF activo.\n    monitor                   Opera sesiones y checks del monitor LAN.\n    access                    Configura acceso remoto LAN seguro por SSH y HTTPS.\n    smb                       Descubre y abre recursos SMB de Windows.\n    terminal (cli)            Abre la terminal propia de un elemento según su protocolo.\n    switch                    Planifica comandos Cisco filtrados, remapeados y clasificados.\n    group                     Crea, edita y consulta grupos de elementos.\n    element                   Edita uno o varios campos de un elemento identificado por IP, MAC o\n                              alias.\n    project (projects)        Crea, actualiza e inspecciona proyectos LANCTL .vlf.\n    plugin (plugins, addon, addons)\n                              Gestiona complementos unificados LANCTL .lcp.\n    language (languages, lang)\n                              Manage LANCTL interface languages.\n    error (errors)            Consulta el catálogo por identificador 0eXXXXXXXX.\n    database (db)             Diagnostica y exporta datos.\n    demo                      Genera un recorrido reproducible sin depender de una red real.\n    lanwire (wire)            Abre LANWIRE o ejecuta uno de sus comandos sobre la base física\n                              compartida.\n    lab                       Gestiona redes LAN simuladas sin tráfico real.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión y termina.\n  --quiet                     Omite la salida correcta; conserva errores.\n  --verbose                   Añade diagnóstico de ejecución a stderr.\n  --gui                       Abre la GUI heredada (solo código fuente y con\n                              LANCTL_ENABLE_LEGACY_GUI=1).\n  --cli, -cli                 Open the persistent interactive LANCTL terminal.\n  -tui [VENTANA], --tui [VENTANA]\n                              Open the advanced full-screen terminal interface. Puede abrir\n                              directamente PLUGINS, PROJECTS o SETTINGS.\n  -project ARCHIVO.vlf, --project ARCHIVO.vlf\n                              Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un\n                              comando.",
+      "details": "Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]\n             [-project ARCHIVO.vlf]\n             COMANDO ...\n\nLogical control of LAN devices and infrastructure.\n\nArguments:\n  COMANDO\n    ephemeral (-e)            Escanea activos sin leer ni guardar ningún inventario.\n    list                      Escanea la LAN y muestra dispositivos activos e históricos.\n    recurrent                 Consulta los elementos recurrentes conocidos por LANCTL.\n    ping                      Comprueba puntualmente si un elemento responde por PING o ARP.\n    open (connect)            Abre un elemento con un cliente acorde al protocolo.\n    settings                  Consulta o modifica la configuración persistente de LANCTL.\n    call                      Resuelve un alias, una IP o una MAC a los datos del dispositivo.\n    search                    Busca dispositivos por alias, nombre, IP o MAC.\n    scan                      Inspecciona en profundidad un único elemento de la LAN.\n    cnf                       Asigna el estado CNF de un elemento por IP, MAC o alias.\n    credential (credentials, auth)\n                              Asocia credenciales cifradas a un elemento y protocolo.\n    GATEWAY (gateway)         Consulta y configura el gateway mediante TR-064.\n    downloadSettings (downloadsettings, download-settings)\n                              Alias heredado de «GATEWAY downloadSettings».\n    protocol                  Consulta o configura un protocolo de un elemento.\n    ssh                       Abre SSH o ejecuta una consulta show de solo lectura.\n    radmin                    Configura, comprueba o abre Radmin Viewer.\n    wol                       Enciende equipos mediante Wake-on-LAN y ejecuta secuencias seguras.\n    history                   Consulta eventos estructurados del proyecto VLF activo.\n    monitor                   Opera sesiones y checks del monitor LAN.\n    access                    Configura acceso remoto LAN seguro por SSH y HTTPS.\n    smb                       Descubre y abre recursos SMB de Windows.\n    terminal (cli)            Abre la terminal propia de un elemento según su protocolo.\n    switch                    Planifica comandos Cisco filtrados, remapeados y clasificados.\n    group                     Crea, edita y consulta grupos de elementos.\n    element                   Edita uno o varios campos de un elemento identificado por IP, MAC o\n                              alias.\n    project (projects)        Crea, actualiza e inspecciona proyectos LANCTL .vlf.\n    plugin (plugins, addon, addons)\n                              Gestiona complementos unificados LANCTL .lcp.\n    language (languages, lang)\n                              Manage LANCTL interface languages.\n    error (errors)            Consulta el catálogo por identificador 0eXXXXXXXX.\n    database (db)             Diagnostica y exporta datos.\n    demo                      Genera un recorrido reproducible sin depender de una red real.\n    lanwire (wire)            Abre LANWIRE o ejecuta uno de sus comandos sobre la base física\n                              compartida.\n    lab                       Gestiona redes LAN simuladas sin tráfico real.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión y termina.\n  --quiet                     Omite la salida correcta; conserva errores.\n  --verbose                   Añade diagnóstico de ejecución a stderr.\n  --gui                       Abre la interfaz gráfica de LANIP.\n  --cli, -cli                 Open the persistent interactive LANCTL terminal.\n  -tui [VENTANA], --tui [VENTANA]\n                              Open the advanced full-screen terminal interface. Puede abrir\n                              directamente PLUGINS, PROJECTS o SETTINGS.\n  -project ARCHIVO.vlf, --project ARCHIVO.vlf\n                              Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un\n                              comando.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -10129,6 +10130,17 @@ window.LANCTL_REFERENCE = {
         },
         {
           "choices": [],
+          "default": null,
+          "description": "Abre logs en otra terminal y sigue el registro común.",
+          "flags": [
+            "--window"
+          ],
+          "label": "--window",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
           "default": "1",
           "description": "Nivel mínimo (1-59); conserva líneas sin nivel.",
           "flags": [
@@ -10145,7 +10157,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.2-beta.4"
       },
       "description": "Monitorización, eventos e incidencias de la suite LANCTL.",
-      "details": "Usage: LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DURATION]\n              [--mode {permanent,temporary,diagnostic,once}]\n              [--authority {observe,operate,administer}] [--json] [--yes] [--interval INTERVAL]\n              [--every EVERY] [--group GROUP] [--type {presence,services,ports,identity,smb,full}]\n              [--fast] [--unknown] [--follow] [--sessions SESSIONS]\n              [--incidents-store INCIDENTS_STORE] [--lock LOCK] [--monitor-db MONITOR_DB]\n              [--profiles PROFILES] [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]\n              [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]\n              [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]\n              [--timeout TIMEOUT] [--cli | --tui] [--source {all,program,project}] [--limit LIMIT]\n              [--level LEVEL]\n              [words ...]\n\nMonitorización, eventos e incidencias de la suite LANCTL.\n\nArguments:\n  words                       logs, events, status, attach, detach, once, session, incidents,\n                              service o foreground.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión común de la suite y termina.\n  --project PROJECT           Opción operativa del monitor.\n  --permanent                 Opción operativa del monitor.\n  --duration DURATION         Opción operativa del monitor.\n  --mode {permanent,temporary,diagnostic,once}\n                              Opción operativa del monitor.\n  --authority {observe,operate,administer}\n                              Opción operativa del monitor.\n  --json                      Opción operativa del monitor.\n  --yes                       Opción operativa del monitor.\n  --interval INTERVAL         Opción operativa del monitor.\n  --every EVERY               Opción operativa del monitor.\n  --group GROUP               Opción operativa del monitor.\n  --type {presence,services,ports,identity,smb,full}\n                              Opción operativa del monitor.\n  --fast                      Opción operativa del monitor.\n  --unknown                   Opción operativa del monitor.\n  --follow                    Opción operativa del monitor.\n  --sessions SESSIONS         Estado runtime de sesiones.\n  --incidents-store INCIDENTS_STORE\n                              Estado runtime de incidencias.\n  --lock LOCK                 Lock singleton del monitor.\n  --monitor-db MONITOR_DB     Repositorio SQLite del monitor.\n  --profiles PROFILES         Perfiles personalizados.\n  --assignments-store ASSIGNMENTS_STORE\n                              Asignaciones persistentes.\n  --profile PROFILE           Perfil monitor.\n  --priority {low,normal,high,critical}\n                              Prioridad de asignación.\n  --check CHECK               Check ping, arp o port:NN.\n  --presence PRESENCE         Intervalo de presencia.\n  --discovery DISCOVERY       Intervalo de descubrimiento.\n  --services SERVICES         Intervalo de servicios.\n  --deep DEEP                 Intervalo profundo.\n  --workers WORKERS           Workers del perfil.\n  --timeout TIMEOUT           Timeout del perfil.\n  --cli, -cli                 Abre la consola de comandos.\n  --tui, -tui                 Abre el visor tabular de eventos.\n  --source {all,program,project}\n                              Origen para logs.\n  --limit LIMIT               Máximo de eventos (1-1000).\n  --level LEVEL               Nivel mínimo (1-59); conserva líneas sin nivel.",
+      "details": "Usage: LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DURATION]\n              [--mode {permanent,temporary,diagnostic,once}]\n              [--authority {observe,operate,administer}] [--json] [--yes] [--interval INTERVAL]\n              [--every EVERY] [--group GROUP] [--type {presence,services,ports,identity,smb,full}]\n              [--fast] [--unknown] [--follow] [--sessions SESSIONS]\n              [--incidents-store INCIDENTS_STORE] [--lock LOCK] [--monitor-db MONITOR_DB]\n              [--profiles PROFILES] [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]\n              [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]\n              [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]\n              [--timeout TIMEOUT] [--cli | --tui] [--source {all,program,project}] [--limit LIMIT]\n              [--window] [--level LEVEL]\n              [words ...]\n\nMonitorización, eventos e incidencias de la suite LANCTL.\n\nArguments:\n  words                       logs, events, status, attach, detach, once, session, incidents,\n                              service o foreground.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión común de la suite y termina.\n  --project PROJECT           Opción operativa del monitor.\n  --permanent                 Opción operativa del monitor.\n  --duration DURATION         Opción operativa del monitor.\n  --mode {permanent,temporary,diagnostic,once}\n                              Opción operativa del monitor.\n  --authority {observe,operate,administer}\n                              Opción operativa del monitor.\n  --json                      Opción operativa del monitor.\n  --yes                       Opción operativa del monitor.\n  --interval INTERVAL         Opción operativa del monitor.\n  --every EVERY               Opción operativa del monitor.\n  --group GROUP               Opción operativa del monitor.\n  --type {presence,services,ports,identity,smb,full}\n                              Opción operativa del monitor.\n  --fast                      Opción operativa del monitor.\n  --unknown                   Opción operativa del monitor.\n  --follow                    Opción operativa del monitor.\n  --sessions SESSIONS         Estado runtime de sesiones.\n  --incidents-store INCIDENTS_STORE\n                              Estado runtime de incidencias.\n  --lock LOCK                 Lock singleton del monitor.\n  --monitor-db MONITOR_DB     Repositorio SQLite del monitor.\n  --profiles PROFILES         Perfiles personalizados.\n  --assignments-store ASSIGNMENTS_STORE\n                              Asignaciones persistentes.\n  --profile PROFILE           Perfil monitor.\n  --priority {low,normal,high,critical}\n                              Prioridad de asignación.\n  --check CHECK               Check ping, arp o port:NN.\n  --presence PRESENCE         Intervalo de presencia.\n  --discovery DISCOVERY       Intervalo de descubrimiento.\n  --services SERVICES         Intervalo de servicios.\n  --deep DEEP                 Intervalo profundo.\n  --workers WORKERS           Workers del perfil.\n  --timeout TIMEOUT           Timeout del perfil.\n  --cli, -cli                 Abre la consola de comandos.\n  --tui, -tui                 Abre el visor tabular de eventos.\n  --source {all,program,project}\n                              Origen para logs.\n  --limit LIMIT               Máximo de eventos (1-1000).\n  --window                    Abre logs en otra terminal y sigue el registro común.\n  --level LEVEL               Nivel mínimo (1-59); conserva líneas sin nivel.",
       "docs": [
         "MONITOR.md",
         "CLI-REFERENCE.md",
@@ -10164,7 +10176,7 @@ window.LANCTL_REFERENCE = {
         "LANMON"
       ],
       "title": "LANMON",
-      "usage": "LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DURATION]\n              [--mode {permanent,temporary,diagnostic,once}]\n              [--authority {observe,operate,administer}] [--json] [--yes] [--interval INTERVAL]\n              [--every EVERY] [--group GROUP] [--type {presence,services,ports,identity,smb,full}]\n              [--fast] [--unknown] [--follow] [--sessions SESSIONS]\n              [--incidents-store INCIDENTS_STORE] [--lock LOCK] [--monitor-db MONITOR_DB]\n              [--profiles PROFILES] [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]\n              [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]\n              [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]\n              [--timeout TIMEOUT] [--cli | --tui] [--source {all,program,project}] [--limit LIMIT]\n              [--level LEVEL]\n              [words ...]"
+      "usage": "LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DURATION]\n              [--mode {permanent,temporary,diagnostic,once}]\n              [--authority {observe,operate,administer}] [--json] [--yes] [--interval INTERVAL]\n              [--every EVERY] [--group GROUP] [--type {presence,services,ports,identity,smb,full}]\n              [--fast] [--unknown] [--follow] [--sessions SESSIONS]\n              [--incidents-store INCIDENTS_STORE] [--lock LOCK] [--monitor-db MONITOR_DB]\n              [--profiles PROFILES] [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]\n              [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]\n              [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]\n              [--timeout TIMEOUT] [--cli | --tui] [--source {all,program,project}] [--limit LIMIT]\n              [--window] [--level LEVEL]\n              [words ...]"
     },
     {
       "category": "Proyectos",
@@ -10393,6 +10405,24 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.2-beta.4"
       },
+      "description": "LANCTL, LANIP, LANWIRE, LANRACK, LANACCESS y LANMON registran sus ejecuciones en `runtime/coordinator.db`, dentro de la raíz de datos resuelta por el programa. Es un almacén SQLite transaccional con `user_version=1`, no una base de inventario ni un almacén de credenciales. No se versiona en Git.",
+      "details": "Documento mantenido en docs/COORDINATION.md.",
+      "docs": [
+        "COORDINATION.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-coordination",
+      "kind": "document",
+      "name": "COORDINATION.md",
+      "title": "Coordinación local entre launchers",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/COORDINATION.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.2-beta.4"
+      },
       "description": "Estas reglas son el contrato de trabajo del repositorio. Se aplican a código, documentación, plugins, automatizaciones, empaquetado y publicaciones.",
       "details": "Documento mantenido en docs/DEVELOPMENT-RULES.md.",
       "docs": [
@@ -10531,6 +10561,24 @@ window.LANCTL_REFERENCE = {
       "name": "LANG.md",
       "title": "Idiomas de LANCTL",
       "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/LANG.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.2-beta.4"
+      },
+      "description": "Interfaz de escritorio sobre pywebview, HTML/CSS/JavaScript local y los servicios existentes de LANIP. No instala un servidor web ni abre un puerto de acceso remoto. La API remota anterior conserva `GuiApi`; el escritorio utiliza `DesktopApi`.",
+      "details": "Documento mantenido en docs/LANIP-GUI.md.",
+      "docs": [
+        "LANIP-GUI.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-lanip-gui",
+      "kind": "document",
+      "name": "LANIP-GUI.md",
+      "title": "GUI de LANIP",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/LANIP-GUI.md"
     },
     {
       "category": "Archivos de documentación",
@@ -10930,7 +10978,7 @@ window.LANCTL_REFERENCE = {
     }
   ],
   "meta": {
-    "entryCount": 170,
+    "entryCount": 172,
     "name": "LANCTL Reference",
     "repository": "https://github.com/CctrGy/LANCTL",
     "version": "0.3.2-beta.4"

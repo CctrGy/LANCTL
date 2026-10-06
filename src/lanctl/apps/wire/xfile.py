@@ -123,6 +123,9 @@ def atomic_write_bytes(path: str | Path, payload: bytes) -> Path:
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, target)
+        from lanctl.core.session import notify_write
+
+        notify_write(target)
         return target.resolve()
     finally:
         temporary.unlink(missing_ok=True)

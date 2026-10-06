@@ -12,6 +12,7 @@ from lanctl.core.parser import (
     has_help_argument,
     normalize_help_arguments,
 )
+from lanctl.core.session import coordinated_launcher
 
 _LAUNCHERS = {
     "lanip": ("ip", "Inventario lógico, descubrimiento, IP, MAC y servicios."),
@@ -53,7 +54,7 @@ def build_parser() -> LANCTLArgumentParser:
     for name, (alias, description) in _LAUNCHERS.items():
         child = launchers.add_parser(name, aliases=[alias], help=description, add_help=False)
         child.add_argument("arguments", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
-    for name in ("plugin", "settings", "language"):
+    for name in ("plugin", "settings", "language", "backend"):
         child = launchers.add_parser(
             name, help="Administración compartida de la suite.", add_help=False
         )
@@ -82,9 +83,14 @@ def _run_launcher(name: str, arguments: list[str]) -> int:
     return application(arguments)
 
 
+@coordinated_launcher("lanctl")
 def main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
+    if arguments and arguments[0] == "backend":
+        from lanctl.core.coordination_cli import run
+
+        return run(arguments[1:])
     if arguments and arguments[0] == "--admin" and not has_help_argument(arguments):
         from lanctl.core.errors import errors
         from lanctl.core.local_permissions import launch_elevated

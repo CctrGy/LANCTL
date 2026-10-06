@@ -15,6 +15,7 @@ from lanctl.core.database import DeviceDatabase
 from lanctl.core.file_transaction import locked_files
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.core.secret_input import read_secret
+from lanctl.core.session import coordinated_launcher
 
 
 def configure_utf8_stdio() -> None:
@@ -362,6 +363,7 @@ def _main(argv: list[str] | None = None) -> int:
     return run_cli(manager)
 
 
+@coordinated_launcher("lanaccess")
 def main(argv: list[str] | None = None) -> int:
     from lanctl.core.errors import errors
 

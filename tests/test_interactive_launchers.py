@@ -103,3 +103,49 @@ def test_failed_view_keeps_commands_available():
     ):
         assert command_console("TEST", Mock(), tui=True, overview=overview) == 0
     report.assert_called_once()
+
+
+@pytest.mark.parametrize("terminal", [True, False])
+def test_clear_aliases_only_clear_interactive_terminal(terminal):
+    dispatch = Mock()
+    with (
+        patch("lanctl.core.interactive_console.Console") as console,
+        patch("builtins.input", side_effect=["clear", "CLS", "exit"]),
+    ):
+        console.return_value.is_terminal = terminal
+        assert command_console("TEST", dispatch) == 0
+    assert console.return_value.clear.call_count == (2 if terminal else 0)
+    dispatch.assert_not_called()
+
+
+def test_basic_commands_and_general_help(capsys):
+    from pathlib import Path
+
+    dispatch = Mock(return_value=0)
+    with patch("builtins.input", side_effect=["pwd", "commands", "help", "VERSION", "exit"]):
+        assert command_console("TEST", dispatch) == 0
+    output = capsys.readouterr().out
+    assert str(Path.cwd()) in output
+    assert output.count("clear | cls") == 2
+    assert [call.args[0] for call in dispatch.call_args_list] == [["--help"], ["--version"]]
+
+
+def test_builtin_rejects_arguments(capsys):
+    dispatch = Mock()
+    with patch("builtins.input", side_effect=["clear anything", "exit"]):
+        assert command_console("TEST", dispatch) == 0
+    assert "Uso: clear" in capsys.readouterr().out
+    dispatch.assert_not_called()
+
+
+def test_tui_clear_redraws_without_leaving_screen():
+    dispatch = Mock()
+    with (
+        patch("lanctl.core.interactive_console.ManagementScreen") as screen,
+        patch("builtins.input", side_effect=["clear", "exit"]),
+    ):
+        assert command_console("TEST", dispatch, tui=True) == 0
+    active = screen.return_value.__enter__.return_value
+    assert active.draw.call_count == 2
+    active.suspended.assert_not_called()
+    dispatch.assert_not_called()

@@ -40,6 +40,30 @@ def _identity(pid: int):
 
 
 def interface_status(path: Path = RUNTIME_PATH) -> dict:
+    if path == RUNTIME_PATH:
+        from lanctl.core.coordination import Coordinator
+        from lanctl.core.local_permissions import elevated
+
+        sessions = [
+            item for item in Coordinator(administrative=elevated()).sessions() if item["controls"]
+        ]
+        if sessions:
+            if len(sessions) == 1:
+                return {
+                    **sessions[0],
+                    "sessionId": sessions[0]["id"],
+                    "running": True,
+                    "interactive": True,
+                    "sessions": sessions,
+                }
+            return {
+                "running": True,
+                "mode": "multiple",
+                "pid": None,
+                "interactive": True,
+                "sessions": sessions,
+                "ambiguous": True,
+            }
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
         pid = int(value["pid"])
@@ -109,8 +133,17 @@ def default_forced_view() -> str:
     return str(service.config().get("control", {}).get("forcedView", "off"))
 
 
-def enqueue(action: str, value: str | None = None) -> dict:
+def enqueue(action: str, value: str | None = None, *, session_id: str | None = None) -> dict:
     status = interface_status()
+    if status.get("ambiguous") and not session_id:
+        raise ValueError("hay varias interfaces; indica la sesión de destino")
+    target = session_id or status.get("sessionId")
+    if target:
+        from lanctl.core.coordination import Coordinator
+        from lanctl.core.local_permissions import elevated
+
+        identifier = Coordinator(administrative=elevated()).enqueue(target, action, value)
+        return {"queued": True, "commandId": identifier, "sessionId": target}
     if not status["running"]:
         raise RuntimeError("no hay una GUI/TUI raíz abierta para recibir la orden")
     command = {
@@ -134,8 +167,11 @@ def enqueue(action: str, value: str | None = None) -> dict:
 
 def _command(*arguments: str) -> list[str]:
     if getattr(sys, "frozen", False):
-        return [sys.executable, *arguments]
-    return [sys.executable, str(Path(__file__).resolve().parents[2] / "lanctl.py"), *arguments]
+        return [
+            str(Path(sys.executable).with_name("lanip.exe" if os.name == "nt" else "lanip")),
+            *arguments,
+        ]
+    return [sys.executable, str(Path(__file__).resolve().parents[4] / "lanip.py"), *arguments]
 
 
 def _windows_session_zero() -> bool:
@@ -152,19 +188,15 @@ def _windows_session_zero() -> bool:
         return False
 
 
-def forced_view(view: str) -> dict:
+def forced_view(view: str, *, session_id: str | None = None) -> dict:
     normalized = view.casefold()
     if normalized not in VIEWS:
         raise ValueError("vista no válida: gui, tui, plugins, projects o settings")
-    if normalized == "gui":
-        from lanctl.apps.ip.interfaces.cli.main import legacy_gui_enabled
-
-        if not legacy_gui_enabled():
-            raise RuntimeError(
-                "la GUI está congelada; usa tui o habilita LANCTL_ENABLE_LEGACY_GUI=1 "
-                "en un entorno de desarrollo"
-            )
+    if session_id:
+        return enqueue("view", normalized, session_id=session_id)
     current = interface_status()
+    if current.get("ambiguous"):
+        raise ValueError("hay varias interfaces; indica la sesión de destino")
     if current["running"] and (current.get("mode") == "tui" or normalized == current.get("mode")):
         return enqueue("view", normalized)
     if _windows_session_zero():
@@ -177,7 +209,13 @@ def forced_view(view: str) -> dict:
                 "escritorio. Inicia el agente interactivo LANCTL del usuario."
             ),
         }
-    arguments = ["--gui"] if normalized == "gui" else ["--tui", normalized]
+    arguments = (
+        ["--gui"]
+        if normalized == "gui"
+        else ["--tui"]
+        if normalized == "tui"
+        else ["--tui", normalized]
+    )
     flags = 0
     if platform.system() == "Windows":
         flags = (
@@ -210,6 +248,9 @@ class RootInterfaceAgent:
         self.identity = _identity(self.pid)
         self.stop_event = threading.Event()
         self.thread = None
+        from lanctl.core.session import current_session
+
+        self.session = current_session() if self.runtime_path == RUNTIME_PATH else None
 
     def _publish(self):
         self.runtime_path.parent.mkdir(parents=True, exist_ok=True)
@@ -245,12 +286,20 @@ class RootInterfaceAgent:
                 continue
 
     def start(self):
+        if self.session:
+            self.session.handler = self.handler
+            self.session.coordinator.heartbeat(self.session.id, self.session.project, True)
+            return self
         self._publish()
         self.thread = threading.Thread(target=self._run, name="lanctl-root-control", daemon=True)
         self.thread.start()
         return self
 
     def stop(self):
+        if self.session:
+            self.session.handler = None
+            self.session.coordinator.heartbeat(self.session.id, self.session.project, False)
+            return
         self.stop_event.set()
         if self.thread:
             self.thread.join(2)
