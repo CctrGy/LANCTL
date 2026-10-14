@@ -9,6 +9,7 @@ from lanctl import __version__
 from lanctl.apps.wire.cli.commands import CommandProcessor
 from lanctl.apps.wire.idf.database import DEFAULT_DATABASE_PATH, IDFDatabaseManager
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
+from lanctl.core.session import coordinated_launcher
 
 
 def configure_utf8_stdio() -> None:
@@ -196,6 +197,7 @@ def _command_parts(args) -> list[str]:
     return parts
 
 
+@coordinated_launcher("lanwire")
 def main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)

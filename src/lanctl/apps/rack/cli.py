@@ -10,6 +10,7 @@ from lanctl import __version__
 from lanctl.apps.rack.service import RackService
 from lanctl.apps.wire.idf.database import DEFAULT_DATABASE_PATH
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
+from lanctl.core.session import coordinated_launcher
 
 
 def configure_utf8_stdio() -> None:
@@ -57,6 +58,7 @@ def run_tui(service: RackService) -> int:
     return _console(service, tui=True)
 
 
+@coordinated_launcher("lanrack")
 def main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))

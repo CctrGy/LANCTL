@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import tempfile
 import zipfile
@@ -31,9 +32,17 @@ def create_backup(path: str | Path, *, directory: str | Path | None = None) -> P
     target_root = Path(directory) if directory else source.parent / "backups"
     target_root.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    target = target_root / f"{source.name}.{timestamp}.bak"
-    with locked_files((source, target)):
-        shutil.copy2(source, target)
+    descriptor, name = tempfile.mkstemp(
+        prefix=f"{source.name}.{timestamp}.", suffix=".bak", dir=target_root
+    )
+    os.close(descriptor)
+    target = Path(name)
+    try:
+        with locked_files((source, target)):
+            shutil.copy2(source, target)
+    except Exception:
+        target.unlink(missing_ok=True)
+        raise
     return target
 
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPOSITORY="CctrGy/LANCTL"
-CHANNEL="beta"; VERSION=""; MODE="standard"; CONFIGURE_ACCESS=0; ASSUME_YES=0; UNINSTALL=0; USE_TARBALL=0
+CHANNEL="stable"; VERSION=""; MODE="standard"; CONFIGURE_ACCESS=0; ASSUME_YES=0; UNINSTALL=0; USE_TARBALL=0
 usage() { cat <<'EOF'
 LANCTL online installer
   ./install.sh [--channel stable|beta] [--version VERSION]

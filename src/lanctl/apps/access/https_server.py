@@ -72,9 +72,14 @@ class _BoundedHttpServer(ThreadingHTTPServer):
     daemon_threads = True
     request_queue_size = 32
 
-    def __init__(self, *args, max_threads=32, **kwargs):
+    def __init__(self, *args, max_threads=32, tls_context=None, cidr=None, **kwargs):
         self._capacity = threading.BoundedSemaphore(max_threads)
+        self._tls_context = tls_context
+        self._cidr = cidr
         super().__init__(*args, **kwargs)
+
+    def verify_request(self, request, client_address):
+        return self._cidr is None or source_allowed(client_address[0], self._cidr)
 
     def process_request(self, request, client_address):
         if not self._capacity.acquire(blocking=False):
@@ -88,7 +93,14 @@ class _BoundedHttpServer(ThreadingHTTPServer):
 
     def process_request_thread(self, request, client_address):
         try:
+            # El accept del listener permanece TCP: TLS consume un worker
+            # acotado y tiene plazo antes de crear el handler HTTP.
+            if self._tls_context is not None:
+                request.settimeout(15)
+                request = self._tls_context.wrap_socket(request, server_side=True)
             super().process_request_thread(request, client_address)
+        except OSError:
+            self.shutdown_request(request)
         finally:
             self._capacity.release()
 
@@ -182,7 +194,7 @@ class HttpsAccessServer:
                 return parent.auth.validate_session(
                     session.value if session else "",
                     self.client_address[0],
-                    self.headers.get("X-CSRF-Token") if csrf else None,
+                    self.headers.get("X-CSRF-Token", "") if csrf else None,
                 )
 
             def _origin(self):
@@ -295,9 +307,11 @@ class HttpsAccessServer:
                         },
                     )
 
-        server = _BoundedHttpServer((bind, port), Handler)
-        server.socket = HttpsCapability.context(certificate, private_key).wrap_socket(
-            server.socket, server_side=True
+        server = _BoundedHttpServer(
+            (bind, port),
+            Handler,
+            tls_context=HttpsCapability.context(certificate, private_key),
+            cidr=cidr,
         )
         self.server = server
 

@@ -561,10 +561,17 @@ def _normalize_v2_document(config: dict) -> dict:
     return document
 
 
+def _config_version(config: dict) -> int:
+    version = config.get("schemaVersion", 0)
+    if type(version) is not int or version not in (0, 1, CONFIG_SCHEMA_VERSION):
+        raise ValueError(f"versión de configuración no compatible: {version}")
+    return version
+
+
 def canonical_config(config: dict) -> dict:
     """Devuelve la representación agrupada que se escribe en disco."""
 
-    if int(config.get("schemaVersion", 0) or 0) == CONFIG_SCHEMA_VERSION:
+    if _config_version(config) == CONFIG_SCHEMA_VERSION:
         return _deep_merge(DOCUMENT_DEFAULTS, _normalize_v2_document(config))
     return _legacy_to_document(config)
 
@@ -590,7 +597,7 @@ def normalize_dhcp_range(value: str) -> str | None:
     return f"{start}-{end}"
 
 
-def load_config() -> dict:
+def _load_config() -> dict:
     """Lee una instantánea atómica sin crear archivos ni locks.
 
     Los escritores usan ``os.replace``, por lo que un lector siempre observa
@@ -622,12 +629,15 @@ def load_config() -> dict:
         return _document_to_legacy(deepcopy(DOCUMENT_DEFAULTS))
     try:
         original = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        if not isinstance(original, dict):
+            raise ValueError(f"la configuración debe ser un objeto JSON: {CONFIG_PATH}")
+        _config_version(original)
         stored = migrate_config_paths(original)
     except json.JSONDecodeError as error:
         raise ValueError(f"configuración JSON no válida: {CONFIG_PATH}") from error
     if not isinstance(stored, dict):
         raise ValueError(f"la configuración debe ser un objeto JSON: {CONFIG_PATH}")
-    if int(stored.get("schemaVersion", 0) or 0) == CONFIG_SCHEMA_VERSION:
+    if _config_version(stored) == CONFIG_SCHEMA_VERSION:
         normalized = _normalize_v2_document(stored)
         return _document_to_legacy(_deep_merge(DOCUMENT_DEFAULTS, normalized))
     # Migración de la clave usada por versiones anteriores.
@@ -667,9 +677,23 @@ def load_config() -> dict:
     return _document_to_legacy(_legacy_to_document(merged))
 
 
+def load_config() -> dict:
+    from lanctl.core.session import overlay_config
+
+    if os.environ.get("LANCTL_CANONICAL_HELP") == "1":
+        return _load_config()
+    return overlay_config(_load_config())
+
+
 @transactional_file(CONFIG_PATH)
 def save_config(config: dict) -> Path:
-    atomic_write_json(CONFIG_PATH, canonical_config(config))
+    from lanctl.core.session import commit_config, current_session, prepare_config_save
+
+    atomic_write_json(CONFIG_PATH, canonical_config(prepare_config_save(config, _load_config())))
+    commit_config(config)
+    session = current_session()
+    if session:
+        session.emit("LANCTL.Core.Config.Changed")
     return CONFIG_PATH.resolve()
 
 

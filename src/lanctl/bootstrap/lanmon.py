@@ -8,6 +8,7 @@ from lanctl import __version__
 from lanctl.apps.monitor.commands import register_monitor_command
 from lanctl.bootstrap.lanctl import configure_utf8_stdio
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
+from lanctl.core.session import coordinated_launcher
 
 
 class _StandaloneCommand:
@@ -43,6 +44,11 @@ def build_parser() -> LANCTLArgumentParser:
     )
     parser.add_argument("--limit", type=int, default=100, help="Máximo de eventos (1-1000).")
     parser.add_argument(
+        "--window",
+        action="store_true",
+        help="Abre logs en otra terminal y sigue el registro común.",
+    )
+    parser.add_argument(
         "--level", type=int, default=1, help="Nivel mínimo (1-59); conserva líneas sin nivel."
     )
     return parser
@@ -51,7 +57,13 @@ def build_parser() -> LANCTLArgumentParser:
 def _main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
+    if arguments and arguments[0] == "backend":
+        from lanctl.core.coordination_cli import run
+
+        return run(arguments[1:])
     args = build_parser().parse_args(arguments or ["status"])
+    if args.window and (args.words != ["logs"] or args.cli or args.tui):
+        raise ValueError("--window solo se utiliza con logs")
     if args.cli or args.tui:
         from lanctl.core.interactive_console import command_console
 
@@ -64,10 +76,20 @@ def _main(argv: list[str] | None = None) -> int:
                 "logs: registros de programa y proyecto\n"
                 "events: eventos del monitor · status: estado\n"
                 "incidents: incidencias · service: gestión de servicio\n"
+                "backend sessions / events / tasks: coordinación entre launchers\n"
                 "help: todas las opciones. Ningún servicio se inicia al abrir este panel."
             ),
         )
     if args.words == ["logs"]:
+        if args.follow or args.window:
+            from lanctl.apps.monitor.log_stream import follow_logs, open_log_window
+
+            if args.project or args.source == "project":
+                raise ValueError(
+                    "El seguimiento muestra el log común del programa, no el archivo VLF."
+                )
+            action = open_log_window if args.window else follow_logs
+            return action(limit=args.limit, minimum=args.level)
         import json
 
         from lanctl.apps.monitor.event_view import read_events
@@ -90,6 +112,7 @@ def _main(argv: list[str] | None = None) -> int:
     return args.handler(args)
 
 
+@coordinated_launcher("lanmon")
 def main(argv: list[str] | None = None) -> int:
     from lanctl.core.errors import errors
 

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('stable','beta')][string]$Channel = 'beta',
+    [ValidateSet('stable','beta')][string]$Channel = 'stable',
     [string]$Version = 'auto',
     [ValidateSet('standard','monitor')][string]$Mode = 'standard',
     [switch]$Portable,
@@ -29,7 +29,7 @@ function Resolve-RequestedVersion {
         return $null
     }
     if ($requested -notmatch '^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$') {
-        throw "Invalid version '$requested'. Use auto or a version such as 0.3.1-beta.1."
+        throw "Invalid version '$requested'. Use auto or a version such as 0.3.3."
     }
     return $requested
 }

@@ -1,6 +1,10 @@
 # Revisión de estabilidad — 2026-09-26
 
-Estado: preparación local; no declarada estable, sin publicación ni actualización
+Documento histórico: recoge la revisión anterior a la publicación de
+0.3.2-beta.4. El estado siguiente corresponde a ese momento y no al estado
+actual del repositorio; consulta las notas de cada Release.
+
+Estado en la revisión: preparación local; no declarada estable, sin publicación ni actualización
 de la instalación. Versión mantenida: 0.3.2-beta.1.
 
 ## Correcciones de esta revisión

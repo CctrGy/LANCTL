@@ -14,6 +14,7 @@ from lanctl.core.paths import application_path
 
 from .configuration import parse_duration
 from .models import CheckResult, Incident, MonitorSession
+from .outages import load_outages
 
 SCHEMA_VERSION = 2
 
@@ -136,6 +137,7 @@ class MetricsStore:
 
     def aggregate(self, *, now=None, resolutions=(300, 3600)):
         written = 0
+        outages = load_outages(self.db)
         for resolution in resolutions:
             rows = self.db.execute(
                 "SELECT device_id,CAST(strftime('%s',timestamp)/? AS INTEGER)*? bucket_epoch,AVG(presence)*100 availability,MIN(latency_ms) lmin,AVG(latency_ms) lavg,MAX(latency_ms) lmax,COUNT(*) count,SUM(CASE WHEN presence=0 THEN 1 ELSE 0 END) losses FROM samples WHERE check_type IN ('availability','ping','arp') GROUP BY device_id,bucket_epoch",
@@ -143,6 +145,9 @@ class MetricsStore:
             ).fetchall()
             with self.db.transaction():
                 for row in rows:
+                    outage_count, outage_duration = outages.bucket(
+                        row["device_id"], row["bucket_epoch"], resolution
+                    )
                     bucket = (
                         datetime.fromtimestamp(row["bucket_epoch"], timezone.utc)
                         .isoformat()
@@ -160,8 +165,8 @@ class MetricsStore:
                             row["lmax"],
                             row["losses"] * 100 / row["count"],
                             row["count"],
-                            row["losses"],
-                            row["losses"] * resolution,
+                            outage_count,
+                            outage_duration,
                         ),
                     )
                     written += 1

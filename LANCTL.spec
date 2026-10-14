@@ -11,15 +11,16 @@ PROJECT_ROOT = Path(SPECPATH)
 SOURCE_ROOT = PROJECT_ROOT / "src"
 sys.path.insert(0, str(SOURCE_ROOT))
 VERSION_INFO = os.environ.get("LANCTL_VERSION_INFO", "packaging/windows_version_info.txt")
-LEGACY_GUI_EXCLUDES = ["webview"]
+LEGACY_GUI_EXCLUDES = []
 
 
 def collect_runtime_modules():
-    """Incluye el núcleo RPC reutilizado por remoto, pero no su motor visual."""
+    """Incluye los contratos RPC y la nueva interfaz gráfica de LANIP."""
     return collect_submodules("lanctl")
 
 
 datas = collect_data_files("manuf") + [
+    ("gui", "gui"),
     ("bundled/lanctl.theme.default.lcp", "bundled"),
     ("bundled/lanctl.analysis.mac-vendor.lcp", "bundled"),
     ("bundled/lanctl.discovery.mdns-ssdp.lcp", "bundled"),

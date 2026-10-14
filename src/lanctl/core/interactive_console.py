@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from contextlib import nullcontext
+from pathlib import Path
 
-from rich.console import Group
+from rich.console import Console, Group
 from rich.panel import Panel
 from rich.text import Text
 
@@ -13,6 +14,15 @@ from lanctl.core.command_line import split_command_line
 from lanctl.core.console import error as print_error
 from lanctl.core.errors import LanctlError, errors
 from lanctl.core.terminal_ui import ManagementScreen
+
+CONSOLE_HELP = """Comandos de consola:
+  clear | cls       Limpiar la pantalla (no borra datos ni logs).
+  pwd               Mostrar el directorio de trabajo.
+  commands          Mostrar estos comandos básicos.
+  help [comando]    Mostrar ayuda general o de un comando.
+  version           Mostrar la versión.
+  exit | quit | q   Salir o volver al llamador.
+"""
 
 
 def command_console(name, dispatch, *, tui=False, overview="", shortcuts=None):
@@ -53,9 +63,30 @@ def command_console(name, dispatch, *, tui=False, overview="", shortcuts=None):
                 if not words:
                     continue
                 words = list(shortcuts.get(line.casefold(), words))
+                builtin = words[0].casefold()
+                if builtin in {"clear", "cls", "pwd", "commands"}:
+                    if len(words) != 1:
+                        status = f"Uso: {builtin} (sin argumentos)."
+                        if not screen:
+                            print(status)
+                        continue
+                    if builtin in {"clear", "cls"}:
+                        status = "Preparado."
+                        if not screen:
+                            console = Console()
+                            if console.is_terminal:
+                                console.clear()
+                        continue
+                    with screen.suspended() if screen else nullcontext():
+                        print(str(Path.cwd()) if builtin == "pwd" else CONSOLE_HELP)
+                        if screen:
+                            input("Pulsa Enter para volver al panel…")
+                    status = "Última operación: correcta (código 0)."
+                    continue
+                general_help = len(words) == 1 and builtin in {"help", "--help", "-h", "/?"}
                 if words[0].casefold() == "help":
                     words = [*words[1:], "--help"]
-                elif words == ["version"]:
+                elif len(words) == 1 and builtin == "version":
                     words = ["--version"]
                 if words[0] in {"--cli", "-cli", "--tui", "-tui"}:
                     status = "Ya estás en una consola. Usa comandos, no anides esta interfaz."
@@ -65,6 +96,8 @@ def command_console(name, dispatch, *, tui=False, overview="", shortcuts=None):
                 # A child TUI owns the terminal until it returns. No nested alternate buffers.
                 with screen.suspended() if screen else nullcontext():
                     try:
+                        if general_help:
+                            print(CONSOLE_HELP)
                         result = dispatch(words)
                         code = result if isinstance(result, int) else 0
                     except SystemExit as exc:
@@ -90,3 +123,5 @@ def command_console(name, dispatch, *, tui=False, overview="", shortcuts=None):
                     level=34,
                 )
                 status = str(exc)
+                if not screen:
+                    print(status)

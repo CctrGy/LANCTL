@@ -181,6 +181,19 @@ def run_show_command(
     """Ejecuta exclusivamente consultas `show` mediante Netmiko."""
     if not command.strip().casefold().startswith("show "):
         raise ValueError("solo se permiten comandos Cisco de consulta que empiecen por 'show '")
+    if not profile.fingerprint:
+        raise ValueError("la huella SSH debe estar fijada antes de operar")
+    import paramiko
+
+    class PinnedHostKeyPolicy(paramiko.MissingHostKeyPolicy):
+        def missing_host_key(self, client, hostname, key):
+            presented = _key_fingerprint(key)
+            if not hmac.compare_digest(presented, profile.fingerprint):
+                raise ValueError(
+                    "ALERTA: la huella SSH ha cambiado "
+                    f"(esperada {profile.fingerprint}, actual {presented})"
+                )
+
     if connector is None:
         try:
             from netmiko import ConnectHandler
@@ -201,12 +214,20 @@ def run_show_command(
         "port": profile.port,
         "username": username,
         "password": password,
+        "auto_connect": False,
+        "ssh_strict": True,
+        "system_host_keys": False,
+        "alt_host_keys": False,
         # Un perfil heredado puede retirar una entrada concreta de esta lista;
         # la excepción queda acotada a esta conexión y a una huella fijada.
         "disabled_algorithms": disabled_algorithms(profile),
     }
     connection = connector(**parameters)
     try:
+        # Netmiko 4.x permite separar construcción y conexión. Instalar la
+        # política antes de _open garantiza validación antes de autenticar.
+        connection.key_policy = PinnedHostKeyPolicy()
+        connection._open()
         return str(connection.send_command(command))
     finally:
         connection.disconnect()

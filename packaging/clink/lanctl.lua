@@ -1,5 +1,5 @@
 -- Autocompletado de LANCTL para Clink 1.3.23 o posterior.
--- Compatible con LANCTL 0.3.2-beta.4.
+-- Compatible con LANCTL 0.3.3.
 -- Desarrollo: clink installscripts <ruta>\packaging\clink
 -- Instalación: <directorio-de-instalación>\clink\lanctl.lua
 
@@ -544,9 +544,14 @@ local function configure_lanaccess(matcher)
     }):nofiles()
 end
 
+local backend = clink.argmatcher():addarg({ "status", "sessions", "events", "tasks", "refresh" })
+    :addflags({ "-h", "--help", "/?", "--session" .. history_value("ID de sesión"),
+        "--after" .. history_value("Cursor"), "--limit" .. history_value("1-1000") }):loop()
+
 local function configure_lanmon(matcher)
+    matcher:addflags("--window")
     return matcher:addarg({
-        "logs", "events", "status", "attach", "detach", "once", "session",
+        "backend" .. backend, "logs", "events", "status", "attach", "detach", "once", "session",
         "incidents", "incident", "service", "foreground", "configure", "profile",
         "assign", "unassign", "assignments", "report", "ping", "scan", "identify", "health"
     }):addflags({
@@ -624,6 +629,7 @@ for _, command in ipairs(root_commands) do
     table.insert(suite_commands, command)
 end
 local suite_launchers = {
+    "backend" .. backend,
     "lanip" .. configure_lanip(clink.argmatcher()),
     "ip" .. configure_lanip(clink.argmatcher()),
     "lanwire" .. configure_lanwire(clink.argmatcher()), "wire" .. configure_lanwire(clink.argmatcher()),

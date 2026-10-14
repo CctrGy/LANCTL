@@ -46,7 +46,8 @@ class InterProcessLock:
 
     def acquire(self) -> InterProcessLock:
         deadline = time.monotonic() + max(0.0, self.timeout)
-        self._local.acquire()
+        if not self._local.acquire(timeout=max(0.0, deadline - time.monotonic())):
+            raise TimeoutError(f"timeout esperando el bloqueo de datos: {self.path}")
         held = getattr(_HELD_LOCKS, "paths", None)
         if held is None:
             held = _HELD_LOCKS.paths = {}
@@ -177,7 +178,9 @@ def transactional_method(method):
 
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        with locked_file(self.path):
+        from lanctl.core.session import task
+
+        with locked_file(self.path), task("LANCTL.Core.Storage.Transaction"):
             return method(self, *args, **kwargs)
 
     return wrapper
@@ -228,6 +231,9 @@ def atomic_write_bytes(path: str | Path, payload: bytes) -> Path:
             os.fsync(stream.fileno())
         os.replace(temporary, target)
         fsync_directory(target.parent)
+        from lanctl.core.session import notify_write
+
+        notify_write(target)
         return target
     finally:
         temporary.unlink(missing_ok=True)

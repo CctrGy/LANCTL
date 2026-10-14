@@ -2,6 +2,10 @@
 
 Interfaces de los seis launchers: [CLI y TUI](docs/LAUNCHER-INTERFACES.md).
 
+Interfaz de escritorio de LANIP: [GUI de LANIP](docs/LANIP-GUI.md).
+Se ejecuta con `lanip --gui` y se incluye en los instaladores de Windows de
+0.3.3. Linux conserva la distribución CLI/TUI.
+
 La integración de desarrollo con ProjectDock está documentada en
 [Gestión del repositorio con ProjectDock](repositoryTerminal/projectdock/README.md).
 La migración conserva los accesos anteriores mientras se valida su equivalencia.
@@ -13,11 +17,18 @@ La [LANCTL Reference](reference/index.html) ofrece un índice web con búsqueda,
 sintaxis, opciones y ejemplos de todos los launchers y comandos, además de
 proyectos VLF, plugins LCP y el catálogo de documentación.
 
-> Versión actual: **0.3.2-beta.4**, destinada al canal estable por decisión del
-> propietario, conservando el sufijo beta. Consulta las [notas y limitaciones](docs/RELEASE-0.3.2-beta.4.md).
+> Versión actual: **0.3.3**, canal estable. Consulta las
+> [notas y limitaciones](docs/RELEASE-0.3.3.md).
 > Conserva copias de seguridad; no utilices el programa como única fuente de inventario.
 
-### Cambios de 0.3.2-beta.4
+### Cambios de 0.3.3
+
+- GUI de escritorio de LANIP incluida en Windows, con inventario, escaneo y proyectos.
+- Sesiones y coordinación entre aplicaciones, consolas y seguimiento de registros.
+- Correcciones de seguridad de plugins, acceso remoto, SSH y autorización.
+- Correcciones de integridad de proyectos, escrituras concurrentes y monitorización.
+
+### Cambios previos de 0.3.2-beta.4
 
 - LANACCESS amplía la gestión CLI/TUI de credenciales y almacenes cifrados portables.
 - LANMON separa sus comandos y añade un visor de registros de programa y proyecto.
@@ -77,10 +88,9 @@ Los comandos de un dominio no se mezclan con los demás. `list`, `scan`,
 
 ## Estado actual
 
-El desarrollo activo se centra en CLI y TUI. La antigua GUI está congelada, no
-se empaqueta y no forma parte de los binarios publicados. Solo puede ejecutarse
-desde código con el extra `gui` y `LANCTL_ENABLE_LEGACY_GUI=1`; consulta
-[LEGACY-GUI.md](docs/LEGACY-GUI.md).
+CLI y TUI siguen siendo independientes. La GUI de LANIP se ejecuta
+con `lanip --gui` en Windows; desde código requiere el extra `gui`.
+Consulta los requisitos y límites en [LANIP-GUI.md](docs/LANIP-GUI.md).
 
 LANCTL incluye:
 
@@ -97,7 +107,7 @@ LANCTL incluye:
 
 ### Windows
 
-Instalación remota en una sola línea desde GitHub —selecciona la beta más
+Instalación remota en una sola línea desde GitHub —selecciona la versión estable más
 reciente publicada—:
 
 ```powershell
@@ -105,25 +115,25 @@ irm https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.ps1 | iex
 ```
 
 Para ejecutar remotamente el instalador conservado en la Release y fijar
-exactamente `0.3.1-beta.1` en una sola línea:
+exactamente `0.3.3` en una sola línea:
 
 ```powershell
-& ([scriptblock]::Create((irm 'https://github.com/CctrGy/LANCTL/releases/download/v0.3.1-beta.1/install.ps1'))) -Version '0.3.1-beta.1'
+& ([scriptblock]::Create((irm 'https://github.com/CctrGy/LANCTL/releases/download/v0.3.3/install.ps1'))) -Version '0.3.3'
 ```
 
-Para instalar automáticamente la beta más reciente publicada:
+Para instalar automáticamente la versión estable más reciente publicada:
 
 ```powershell
 Invoke-WebRequest https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.ps1 -OutFile install.ps1
-.\install.ps1 -Channel beta
+.\install.ps1 -Channel stable
 ```
 
-Para instalar exactamente la versión estable conservada `0.3.1-beta.1`, descarga
+Para instalar exactamente la versión estable conservada `0.3.3`, descarga
 el instalador y su suma desde esa misma Release, comprueba el script y fija la
 versión al ejecutarlo:
 
 ```powershell
-$version = '0.3.1-beta.1'
+$version = '0.3.3'
 $base = "https://github.com/CctrGy/LANCTL/releases/download/v$version"
 Invoke-WebRequest "$base/install.ps1" -OutFile install.ps1
 Invoke-WebRequest "$base/SHA256SUMS.txt" -OutFile SHA256SUMS.txt
@@ -142,30 +152,30 @@ coloca los seis ejecutables en `C:\Program Files\LANCTL` y puede añadirlos al
 
 ### Linux y Raspberry Pi OS
 
-Instalación remota en una sola línea de la beta más reciente publicada:
+Instalación remota en una sola línea de la versión estable más reciente publicada:
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh | sudo bash -s -- --channel beta
+curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh | sudo bash -s -- --channel stable
 ```
 
-Para fijar exactamente `0.3.1-beta.1` usando el script de esa Release:
+Para fijar exactamente `0.3.3` usando el script de esa Release:
 
 ```sh
-curl --proto '=https' --tlsv1.2 -fsSL https://github.com/CctrGy/LANCTL/releases/download/v0.3.1-beta.1/install.sh | sudo bash -s -- --version 0.3.1-beta.1
+curl --proto '=https' --tlsv1.2 -fsSL https://github.com/CctrGy/LANCTL/releases/download/v0.3.3/install.sh | sudo bash -s -- --version 0.3.3
 ```
 
-Para instalar automáticamente la beta más reciente publicada:
+Para instalar automáticamente la versión estable más reciente publicada:
 
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSLo install.sh \
   https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh
-sudo bash install.sh --channel beta
+sudo bash install.sh --channel stable
 ```
 
-Para instalar exactamente `0.3.1-beta.1` mediante el paquete DEB:
+Para instalar exactamente `0.3.3` mediante el paquete DEB:
 
 ```sh
-version='0.3.1-beta.1'
+version='0.3.3'
 base="https://github.com/CctrGy/LANCTL/releases/download/v${version}"
 curl --proto '=https' --tlsv1.2 -fsSLo install.sh "${base}/install.sh"
 curl --proto '=https' --tlsv1.2 -fsSLo SHA256SUMS.txt "${base}/SHA256SUMS.txt"
@@ -404,11 +414,11 @@ plan sin ejecutar). Consulta [repositoryTerminal](repositoryTerminal/README.md)
 para requisitos y ejemplos. No cambia la versión ni realiza Git/push.
 
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.2-beta.4
+.\scripts\build-windows.ps1 -Version 0.3.3
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.2-beta.4
+./scripts/build-linux.sh 0.3.3
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.

@@ -21,6 +21,11 @@ def write_log(message: str, directory: Path | None = None) -> Path:
         log_directory = application_path(configured)
     else:
         log_directory = application_path(directory)
+    from lanctl.core.session import current_session, current_task_id
+
+    session = current_session()
+    if session:
+        message = f"[session={session.id} launcher={session.launcher} mode={session.mode} task={current_task_id() or '-'}] {message}"
     return _append_daily_log(message, log_directory, now)
 
 

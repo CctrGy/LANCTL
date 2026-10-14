@@ -3,8 +3,10 @@ from __future__ import annotations
 import atexit
 import importlib.machinery
 import importlib.util
+import json
 import multiprocessing
 import os
+import queue
 import sys
 import threading
 import time
@@ -14,6 +16,91 @@ from pathlib import Path
 from types import ModuleType
 
 _RUNTIMES: set[IsolatedPluginRuntime] = set()
+_MAX_MESSAGE_BYTES = 64 * 1024
+
+
+def _send_message(connection, message) -> None:
+    payload = json.dumps(message, ensure_ascii=True, allow_nan=False).encode("utf-8")
+    if len(payload) > _MAX_MESSAGE_BYTES:
+        raise ValueError("mensaje IPC de plugin demasiado grande")
+    connection.send_bytes(payload)
+
+
+def _receive_message(connection):
+    # Nunca usar Connection.recv(): el emisor es código externo y pickle
+    # ejecuta constructores antes de que el host pueda validar el mensaje.
+    try:
+        message = json.loads(connection.recv_bytes(_MAX_MESSAGE_BYTES).decode("utf-8"))
+    except (UnicodeError, ValueError, RecursionError) as error:
+        raise ValueError("mensaje IPC de plugin no válido") from error
+    valid = False
+    if isinstance(message, list) and message:
+        kind = message[0]
+        if kind in ("BOOTED", "READY", "STOPPED"):
+            valid = len(message) == 2 and type(message[1]) is int and message[1] > 0
+        elif kind in ("ERROR", "VIOLATION"):
+            valid = len(message) == 3 and all(isinstance(x, str) for x in message[1:])
+        elif kind == "CALL":
+            valid = (
+                len(message) == 3
+                and message[1] == "log"
+                and isinstance(message[2], list)
+                and len(message[2]) == 1
+                and isinstance(message[2][0], str)
+            )
+        elif kind == "STOP":
+            valid = len(message) == 1
+    if not valid:
+        raise ValueError("contrato IPC de plugin no válido")
+    return message
+
+
+class _MessageReader:
+    """Un frame incompleto no bloquea los plazos del padre ni el watchdog."""
+
+    def __init__(self, connection):
+        self.connection = connection
+        self.messages = queue.Queue(maxsize=1)
+        self.closed = threading.Event()
+        self.pending = None
+        self.thread = threading.Thread(target=self._read, name="LANCTL plugin IPC", daemon=True)
+        self.thread.start()
+
+    def _read(self):
+        while not self.closed.is_set():
+            try:
+                item = (True, _receive_message(self.connection))
+            except (EOFError, OSError, ValueError) as error:
+                item = (False, error)
+            while not self.closed.is_set():
+                try:
+                    self.messages.put(item, timeout=0.1)
+                    break
+                except queue.Full:
+                    continue
+            if not item[0]:
+                return
+
+    def poll(self, timeout=0):
+        if self.pending is None:
+            try:
+                self.pending = self.messages.get(timeout=timeout)
+            except queue.Empty:
+                return False
+        return True
+
+    def receive(self):
+        if not self.poll():
+            raise RuntimeError("no hay un mensaje IPC completo disponible")
+        succeeded, value = self.pending
+        self.pending = None
+        if not succeeded:
+            raise value
+        return value
+
+    def close(self):
+        self.closed.set()
+        self.thread.join(1)
 
 
 class IsolatedPolicyViolation(PermissionError):
@@ -110,7 +197,7 @@ class _IsolatedApi:
         if self.remaining <= 0:
             raise RuntimeError("límite de llamadas del plugin agotado")
         self.remaining -= 1
-        self.connection.send(("CALL", method, arguments))
+        _send_message(self.connection, ("CALL", method, arguments))
 
 
 def _apply_memory_limit(megabytes: int) -> None:
@@ -162,7 +249,7 @@ def _install_security_policy(connection, plugin_root: Path) -> None:
 
     def violation(event: str, detail: object) -> None:
         with suppress(BrokenPipeError, EOFError, OSError):
-            connection.send(("VIOLATION", event, str(detail)[:512]))
+            _send_message(connection, ("VIOLATION", event, str(detail)[:512]))
         raise IsolatedPolicyViolation(f"política de plugin aislado: {event}: {detail}")
 
     def allowed_read(value: object) -> bool:
@@ -203,7 +290,7 @@ def _worker(connection, plugin_id: str, entry: str, memory_mb: int, max_calls: i
         # el presupuesto concedido al código del plugin (especialmente en
         # Windows). Este handshake permite que el padre empiece a contar el
         # timeout justo antes de cargar y activar código externo.
-        connection.send(("BOOTED", os.getpid()))
+        _send_message(connection, ("BOOTED", os.getpid()))
         module_name = "lanctl_isolated_" + plugin_id.replace(".", "_").replace("-", "_")
         loader = importlib.machinery.SourceFileLoader(module_name, entry)
         spec = importlib.util.spec_from_loader(module_name, loader)
@@ -215,23 +302,23 @@ def _worker(connection, plugin_id: str, entry: str, memory_mb: int, max_calls: i
         if not callable(activate):
             raise ValueError("main.exec debe definir activate(api)")
         activate(_IsolatedApi(connection, plugin_id, max_calls))
-        connection.send(("READY", os.getpid()))
+        _send_message(connection, ("READY", os.getpid()))
         while True:
             try:
-                command = connection.recv()
+                command = _receive_message(connection)
             except EOFError:
                 return
-            if command == "STOP":
+            if command == ["STOP"]:
                 deactivate = getattr(module, "deactivate", None)
                 if callable(deactivate):
                     deactivate()
-                connection.send(("STOPPED", os.getpid()))
+                _send_message(connection, ("STOPPED", os.getpid()))
                 return
     except Exception as error:  # noqa: BLE001 - frontera de código externo
         try:
             kind = "VIOLATION" if isinstance(error, IsolatedPolicyViolation) else "ERROR"
-            connection.send((kind, type(error).__name__, str(error)))
-        except (BrokenPipeError, EOFError, OSError):
+            _send_message(connection, (kind, type(error).__name__, str(error)[:4096]))
+        except (BrokenPipeError, EOFError, OSError, ValueError):
             return
     finally:
         connection.close()
@@ -258,9 +345,17 @@ class IsolatedPluginRuntime:
         self.audit = audit or (lambda *_args: None)
         self.process = None
         self._connection = None
+        self._reader = None
         self._job_handle = None
         self._watchdog_stop = threading.Event()
         self._watchdog_thread = None
+        self._calls = 0
+
+    def _log_call(self, message) -> None:
+        self._calls += 1
+        if self._calls > self.max_calls:
+            raise RuntimeError("límite de llamadas del plugin agotado")
+        self.audit(self.plugin_id, "ISOLATED LOG", message[2][0], "OK")
 
     def _resident_memory(self) -> int:
         if self.process is None or self.process.pid is None:
@@ -307,12 +402,18 @@ class IsolatedPluginRuntime:
         while not self._watchdog_stop.wait(0.1):
             if self.process is None or not self.process.is_alive():
                 return
-            if self._connection is not None and self._connection.poll():
+            if self._reader is not None and self._reader.poll():
                 try:
-                    message = self._connection.recv()
-                except (EOFError, OSError):
+                    message = self._reader.receive()
+                    if message[0] == "CALL":
+                        self._log_call(message)
+                    elif message[0] not in ("VIOLATION", "ERROR"):
+                        raise ValueError("mensaje IPC inesperado tras activar el plugin")
+                except (EOFError, OSError, ValueError, RuntimeError) as error:
+                    self.audit(self.plugin_id, "POLICY VIOLATION", "IPC", "BLOCKED", str(error))
+                    self.process.terminate()
                     return
-                if message[0] == "VIOLATION":
+                if message[0] in ("VIOLATION", "ERROR"):
                     self.audit(
                         self.plugin_id,
                         "POLICY VIOLATION",
@@ -322,8 +423,6 @@ class IsolatedPluginRuntime:
                     )
                     self.process.terminate()
                     return
-                if message[0] == "CALL" and message[1] == "log":
-                    self.audit(self.plugin_id, "ISOLATED LOG", str(message[2][0]), "OK")
             used = self._resident_memory() if self._job_handle is None else 0
             if self._job_handle is None and used > limit:
                 self.audit(
@@ -341,6 +440,8 @@ class IsolatedPluginRuntime:
         return self.process.pid if self.process is not None else None
 
     def start(self) -> IsolatedPluginRuntime:
+        self._calls = 0
+        self._watchdog_stop.clear()
         context = multiprocessing.get_context("spawn")
         parent, child = context.Pipe()
         process = context.Process(
@@ -351,6 +452,7 @@ class IsolatedPluginRuntime:
         )
         process.start()
         child.close()
+        reader = _MessageReader(parent)
         # El presupuesto del manifiesto limita exclusivamente la carga y la
         # activación del plugin. El bootstrap de multiprocessing es trabajo del
         # host y dispone de un margen independiente y acotado.
@@ -365,19 +467,24 @@ class IsolatedPluginRuntime:
                     if activation_deadline is None:
                         raise TimeoutError(f"timeout iniciando el proceso aislado {self.plugin_id}")
                     raise TimeoutError(f"timeout activando el plugin aislado {self.plugin_id}")
-                if parent.poll(min(0.05, remaining)):
-                    message = parent.recv()
+                if reader.poll(min(0.05, remaining)):
+                    message = reader.receive()
                     if message[0] == "BOOTED":
+                        if activation_deadline is not None or message[1] != process.pid:
+                            raise ValueError("handshake IPC de plugin no válido")
                         # Un pequeño margen cubre la entrega del mensaje de
                         # política del hijo sin convertirla erróneamente en un
                         # timeout del host bajo carga alta.
                         activation_deadline = time.monotonic() + self.timeout + 0.25
                         continue
                     if message[0] == "CALL" and message[1] == "log":
-                        self.audit(self.plugin_id, "ISOLATED LOG", str(message[2][0]), "OK")
+                        self._log_call(message)
                         continue
                     if message[0] == "READY":
+                        if activation_deadline is None or message[1] != process.pid:
+                            raise ValueError("handshake IPC de plugin no válido")
                         self.process, self._connection = process, parent
+                        self._reader = reader
                         _RUNTIMES.add(self)
                         self._watchdog_thread = threading.Thread(
                             target=self._watch_runtime,
@@ -398,13 +505,26 @@ class IsolatedPluginRuntime:
                             str(message[2]),
                         )
                         raise PermissionError(f"incumplimiento de política: {message[1]}")
+                    raise ValueError("mensaje IPC inesperado durante la activación")
                 if not process.is_alive():
                     raise RuntimeError("el proceso aislado terminó durante la activación")
         except Exception:
             process.terminate()
             process.join(2)
+            if process.is_alive():
+                process.kill()
+                process.join(2)
+            reader.close()
             parent.close()
+            self._close_job()
             raise
+
+    def _close_job(self):
+        if self._job_handle:
+            import ctypes
+
+            ctypes.windll.kernel32.CloseHandle(self._job_handle)
+            self._job_handle = None
 
     def stop(self) -> None:
         if self.process is None or self._connection is None:
@@ -416,21 +536,22 @@ class IsolatedPluginRuntime:
             self._watchdog_thread = None
         try:
             if process.is_alive():
-                connection.send("STOP")
-                if connection.poll(self.timeout):
-                    connection.recv()
-                else:
+                try:
+                    _send_message(connection, ["STOP"])
+                    if self._reader.poll(self.timeout):
+                        self._reader.receive()
+                    else:
+                        process.terminate()
+                except (EOFError, OSError, ValueError):
                     process.terminate()
             process.join(self.timeout)
             if process.is_alive():
                 process.kill()
                 process.join(2)
         finally:
+            self._reader.close()
+            self._reader = None
             connection.close()
             self.process = self._connection = None
-            if self._job_handle:
-                import ctypes
-
-                ctypes.windll.kernel32.CloseHandle(self._job_handle)
-                self._job_handle = None
+            self._close_job()
             _RUNTIMES.discard(self)

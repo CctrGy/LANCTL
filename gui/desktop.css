@@ -1,0 +1,31 @@
+/* Desktop additions retain public component IDs used by themes/plugins. */
+.topbar { gap:16px; }
+.brand { min-width:200px; }
+.commandbar { flex-wrap:wrap; gap:10px; }
+.content { grid-template-rows:auto minmax(150px,1fr) auto; }
+.inspector { grid-template-columns:minmax(150px,0.7fr) minmax(250px,1fr) minmax(320px,1.3fr) auto; max-height:32vh; overflow:auto; }
+.table-panel { grid-template-rows:auto minmax(0,1fr); }
+.table-title { min-height:48px; padding:8px 12px; }
+.commandbar select { padding:8px; background:var(--surface,#152330); color:inherit; border:1px solid #345066; border-radius:6px; }
+.search { min-width:220px; flex:1; }
+.table-scroll { overscroll-behavior:contain; }
+th[data-column] { cursor:pointer; }
+th[aria-sort] { color:#66d5dc; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid #64dce5; outline-offset:3px; }
+#scan-progress { width:min(480px,55vw); height:6px; accent-color:#63d6cf; }
+#desktop-dialog, #save-dialog { color:#e4edf5; background:#14212d; border:1px solid #426174; border-radius:12px; padding:24px; max-height:85vh; overflow:auto; width:min(680px,90vw); }
+dialog::backdrop { background:#02070cb3; }
+#desktop-fields { display:grid; gap:14px; margin:20px 0; }
+#desktop-fields label { display:grid; grid-template-columns:minmax(160px,1fr) 2fr; align-items:center; gap:16px; }
+#desktop-fields input, #desktop-fields select { width:100%; padding:10px; color:inherit; background:#0c1720; border:1px solid #40566a; border-radius:5px; box-sizing:border-box; }
+.dialog-actions { display:flex; justify-content:flex-end; gap:12px; }
+#desktop-error { color:#ffa6a6; white-space:pre-wrap; }
+#event-tray { position:fixed; bottom:28px; right:18px; z-index:8; background:#14212df2; border:1px solid #375367; border-radius:8px 8px 0 0; max-width:650px; }
+#event-tray summary { padding:6px 12px; cursor:pointer; }
+#session-events { max-height:180px; overflow:auto; padding:0 20px 10px 32px; font-size:12px; }
+#session-events li { padding:4px; }
+.busy #cancel-scan { cursor:pointer; opacity:1; }
+.remote-mode #desktop-settings, .remote-mode #device-groups, .remote-mode #scan-profile,
+.remote-mode #state-filter, .remote-mode #group-filter { display:none; }
+@media(max-width:1150px) { .brand small,.connection { display:none; } .topbar { gap:8px; } .project { min-width:0; } .project select { max-width:190px; } }
+@media(max-width:1250px) { .inspector { grid-template-columns:1fr 1fr; } .summary { flex-wrap:wrap; } }

@@ -28,6 +28,11 @@ class IDFDatabaseManager:
     def __init__(self, path: str | Path = DEFAULT_DATABASE_PATH) -> None:
         requested = Path(path)
         self.path = application_path(requested)
+        from lanctl.core.session import current_session
+
+        session = current_session()
+        if session:
+            session.resources.add(self.path.resolve())
         if self.path.suffix.casefold() != ".db":
             raise ValueError("la base de datos IDF debe usar la extensión .db")
         self._migrate_legacy_default(requested)

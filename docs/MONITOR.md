@@ -48,4 +48,33 @@ Los perfiles integrados están protegidos. Las asignaciones resueltas guardan `d
 
 El VLF no incorpora la base SQLite. Los informes portables se escriben bajo `monitoring/` renovando hashes con el mismo bloqueo de escritura que HistoryService.
 
+### Identidad, salud y significado de las métricas
+
+Las tareas conservan su identificador público, pero resuelven el target vigente
+al ejecutarse. Un redescubrimiento actualiza la IP del mismo `deviceId` y retira
+las tareas de dispositivos ausentes. Cancelar una tarea también invalida su
+ejecución en vuelo: su finalización no vuelve a introducirla en la cola.
+
+La salud se deriva del resultado vigente de cada check (incluido servicio/puerto)
+durante la ejecución del motor. Una latencia normal recupera su propio check,
+pero un éxito en otro servicio no borra un fallo pendiente. El estado de
+mantenimiento tiene precedencia. Los contadores de presencia conservan sus
+umbrales de fallo y recuperación.
+
+`packet_loss` y `availability` describen proporciones de muestras. En cambio,
+`outage_count` y las desconexiones del informe cuentan intervalos consecutivos
+de observaciones fallidas, incluida una primera observación ya fallida; no son
+el número de paquetes perdidos ni el número de incidencias del gestor. Las
+observaciones simultáneas se consideran presentes si alguna tiene éxito.
+
+`outage_duration` estima segundos entre la primera observación fallida y la
+siguiente recuperación; si no hay recuperación, termina en la última muestra
+observada. No extrapola más allá de esa muestra ni entre sesiones. Dentro de
+una sesión se supone continuidad entre observaciones, por lo que los huecos
+largos reducen la precisión de la estimación. Los intervalos solapados se unen
+y la duración se recorta a cada bucket; nunca supera su resolución. El inicio
+se cuenta solo en el bucket donde ocurrió. Solo se materializan buckets con
+muestras. Los agregados existentes se recalculan cuando aún existen sus crudos;
+los informes históricos ya guardados no se reescriben automáticamente.
+
 En Linux la ruta predeterminada respeta `XDG_STATE_HOME` o `~/.local/state/lanctl`; un servicio puede proporcionar un override hacia `/var/lib/lanctl`. En Windows portable se usa `application_path`.

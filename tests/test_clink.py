@@ -2,6 +2,7 @@ import argparse
 import unittest
 from pathlib import Path
 
+from lanctl import __version__
 from lanctl.apps.access.manager_cli import build_parser as build_access_parser
 from lanctl.apps.ip.interfaces.cli.main import build_parser
 from lanctl.apps.rack.cli import build_parser as build_rack_parser
@@ -24,7 +25,7 @@ class ClinkCompletionTests(unittest.TestCase):
             self.assertIn(f'clink.argmatcher("{executable}", "{executable}.exe")', self.script)
 
     def test_script_identifies_its_compatible_release(self):
-        self.assertIn("Compatible con LANCTL 0.3.2-beta.4", self.script)
+        self.assertIn(f"Compatible con LANCTL {__version__}", self.script)
 
     def test_suite_launcher_aliases_are_completed(self):
         for launcher in (

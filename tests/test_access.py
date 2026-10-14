@@ -262,9 +262,11 @@ class AccessTests(unittest.TestCase):
                 AuthorizationService(store),
                 runner=lambda *a, **k: calls.append((a, k)) or Completed(),
             )
-            code, output = adapter.execute(user, "lanctl list --format json")
+            code, output = adapter.execute(user, "lanctl search switch")
             self.assertEqual((code, output), (0, "inventario"))
             self.assertFalse(calls[0][1]["shell"])
+            with self.assertRaises(PermissionError):
+                adapter.execute(user, "list --format json")
             with self.assertRaises(PermissionError):
                 adapter.execute(user, "wol equipo")
             with self.assertRaises(PermissionError):
@@ -292,7 +294,7 @@ class AccessTests(unittest.TestCase):
                 raise subprocess.TimeoutExpired(["lanctl", "list"], 0.01)
 
             adapter = LanctlCommandAdapter(AuthorizationService(store), runner=timeout)
-            code, output = adapter.execute(user, "list")
+            code, output = adapter.execute(user, "search switch")
             self.assertEqual(code, 124)
             self.assertIn("agotado", output)
 

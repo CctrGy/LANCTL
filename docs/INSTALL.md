@@ -20,7 +20,7 @@ Invoke-WebRequest https://github.com/CctrGy/LANCTL/releases/download/vVERSION/in
 Invoke-WebRequest https://github.com/CctrGy/LANCTL/releases/download/vVERSION/SHA256SUMS.txt -OutFile SHA256SUMS.txt
 Get-FileHash .\install.ps1 -Algorithm SHA256
 # Comparar manualmente con la línea install.ps1 de SHA256SUMS.txt:
-.\install.ps1 -Channel beta
+.\install.ps1 -Channel stable
 ```
 
 Opciones principales: `-Channel stable|beta`, `-Version VERSION`,
@@ -36,7 +36,7 @@ Uso rápido:
 
 ```sh
 curl --proto '=https' --tlsv1.2 -fsSLo install.sh https://raw.githubusercontent.com/CctrGy/LANCTL/main/install.sh
-sudo bash install.sh --channel beta
+sudo bash install.sh --channel stable
 ```
 
 Descarga `install.sh` y su checksum por separado para el procedimiento
@@ -98,6 +98,8 @@ servicio y los listeners quedan supervisados por el backend permanente.
 
 `.github/workflows/release.yml` ejecuta tests y validaciones, genera setup y ZIP
 Windows, DEB/tarballs Linux amd64/arm64, calcula hashes sobre los artefactos
-finales y publica únicamente en builds de tag. `workflow_dispatch` construye y
+finales y publica al subir una rama `stable/VERSION` o un tag de versión.
+Desde 0.3.3 los instaladores remotos seleccionan el canal estable por defecto;
+el canal beta sigue disponible explícitamente. `workflow_dispatch` construye y
 sube artefactos de CI sin crear una Release. La firma detached es opcional y usa
 exclusivamente GitHub Secrets.

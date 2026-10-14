@@ -13,7 +13,7 @@ from lanctl.core.config import load_config, update_config
 from lanctl.core.file_transaction import atomic_write_json, locked_files
 from lanctl.core.paths import application_path
 from lanctl.core.projects.paths import resolve_project_path
-from lanctl.core.projects.vlf import inspect_project, verify_project
+from lanctl.core.projects.vlf import inspect_project, validate_project_id, verify_project
 
 
 class ProjectChangesPendingError(RuntimeError):
@@ -152,15 +152,16 @@ def prepare_project_workspace(
     source = Path(project).expanduser().resolve()
     verify_project(source)
     info = inspect_project(source)
-    project_id = str(info.get("id") or "").strip()
-    if not project_id:
-        raise ValueError("el proyecto VLF no contiene UUID")
+    project_id = validate_project_id(info.get("id"))
     content_hash = str(info.get("contentHash") or "")
-    workspace_root = (
+    workspaces_root = (
         Path(root).expanduser().resolve()
         if root is not None
         else application_path("data/lc/projects/workspaces")
-    ) / project_id
+    ).resolve()
+    workspace_root = (workspaces_root / project_id).resolve()
+    if not workspace_root.is_relative_to(workspaces_root):
+        raise ValueError("el workspace del proyecto está fuera de la raíz permitida")
     database = workspace_root / "devices.json"
     groups = workspace_root / "groups.json"
     metadata = workspace_root / "workspace.json"
@@ -186,6 +187,29 @@ def prepare_project_workspace(
         devices, group_rows = _inventory_documents(source)
         workspace_root.mkdir(parents=True, exist_ok=True)
         with locked_files((database, groups, metadata)):
+            if str(inspect_project(source).get("contentHash") or "") != content_hash:
+                raise ProjectChangesPendingError(
+                    "el archivo de proyecto cambió durante la apertura; vuelve a intentarlo"
+                )
+            # Recheck inside the lock: another launcher may have edited while
+            # the archive was being read. Discard must not erase its work.
+            dirty = workspace_files_are_dirty(database, groups, metadata)
+            if dirty:
+                from lanctl.core.session import current_session
+
+                session = current_session()
+                others = session.coordinator.sessions() if session else []
+                shared = any(
+                    item["id"] != session.id
+                    and item.get("project")
+                    and Path(item["project"]).resolve() == source
+                    for item in others
+                )
+                if not discard_changes or shared:
+                    raise ProjectChangesPendingError(
+                        "no se puede reemplazar un workspace con cambios pendientes "
+                        "mientras otra sesión utiliza el proyecto; guarda o cierra esa sesión"
+                    )
             atomic_write_json(database, devices)
             atomic_write_json(groups, group_rows)
             atomic_write_json(

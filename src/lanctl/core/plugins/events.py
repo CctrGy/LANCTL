@@ -115,6 +115,14 @@ class EventBus:
             correlation_id or str(uuid.uuid4()),
         )
         event = construct_contract(definition.contract, {"metadata": metadata, **values})
+        from lanctl.core.session import current_session
+
+        session = current_session()
+        if session:
+            # Observation across processes, never replay cancelable plugin hooks.
+            session.emit(
+                event_id, correlation=metadata.correlation_id, metadata={"version": version}
+            )
         decisions: list[HookDecision] = []
         for _, plugin_id, handler in tuple(
             self._subscriptions.get((event_id.casefold(), version), [])

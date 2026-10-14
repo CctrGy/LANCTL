@@ -9,7 +9,6 @@ import platform
 import signal
 import ssl
 import subprocess
-import sys
 from contextlib import suppress
 from dataclasses import asdict
 from pathlib import Path
@@ -311,11 +310,9 @@ def _public_session(session):
 
 
 def _lanctl_command(*arguments):
-    return (
-        [sys.executable, *arguments]
-        if getattr(sys, "frozen", False)
-        else [sys.executable, str(Path(__file__).resolve().parents[2] / "lanctl.py"), *arguments]
-    )
+    from lanctl.bootstrap.commands import ip_command
+
+    return ip_command(*arguments)
 
 
 def _start_service_process(service, protocol):

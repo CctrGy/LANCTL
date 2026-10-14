@@ -63,6 +63,7 @@ class MonitorService:
         self.session = None
         self.profile = None
         self._scheduled: set[str] = set()
+        self._check_specs = {}
         self._schedule_lock = threading.RLock()
         self._state_lock = threading.RLock()
 
@@ -73,6 +74,8 @@ class MonitorService:
         profile = self.config.profile(profile_id or "normal")
         self.profile = profile
         self.session = session
+        self._scheduled.clear()
+        self._check_specs.clear()
         self.evaluator = StateEvaluator(profile)
         self._restore_states()
         self.scheduler = MonitorScheduler(
@@ -187,6 +190,7 @@ class MonitorService:
             if suffix is not None:
                 task_id += f".{suffix}"
         with self._schedule_lock:
+            self._check_specs[task_id] = (check_id, plan.target, dict(arguments or {}))
             if task_id in self._scheduled:
                 return
             self.registry.get(check_id)
@@ -197,11 +201,19 @@ class MonitorService:
                 check_id,
                 interval,
                 timeout,
-                lambda _id, current_timeout, p=plan, c=check_id, a=arguments or {}: self._run_check(
-                    c, p.target, current_timeout, self.session, a
+                lambda _id, current_timeout, key=task_id: self._run_scheduled_check(
+                    key, current_timeout
                 ),
                 delay=delay,
             )
+
+    def _run_scheduled_check(self, task_id, timeout):
+        with self._schedule_lock:
+            specification = self._check_specs.get(task_id)
+        if specification is None:
+            return None
+        check_id, target, arguments = specification
+        return self._run_check(check_id, target, timeout, self.session, arguments)
 
     def _schedule_global(self, task_id, target, check_id, interval, timeout, handler, delay=0):
         with self._schedule_lock:
@@ -308,7 +320,15 @@ class MonitorService:
 
     def _run_discovery(self, _target, timeout):
         discovered = self.assignments.discover(self.session, timeout) or []
-        self._schedule_targets(self._plans(self.session))
+        plans = self._plans(self.session)
+        active_ids = {plan.target.device_id for plan in plans if plan.target.ip not in ("", "-")}
+        with self._schedule_lock:
+            for task_id, (_, target, _) in list(self._check_specs.items()):
+                if target.device_id not in active_ids:
+                    self.scheduler.cancel(task_id)
+                    self._scheduled.discard(task_id)
+                    del self._check_specs[task_id]
+            self._schedule_targets(plans)
         self.incidents.resolve("network", "check.error.discovery")
         self._history(
             "monitor.discovery.completed",

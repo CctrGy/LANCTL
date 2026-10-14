@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import ipaddress
 import json
 from collections.abc import Iterable, Mapping
@@ -19,6 +20,7 @@ class DeviceDatabase:
 
     def __init__(self, path: str):
         self.path = application_path(path)
+        self._revision = None
 
     def load(self) -> list[Device]:
         # Una interrupción entre la escritura de devices y groups deja un
@@ -28,9 +30,11 @@ class DeviceDatabase:
 
         recover_device_group_transaction(self.path)
         if not self.path.exists():
+            self._revision = "missing"
             return []
         try:
-            value = json.loads(self.path.read_text(encoding="utf-8"))
+            raw = self.path.read_bytes()
+            value = json.loads(raw.decode("utf-8"))
         except json.JSONDecodeError as error:
             raise ValueError(
                 "la base de datos no contiene JSON válido "
@@ -51,6 +55,7 @@ class DeviceDatabase:
                     f"cada registro de la base de datos debe tener al menos IP y MAC: {self.path}"
                 )
             devices.append(Device.from_dict(item))
+        self._revision = hashlib.sha256(raw).hexdigest()
         return devices
 
     @transactional_method
@@ -96,6 +101,13 @@ class DeviceDatabase:
             previous_index = reserved_indexes.get(reserved_role) if reserved_role else None
             if previous_index is None:
                 previous_index = mac_indexes.get(mac) if mac else None
+            if previous_index is None and mac:
+                candidate_index = ip_indexes.get(ip)
+                candidate = devices[candidate_index] if candidate_index is not None else None
+                if candidate is not None and not candidate.mac:
+                    # Promueve la identidad provisional conservando su ID,
+                    # sin fusionar dos MAC conocidas que reutilicen una IP.
+                    previous_index = candidate_index
             if previous_index is None and mac and is_private_mac(mac):
                 candidate_index = ip_indexes.get(ip)
                 candidate = devices[candidate_index] if candidate_index is not None else None
@@ -238,6 +250,7 @@ class DeviceDatabase:
         if before is None:
             before = self.load() if self.path.exists() else []
         atomic_write_json(self.path, [device.to_dict() for device in devices])
+        self._revision = hashlib.sha256(self.path.read_bytes()).hexdigest()
         self._audit_changes(before, devices)
 
     def _audit_changes(self, before: list[Device], after: list[Device]) -> None:
@@ -386,6 +399,13 @@ class DeviceDatabase:
 
     @transactional_method
     def save_devices(self, devices: list[Device]) -> None:
+        revision = (
+            hashlib.sha256(self.path.read_bytes()).hexdigest() if self.path.exists() else "missing"
+        )
+        if self._revision is not None and revision != self._revision:
+            raise RuntimeError(
+                "el inventario cambió en otra sesión; recarga antes de guardar la instantánea"
+            )
         self._write(devices)
 
     def _find(

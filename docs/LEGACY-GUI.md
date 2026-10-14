@@ -1,5 +1,10 @@
 # GUI heredada congelada
 
+> Nota: esta página describe el estado anterior. La interfaz de escritorio
+> de LANIP se desarrolla ahora en [LANIP-GUI.md](LANIP-GUI.md).
+> El puente `GuiApi` permanece por compatibilidad con clientes remotos;
+> `lanip --gui` abre el adaptador nuevo `DesktopApi` sin variable de habilitación.
+
 La GUI se conserva únicamente como referencia mientras el desarrollo se centra
 en CLI y TUI. No recibe nuevas funciones, no participa en la batería ordinaria
 de pruebas y no se incluye en los ejecutables, el ZIP portable, el instalador ni

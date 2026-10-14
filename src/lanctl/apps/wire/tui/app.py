@@ -1596,17 +1596,32 @@ class LanwireTui:
         just_fix_windows_console()
         self.stream.write(ENTER_SCREEN)
         self.stream.flush()
+        from threading import Event
+
+        from lanctl.core.session import current_session
+
+        session = current_session()
+        changed = Event()
+        previous_handler = session.handler if session else None
+        if session:
+            session.handler = lambda command: changed.set()
         try:
             self.render()
             while self.running:
                 key = read_key(0.1)
                 size_changed = self.dimensions() != self._last_size
+                if changed.is_set() and not self.view_id and self.editor_buffer is None:
+                    changed.clear()
+                    self.reload()
+                    size_changed = True
                 if key is not None:
                     self.handle_key(key)
                 if key is not None or size_changed:
                     self.render()
             return 0
         finally:
+            if session:
+                session.handler = previous_handler
             self.stream.write(LEAVE_SCREEN)
             self.stream.flush()
 

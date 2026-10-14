@@ -220,6 +220,9 @@ class GroupDatabase:
     @_transaction
     def ensure_basic(self, devices: list[Device]) -> list[Group]:
         previous_devices = self.devices.load()
+        # El argumento se conserva por compatibilidad. La instantánea del
+        # llamador puede ser anterior a una edición concurrente ya confirmada.
+        devices = [device.copy() for device in previous_devices]
         groups = self.load()
         basic = next((group for group in groups if group.name == "BASIC"), None)
         if basic is None:
@@ -330,13 +333,13 @@ class GroupDatabase:
 
     @_transaction
     def delete_device(self, selector: str) -> Device:
-        """Elimina un elemento y todas sus referencias de grupo por MAC."""
+        """Elimina solo la identidad seleccionada y sus referencias de grupo."""
         devices = self.devices.load()
         _, target = self.devices._find(selector, devices=devices)
         if target.default_alias in ("GATEWAY", "BRODCAST"):
             raise ValueError(f"el elemento reservado {target.default_alias} no se puede eliminar")
 
-        remaining = [device for device in devices if device.mac != target.mac]
+        remaining = [device for device in devices if device.device_id != target.device_id]
         if len(remaining) == len(devices):
             raise ValueError(f"no existe ningún dispositivo para: {selector}")
 

@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 
 from lanctl.core.projects.vlf import append_monitor_document
 
+from .outages import load_outages
+
 
 class ReportBuilder:
     def __init__(self, database, session_repository, incident_repository, project=None):
@@ -18,6 +20,8 @@ class ReportBuilder:
             "SELECT device_id,COUNT(*) samples,SUM(CASE WHEN presence=1 THEN 1 ELSE 0 END) online,AVG(latency_ms) latency,SUM(CASE WHEN presence=0 THEN 1 ELSE 0 END) outages FROM samples WHERE session_id=? AND check_type IN ('availability','ping','arp') GROUP BY device_id",
             (session.sessionId,),
         ).fetchall()
+        outages = load_outages(self.db, session.sessionId)
+        samples = [{**dict(row), "outages": outages.count(row["device_id"])} for row in samples]
         incidents = [asdict(x) for x in self.incidents.list() if x.sessionId == session.sessionId]
         report = {
             "schemaVersion": 1,
