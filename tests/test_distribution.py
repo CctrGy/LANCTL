@@ -325,7 +325,7 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("WINDOWS_SIGNING_CERTIFICATE_BASE64", release)
         self.assertIn("WINDOWS_SIGNING_CERTIFICATE_PASSWORD", release)
         self.assertIn("RequireSignature = $true", release)
-        self.assertIn("checksummed unsigned beta artifacts", release)
+        self.assertIn("checksummed unsigned artifacts", release)
         self.assertIn("Clean Windows install, update, demo and uninstall", release)
         self.assertIn("User data was not preserved", release)
         self.assertNotIn('landemo.exe" --output', release)

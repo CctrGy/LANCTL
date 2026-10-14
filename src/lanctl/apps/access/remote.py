@@ -4,18 +4,16 @@ import json
 import os
 import shlex
 import subprocess
-import sys
-from pathlib import Path
 from typing import ClassVar
 
 READ_COMMANDS = {
-    "list": "inventory.read",
     "search": "inventory.read",
     "ping": "inventory.read",
     "history": "history.read",
     "smb": "smb.read",
 }
 WRITE_COMMANDS = {
+    "list": "scan.run",
     "scan": "scan.run",
     "wol": "wol.send",
     "recurrent": "automation.manage",
@@ -32,6 +30,8 @@ MAX_COMMAND_LENGTH = 4096
 MAX_ARGUMENTS = 64
 MAX_OUTPUT = 1024 * 1024
 FORBIDDEN_PATH_OPTIONS = {
+    "--output",
+    "-o",
     "--assignments-store",
     "--config",
     "--database",
@@ -115,6 +115,7 @@ def parse_remote_command(command: str) -> list[str]:
                 candidate
                 for candidate in FORBIDDEN_PATH_OPTIONS
                 if option == candidate
+                or (candidate == "-o" and option.startswith("-o") and not option.startswith("--"))
                 or (option.startswith("--") and len(option) > 2 and candidate.startswith(option))
             ),
             None,
@@ -134,13 +135,9 @@ class LanctlCommandAdapter:
 
     @staticmethod
     def command(arguments: list[str]) -> list[str]:
-        if getattr(sys, "frozen", False):
-            return [sys.executable, *arguments]
-        return [
-            sys.executable,
-            str(Path(__file__).resolve().parents[2] / "lanctl.py"),
-            *arguments,
-        ]
+        from lanctl.bootstrap.commands import ip_command
+
+        return ip_command(*arguments)
 
     def execute(self, user, command: str) -> tuple[int, str]:
         arguments = parse_remote_command(command)

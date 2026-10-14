@@ -7,7 +7,8 @@ import random
 import re
 import socket
 import subprocess
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from itertools import islice
 from time import perf_counter
 
 from lanctl.apps.ip.domain.models import Device
@@ -117,7 +118,17 @@ class LanScanner:
         self.response_times_ms: dict[str, dict[str, float]] = {}
 
     def _ordered_hosts(self) -> list[ipaddress.IPv4Address]:
-        hosts = list(self.network.hosts())
+        if self.max_hosts < 1:
+            raise ValueError("max_hosts debe ser positivo")
+        if isinstance(self.network, ipaddress.IPv4Network):
+            count = self.network.num_addresses
+            if self.network.prefixlen < 31:
+                count -= 2
+            if count > self.max_hosts:
+                raise ValueError(f"la red contiene {count} hosts; usa --max-hosts para autorizarla")
+        hosts = list(islice(self.network.hosts(), self.max_hosts + 1))
+        if len(hosts) > self.max_hosts:
+            raise ValueError("la red supera --max-hosts")
         if self.scan_order == "descending":
             hosts.reverse()
         elif self.scan_order == "random":
@@ -130,6 +141,21 @@ class LanScanner:
         result = function(*args)
         return result, (perf_counter() - started) * 1000
 
+    def _bounded_futures(self, executor, jobs, pending):
+        jobs = iter(jobs)
+        while True:
+            while len(pending) < max(1, self.workers * 2):
+                try:
+                    key, function, arguments = next(jobs)
+                except StopIteration:
+                    break
+                pending[executor.submit(function, *arguments)] = key
+            if not pending:
+                return
+            completed, _ = wait(pending, return_when=FIRST_COMPLETED)
+            for future in completed:
+                yield future, pending.pop(future)
+
     def _parallel(self, function, values, phase: str, progress=None, found_key=None):
         values = list(values)
         if progress:
@@ -138,13 +164,10 @@ class LanScanner:
         executor = ThreadPoolExecutor(max_workers=self.workers)
         futures = {}
         try:
-            futures = {
-                executor.submit(function, value): index for index, value in enumerate(values)
-            }
-            for future in as_completed(futures):
+            jobs = ((index, function, (value,)) for index, value in enumerate(values))
+            for future, index in self._bounded_futures(executor, jobs, futures):
                 if progress and getattr(progress, "cancelled", lambda: False)():
                     raise InterruptedError("escaneo cancelado")
-                index = futures[future]
                 result = future.result()
                 results[index] = result
                 if progress and found_key:
@@ -182,19 +205,16 @@ class LanScanner:
         try:
             # Los trabajos se intercalan por host: ARP puede avanzar mientras
             # el ping del mismo host espera, compartiendo el mismo límite.
-            for ip in hosts:
-                if use_icmp:
-                    futures[executor.submit(self._timed, self._ping, ip)] = ("icmp", ip)
-                if use_arp:
-                    futures[executor.submit(self._timed, active_arp_mac, ip, self.timeout)] = (
-                        "arp",
-                        ip,
-                    )
+            def jobs():
+                for ip in hosts:
+                    if use_icmp:
+                        yield ("icmp", ip), self._timed, (self._ping, ip)
+                    if use_arp:
+                        yield ("arp", ip), self._timed, (active_arp_mac, ip, self.timeout)
 
-            for future in as_completed(futures):
+            for future, (method, ip) in self._bounded_futures(executor, jobs(), futures):
                 if progress and getattr(progress, "cancelled", lambda: False)():
                     raise InterruptedError("escaneo cancelado")
-                method, ip = futures[future]
                 result, elapsed_ms = future.result()
                 found = bool(result)
                 if method == "icmp" and found:

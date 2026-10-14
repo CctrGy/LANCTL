@@ -101,6 +101,13 @@ class DeviceDatabase:
             previous_index = reserved_indexes.get(reserved_role) if reserved_role else None
             if previous_index is None:
                 previous_index = mac_indexes.get(mac) if mac else None
+            if previous_index is None and mac:
+                candidate_index = ip_indexes.get(ip)
+                candidate = devices[candidate_index] if candidate_index is not None else None
+                if candidate is not None and not candidate.mac:
+                    # Promueve la identidad provisional conservando su ID,
+                    # sin fusionar dos MAC conocidas que reutilicen una IP.
+                    previous_index = candidate_index
             if previous_index is None and mac and is_private_mac(mac):
                 candidate_index = ip_indexes.get(ip)
                 candidate = devices[candidate_index] if candidate_index is not None else None

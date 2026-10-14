@@ -13,7 +13,7 @@ from lanctl.core.config import load_config, update_config
 from lanctl.core.file_transaction import atomic_write_json, locked_files
 from lanctl.core.paths import application_path
 from lanctl.core.projects.paths import resolve_project_path
-from lanctl.core.projects.vlf import inspect_project, verify_project
+from lanctl.core.projects.vlf import inspect_project, validate_project_id, verify_project
 
 
 class ProjectChangesPendingError(RuntimeError):
@@ -152,15 +152,16 @@ def prepare_project_workspace(
     source = Path(project).expanduser().resolve()
     verify_project(source)
     info = inspect_project(source)
-    project_id = str(info.get("id") or "").strip()
-    if not project_id:
-        raise ValueError("el proyecto VLF no contiene UUID")
+    project_id = validate_project_id(info.get("id"))
     content_hash = str(info.get("contentHash") or "")
-    workspace_root = (
+    workspaces_root = (
         Path(root).expanduser().resolve()
         if root is not None
         else application_path("data/lc/projects/workspaces")
-    ) / project_id
+    ).resolve()
+    workspace_root = (workspaces_root / project_id).resolve()
+    if not workspace_root.is_relative_to(workspaces_root):
+        raise ValueError("el workspace del proyecto está fuera de la raíz permitida")
     database = workspace_root / "devices.json"
     groups = workspace_root / "groups.json"
     metadata = workspace_root / "workspace.json"

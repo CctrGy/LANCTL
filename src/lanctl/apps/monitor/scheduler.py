@@ -58,6 +58,7 @@ class MonitorScheduler:
         self.rng = rng or random.Random()
         self.error_handler = error_handler
         self.queue = []
+        self.tasks = {}
         self.inflight = set()
         self.sequence = 0
         self.cancelled = False
@@ -67,6 +68,9 @@ class MonitorScheduler:
         if interval < 1 or not 0.05 <= timeout <= 120:
             raise ValueError("cadencia o timeout no válidos")
         with self.lock:
+            previous = self.tasks.get(task_id)
+            if previous is not None:
+                previous.cancelled = True
             self.sequence += 1
             task = ScheduledCheck(
                 self.clock() + max(0, delay),
@@ -78,6 +82,7 @@ class MonitorScheduler:
                 timeout,
                 handler,
             )
+            self.tasks[task_id] = task
             heapq.heappush(self.queue, task)
         return task
 
@@ -147,16 +152,17 @@ class MonitorScheduler:
         task.due = self.clock() + max(5, task.interval * factor + spread)
         with self.lock:
             self.inflight.discard(key)
-            if not self.cancelled and not task.cancelled:
+            if not self.cancelled and not task.cancelled and self.tasks.get(task.task_id) is task:
                 heapq.heappush(self.queue, task)
 
     def cancel(self, task_id=None):
         with self.lock:
             if task_id is None:
                 self.cancelled = True
-            for task in self.queue:
+            for task in list(self.tasks.values()):
                 if task_id is None or task.task_id == task_id:
                     task.cancelled = True
+                    self.tasks.pop(task.task_id, None)
 
     def close(self):
         self.cancel()

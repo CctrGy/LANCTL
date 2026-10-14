@@ -9,7 +9,7 @@ on:
       version:
         description: Version without v prefix
         required: true
-        default: 0.3.2-beta.4
+        default: 0.3.3
 
 permissions:
   contents: read
@@ -97,6 +97,8 @@ jobs:
       - run: python -m compileall -q src tests
       - run: bash -n install.sh scripts/build-linux.sh
       - run: shellcheck install.sh scripts/build-linux.sh packaging/debian/postinst packaging/debian/prerm
+      - name: Repository hygiene and secret guard
+        run: python tools/check_repository_hygiene.py
       - run: git diff --check
       - uses: actions/upload-artifact@v4
         with: {name: coverage-report, path: coverage.xml, if-no-files-found: error}
@@ -119,7 +121,7 @@ jobs:
           WINDOWS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PASSWORD }}
         run: |
           if (-not $env:WINDOWS_SIGNING_CERTIFICATE_BASE64 -or -not $env:WINDOWS_SIGNING_CERTIFICATE_PASSWORD) {
-            Write-Warning 'Authenticode secrets are unavailable; publishing checksummed unsigned beta artifacts.'
+            Write-Warning 'Authenticode secrets are unavailable; publishing checksummed unsigned artifacts.'
             exit 0
           }
           $pfx = Join-Path $env:RUNNER_TEMP 'lanctl-signing.pfx'
@@ -195,6 +197,29 @@ jobs:
       - name: Build native package
         run: |
           ./scripts/build-linux.sh "${{ needs.prepare.outputs.version }}"
+      - name: Native install, update, launchers and uninstall
+        shell: bash
+        run: |
+          version='${{ needs.prepare.outputs.version }}'
+          sandbox="$(mktemp -d -t lanctl-release-check.XXXXXXXX)"
+          trap 'rm -rf -- "$sandbox"' EXIT
+          export LANCTL_DATA_DIR="$sandbox/data"
+          export LANCTL_SECRET_DIR="$sandbox/secrets"
+          package="$PWD/dist/release/lanctl_${version}_${{ matrix.arch }}.deb"
+          for launcher in LANCTL lanip lanwire lanrack lanaccess lanmon; do
+            [[ "$(dist/"$launcher" --version)" == *" $version" ]]
+            dist/"$launcher" --help > /dev/null
+          done
+          sudo dpkg -i "$package"
+          for launcher in lanctl lanip lanwire lanrack lanaccess lanmon; do
+            [[ "$("$launcher" --version)" == *" $version" ]]
+          done
+          lanip demo --output "$sandbox/demo"
+          sudo touch /var/lib/lanctl/release-sentinel.txt
+          sudo dpkg -i "$package"
+          sudo dpkg -r lanctl
+          test -f /var/lib/lanctl/release-sentinel.txt
+          test ! -e /opt/lanctl/lanctl
       - uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}

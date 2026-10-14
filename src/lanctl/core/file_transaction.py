@@ -46,7 +46,8 @@ class InterProcessLock:
 
     def acquire(self) -> InterProcessLock:
         deadline = time.monotonic() + max(0.0, self.timeout)
-        self._local.acquire()
+        if not self._local.acquire(timeout=max(0.0, deadline - time.monotonic())):
+            raise TimeoutError(f"timeout esperando el bloqueo de datos: {self.path}")
         held = getattr(_HELD_LOCKS, "paths", None)
         if held is None:
             held = _HELD_LOCKS.paths = {}

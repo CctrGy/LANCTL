@@ -13,7 +13,8 @@ La API remota anterior conserva `GuiApi`; el escritorio utiliza `DesktopApi`.
 
 Con una instalación que incluya estos cambios: `lanip --gui` o
 `lanctl lanip --gui`. CLI y TUI siguen funcionando de forma independiente.
-No se ha modificado el número de versión ni los binarios publicados/instalados.
+Desde 0.3.3 se incluye en el Setup y ZIP portable de Windows. Las versiones
+anteriores conservan sus binarios originales.
 
 ## Funciones
 
@@ -42,7 +43,7 @@ El build Windows incluye recursos GUI y requiere el extra `[gui]`. Se mantiene
 el mismo `lanip.exe`, sin un séptimo launcher. Windows necesita WebView2 Runtime.
 Linux necesita un motor compatible de pywebview (GTK/WebKit o Qt); el empaquetado
 gráfico Linux no se ha validado en este cambio y los builds Linux publicados
-siguen siendo CLI/TUI. No se presenta como una nueva release estable.
+siguen siendo CLI/TUI en 0.3.3.
 
 La GUI no sustituye las pantallas especializadas de LANACCESS o LANWIRE. El
 formulario de configuración ofrece una selección de opciones, no todas las

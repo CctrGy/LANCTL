@@ -91,7 +91,7 @@ class PluginManifest:
             for item in value.get("depends", [])
         )
         entry = str(value.get("entryPoint", "main.exec")).replace("\\", "/")
-        if entry.startswith("/") or ".." in entry.split("/"):
+        if entry.startswith("/") or ".." in entry.split("/") or ":" in entry:
             raise ValueError("entryPoint no seguro")
         runtime = str(value.get("runtime", "isolated")).casefold()
         if runtime not in ("isolated", "trusted"):

@@ -57,6 +57,19 @@ DIRECTORIES = (
 _VLF_WRITE_LOCK = RLock()
 
 
+def validate_project_id(value: object) -> str:
+    """El UUID público nunca se interpreta como una ruta proporcionada por el VLF."""
+    if not isinstance(value, str):
+        raise ValueError("el proyecto VLF no contiene UUID válido")
+    try:
+        parsed = uuid.UUID(value)
+    except ValueError as error:
+        raise ValueError("el proyecto VLF no contiene UUID válido") from error
+    if str(parsed) != value.lower():
+        raise ValueError("el UUID del proyecto VLF debe usar el formato canónico")
+    return value
+
+
 @transactional_path_argument("output", transform=lambda value: _vlf_path(value))
 def create_project(
     output: str | Path,
@@ -88,7 +101,7 @@ def create_project(
     active = dict(config or load_config())
     now = datetime.now().astimezone().isoformat(timespec="seconds")
     identity = dict(identity or {})
-    project_id = str(identity.get("id") or uuid.uuid4())
+    project_id = validate_project_id(identity.get("id") or str(uuid.uuid4()))
     created = str(identity.get("created") or now)
     project_name = name or str(identity.get("name") or destination.stem)
 
@@ -398,6 +411,7 @@ def verify_project(path: str | Path) -> dict:
             raise ValueError("VLF incompleto; faltan: " + ", ".join(missing))
         info = _read_json_entry(archive, "project.info")
         checksum = _read_json_entry(archive, "meta/checksum")
+        validate_project_id(info.get("id"))
         if str(info.get("formatVersion")) != VLF_FORMAT_VERSION:
             raise ValueError(f"versión VLF no compatible: {info.get('formatVersion')}")
         content_hash = _hash_archive(archive, {"project.info", "meta/checksum"})

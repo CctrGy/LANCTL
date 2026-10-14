@@ -7,7 +7,6 @@ import io
 import json
 import re
 import subprocess
-import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -494,15 +493,9 @@ class GuiApi:
             device = self._database().resolve(selector)
             if not device.protocols:
                 raise ValueError("el dispositivo no tiene protocolos configurados")
-            if getattr(sys, "frozen", False):
-                command = [sys.executable, "terminal", device.device_id]
-            else:
-                command = [
-                    sys.executable,
-                    str(Path(__file__).resolve().parents[1] / "lanctl.py"),
-                    "terminal",
-                    device.device_id,
-                ]
+            from lanctl.bootstrap.commands import ip_command
+
+            command = ip_command("terminal", device.device_id)
             flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
             subprocess.Popen(command, creationflags=flags)
             return {"message": "Terminal iniciada en una ventana independiente"}

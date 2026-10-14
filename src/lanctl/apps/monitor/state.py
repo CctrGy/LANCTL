@@ -7,6 +7,7 @@ class StateEvaluator:
     def __init__(self, profile: MonitorProfile):
         self.profile = profile
         self.states = {}
+        self.check_health = {}
 
     def evaluate(self, result: CheckResult):
         state = self.states.setdefault(result.target, DeviceState(result.target))
@@ -22,14 +23,14 @@ class StateEvaluator:
                 state.consecutiveRecoveries = 0
                 if state.consecutiveFailures >= self.profile.failure_threshold:
                     state.presence = "offline"
-        elif not result.success:
-            state.health = "warning"
-        elif state.health != "maintenance":
-            state.health = "healthy"
         latency = result.latencyMs
+        health = "warning" if not result.success else "healthy"
         if latency is not None:
-            state.health = (
-                "critical" if latency >= 1000 else "warning" if latency >= 250 else state.health
-            )
+            health = "critical" if latency >= 1000 else "warning" if latency >= 250 else health
+        checks = self.check_health.setdefault(result.target, {})
+        checks[(result.checkId, result.metrics.get("service"), result.metrics.get("port"))] = health
+        if state.health != "maintenance":
+            severity = {"healthy": 0, "warning": 1, "critical": 2}
+            state.health = max(checks.values(), key=severity.__getitem__)
         state.updatedAt = now_iso()
         return state, before != (state.presence, state.health), before

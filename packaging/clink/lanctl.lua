@@ -1,5 +1,5 @@
 -- Autocompletado de LANCTL para Clink 1.3.23 o posterior.
--- Compatible con LANCTL 0.3.2-beta.4.
+-- Compatible con LANCTL 0.3.3.
 -- Desarrollo: clink installscripts <ruta>\packaging\clink
 -- Instalación: <directorio-de-instalación>\clink\lanctl.lua
 

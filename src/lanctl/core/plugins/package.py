@@ -7,8 +7,9 @@ import shutil
 import tempfile
 import zipfile
 from datetime import datetime
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
+from lanctl.core.file_transaction import locked_file
 from lanctl.core.plugins.models import PluginManifest
 
 MAX_ENTRY_SIZE = 64 * 1024 * 1024
@@ -51,7 +52,10 @@ def install_package(path: str | Path, destination_root: Path) -> tuple[PluginMan
     manifest = result["manifest"]
     destination = destination_root / manifest.plugin_id
     destination_root.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="lanctl-lcp-") as temporary:
+    with (
+        locked_file(destination),
+        tempfile.TemporaryDirectory(prefix=".lanctl-lcp-", dir=destination_root) as temporary,
+    ):
         staging = Path(temporary) / manifest.plugin_id
         staging.mkdir()
         with safe_package(path) as archive:
@@ -59,16 +63,24 @@ def install_package(path: str | Path, destination_root: Path) -> tuple[PluginMan
                 if item.is_dir():
                     continue
                 target = staging.joinpath(*PurePosixPath(item.filename).parts)
+                if not target.resolve().is_relative_to(staging.resolve()):
+                    raise ValueError(f"ruta no segura dentro del LCP: {item.filename}")
                 target.parent.mkdir(parents=True, exist_ok=True)
                 with archive.open(item) as source, target.open("wb") as output:
                     shutil.copyfileobj(source, output)
+        if directory_hash(staging, {"meta/checksum", "meta/signature"}) != result["checksum"]:
+            raise ValueError("el paquete LCP cambió durante la instalación")
         old = destination.with_name(destination.name + ".old")
-        if old.exists():
+        if old.exists() and not destination.exists():
+            old.replace(destination)
+        elif old.exists():
             shutil.rmtree(old)
         if destination.exists():
             destination.replace(old)
         try:
-            shutil.copytree(staging, destination)
+            # Staging está completo y en el mismo filesystem: no se publica
+            # una carpeta parcial si falla la extracción o falta espacio.
+            staging.replace(destination)
         except Exception:
             if old.exists() and not destination.exists():
                 old.replace(destination)
@@ -210,6 +222,8 @@ def safe_package(path: str | Path):
                 or "\\" in name
                 or ".." in pure.parts
                 or pure.is_absolute()
+                or PureWindowsPath(name).drive
+                or ":" in name
             ):
                 raise ValueError(f"ruta no segura dentro del LCP: {name}")
             folded = name.casefold()

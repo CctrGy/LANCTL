@@ -63,13 +63,28 @@ def fingerprint_key(key):
 
 
 class AuthorizationService:
-    def __init__(self, store):
+    def __init__(self, store, clock=now):
         self.store = store
+        self.clock = clock
 
     def permissions(self, user):
-        custom = self.store.load().get("roles", {})
+        document = self.store.load()
+        current = next((x for x in document["users"] if x["userId"] == user.userId), None)
+        if current is None:
+            return set()
+        current = RemoteUser(**current)
+        stamp = self.clock()
+        if (
+            not current.enabled
+            or (current.expiresAt and stamp >= aware(current.expiresAt))
+            or (current.lockedUntil and stamp < aware(current.lockedUntil))
+            or current.passwordHash != user.passwordHash
+            or current.sshKeys != user.sshKeys
+        ):
+            return set()
+        custom = document.get("roles", {})
         result = set()
-        for role in user.roles:
+        for role in current.roles:
             result.update(custom.get(role, ROLE_PERMISSIONS.get(role, set())))
         return result
 
