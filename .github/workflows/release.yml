@@ -218,7 +218,7 @@ jobs:
           sudo touch /var/lib/lanctl/release-sentinel.txt
           sudo dpkg -i "$package"
           sudo dpkg -r lanctl
-          test -f /var/lib/lanctl/release-sentinel.txt
+          sudo test -f /var/lib/lanctl/release-sentinel.txt
           test ! -e /opt/lanctl/lanctl
       - uses: actions/upload-artifact@v4
         with:
