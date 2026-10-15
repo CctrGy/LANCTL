@@ -503,8 +503,8 @@ class DeviceModelTests(unittest.TestCase):
         )
 
     def test_device_description_limit(self):
-        with self.assertRaises(ValueError):
-            Device(ip="192.168.1.20", description="x" * 43)
+        device = Device(ip="192.168.1.20", description="x" * 10000)
+        self.assertEqual(len(device.description), 10000)
 
     def test_mac_with_hyphens_is_normalized(self):
         self.assertEqual(

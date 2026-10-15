@@ -2,6 +2,8 @@
 
 Interfaces de los seis launchers: [CLI y TUI](docs/LAUNCHER-INTERFACES.md).
 
+Centro de administración GUI: `lanctl --gui`; consulta [GUI de LANCTL](docs/LANCTL-GUI.md).
+
 Interfaz de escritorio de LANIP: [GUI de LANIP](docs/LANIP-GUI.md).
 Se ejecuta con `lanip --gui` y se incluye en los instaladores de Windows de
 0.3.3. Linux conserva la distribución CLI/TUI.
@@ -474,3 +476,5 @@ archivos de documentación.
 
 Si LANCTL te resulta útil, puedes seguir y apoyar su desarrollo en
 [CctrGy Donations](https://cctrgy.github.io/donations.html).
+
+Configuración CLI completa, agrupada por programa y proyecto: [guía de ajustes](docs/CLI-SETTINGS.md).

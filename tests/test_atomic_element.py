@@ -37,10 +37,8 @@ def stores(tmp_path: Path) -> tuple[DeviceDatabase, GroupDatabase]:
 def test_chained_element_validation_is_all_or_nothing(tmp_path: Path) -> None:
     database, groups = stores(tmp_path)
 
-    with pytest.raises(ValueError, match="42 caracteres"):
-        groups.edit_device_fields(
-            "OLD", [("name", "Nuevo"), ("description", "x" * 43), ("group", "LAB")]
-        )
+    with pytest.raises(ValueError, match="IPv4"):
+        groups.edit_device_fields("OLD", [("name", "Nuevo"), ("ip", "invalid"), ("group", "LAB")])
 
     device = database.resolve("OLD")
     assert device.name == "Old name"

@@ -71,7 +71,7 @@ def main():
                 except Exception as error:
                     outcome.append(f"FAIL: {error}")
                 finally:
-                    api._closing = True
+                    # Exercises the native closing event and JS/RPC close handshake.
                     window.destroy()
 
             window.events.loaded += verify

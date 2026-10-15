@@ -5,6 +5,13 @@ Los comandos directos y `/?` siguen disponibles. No cambia el formato de los
 proyectos, credenciales ni contratos de plugins.
 
 LANIP incorpora además `--gui`: véase [interfaz de escritorio](LANIP-GUI.md).
+LANCTL incorpora `--gui` para proyectos, plugins, preferencias y terminales:
+véase [centro gráfico de LANCTL](LANCTL-GUI.md).
+
+Sin argumentos, LANCTL usa la preferencia global `startup.interface` (`cli` por
+defecto). Se configura con `lanctl settings --startup-interface cli|tui|gui`.
+Un comando o interfaz explícitos siempre tienen prioridad. La preferencia no
+cambia el arranque predeterminado de los launchers especializados.
 
 Las instancias comparten [coordinación local](COORDINATION.md): sesiones,
 proyectos independientes, tareas, eventos y órdenes de refresco dirigidas.

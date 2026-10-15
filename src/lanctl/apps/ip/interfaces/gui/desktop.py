@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import hashlib
 import io
@@ -11,7 +12,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from threading import Event
+from threading import Event, Thread
 
 from lanctl.apps.ip.interfaces.gui.main import GuiApi
 from lanctl.core.config import load_config
@@ -41,15 +42,37 @@ class DesktopProgress(ScanProgress):
 
 # Explicit allow-list: never expose arbitrary CLI execution through the WebView.
 SETTINGS = (
+    ("Inicio", "startupInterface", "Inicio de LANCTL: cli / tui / gui", "--startup-interface"),
+    ("Inicio", "closeGuiOnLaunch", "Cerrar LANCTL al abrir un launcher", "--close-gui-on-launch"),
     ("Red", "range", "Red autorizada (CIDR)", "-range"),
     ("Red", "discovery", "Detección: icmp / arp / hybrid", "--discovery"),
+    ("Red", "dhcpRange", "Rango DHCP (off: desactivado)", "--dhcp-range"),
     ("Escaneo", "scanProfile", "Perfil: fast / normal / accurate", "--scan-profile"),
     ("Escaneo", "workers", "Procesos concurrentes", "--workers"),
     ("Escaneo", "timeout", "Timeout (segundos)", "--timeout"),
     ("Escaneo", "maxHosts", "Límite de hosts", "--max-hosts"),
+    ("Escaneo", "scanOrder", "Orden de sondeo", "--scan-order"),
+    ("Escaneo", "serviceIdentification", "Identificar servicios", "--service-identification"),
+    (
+        "Retención",
+        "disconnectedRetention",
+        "Conservación de desconectados",
+        "--disconnected-retention",
+    ),
+    ("Retención", "disconnectedRetentionTarget", "Equipos afectados", "--disconnected-target"),
+    ("Retención", "disconnectedRetentionScope", "Ámbito de la regla", "--disconnected-scope"),
     ("Proyectos", "projectsDirectory", "Carpeta de proyectos (auto)", "--projects-directory"),
     ("Proyectos", "projectSaveMode", "Política de guardado", "--save-mode"),
+    (
+        "Proyectos",
+        "projectSaveIntervalMinutes",
+        "Intervalo de guardado (minutos)",
+        "--save-interval",
+    ),
     ("Logs", "errorLogLevel", "Nivel de registro (1-59)", "--error-log-level"),
+    ("Logs", "logCleanupEnabled", "Limpieza automática de registros", "--log-cleanup"),
+    ("Logs", "logRetentionDays", "Conservación de registros (días)", "--log-retention-days"),
+    ("CLI", "cliCommandChaining", "Encadenar órdenes con ;", "--cli-command-chaining"),
 )
 
 
@@ -70,7 +93,44 @@ class DesktopApi(GuiApi):
         result["active"] = self._activity.get(device.device_id, False)
         result["editableCnf"] = device.cnf
         result["editRevision"] = self._edit_revision(device)
+        result["idf"] = device.idf
+        result["realTarget"] = not (
+            "SIMULATED" in device.discovery_methods or device.protocol_options.get("simulation")
+        )
         return result
+
+    def _inventory_payload(self, query=""):
+        payload = super()._inventory_payload(query)
+        payload["groupCatalog"] = [
+            {"name": group.name, "description": group.description, "editable": group.editable}
+            for group in self._groups(load_config(), self._database()).load()
+        ]
+        return payload
+
+    @staticmethod
+    def _editable_snapshot(device):
+        return {**GuiApi._editable_snapshot(device), "ip": device.ip, "idf": device.idf}
+
+    def device_record(self, selector):
+        """Read the complete stored identity without initiating network probes."""
+
+        def operation():
+            from lanctl.core.history import redact
+
+            device = self._database().resolve(selector)
+            record = device.to_dict()
+            record.pop("credentials", None)
+            # Credential references and protocol options can contain sensitive material.
+            for key in list(record):
+                if "credential" in key.casefold():
+                    record.pop(key)
+            return {
+                "device": self._serialize(device),
+                "record": redact(record),
+                "editable": self._editable_snapshot(device),
+            }
+
+        return self._respond(operation)
 
     def _edit_revision(self, device):
         return hashlib.sha256(
@@ -88,6 +148,8 @@ class DesktopApi(GuiApi):
                 "description",
                 "cnf",
                 "icon",
+                "ip",
+                "idf",
             }:
                 raise ValueError("Campos de edición no válidos.")
             config = load_config()
@@ -144,6 +206,37 @@ class DesktopApi(GuiApi):
                 raise ValueError("Acción de grupo no válida.")
             save_active_project(SaveTrigger.CHANGE)
             return {**self._inventory_payload(), "message": "Grupo actualizado"}
+
+        return self._respond(operation)
+
+    def create_group(self, name, description=""):
+        def operation():
+            from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+
+            self._groups(load_config(), self._database()).create(str(name).strip(), description)
+            save_active_project(SaveTrigger.CHANGE)
+            return {**self._inventory_payload(), "message": f"Grupo creado: {name}"}
+
+        return self._respond(operation)
+
+    def open_cli(self):
+        def operation():
+            from lanctl.apps.suite.processes import open_system_cli
+
+            open_system_cli("lanip")
+            return {"message": "CLI de LANIP abierto en la terminal del sistema."}
+
+        return self._respond(operation)
+
+    def open_suite(self):
+        def operation():
+            from lanctl.apps.suite.processes import launcher_command, process_options
+
+            flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+            subprocess.Popen(
+                launcher_command("lanctl", "--gui"), creationflags=flags, **process_options()
+            )
+            return {"message": "GUI de LANCTL abierta."}
 
         return self._respond(operation)
 
@@ -223,13 +316,18 @@ class DesktopApi(GuiApi):
 
         return self._respond(operation)
 
-    def create_project(self, name, directory="", discard=False):
+    def create_project(self, name, directory="", discard=False, metadata=None):
         def operation():
             if workspace_is_dirty(load_config()) and discard is not True:
                 raise ValueError("Guarda los cambios pendientes antes de crear otro proyecto.")
             clean = str(name).strip()
             if not clean or len(clean) > 80 or any(c in clean for c in '/\\:<>"|?*'):
                 raise ValueError("Nombre de proyecto no válido.")
+            from lanctl.core.projects.metadata import FIELDS, validate_metadata
+
+            values = validate_metadata(
+                {key: "" for key, *_ in FIELDS} | (metadata or {}) | {"name": clean}
+            )
             destination = resolve_project_path(
                 clean + ".vlf", directory or load_config().get("projectsDirectory")
             )
@@ -245,7 +343,16 @@ class DesktopApi(GuiApi):
                     databaseLog=None,
                 )
                 result = create_project(
-                    destination, name=clean, config=config, initialize_reserved=False
+                    destination,
+                    name=clean,
+                    config=config,
+                    initialize_reserved=False,
+                    description=values["description"],
+                    author=values["author"],
+                    lan_name=values["lan"],
+                    location=values["location"],
+                    company=values["company"],
+                    responsible=values["responsible"],
                 )
             if discard is True:
                 self._discard_current()
@@ -261,10 +368,17 @@ class DesktopApi(GuiApi):
         return self._respond(operation)
 
     def open_terminal(self, selector):
-        return self.open_device(selector, "auto")
+        def operation():
+            device = self._database().resolve(selector)
+            protocol = next((p for p in ("ssh", "tr-064", "telnet") if p in device.protocols), None)
+            if protocol is None:
+                raise ValueError("El equipo no dispone de un protocolo de terminal.")
+            return self.open_device(selector, protocol)
+
+        return self._respond(operation)
 
     def open_device(self, selector, protocol="auto", port=None):
-        def operation():
+        def operation(protocol=protocol):
             from lanctl.apps.ip.domain.discovery import require_real_target
             from lanctl.apps.ip.interfaces.cli.commands.open import OPEN_PROTOCOLS
 
@@ -274,6 +388,28 @@ class DesktopApi(GuiApi):
                 raise ValueError("El dispositivo no dispone de un acceso válido.")
             if port is not None and not 1 <= int(port) <= 65535:
                 raise ValueError("El puerto debe estar entre 1 y 65535.")
+            if protocol == "auto":
+                from lanctl.apps.ip.interfaces.cli.commands.open import _automatic_protocol
+
+                protocol = _automatic_protocol(device)
+            if protocol not in OPEN_PROTOCOLS:
+                raise ValueError("El servicio detectado no dispone de un cliente de acceso.")
+            if protocol in {"http", "https", "ftp", "smb", "rdp", "rtsp", "radmin"}:
+                from lanctl.apps.ip.interfaces.cli.commands.open import run_open
+
+                config = load_config()
+                run_open(
+                    argparse.Namespace(
+                        selector=device.device_id,
+                        protocol=protocol,
+                        port=port,
+                        path="",
+                        dry_run=False,
+                        database=config["database"],
+                        store=config["credentials"],
+                    )
+                )
+                return {"message": "Acceso abierto directamente en su aplicación"}
             if getattr(sys, "frozen", False):
                 command = [
                     str(
@@ -329,11 +465,32 @@ class DesktopApi(GuiApi):
 
     def get_settings(self):
         def operation():
+            from lanctl.apps.ip.interfaces.cli.main import build_parser
+
             config = load_config()
+            parser = build_parser()._subparsers._group_actions[0].choices["settings"]
+            choices = {
+                option: action.choices
+                for action in parser._actions
+                for option in action.option_strings
+                if action.choices
+            }
             return {
                 "fields": [
-                    {"section": section, "key": key, "label": label, "value": config.get(key)}
-                    for section, key, label, _ in SETTINGS
+                    {
+                        "section": section,
+                        "key": key,
+                        "label": label,
+                        "value": ("on" if config[key] else "off")
+                        if type(config.get(key)) is bool
+                        else (
+                            config.get(key)
+                            if config.get(key) is not None
+                            else ("off" if key == "dhcpRange" else "")
+                        ),
+                        "choices": list(choices[option]) if option in choices else None,
+                    }
+                    for section, key, label, option in SETTINGS
                 ]
             }
 
@@ -394,20 +551,26 @@ def run_gui():
         "LANIP · Inventario de red",
         bundled_path("gui/index.html").as_uri(),
         js_api=api,
-        width=1440,
-        height=900,
+        width=1280,
+        height=800,
         min_size=(960, 640),
         background_color="#101820",
     )
     api.attach_window(window)
+    loaded = Event()
+    window.events.loaded += loaded.set
 
     def closing():
-        if api._closing:
+        if api._closing or not loaded.is_set():
             return True
-        window.evaluate_js("desktopClose()")
+        # evaluate_js waits for WebView dispatch: never call it on the native close thread.
+        Thread(target=lambda: window.evaluate_js("desktopClose()"), daemon=True).start()
         return False
 
     window.events.closing += closing
+    from lanctl.apps.suite.window_style import apply_dark_caption
+
+    window.events.shown += lambda: apply_dark_caption(window)
     from lanctl.apps.access.root_control import RootInterfaceAgent
 
     def remote_action(command):
@@ -417,7 +580,8 @@ def run_gui():
             window.restore()
             window.show()
 
-    agent = RootInterfaceAgent("gui", remote_action).start()
+    agent = RootInterfaceAgent("gui", remote_action)
+    window.events.loaded += agent.start
     try:
         webview.start(debug=False)
     finally:

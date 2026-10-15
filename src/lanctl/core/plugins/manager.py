@@ -446,6 +446,7 @@ class PluginManager:
             return
         if plugin.manifest.runtime == "isolated":
             from lanctl.core.plugins.isolated_runtime import IsolatedPluginRuntime
+            from lanctl.core.plugins.settings import PluginSettings
 
             limits = plugin.manifest.raw.get("limits", {})
             plugin.isolated_runtime = IsolatedPluginRuntime(
@@ -455,6 +456,7 @@ class PluginManager:
                 memory_mb=int(limits.get("memoryMb", 128)),
                 max_calls=int(limits.get("maxCalls", 1000)),
                 audit=self.audit,
+                settings=PluginSettings(plugin).load(),
             ).start()
             self.audit(
                 plugin.manifest.plugin_id,

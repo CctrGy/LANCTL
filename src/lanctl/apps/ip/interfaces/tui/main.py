@@ -698,6 +698,10 @@ class LanctlTui:
         body_rows = max(1, min(geometry.modal_height, maximum_height) - 7)
         content_width = max(24, min(geometry.modal_width, maximum_width) - 6)
         page = self._modal_page(modal, content_width=content_width)
+        if modal.kind in {"project_create", "project_edit"}:
+            selected_row = next((index for index, row in enumerate(page) if row.startswith("◆")), 0)
+            if selected_row < modal.scroll or selected_row >= modal.scroll + max(1, body_rows - 1):
+                modal.scroll = max(0, selected_row - max(0, body_rows - 2))
         maximum = max(0, len(page) - body_rows)
         modal.scroll = max(0, min(modal.scroll, maximum))
         visible = page[modal.scroll : modal.scroll + body_rows]
@@ -729,8 +733,8 @@ class LanctlTui:
                 description_width=max(24, available - 4),
                 table_width=available,
             )
-        if modal.kind == "project_create":
-            return self._project_create_page(modal)
+        if modal.kind in {"project_create", "project_edit"}:
+            return self._project_create_page(modal, content_width or 100)
         if modal.kind == "info" and modal.tabs[modal.tab_index] != "Puertos":
             available = content_width or 88
             return [
@@ -909,6 +913,22 @@ class LanctlTui:
                 "--list-fields",
                 "separadas por comas",
                 "Define qué columnas aparecen en la lista normal y en el inventario del TUI, respetando el orden indicado.",
+            ),
+            (
+                "GENERAL",
+                "startupInterface",
+                "Interfaz inicial LANCTL",
+                "--startup-interface",
+                "cli | tui | gui",
+                "Interfaz preferida al iniciar LANCTL sin argumentos.",
+            ),
+            (
+                "GENERAL",
+                "closeGuiOnLaunch",
+                "Cerrar GUI al abrir launcher",
+                "--close-gui-on-launch",
+                "on | off",
+                "Cierra LANCTL después de confirmar que la otra GUI está disponible.",
             ),
             (
                 "APARIENCIA",
@@ -1405,6 +1425,8 @@ class LanctlTui:
         from lanctl.core.projects.save_policy import available_save_modes
 
         choices = {
+            "startupInterface": ("cli", "tui", "gui"),
+            "closeGuiOnLaunch": ("on", "off"),
             "discovery": ("icmp", "arp", "hybrid"),
             "scanProfile": ("fast", "normal", "accurate"),
             "scanOrder": ("ascending", "descending", "random"),
@@ -2119,7 +2141,9 @@ class LanctlTui:
             self.messages = ["Ping completado." if result == 0 else "El elemento no ha respondido."]
 
     def _set_command_output(self, output: str, result: int) -> None:
-        self.messages = _clean_tui_output(output) if output else [f"Código de salida: {result}"]
+        self.messages = (
+            _clean_tui_output(output)[-2000:] if output else [f"Código de salida: {result}"]
+        )
         self.output_selectable = _selectable_output_indexes(self.messages)
         self.output_focus = bool(self.output_selectable)
         self.output_index = 0
@@ -2166,6 +2190,7 @@ class LanctlTui:
             self.command_history = []
         if not self.command_history or self.command_history[-1] != raw:
             self.command_history.append(raw)
+            del self.command_history[:-500]
         if getattr(self, "pending_confirmation", None) is not None:
             answer = raw.casefold()
             if answer in ("s", "si", "sí", "y", "yes"):
@@ -2440,17 +2465,29 @@ class LanctlTui:
         self.messages = ["Consola preparada."]
 
     def handle_key(self, key: str) -> None:
+        save_requested = self._action_for_key(key) == "save"
         if getattr(self, "scanning", False) and key == "ESC" and not self.modal:
             self.cancel_refresh()
             return
         if getattr(self, "modal", None):
+            if self.modal.kind == "settings" and key == "CTRL_S":
+                self._save_settings(self.modal)
+                return
+            if self.modal.kind in {"project_create", "project_edit"} and key == "CTRL_S":
+                self._submit_project_form(self.modal)
+                return
             # Settings conserva su guardado específico. En los demás overlays,
             # Ctrl+S sigue siendo el guardado manual global del proyecto.
-            if key == "CTRL_S" and self.modal.kind not in {
+            if save_requested and self.modal.kind not in {
                 "settings",
                 "remote_users",
                 "project_close",
+                "project_create",
+                "project_edit",
             }:
+                if self.modal.kind == "info" and self.modal.editing:
+                    self.modal.footer = "Tab aplica el campo antes de guardar el proyecto"
+                    return
                 active_modal = self.modal
                 self._manual_save()
                 if self.modal is active_modal:
@@ -2460,6 +2497,9 @@ class LanctlTui:
                     active_modal.footer = f"{confirmation} · Esc cerrar"
                 return
             self._handle_modal_key(key)
+            return
+        if save_requested:
+            self._manual_save()
             return
         if self.detail_lines:
             if key == "UP":
@@ -2681,7 +2721,7 @@ class LanctlTui:
         if modal.kind == "project_switch":
             self._handle_project_switch_key(modal, key)
             return
-        if modal.kind == "project_create":
+        if modal.kind in {"project_create", "project_edit"}:
             self._handle_project_create_key(modal, key)
             return
         if modal.kind == "info":
@@ -2723,6 +2763,8 @@ class LanctlTui:
             self._request_project_activation(path)
         elif modal.kind == "projects" and key == "CTRL_N":
             self._create_project_from_manager()
+        elif modal.kind == "projects" and key == "CTRL_E" and modal.items:
+            self._edit_project_from_manager(modal.items[modal.selected].path)
         elif modal.kind == "projects" and key == "DELETE" and modal.items:
             self._delete_project_from_manager(modal.items[modal.selected])
         elif key == "CTRL_R":
@@ -2868,6 +2910,13 @@ class LanctlTui:
                 "PROJECT",
             ),
         ]
+        from lanctl.core.projects.metadata import FIELDS
+
+        fields.extend(
+            SettingField(key, label, "", "", "", "Dato descriptivo opcional.", "PROJECT")
+            for key, label, *_ in FIELDS
+            if key not in {"name", "description"}
+        )
         self._open_modal(
             ModalState(
                 kind="project_create",
@@ -2877,32 +2926,43 @@ class LanctlTui:
                 items=fields,
                 editing=True,
                 editor_fresh=True,
-                footer="escribir editar  Enter siguiente/crear  ↑/↓ campo  Esc cancelar",
+                footer="escribir editar  Ctrl+S crear  Enter siguiente/crear  ↑/↓ campo  Esc cancelar",
                 max_width=120,
             )
         )
 
     @staticmethod
-    def _project_create_page(modal: ModalState) -> list[str]:
-        rows = [
-            "  CAMPO                      VALOR",
-            "  ─────────────────────────  ─────────────────────────────────────────────────────────────",
-        ]
+    def _project_create_page(modal: ModalState, width=100) -> list[str]:
+        compact = width < 54
+        rows = ["  CAMPO / VALOR" if compact else "  CAMPO                      VALOR", "─" * width]
         for index, field in enumerate(modal.items):
-            marker = "▶" if index == modal.selected else " "
+            marker = "◆" if index == modal.selected else " "
+            changed = "*" if field.value != field.original else " "
             placeholder = {
                 "name": "(escribe un nombre)",
                 "path": "(indica una ruta)",
             }.get(field.key, "(opcional)")
-            rows.append(f"{marker} {field.label:<25} {fit_text(field.value or placeholder, 62)}")
+            if compact:
+                rows.extend(
+                    (f"{marker}{changed} {field.label}", f"   {field.value or placeholder}")
+                )
+            else:
+                rows.append(f"{marker}{changed} {field.label:<25} {field.value or placeholder}")
         selected = modal.items[modal.selected]
         rows.extend(("", "  DESCRIPCIÓN", f"  {selected.description}"))
-        return rows
+        return [fit_text(row, width) for row in rows]
 
     def _handle_project_create_key(self, modal: ModalState, key: str) -> None:
         if key == "ESC":
+            if any(
+                field.value != field.original for field in modal.items
+            ) and not modal.tab_selections.get(-2):
+                modal.tab_selections[-2] = 1
+                modal.footer = "Cambios sin guardar · Esc otra vez para descartar · cualquier otra tecla para continuar"
+                return
             self.show_project_manager()
             return
+        modal.tab_selections.pop(-2, None)
         if key in ("UP", "DOWN", "TAB", "SHIFT_TAB"):
             backwards = key in ("UP", "SHIFT_TAB")
             modal.selected = (modal.selected + (-1 if backwards else 1)) % len(modal.items)
@@ -2914,7 +2974,7 @@ class LanctlTui:
                 modal.selected += 1
                 modal.editor_fresh = True
             else:
-                self._submit_project_creation(modal)
+                self._submit_project_form(modal)
             return
         if key == "BACKSPACE":
             field.value = field.value[:-1]
@@ -2925,6 +2985,73 @@ class LanctlTui:
         elif len(key) == 1 and key.isprintable():
             field.value = key if modal.editor_fresh else field.value + key
             modal.editor_fresh = False
+
+    def _edit_project_from_manager(self, path) -> None:
+        from lanctl.core.projects.metadata import FIELDS, read_metadata
+
+        try:
+            data = read_metadata(path)
+            fields = [
+                SettingField(
+                    key,
+                    label,
+                    "",
+                    data["values"][key],
+                    data["values"][key],
+                    "Dato descriptivo del proyecto.",
+                    "PROJECT",
+                )
+                for key, label, *_ in FIELDS
+            ]
+            self._open_modal(
+                ModalState(
+                    kind="project_edit",
+                    title="PROJECT MANAGER / EDITAR PROYECTO",
+                    tabs=["Datos"],
+                    pages=[[]],
+                    items=fields,
+                    editing=True,
+                    editor_fresh=True,
+                    edit_snapshot=json.dumps({"path": str(path), "revision": data["revision"]}),
+                    footer="escribir editar  Ctrl+S guardar  Enter siguiente/guardar  ↑/↓ campo  Esc cancelar",
+                    max_width=120,
+                )
+            )
+        except (OSError, ValueError, sqlite3.DatabaseError) as error:
+            self._project_metadata_error(error)
+
+    def _project_metadata_error(self, error) -> None:
+        from lanctl.core.errors import errors
+
+        errors.from_exception(
+            error,
+            origin="LANCTL.TUI.ProjectManager.Metadata",
+            code="PROJECT.MANAGER.METADATA_FAILED",
+            level=34,
+            print_output=False,
+        )
+        self.messages = [f"No se pudieron editar los metadatos: {error}"]
+        if self.modal:
+            self.modal.footer = str(error)
+
+    def _submit_project_form(self, modal: ModalState) -> None:
+        if modal.kind == "project_create":
+            self._submit_project_creation(modal)
+            return
+        from lanctl.core.projects.metadata import update_metadata
+
+        try:
+            snapshot = json.loads(modal.edit_snapshot)
+            update_metadata(
+                snapshot["path"],
+                {field.key: field.value for field in modal.items},
+                snapshot["revision"],
+            )
+            self.reload()
+            self.show_project_manager()
+            self.messages = ["Metadatos del proyecto guardados."]
+        except (OSError, ValueError, sqlite3.DatabaseError) as error:
+            self._project_metadata_error(error)
 
     def _submit_project_creation(self, modal: ModalState) -> None:
         from lanctl.core.projects.catalog import ProjectCatalog
@@ -2950,6 +3077,9 @@ class LanctlTui:
         description = values["description"]
         destination = directory / (name if name.casefold().endswith(".vlf") else f"{name}.vlf")
         try:
+            from lanctl.core.projects.metadata import FIELDS, validate_metadata
+
+            validate_metadata({key: values.get(key, "") for key, *_ in FIELDS})
             destination.parent.mkdir(parents=True, exist_ok=True)
             # No heredar el inventario ni los grupos del proyecto activo.
             with tempfile.TemporaryDirectory(prefix="lanctl-project-create-") as temporary:
@@ -2960,6 +3090,11 @@ class LanctlTui:
                     destination,
                     name=Path(name).stem,
                     description=description,
+                    author=values.get("author", ""),
+                    lan_name=values.get("lan", ""),
+                    location=values.get("location", ""),
+                    company=values.get("company", ""),
+                    responsible=values.get("responsible", ""),
                     config=empty_config,
                     initialize_reserved=False,
                 )

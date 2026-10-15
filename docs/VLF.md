@@ -134,3 +134,13 @@ VLF 1.0 admite de forma aditiva `logs/events/YYYY-MM-DD.jsonl`, con un objeto
 `meta/checksum`; `project update` preserva el directorio completo. Las líneas
 corruptas o truncadas se omiten en lectura normal y producen error en modo
 estricto. `logs/dd-mm-yyyy.log` permanece disponible para auditoría legacy.
+
+### Preferencias explícitas del proyecto
+
+El editor `lanctl settings --scope project` conserva las preferencias de red
+editadas en `lan/settings.override.json`, un documento opcional con
+`schemaVersion: 1` y un objeto `network`. Sus campos corresponden a
+`lan/network.config`; `network`, `netmask` y `prefixLength` se derivan de `cidr`.
+El guardado conserva este documento y aplica sus valores sobre los valores
+generados. Forma parte del cálculo de hashes del VLF. La activación carga las
+preferencias explícitas sin reemplazar el inventario del espacio de trabajo.

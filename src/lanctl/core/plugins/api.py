@@ -16,6 +16,13 @@ class PluginApi:
             raise PermissionError(f"{self.plugin_id} no tiene el permiso {permission}")
 
     @property
+    def settings(self) -> dict:
+        """Read only this plugin's validated, non-secret preferences."""
+        from lanctl.core.plugins.settings import PluginSettings
+
+        return PluginSettings(self._manager.get(self.plugin_id)).load()
+
+    @property
     def events(self):
         return _PluginEvents(self)
 

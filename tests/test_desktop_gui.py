@@ -6,6 +6,137 @@ from lanctl.apps.ip.interfaces.gui.desktop import DesktopApi, DesktopProgress
 MODULE = "lanctl.apps.ip.interfaces.gui.desktop"
 
 
+def test_long_device_description_roundtrips_through_edit_and_reload(tmp_path):
+    from lanctl.apps.ip.domain.models import Device
+    from lanctl.core.database import DeviceDatabase
+    from lanctl.core.group_database import GroupDatabase
+
+    instance = api()
+    database = DeviceDatabase(str(tmp_path / "devices.json"))
+    device = Device(ip="192.0.2.10", mac="02:00:00:00:00:10", description="a" * 10000)
+    database.save_devices([device])
+    groups = GroupDatabase(str(tmp_path / "groups.json"), database)
+    with (
+        patch.object(instance, "_database", return_value=database),
+        patch.object(instance, "_groups", return_value=groups),
+        patch("lanctl.core.projects.save_policy.save_active_project"),
+    ):
+        result = instance.update_device(device.device_id, {"description": "Detalle\n" * 2000})
+    assert result["ok"], result
+    assert database.resolve(device.device_id).description == ("Detalle\n" * 2000).strip()
+
+
+def test_open_lanctl_gui_does_not_use_shell():
+    with (
+        patch("lanctl.apps.suite.processes.launcher_command", return_value=["lanctl", "--gui"]),
+        patch("lanctl.apps.suite.processes.process_options", return_value={}),
+        patch(f"{MODULE}.subprocess.Popen") as process,
+    ):
+        assert api().open_suite()["ok"]
+    assert process.call_args.args[0] == ["lanctl", "--gui"]
+    assert "shell" not in process.call_args.kwargs
+
+
+def test_create_group_with_description_and_invalid_description_is_atomic(tmp_path):
+    from lanctl.core.database import DeviceDatabase
+    from lanctl.core.group_database import GroupDatabase
+
+    instance = api()
+    devices = DeviceDatabase(str(tmp_path / "devices.json"))
+    groups = GroupDatabase(str(tmp_path / "groups.json"), devices)
+    with (
+        patch.object(instance, "_database", return_value=devices),
+        patch.object(instance, "_groups", return_value=groups),
+        patch("lanctl.core.projects.save_policy.save_active_project"),
+    ):
+        result = instance.create_group("oficina", "Equipos de oficina")
+        assert result["ok"], result
+        assert any(group["name"] == "OFICINA" for group in result["groupCatalog"])
+        assert (
+            next(group for group in groups.load() if group.name == "OFICINA").description
+            == "Equipos de oficina"
+        )
+        assert not instance.create_group("otro", "x" * 43)["ok"]
+        assert "OTRO" not in [group.name for group in groups.load()]
+
+
+def test_lanip_cli_button_opens_lanip_not_suite():
+    with patch("lanctl.apps.suite.processes.open_system_cli") as launch:
+        assert api().open_cli()["ok"]
+    launch.assert_called_once_with("lanip")
+
+
+def test_settings_include_scan_retention_projects_and_logging_options():
+    fields = api().get_settings()["fields"]
+    by_key = {field["key"]: field for field in fields}
+    assert {
+        "scanOrder",
+        "dhcpRange",
+        "disconnectedRetention",
+        "serviceIdentification",
+        "projectSaveIntervalMinutes",
+        "logRetentionDays",
+    } <= by_key.keys()
+    assert by_key["serviceIdentification"]["choices"] == ["on", "off"]
+
+
+def test_complete_device_record_is_passive_and_redacts_secrets(tmp_path):
+    from lanctl.apps.ip.domain.models import Device
+    from lanctl.core.database import DeviceDatabase
+
+    instance = api()
+    database = DeviceDatabase(str(tmp_path / "devices.json"))
+    device = Device.from_dict(
+        {
+            "IP": "192.0.2.1",
+            "MAC": "02:00:00:00:00:01",
+            "NAME": "Router",
+            "previousIPs": ["192.0.2.20"],
+            "discoveryMethods": ["ARP"],
+            "credentials": {"http": "private-reference"},
+            "protocolOptions": {"http": {"password": "private-password", "port": 8080}},
+        }
+    )
+    database.save_devices([device])
+    with (
+        patch.object(instance, "_database", return_value=database),
+        patch.object(instance, "_diagnose") as diagnose,
+    ):
+        result = instance.device_record(device.device_id)
+    assert result["ok"]
+    assert result["record"]["previousIPs"] == ["192.0.2.20"]
+    assert "private-reference" not in str(result)
+    assert "private-password" not in str(result)
+    diagnose.assert_not_called()
+
+
+def test_web_service_opens_directly_without_a_console(tmp_path):
+    from lanctl.apps.ip.domain.models import Device
+    from lanctl.core.database import DeviceDatabase
+
+    instance = api()
+    database = DeviceDatabase(str(tmp_path / "devices.json"))
+    device = Device.from_dict(
+        {"IP": "192.0.2.1", "MAC": "02:00:00:00:00:01", "protocols": ["https"]}
+    )
+    database.save_devices([device])
+    with (
+        patch.object(instance, "_database", return_value=database),
+        patch(
+            f"{MODULE}.load_config",
+            return_value={"database": str(database.path), "credentials": "store"},
+        ),
+        patch(
+            "lanctl.apps.ip.interfaces.cli.commands.open.run_open", return_value=0
+        ) as open_target,
+        patch(f"{MODULE}.subprocess.Popen") as process,
+    ):
+        assert instance.open_service(device.device_id, "https", 8443)["ok"]
+    assert open_target.call_args.args[0].port == 8443
+    assert open_target.call_args.args[0].protocol == "https"
+    process.assert_not_called()
+
+
 def api():
     with patch("lanctl.apps.ip.interfaces.gui.main.local_ipv4", return_value="127.0.0.1"):
         return DesktopApi()

@@ -103,6 +103,12 @@ local open = clink.argmatcher()
 
 local settings = clink.argmatcher()
     :addflags({
+        "--startup-interface" .. values({ "cli", "tui", "gui" }),
+        "--close-gui-on-launch" .. on_off,
+        "--menu", "--catalog", "--get" .. history_value("Ruta de ajuste"),
+        "--set" .. history_value("Ruta y valor"),
+        "--scope" .. values({ "program", "project" }),
+        "--category" .. history_value("Categoría"),
         "-h", "--help", "/?",
         "-range" .. history_value("Red CIDR"),
         "-list-fields" .. history_value("Columnas"), "--list-fields" .. history_value("Columnas"),
@@ -643,7 +649,7 @@ end
 
 clink.argmatcher("lanctl", "lanctl.exe", "LANCTL.exe")
     :addarg(suite_commands)
-    :addflags({
+    :addflags({ "--gui",
         "-h", "--help", "/?", "--version", "--cli", "-cli", "-tui", "--tui", "--admin"
     })
     :nofiles()

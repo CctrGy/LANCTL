@@ -6,7 +6,7 @@ No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.
 ## `LANCTL`
 
 ```text
-Usage: LANCTL [-h] [--version] [--cli | -tui] [--admin] LAUNCHER ...
+Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [--admin] LAUNCHER ...
 
 Orquestador raíz de las aplicaciones de la suite LANCTL.
 
@@ -28,6 +28,7 @@ Options:
   --version           Muestra la versión común de la suite y termina.
   --cli, -cli         Abre la consola principal.
   -tui, --tui         Abre el TUI principal.
+  --gui               Abre el centro gráfico de LANCTL.
   --admin             Solicita UAC explícitamente para un launcher instalado en Windows.
 ```
 
@@ -257,7 +258,8 @@ Options:
 ## `LANIP settings`
 
 ```text
-Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]
+Usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]
+                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]
                       [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]
                       [--scan-profile {fast,normal,accurate}] [--progress {on,off}]
                       [--service-identification {on,off}]
@@ -277,9 +279,16 @@ Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp
                       [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]
                       [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]
                       [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]
+                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]
+                      [--scope {program,project}] [--category CATEGORY]
 
 Options:
   -h, --help                  Show this help and exit.
+  --startup-interface {cli,tui,gui}
+                              Interfaz preferida al abrir LANCTL sin argumentos.
+  --close-gui-on-launch {on,off}
+                              Cierra la GUI principal cuando el launcher solicitado esté
+                              disponible.
   -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.
   -list-fields CAMPO [CAMPO ...], --list-fields CAMPO [CAMPO ...], -list CAMPO [CAMPO ...]
                               Columnas mostradas por list, separadas por espacios o comas.
@@ -352,6 +361,12 @@ Options:
   --tui-footer-button ACCIÓN=on|off
                               Muestra u oculta una acción concreta de la barra inferior. Puede
                               repetirse.
+  --menu                      Editor interactivo por categorías de programa y proyecto.
+  --catalog                   Lista todos los ajustes por categorías, con valor y estado editable.
+  --get RUTA                  Consulta un ajuste por su ruta, por ejemplo ip.workers.
+  --set RUTA VALOR            Modifica un ajuste; listas y booleanos usan JSON.
+  --scope {program,project}   Ámbito de configuración (predeterminado: program).
+  --category CATEGORY         Filtra el catálogo por categoría, por ejemplo network o monitor.
 ```
 
 ## `LANIP call`
@@ -885,7 +900,7 @@ Options:
   -alias NEW_ALIAS, --alias NEW_ALIAS
                               Asigna ALIAS al elemento indicado.
   -description NEW_DESCRIPTION, --description NEW_DESCRIPTION
-                              Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).
+                              Asigna DESCRIPTION al elemento indicado.
   -cnf NEW_CNF, --cnf NEW_CNF
                               Asigna el estado CNF.
   -idf NEW_IDF, --idf NEW_IDF

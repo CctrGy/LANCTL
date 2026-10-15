@@ -101,6 +101,7 @@ DOCUMENT_DEFAULTS = {
         "promptSaveOnCommandExit": False,
         "commandChaining": True,
     },
+    "startup": {"interface": "cli", "closeGuiOnLaunch": False},
     "network": {
         "range": None,
         "dhcpRange": None,
@@ -209,6 +210,9 @@ DOCUMENT_DEFAULTS = {
         "profile": "normal",
         "mode": "permanent",
         "authority": "observe",
+        "interface": "",
+        "cidr": "",
+        "duration": None,
         "execution": {
             "workers": 32,
             "timeout": 0.8,
@@ -258,6 +262,8 @@ DEFAULTS = {
     "languagesDirectory": "data/lc/languages",
     "cliPromptSaveOnCommandExit": False,
     "cliCommandChaining": True,
+    "startupInterface": "cli",
+    "closeGuiOnLaunch": False,
     "iconsDirectory": "data/lc/icons",
     "logCleanupEnabled": False,
     "logRetentionDays": 90,
@@ -364,6 +370,8 @@ _LEGACY_PATHS = {
     "languagesDirectory": ("localization", "languagesDirectory"),
     "cliPromptSaveOnCommandExit": ("cli", "promptSaveOnCommandExit"),
     "cliCommandChaining": ("cli", "commandChaining"),
+    "startupInterface": ("startup", "interface"),
+    "closeGuiOnLaunch": ("startup", "closeGuiOnLaunch"),
     "range": ("network", "range"),
     "dhcpRange": ("network", "dhcpRange"),
     "tr064Port": ("network", "tr064Port"),
@@ -458,6 +466,9 @@ def _legacy_monitor(document: dict) -> dict:
         "profile": monitor["profile"],
         "mode": monitor["mode"],
         "authority": monitor["authority"],
+        "interface": monitor.get("interface", ""),
+        "cidr": monitor.get("cidr", ""),
+        "duration": monitor.get("duration"),
         **deepcopy(monitor["execution"]),
         "intervals": deepcopy(monitor["intervals"]),
         "retention": deepcopy(monitor["retention"]),
@@ -491,7 +502,7 @@ def _legacy_to_document(config: dict) -> dict:
                 document["wol"][key] = deepcopy(value)
     if isinstance(config.get("monitor"), dict):
         monitor = config["monitor"]
-        for key in ("enabled", "profile", "mode", "authority"):
+        for key in ("enabled", "profile", "mode", "authority", "interface", "cidr", "duration"):
             if key in monitor:
                 document["monitor"][key] = deepcopy(monitor[key])
         for key in ("workers", "timeout", "scanOrder", "failureThreshold", "recoveryThreshold"):
@@ -707,3 +718,8 @@ def update_config(update: Callable[[dict], Any]) -> dict:
             config = replacement
         save_config(config)
         return config
+
+
+def config_from_document(document: dict) -> ConfigSnapshot:
+    """Adapt a canonical document to the session-aware compatible config view."""
+    return _document_to_legacy(canonical_config(document))

@@ -45,6 +45,7 @@ def build_parser() -> LANCTLArgumentParser:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola principal.")
     mode.add_argument("-tui", "--tui", action="store_true", help="Abre el TUI principal.")
+    mode.add_argument("--gui", action="store_true", help="Abre el centro gráfico de LANCTL.")
     parser.add_argument(
         "--admin",
         action="store_true",
@@ -114,12 +115,24 @@ def main(argv: list[str] | None = None) -> int:
         return build_parser().parse_args(arguments)
     if arguments and arguments[0].casefold() in launcher_names:
         return _run_launcher(arguments[0].casefold(), arguments[1:])
-    if not arguments or arguments[0] in {"--cli", "-cli", "--tui", "-tui"}:
+    if not arguments or arguments[0] in {"--cli", "-cli", "--tui", "-tui", "--gui"}:
         from lanctl.apps.suite.interfaces import run_console
 
         args = build_parser().parse_args(arguments)
         if args.launcher:
             build_parser().error("usa lanctl LAUNCHER --cli o --tui")
+        if args.gui:
+            from lanctl.apps.suite.gui import run_gui
+
+            try:
+                return run_gui()
+            except (ImportError, OSError, RuntimeError) as exc:
+                from lanctl.core.errors import errors
+
+                errors.from_exception(
+                    exc, origin="LANCTL.Suite.GUI.Start", code="SUITE.GUI.START.FAILED", level=43
+                )
+                return 2
         return run_console(tui=args.tui)
     parser = build_parser()
     parser.parse_args(arguments)

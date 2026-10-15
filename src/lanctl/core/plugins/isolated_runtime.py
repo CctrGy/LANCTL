@@ -185,10 +185,11 @@ def _windows_memory_job(pid: int, megabytes: int):
 class _IsolatedApi:
     """API mínima transportable para código Python fuera del proceso principal."""
 
-    def __init__(self, connection, plugin_id: str, max_calls: int) -> None:
+    def __init__(self, connection, plugin_id: str, max_calls: int, settings=None) -> None:
         self.connection = connection
         self.plugin_id = plugin_id
         self.remaining = max_calls
+        self.settings = dict(settings or {})
 
     def log(self, message: str) -> None:
         self._call("log", str(message))
@@ -281,7 +282,9 @@ def _install_security_policy(connection, plugin_root: Path) -> None:
     sys.addaudithook(audit)
 
 
-def _worker(connection, plugin_id: str, entry: str, memory_mb: int, max_calls: int) -> None:
+def _worker(
+    connection, plugin_id: str, entry: str, memory_mb: int, max_calls: int, settings=None
+) -> None:
     _apply_memory_limit(memory_mb)
     module: ModuleType | None = None
     try:
@@ -301,7 +304,7 @@ def _worker(connection, plugin_id: str, entry: str, memory_mb: int, max_calls: i
         activate = getattr(module, "activate", None)
         if not callable(activate):
             raise ValueError("main.exec debe definir activate(api)")
-        activate(_IsolatedApi(connection, plugin_id, max_calls))
+        activate(_IsolatedApi(connection, plugin_id, max_calls, settings))
         _send_message(connection, ("READY", os.getpid()))
         while True:
             try:
@@ -336,6 +339,7 @@ class IsolatedPluginRuntime:
         memory_mb: int = 128,
         max_calls: int = 1000,
         audit=None,
+        settings=None,
     ) -> None:
         self.plugin_id = plugin_id
         self.entry = entry
@@ -343,6 +347,7 @@ class IsolatedPluginRuntime:
         self.memory_mb = max(16, int(memory_mb))
         self.max_calls = max(1, int(max_calls))
         self.audit = audit or (lambda *_args: None)
+        self.settings = dict(settings or {})
         self.process = None
         self._connection = None
         self._reader = None
@@ -446,7 +451,14 @@ class IsolatedPluginRuntime:
         parent, child = context.Pipe()
         process = context.Process(
             target=_worker,
-            args=(child, self.plugin_id, str(self.entry), self.memory_mb, self.max_calls),
+            args=(
+                child,
+                self.plugin_id,
+                str(self.entry),
+                self.memory_mb,
+                self.max_calls,
+                self.settings,
+            ),
             name=f"LANCTL plugin {self.plugin_id}",
             daemon=True,
         )

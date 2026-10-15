@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 import sys
 import threading
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from copy import deepcopy
 from functools import wraps
@@ -98,8 +98,9 @@ class Session:
 
     def emit(self, event, **kwargs):
         kwargs.setdefault("correlation", current_task_id())
+        kwargs.setdefault("project", self.project)
         try:
-            return self.coordinator.publish(self.id, event, project=self.project, **kwargs)
+            return self.coordinator.publish(self.id, event, **kwargs)
         except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
             _report(error)
         return None
@@ -157,7 +158,9 @@ def overlay_config(config):
     session = current_session()
     if session:
         with session.lock:
-            return {**config, **deepcopy(session.config)}
+            replacement = deepcopy(config)
+            replacement.update(deepcopy(session.config))
+            return replacement
     return config
 
 
@@ -174,7 +177,9 @@ def prepare_config_save(config, stored):
         changed = any(config.get(key) != session.config.get(key) for key in PROJECT_KEYS)
         if changed:
             return config
-        return {**config, **{key: deepcopy(stored.get(key)) for key in PROJECT_KEYS}}
+        replacement = deepcopy(config)
+        replacement.update({key: deepcopy(stored.get(key)) for key in PROJECT_KEYS})
+        return replacement
 
 
 def commit_config(config):
@@ -262,21 +267,34 @@ def coordinated_launcher(launcher):
                 return _invoke(function, argv, args, kwargs)
             from lanctl.core.config import load_config
 
-            mode = (
-                "gui"
-                if "--gui" in arguments
-                else "tui"
-                if any(word in {"--tui", "-tui"} for word in arguments)
-                or (launcher == "lanip" and not arguments)
-                else "backend"
-                if "foreground" in arguments
-                else "cli"
-            )
+            stack = ExitStack()
             try:
-                session = Session(
-                    launcher, mode, load_config(), parent=parent.id if parent else None
+                config = load_config()
+                if launcher == "lanctl" and not arguments:
+                    preferred = config.get("startupInterface", "cli")
+                    if preferred not in {"cli", "tui", "gui"}:
+                        preferred = "cli"
+                    arguments = [f"--{preferred}"]
+                    argv = arguments
+                mode = (
+                    "gui"
+                    if "--gui" in arguments
+                    else "tui"
+                    if any(word in {"--tui", "-tui"} for word in arguments)
+                    or (launcher == "lanip" and not arguments)
+                    else "backend"
+                    if "foreground" in arguments
+                    else "cli"
                 )
-            except (OSError, ValueError, sqlite3.Error) as error:
+                if mode == "gui":
+                    from lanctl.core.gui_instance import GuiInstance
+
+                    if not stack.enter_context(GuiInstance(launcher)):
+                        stack.close()
+                        return 0
+                session = Session(launcher, mode, config, parent=parent.id if parent else None)
+            except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
+                stack.close()
                 from lanctl.core.errors import errors
 
                 errors.from_exception(
@@ -301,6 +319,8 @@ def coordinated_launcher(launcher):
                     session.close()
                 except (OSError, sqlite3.Error) as error:
                     _report(error)
+                finally:
+                    stack.close()
 
         return wrapped
 

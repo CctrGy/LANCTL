@@ -70,6 +70,17 @@ window.LANCTL_REFERENCE = {
         {
           "choices": [],
           "default": null,
+          "description": "Abre el centro gráfico de LANCTL.",
+          "flags": [
+            "--gui"
+          ],
+          "label": "--gui",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
           "description": "Solicita UAC explícitamente para un launcher instalado en Windows.",
           "flags": [
             "--admin"
@@ -95,7 +106,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.3"
       },
       "description": "Orquestador raíz de las aplicaciones de la suite LANCTL.",
-      "details": "Usage: LANCTL [-h] [--version] [--cli | -tui] [--admin] LAUNCHER ...\n\nOrquestador raíz de las aplicaciones de la suite LANCTL.\n\nArguments:\n  LAUNCHER\n    lanip (ip)        Inventario lógico, descubrimiento, IP, MAC y servicios.\n    lanwire (wire)    Cableado, puertos, paneles y topología física.\n    lanrack (rack)    Salas técnicas, racks, unidades U y equipos.\n    lanaccess (access)\n                      Usuarios, credenciales y accesos remotos.\n    lanmon (monitor)  Monitorización, eventos, incidencias e historial.\n    plugin            Administración compartida de la suite.\n    settings          Administración compartida de la suite.\n    language          Administración compartida de la suite.\n    backend           Administración compartida de la suite.\n\nOptions:\n  -h, --help          Show this help and exit.\n  --version           Muestra la versión común de la suite y termina.\n  --cli, -cli         Abre la consola principal.\n  -tui, --tui         Abre el TUI principal.\n  --admin             Solicita UAC explícitamente para un launcher instalado en Windows.",
+      "details": "Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [--admin] LAUNCHER ...\n\nOrquestador raíz de las aplicaciones de la suite LANCTL.\n\nArguments:\n  LAUNCHER\n    lanip (ip)        Inventario lógico, descubrimiento, IP, MAC y servicios.\n    lanwire (wire)    Cableado, puertos, paneles y topología física.\n    lanrack (rack)    Salas técnicas, racks, unidades U y equipos.\n    lanaccess (access)\n                      Usuarios, credenciales y accesos remotos.\n    lanmon (monitor)  Monitorización, eventos, incidencias e historial.\n    plugin            Administración compartida de la suite.\n    settings          Administración compartida de la suite.\n    language          Administración compartida de la suite.\n    backend           Administración compartida de la suite.\n\nOptions:\n  -h, --help          Show this help and exit.\n  --version           Muestra la versión común de la suite y termina.\n  --cli, -cli         Abre la consola principal.\n  -tui, --tui         Abre el TUI principal.\n  --gui               Abre el centro gráfico de LANCTL.\n  --admin             Solicita UAC explícitamente para un launcher instalado en Windows.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -113,7 +124,7 @@ window.LANCTL_REFERENCE = {
         "LANCTL"
       ],
       "title": "LANCTL",
-      "usage": "LANCTL [-h] [--version] [--cli | -tui] [--admin] LAUNCHER ..."
+      "usage": "LANCTL [-h] [--version] [--cli | -tui | --gui] [--admin] LAUNCHER ..."
     },
     {
       "aliases": [
@@ -1221,6 +1232,35 @@ window.LANCTL_REFERENCE = {
       "aliases": [],
       "arguments": [
         {
+          "choices": [
+            "cli",
+            "tui",
+            "gui"
+          ],
+          "default": null,
+          "description": "Interfaz preferida al abrir LANCTL sin argumentos.",
+          "flags": [
+            "--startup-interface"
+          ],
+          "label": "--startup-interface",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [
+            "on",
+            "off"
+          ],
+          "default": null,
+          "description": "Cierra la GUI principal cuando el launcher solicitado esté disponible.",
+          "flags": [
+            "--close-gui-on-launch"
+          ],
+          "label": "--close-gui-on-launch",
+          "metavar": "",
+          "required": false
+        },
+        {
           "choices": [],
           "default": null,
           "description": "Rango LAN predeterminado, por ejemplo 192.168.1.1/24.",
@@ -1725,6 +1765,75 @@ window.LANCTL_REFERENCE = {
           "label": "--tui-footer-button",
           "metavar": "ACCIÓN=on|off",
           "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Editor interactivo por categorías de programa y proyecto.",
+          "flags": [
+            "--menu"
+          ],
+          "label": "--menu",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Lista todos los ajustes por categorías, con valor y estado editable.",
+          "flags": [
+            "--catalog"
+          ],
+          "label": "--catalog",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Consulta un ajuste por su ruta, por ejemplo ip.workers.",
+          "flags": [
+            "--get"
+          ],
+          "label": "--get",
+          "metavar": "RUTA",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Modifica un ajuste; listas y booleanos usan JSON.",
+          "flags": [
+            "--set"
+          ],
+          "label": "--set",
+          "metavar": "('RUTA', 'VALOR')",
+          "required": false
+        },
+        {
+          "choices": [
+            "program",
+            "project"
+          ],
+          "default": "program",
+          "description": "Ámbito de configuración (predeterminado: program).",
+          "flags": [
+            "--scope"
+          ],
+          "label": "--scope",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Filtra el catálogo por categoría, por ejemplo network o monitor.",
+          "flags": [
+            "--category"
+          ],
+          "label": "--category",
+          "metavar": "",
+          "required": false
         }
       ],
       "category": "Configuración",
@@ -1732,8 +1841,8 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.3"
       },
-      "description": "usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]",
-      "details": "Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.\n  -list-fields CAMPO [CAMPO ...], --list-fields CAMPO [CAMPO ...], -list CAMPO [CAMPO ...]\n                              Columnas mostradas por list, separadas por espacios o comas.\n  -dhcp-range INICIO-FIN, --dhcp-range INICIO-FIN, -dhcp INICIO-FIN\n                              Rango DHCP manual. Usa 'off' para dejarlo sin configurar.\n  -credentials ARCHIVO, --credentials ARCHIVO\n                              Ruta del almacén de credenciales cifradas.\n  -discovery {icmp,arp,hybrid}, --discovery {icmp,arp,hybrid}\n                              Método predeterminado utilizado por list.\n  --scan-profile {fast,normal,accurate}\n                              Perfil predeterminado de list: fast, normal o accurate.\n  --progress {on,off}         Activa o desactiva el progreso interactivo.\n  --service-identification {on,off}\n                              Activa o desactiva el reconocimiento de servicios en scan.\n  --disconnected-retention {permanent,session,forget}\n                              Persistencia de desconectados: permanent, session o forget.\n  --disconnected-target {unconfirmed,all}\n                              Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).\n  --disconnected-scope {all,dhcp}\n                              Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).\n  --workers WORKERS           Concurrencia predeterminada de los escaneos.\n  --timeout TIMEOUT           Timeout predeterminado por operación de red.\n  --scan-order {ascending,descending,random}\n                              Orden predeterminado de sondeo: ascending, descending o random.\n  --max-hosts MAX_HOSTS       Máximo de hosts autorizado por escaneo.\n  --database ARCHIVO          Ruta del inventario de elementos.\n  --physical-database ARCHIVO\n                              Ruta de la base física SQLite administrada exclusivamente por\n                              LANWIRE.\n  --groups ARCHIVO            Ruta de la base de grupos.\n  --log DIRECTORIO            Directorio de registros.\n  --error-log-level 1-59      Nivel mínimo de ErrorEvent escrito en el log (1 incluye diagnóstico\n                              detallado).\n  --projects-directory DIRECTORIO\n                              Carpeta predeterminada para nombres de proyecto VLF relativos.\n  -save-mode MODO, --save-mode MODO\n                              Política de guardado VLF. Usa 'list' para consultar las opciones\n                              integradas y las aportadas por plugins.\n  -save-interval MINUTOS, --save-interval MINUTOS\n                              Intervalo de automatic.timeToSave en minutos (mínimo 0.1).\n  --cli-exit-save-prompt {on,off}\n                              Consulta si se guarda al terminar cada comando individual de\n                              consola.\n  --cli-command-chaining {on,off}\n                              Permite encadenar órdenes con ; dentro de la CLI interactiva.\n  -log-cleanup {on,off}, --log-cleanup {on,off}\n                              Activa o desactiva la limpieza automática de logs antiguos.\n  -log-retention-days DÍAS, --log-retention-days DÍAS\n                              Días durante los que se conservan los archivos de log.\n  --remote-access {on,off}    Activa el acceso SSH restringido.\n  --remote-bind IP            IPv4 local de escucha SSH.\n  --remote-cidr CIDR          Red de origen autorizada.\n  --remote-port REMOTE_PORT   Puerto del servidor SSH remoto.\n  --remote-password-auth {on,off}\n                              Permite o bloquea autenticación SSH mediante contraseña.\n  --remote-backend {service,user}\n                              Ejecuta el backend como servicio persistente o proceso de usuario.\n  --remote-forced-view {off,gui,tui,plugins,projects,settings}\n                              Vista predeterminada para root forced-view.\n  --tui-key ACCIÓN=TECLA      Asigna una tecla a una acción del TUI. Puede repetirse.\n  --tui-layout {cli.bottom,cli.top}\n                              Coloca el CLI arriba (cli.top) o abajo (cli.bottom).\n  --tui-cli-percent 15-75     Porcentaje vertical reservado al CLI; ListElement conserva al menos\n                              25%.\n  --tui-column COLUMNA=TAMAÑO\n                              Peso de columna (GROUP=15%); IP=15ch y MAC=17ch son fijas.\n  --tui-footer-buttons ACCIONES\n                              Acciones visibles en la barra inferior, separadas por comas; usa all\n                              para todas.\n  --tui-footer-button ACCIÓN=on|off\n                              Muestra u oculta una acción concreta de la barra inferior. Puede\n                              repetirse.",
+      "description": "usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]\n                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]\n                      [--scope {program,project}] [--category CATEGORY]",
+      "details": "Usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]\n                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]\n                      [--scope {program,project}] [--category CATEGORY]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --startup-interface {cli,tui,gui}\n                              Interfaz preferida al abrir LANCTL sin argumentos.\n  --close-gui-on-launch {on,off}\n                              Cierra la GUI principal cuando el launcher solicitado esté\n                              disponible.\n  -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.\n  -list-fields CAMPO [CAMPO ...], --list-fields CAMPO [CAMPO ...], -list CAMPO [CAMPO ...]\n                              Columnas mostradas por list, separadas por espacios o comas.\n  -dhcp-range INICIO-FIN, --dhcp-range INICIO-FIN, -dhcp INICIO-FIN\n                              Rango DHCP manual. Usa 'off' para dejarlo sin configurar.\n  -credentials ARCHIVO, --credentials ARCHIVO\n                              Ruta del almacén de credenciales cifradas.\n  -discovery {icmp,arp,hybrid}, --discovery {icmp,arp,hybrid}\n                              Método predeterminado utilizado por list.\n  --scan-profile {fast,normal,accurate}\n                              Perfil predeterminado de list: fast, normal o accurate.\n  --progress {on,off}         Activa o desactiva el progreso interactivo.\n  --service-identification {on,off}\n                              Activa o desactiva el reconocimiento de servicios en scan.\n  --disconnected-retention {permanent,session,forget}\n                              Persistencia de desconectados: permanent, session o forget.\n  --disconnected-target {unconfirmed,all}\n                              Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).\n  --disconnected-scope {all,dhcp}\n                              Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).\n  --workers WORKERS           Concurrencia predeterminada de los escaneos.\n  --timeout TIMEOUT           Timeout predeterminado por operación de red.\n  --scan-order {ascending,descending,random}\n                              Orden predeterminado de sondeo: ascending, descending o random.\n  --max-hosts MAX_HOSTS       Máximo de hosts autorizado por escaneo.\n  --database ARCHIVO          Ruta del inventario de elementos.\n  --physical-database ARCHIVO\n                              Ruta de la base física SQLite administrada exclusivamente por\n                              LANWIRE.\n  --groups ARCHIVO            Ruta de la base de grupos.\n  --log DIRECTORIO            Directorio de registros.\n  --error-log-level 1-59      Nivel mínimo de ErrorEvent escrito en el log (1 incluye diagnóstico\n                              detallado).\n  --projects-directory DIRECTORIO\n                              Carpeta predeterminada para nombres de proyecto VLF relativos.\n  -save-mode MODO, --save-mode MODO\n                              Política de guardado VLF. Usa 'list' para consultar las opciones\n                              integradas y las aportadas por plugins.\n  -save-interval MINUTOS, --save-interval MINUTOS\n                              Intervalo de automatic.timeToSave en minutos (mínimo 0.1).\n  --cli-exit-save-prompt {on,off}\n                              Consulta si se guarda al terminar cada comando individual de\n                              consola.\n  --cli-command-chaining {on,off}\n                              Permite encadenar órdenes con ; dentro de la CLI interactiva.\n  -log-cleanup {on,off}, --log-cleanup {on,off}\n                              Activa o desactiva la limpieza automática de logs antiguos.\n  -log-retention-days DÍAS, --log-retention-days DÍAS\n                              Días durante los que se conservan los archivos de log.\n  --remote-access {on,off}    Activa el acceso SSH restringido.\n  --remote-bind IP            IPv4 local de escucha SSH.\n  --remote-cidr CIDR          Red de origen autorizada.\n  --remote-port REMOTE_PORT   Puerto del servidor SSH remoto.\n  --remote-password-auth {on,off}\n                              Permite o bloquea autenticación SSH mediante contraseña.\n  --remote-backend {service,user}\n                              Ejecuta el backend como servicio persistente o proceso de usuario.\n  --remote-forced-view {off,gui,tui,plugins,projects,settings}\n                              Vista predeterminada para root forced-view.\n  --tui-key ACCIÓN=TECLA      Asigna una tecla a una acción del TUI. Puede repetirse.\n  --tui-layout {cli.bottom,cli.top}\n                              Coloca el CLI arriba (cli.top) o abajo (cli.bottom).\n  --tui-cli-percent 15-75     Porcentaje vertical reservado al CLI; ListElement conserva al menos\n                              25%.\n  --tui-column COLUMNA=TAMAÑO\n                              Peso de columna (GROUP=15%); IP=15ch y MAC=17ch son fijas.\n  --tui-footer-buttons ACCIONES\n                              Acciones visibles en la barra inferior, separadas por comas; usa all\n                              para todas.\n  --tui-footer-button ACCIÓN=on|off\n                              Muestra u oculta una acción concreta de la barra inferior. Puede\n                              repetirse.\n  --menu                      Editor interactivo por categorías de programa y proyecto.\n  --catalog                   Lista todos los ajustes por categorías, con valor y estado editable.\n  --get RUTA                  Consulta un ajuste por su ruta, por ejemplo ip.workers.\n  --set RUTA VALOR            Modifica un ajuste; listas y booleanos usan JSON.\n  --scope {program,project}   Ámbito de configuración (predeterminado: program).\n  --category CATEGORY         Filtra el catálogo por categoría, por ejemplo network o monitor.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -1751,7 +1860,7 @@ window.LANCTL_REFERENCE = {
         "settings"
       ],
       "title": "LANIP settings",
-      "usage": "LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]"
+      "usage": "LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]\n                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]\n                      [--scope {program,project}] [--category CATEGORY]"
     },
     {
       "aliases": [],
@@ -4634,7 +4743,7 @@ window.LANCTL_REFERENCE = {
         {
           "choices": [],
           "default": null,
-          "description": "Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).",
+          "description": "Asigna DESCRIPTION al elemento indicado.",
           "flags": [
             "-description",
             "--description"
@@ -4743,7 +4852,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.3"
       },
       "description": "usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-idf NEW_IDF]\n                     [-group NEW_GROUP] [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE]\n                     [--groups GROUPS] [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}]\n                     [values ...]",
-      "details": "Usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-idf NEW_IDF]\n                     [-group NEW_GROUP] [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE]\n                     [--groups GROUPS] [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}]\n                     [values ...]\n\nArguments:\n  selector                    IP, MAC o alias.\n  {edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}\n                              Campo o acción que se quiere editar.\n  values                      Nuevo valor.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -add MAC                    Añade un elemento nuevo utilizando su dirección MAC.\n  -name NEW_NAME, --name NEW_NAME\n                              Asigna NAME al elemento indicado.\n  -ip NEW_IP, --ip NEW_IP     Asigna una dirección IPv4.\n  -alias NEW_ALIAS, --alias NEW_ALIAS\n                              Asigna ALIAS al elemento indicado.\n  -description NEW_DESCRIPTION, --description NEW_DESCRIPTION\n                              Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).\n  -cnf NEW_CNF, --cnf NEW_CNF\n                              Asigna el estado CNF.\n  -idf NEW_IDF, --idf NEW_IDF\n                              Asigna un IDF único (2-5 letras y 2-5 dígitos).\n  -group NEW_GROUP, --group NEW_GROUP\n                              Añade el elemento al grupo.\n  -protocol NEW_PROTOCOL, --protocol NEW_PROTOCOL\n                              Activa un protocolo.\n  -delete, --delete           Elimina completamente el elemento indicado.\n  --database DATABASE         Archivo JSON de elementos.\n  --groups GROUPS             Archivo JSON de grupos.\n  --yes                       Elimina sin solicitar confirmación.",
+      "details": "Usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-idf NEW_IDF]\n                     [-group NEW_GROUP] [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE]\n                     [--groups GROUPS] [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}]\n                     [values ...]\n\nArguments:\n  selector                    IP, MAC o alias.\n  {edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}\n                              Campo o acción que se quiere editar.\n  values                      Nuevo valor.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -add MAC                    Añade un elemento nuevo utilizando su dirección MAC.\n  -name NEW_NAME, --name NEW_NAME\n                              Asigna NAME al elemento indicado.\n  -ip NEW_IP, --ip NEW_IP     Asigna una dirección IPv4.\n  -alias NEW_ALIAS, --alias NEW_ALIAS\n                              Asigna ALIAS al elemento indicado.\n  -description NEW_DESCRIPTION, --description NEW_DESCRIPTION\n                              Asigna DESCRIPTION al elemento indicado.\n  -cnf NEW_CNF, --cnf NEW_CNF\n                              Asigna el estado CNF.\n  -idf NEW_IDF, --idf NEW_IDF\n                              Asigna un IDF único (2-5 letras y 2-5 dígitos).\n  -group NEW_GROUP, --group NEW_GROUP\n                              Añade el elemento al grupo.\n  -protocol NEW_PROTOCOL, --protocol NEW_PROTOCOL\n                              Activa un protocolo.\n  -delete, --delete           Elimina completamente el elemento indicado.\n  --database DATABASE         Archivo JSON de elementos.\n  --groups GROUPS             Archivo JSON de grupos.\n  --yes                       Elimina sin solicitar confirmación.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -10315,7 +10424,25 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.3"
       },
-      "description": "Lista de asuntos acordados para revisar en una sesión futura. Este documento no indica que las tareas estén implementadas.",
+      "description": "Evidencia de los 33 puntos de [BACKLOG.md](BACKLOG.md), sobre la versión de desarrollo 0.3.3. «Verificado» identifica el alcance local indicado, con datos de prueba aislados. No implica certificación de instalaciones ni plataformas no ejecutadas. Los cambios permanecen en la rama de trabajo, sin publicación.",
+      "details": "Documento mantenido en docs/BACKLOG-VERIFICATION.md.",
+      "docs": [
+        "BACKLOG-VERIFICATION.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-backlog-verification",
+      "kind": "document",
+      "name": "BACKLOG-VERIFICATION.md",
+      "title": "Comprobación del backlog — 15/10/2026",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/BACKLOG-VERIFICATION.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.3"
+      },
+      "description": "Estado revisado el **15/10/2026**. Los puntos marcados tienen corrección o verificación local con evidencia en [la matriz de comprobación](BACKLOG-VERIFICATION.md). La validación de plataformas externas sigue separada; las marcas no equivalen a certificar instaladores ni sistemas que no se han ejecutado.",
       "details": "Documento mantenido en docs/BACKLOG.md.",
       "docs": [
         "BACKLOG.md"
@@ -10381,6 +10508,24 @@ window.LANCTL_REFERENCE = {
       "name": "CLI-REFERENCE.md",
       "title": "Referencia completa del CLI LANCTL",
       "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/CLI-REFERENCE.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.3"
+      },
+      "description": "`lanctl settings` abre el editor por categorías cuando se ejecuta en una terminal interactiva. `lanctl settings --menu` lo abre explícitamente. Con entrada/salida redirigida se conserva la consulta JSON anterior sin preguntas interactivas.",
+      "details": "Documento mantenido en docs/CLI-SETTINGS.md.",
+      "docs": [
+        "CLI-SETTINGS.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-cli-settings",
+      "kind": "document",
+      "name": "CLI-SETTINGS.md",
+      "title": "Configuración completa desde el CLI",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/CLI-SETTINGS.md"
     },
     {
       "category": "Archivos de documentación",
@@ -10561,6 +10706,24 @@ window.LANCTL_REFERENCE = {
       "name": "KNOWN-ISSUES.md",
       "title": "Limitaciones conocidas de la beta",
       "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/KNOWN-ISSUES.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.3"
+      },
+      "description": "Inicia `lanctl --gui` (desde fuentes: `python -m lanctl --gui`). La consola habitual `lanctl --cli` y el TUI siguen disponibles. Desde fuentes se necesita el extra `gui`: `pip install -e \".[gui]\"`.",
+      "details": "Documento mantenido en docs/LANCTL-GUI.md.",
+      "docs": [
+        "LANCTL-GUI.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-lanctl-gui",
+      "kind": "document",
+      "name": "LANCTL-GUI.md",
+      "title": "Centro gráfico de LANCTL",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/LANCTL-GUI.md"
     },
     {
       "category": "Archivos de documentación",
@@ -11014,7 +11177,7 @@ window.LANCTL_REFERENCE = {
     }
   ],
   "meta": {
-    "entryCount": 174,
+    "entryCount": 177,
     "name": "LANCTL Reference",
     "repository": "https://github.com/CctrGy/LANCTL",
     "version": "0.3.3"
