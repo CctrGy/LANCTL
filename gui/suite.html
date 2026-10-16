@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LANCTL</title><link rel="stylesheet" href="suite.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LANCTL</title><link rel="stylesheet" href="suite.css"><link rel="icon" href="../assets/launcher-icons/lanctl.svg"></head>
 <body>
 <div class="shell">
   <header><div class="brand">LAN<span>CTL</span><small>NETWORK CONTROL SUITE</small></div><span id="session-state" class="badge">Sesión local</span></header>
@@ -10,5 +10,9 @@
   <footer><div><span class="ready">● GUI</span><span id="version"></span><span id="project-status">Sin proyecto</span><button id="plugin-count" data-page="plugins">Plugins</button><button id="external-cli" aria-label="Abrir CLI general en la terminal del sistema">›_ CLI</button></div><div><button id="activity">≡ Actividad</button><button id="system-info">ⓘ Sistema</button><time id="clock"></time></div></footer>
 </div>
 <dialog id="dialog"><form id="form"><div class="dialog-head"><h2 id="dialog-title"></h2><button type="button" id="close-dialog" aria-label="Cerrar">×</button></div><div id="fields"></div><p id="form-error" role="alert"></p><div class="actions"><button type="button" id="dismiss">Cancelar</button><button type="submit" class="primary" id="submit">Guardar</button></div></form></dialog>
+<dialog id="confirmation" aria-labelledby="confirmation-title" aria-describedby="confirmation-message">
+<div class="dialog-head"><h2 id="confirmation-title">LANCTL · Confirmación</h2></div>
+<p id="confirmation-message"></p><div class="actions"><button type="button" id="confirmation-cancel" autofocus>Cancelar</button><button type="button" class="primary" id="confirmation-accept">Continuar</button></div>
+</dialog>
 <script src="suite.js"></script>
 </body></html>

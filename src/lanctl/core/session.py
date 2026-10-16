@@ -286,6 +286,10 @@ def coordinated_launcher(launcher):
                     if "foreground" in arguments
                     else "cli"
                 )
+                if mode in {"cli", "tui"}:
+                    from lanctl.core.window_icons import apply_terminal_icon
+
+                    apply_terminal_icon(launcher)
                 if mode == "gui":
                     from lanctl.core.gui_instance import GuiInstance
 

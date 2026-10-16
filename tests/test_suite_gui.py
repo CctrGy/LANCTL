@@ -218,3 +218,58 @@ def test_no_arbitrary_launcher_or_multiline_cli_input():
         launcher_command("powershell", "-Command", "anything")
     with pytest.raises(ValueError):
         EmbeddedCli().send("version\nexit")
+
+
+def test_complete_settings_catalog_and_edit_use_shared_validation(tmp_path, monkeypatch):
+    from lanctl.core import config
+    from lanctl.core.settings_catalog import catalog
+
+    monkeypatch.setattr(config, "CONFIG_PATH", tmp_path / "config.json")
+    api = suite()
+    payload = api.settings_catalog()
+    assert payload["ok"]
+    assert {e["path"] for e in catalog(config.load_config())} <= {
+        e["path"] for e in payload["entries"]
+    }
+    assert api.save_catalog_setting("program", "ip.workers", 12)["ok"]
+    assert config.load_config()["workers"] == 12
+    before = config.CONFIG_PATH.read_bytes()
+    assert not api.save_catalog_setting("program", "ip.workers", 0)["ok"]
+    assert config.CONFIG_PATH.read_bytes() == before
+    assert not api.save_catalog_setting("unknown", "ip.workers", 10)["ok"]
+
+
+def test_project_defaults_do_not_require_a_folder_picker(tmp_path, monkeypatch):
+    from lanctl.core import config
+
+    monkeypatch.setattr(config, "CONFIG_PATH", tmp_path / "config.json")
+    config.save_config({**config.load_config(), "projectsDirectory": str(tmp_path / "Projects")})
+    api = suite()
+    payload = api.project_defaults()
+    assert payload["ok"]
+    assert payload["directory"] == str(tmp_path / "Projects")
+    assert payload["lan"] == "LAN principal"
+
+
+@pytest.mark.parametrize(
+    "package_id,signature,accepted",
+    [
+        ("test.plugin", "VALID_ED25519:example", True),
+        ("test.plugin", "UNSIGNED", False),
+        ("other.plugin", "VALID_ED25519:example", False),
+    ],
+)
+def test_signed_plugin_replacement_checks_identity_and_signature(package_id, signature, accepted):
+    api = suite()
+    api._desktop._window = Mock()
+    api._desktop._window.create_file_dialog.return_value = ["signed.lcp"]
+    verified = {"manifest": SimpleNamespace(plugin_id=package_id), "signature": signature}
+    with (
+        patch("lanctl.apps.suite.gui.get_plugin_manager") as manager,
+        patch("lanctl.core.plugins.package.verify_package", return_value=verified),
+        patch.object(api, "_plugin_payload", return_value={"plugins": []}),
+    ):
+        result = api.install_signed_plugin("test.plugin")
+        assert result["ok"] is accepted
+        assert manager.return_value.install.called is accepted
+        manager.return_value.publishers.trust_package.assert_not_called()

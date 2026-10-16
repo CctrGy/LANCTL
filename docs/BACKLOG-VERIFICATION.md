@@ -120,3 +120,105 @@ máquina ni verificar un instalador con servicios y permisos reales.
    otro equipo autorizado; aquí solo se verifican sus regresiones locales.
 4. Distribución de WOL: obtener/publicar el LCP firmado y su huella de editor;
    el arreglo de interfaz no convierte el paquete sin firma en uno autorizado.
+
+## Revisión de backend de plugins — 16/10/2026 (P34, P40/P42)
+
+Alcance de AUDITOR: `core/plugins/manager.py`, `package.py`, `publishers.py`,
+regresiones nuevas en `tests/test_plugin_security_review.py` y documentación.
+GUI-DESIGN conserva las ventanas, formularios, diálogos, estilos y empaquetado.
+Las correcciones se realizan en la rama de trabajo existente, sin modificar
+los paquetes instalados ni conceder permisos o confianza en los datos del usuario.
+
+### Hallazgos reproducidos y correcciones
+
+Antes de corregir se ejecutaron 20 casos nuevos: los 20 fallaron y reprodujeron
+los problemas descritos. Se amplió después la cobertura a concurrencia,
+dependencias, reinstalación y recuperación.
+
+| Gravedad | Problema confirmado | Corrección y efecto futuro |
+| --- | --- | --- |
+| Alta | `verify ID` devolvía válido sin leer los archivos; activar/recargar podía ejecutar código modificado después del descubrimiento. | Verificación del directorio, checksum y firma antes de publicar la instalación y antes de cargar código o extensiones. El contenido alterado queda bloqueado. |
+| Alta | La firma se recuperaba del texto guardado en el registro; borrar o alterar `meta/signature` no invalidaba esa confianza. Los paquetes preinstalados firmados podían aparecer como `UNSIGNED`. | Verificación criptográfica Ed25519 de los bytes instalados y cotejo con la identidad previamente registrada. Descubrimiento recupera la firma real sin autorizar al editor automáticamente. |
+| Alta | El arranque omitía permisos, compatibilidad y dependencias; una activación fallida podía dejar el runtime anterior funcionando. | Mismas precondiciones al activar y restaurar; descarga de módulos, procesos y registros al fallar. |
+| Alta | Dos gestores podían sobrescribir cambios ajenos y restaurar permisos revocados. Autorizar un editor concurrentemente también podía deshacer una revocación. | Bloqueo de lectura/modificación/escritura, actualización por plugin y rechazo de revisiones antiguas antes de reemplazar o activar; transacción completa del almacén de editores. |
+| Media | El orden de arranque dependía del nombre visible y se ignoraban versiones de dependencias. | Orden por dependencias, restricciones de versión, rechazo de ciclos y fallos; descarga de consumidores locales al desactivar su dependencia. |
+| Media | Repetir activación, descubrir de nuevo o reinstalar perdía referencias al runtime anterior. | Activación idempotente y limpieza antes de redescubrir/reemplazar. |
+| Alta | Un fallo de disco al persistir la activación dejaba el código cargado aunque la operación devolviese error. | Tanto activación manual como arranque descargan sus runtimes si no pueden guardar el estado; el registro anterior permanece intacto. |
+| Media | El motivo de bloqueo no siempre persistía; la cuarentena desaparecía del catálogo tras otro reinicio. | Motivo de fallo persistente y conservación de la cuarentena visible, sin que su historial haga reaparecer plugins desinstalados. |
+| Media | Registros corruptos se interpretaban como vacíos o causaban excepciones de estructura sin contexto. | Validación de esquema y tipos; error contextual sin sobrescribir el documento dañado. |
+
+### Estado observado y límites
+
+Lectura de los paquetes incluidos y del registro local de desarrollo: MAC
+Vendor, mDNS/SSDP, Windows SMB y WOL usan `trusted`, carecen de firma y figuran
+desactivados. El tema y Network Summary Example figuran activados y usan
+`isolated`; el emulador de red también es `isolated` y figura desactivado.
+Esta lectura no certifica el estado de otro directorio de datos o instalación.
+
+El bloqueo de mDNS/SSDP y WOL mostrado en las capturas es correcto para los LCP
+actuales. Las pruebas positivas firman paquetes con claves efímeras en carpetas
+temporales, autorizan explícitamente al editor de prueba y verifican activación
+y revocación. No sustituyen la entrega de paquetes firmados por el editor real.
+
+P34 sigue parcial: falta notificar y aplicar inmediatamente las revocaciones
+en otros procesos ya activos y actualizar sus vistas. La protección añadida
+evita sobrescribir el estado nuevo y bloquea operaciones posteriores con copias
+antiguas; no detiene por sí sola código `trusted` que ya esté ejecutándose en
+otro proceso. La publicación de LCP oficiales y las plataformas de P32 siguen
+pendientes. P40/P42 describen la misma incidencia, con alcance técnico y visual.
+
+Se conservan métodos públicos, valores de `PluginState`, esquemas de registro 1,
+formatos LCP/VLF e IDs de eventos/funciones del Core. La salida de `verify ID`
+añade checksum y firma comprobados a sus campos anteriores. Las entradas de
+dependencias existentes con `*` siguen siendo válidas. Un registro corrupto
+ahora exige reparación explícita en lugar de activar valores por defecto.
+
+### Validación de esta revisión
+
+Suite completa final, incluidas GUI legacy y pruebas de navegador:
+**1.013 pruebas y 643 subpruebas aprobadas; 1 prueba POSIX omitida en Windows**,
+en 113,72 segundos. Cobertura combinada: **67,83 %**, por encima del mínimo
+del 60 %. Las fuentes comprobadas no cambiaron durante la ejecución.
+Los resultados del 15/10/2026 de la sección anterior son históricos.
+
+Comparación con HEAD: conservadas las **28 firmas públicas/estructuras** de
+los tres módulos modificados y el catálogo de eventos del Core. Los comandos
+reproducibles de suite/cobertura son los indicados en la sección anterior;
+las regresiones específicas se ejecutan con:
+
+```text
+python -m pytest tests/test_plugin_security_review.py -q
+```
+
+Las **43 regresiones nuevas** pasan. Bandit con el perfil de release, Ruff lint,
+referencias CLI/web, catálogo de errores (1.237 puntos) e higiene pasan. El
+formato de los cuatro archivos Python de esta revisión también pasa.
+
+El formato global aún señala cinco archivos del trabajo paralelo de GUI-DESIGN:
+`src/lanctl/apps/ip/interfaces/gui/desktop.py`, `src/lanctl/apps/suite/gui.py`,
+`src/lanctl/core/session.py`, `tests/test_distribution.py` y
+`tests/test_suite_browser.py`. AUDITOR no los modifica para evitar solaparse.
+Queda pendiente ese ajuste antes de integrar. Los binarios/instaladores generados
+en paralelo tampoco se consideran certificados por estas pruebas de fuentes;
+deberán incorporar las correcciones finales del backend y validarse después.
+
+## GUI: comprobación local del 16/10/2026
+
+- P36/P41: `test_project_defaults_do_not_require_a_folder_picker` y navegador
+  comprueban carpeta predeterminada editable y LAN inicial sin selector obligatorio.
+- P37/P39: `test_home_terminal_and_project_defaults_fit_client_area` comprueba
+  Inicio sin scroll y salida de terminal desplazable con entrada visible a
+  790×570, 660×460 y 1440×900.
+- P38: `test_complete_settings_catalog_and_edit_use_shared_validation` compara
+  el catálogo completo y comprueba guardado y rechazo de un valor inválido.
+- Confirmaciones: `test_project_edit_form_discard_confirmation_and_preserved_revision`
+  comprueba el diálogo de aplicación y la conservación de cambios al cancelar.
+- Plugins GUI: `test_signed_plugin_replacement_checks_identity_and_signature`
+  verifica ID/firma antes de instalar y que no se concede confianza implícita.
+- Smoke nativo local: LANCTL verifica catálogo, valores iniciales, icono HICON
+  y cierre; LANIP verifica crear/editar/grupos/guardar/cambiar/restaurar/cerrar.
+- Pasada completa local: 961 pruebas, 643 subtests; seis omitidas y 21 excluidas.
+  Las pruebas de navegador se ejecutaron por separado con su opción habilitada.
+
+Estas verificaciones no certifican Linux ni una instalación limpia de Windows.
+La auditoría de distribución de firmas de plugins se mantiene en AUDITOR.

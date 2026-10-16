@@ -111,3 +111,41 @@ restaura y enfoca la existente. LANCTL y LANIP sí pueden coexistir; cerrar una
 no cierra la otra. La página inicial y Actividad reflejan apertura y cierre.
 Los cambios compartidos se recargan cuando no hay un formulario abierto; no se
 reemplaza una edición en curso. Cada sesión conserva su proyecto.
+
+## Iconos de aplicaciones
+
+`assets/launcher-icons/` contiene SVG, PNG e ICO de LANCTL, LANIP, LANWIRE,
+LANRACK, LANACCESS, LANMON y terminal. Los ICO incluyen ocho tamaños de 16 a
+256 píxeles y el spec de Windows asigna el correspondiente a cada ejecutable.
+Las ventanas nativas LANCTL/LANIP aplican su icono al mostrarse. Los demás
+launchers conservan sus iconos propios de ejecutable; sus GUI siguen pendientes.
+CLI/TUI usan el icono común de terminal y un título con el launcher en consolas
+clásicas Windows. Windows Terminal administra el icono de pestaña mediante su
+perfil; no se modifica la configuración personal del anfitrión. Reinicia las
+ventanas abiertas para cargar los recursos nuevos. Los cambios de código de las
+ventanas requieren reconstruir el ejecutable; cambiar su recurso ICO no
+actualiza el código interno del binario.
+
+## Ajustes completos y adaptación de ventana
+
+Configuración incluye el catálogo completo de programa y proyecto activo,
+agrupado por categorías y con buscador. Cada ajuste muestra su tipo y los
+campos automáticos aparecen como solo lectura. Las listas y objetos se editan
+como JSON; booleanos y números tienen controles específicos. El acceso remoto
+reutiliza el adaptador de CLI para aplicar también los cambios en el servicio,
+no solamente en el archivo. Los cambios de proyecto conservan la validación,
+las copias VLF y las preferencias del catálogo CLI. Los formularios modificados
+conservan la confirmación de descarte.
+
+Inicio distribuye las cinco tarjetas en el área útil sin scroll al tamaño
+mínimo de escritorio. La terminal utiliza toda el área central disponible;
+solo su salida se desplaza. Cabecera, entrada y pie permanecen visibles.
+
+Crear proyecto abre directamente el formulario con la carpeta de proyectos
+predeterminada y «LAN principal». Ambos valores se pueden editar y la carpeta
+puede seleccionarse opcionalmente. No copia los metadatos del proyecto anterior.
+
+Los plugins sin firma ofrecen «Instalar versión firmada…». Se comprueban la
+firma y el ID antes de instalar; autorizar al editor y conceder permisos siguen
+siendo pasos explícitos posteriores. No se genera confianza ni se firman
+paquetes automáticamente. Una versión firmada debe proceder del editor.

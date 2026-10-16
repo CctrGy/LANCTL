@@ -570,7 +570,7 @@ def run_gui():
     window.events.closing += closing
     from lanctl.apps.suite.window_style import apply_dark_caption
 
-    window.events.shown += lambda: apply_dark_caption(window)
+    window.events.shown += lambda: apply_dark_caption(window, "lanip")
     from lanctl.apps.access.root_control import RootInterfaceAgent
 
     def remote_action(command):
@@ -583,7 +583,7 @@ def run_gui():
     agent = RootInterfaceAgent("gui", remote_action)
     window.events.loaded += agent.start
     try:
-        webview.start(debug=False)
+        webview.start(debug=False, icon=str(bundled_path("assets/launcher-icons/lanip.png")))
     finally:
         agent.stop()
     return 0

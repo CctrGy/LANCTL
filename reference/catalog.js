@@ -10658,6 +10658,24 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.3"
       },
+      "description": "Abrir `gui/launcher-prototypes.html` en el navegador. No requiere servidor ni dependencias externas. Las cuatro vistas se seleccionan en la barra superior; también admiten los fragmentos `#wire`, `#rack`, `#access` y `#mon`.",
+      "details": "Documento mantenido en docs/GUI-PROTOTYPES.md.",
+      "docs": [
+        "GUI-PROTOTYPES.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-gui-prototypes",
+      "kind": "document",
+      "name": "GUI-PROTOTYPES.md",
+      "title": "Prototipos de los launchers pendientes",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/GUI-PROTOTYPES.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.3"
+      },
       "description": "Este subsistema está destinado a la futura interfaz gráfica. No registra comandos en CLI ni TUI.",
       "details": "Documento mantenido en docs/ICONS.md.",
       "docs": [
@@ -11177,7 +11195,7 @@ window.LANCTL_REFERENCE = {
     }
   ],
   "meta": {
-    "entryCount": 177,
+    "entryCount": 178,
     "name": "LANCTL Reference",
     "repository": "https://github.com/CctrGy/LANCTL",
     "version": "0.3.3"

@@ -165,3 +165,78 @@ P32 permanece abierto: instalación/actualización/desinstalación en Windows
 limpio, Linux ARM64 y acceso SSH desde otra máquina. Las pruebas locales y los
 smokes de GUI no sustituyen esas comprobaciones. La matriz registra el alcance
 exacto de cada prueba y los hallazgos corregidos.
+
+## Próxima revisión: pendientes añadidos el 16/10/2026
+
+Estado actualizado el **16/10/2026**. Los avances de GUI-DESIGN y AUDITOR se
+indican por separado; las comprobaciones de backend se amplían en
+[la matriz de verificación](BACKLOG-VERIFICATION.md).
+
+- [ ] **P34.** Revisar el estado actual de los plugins y comprobar que su estado
+  real se corresponda con el que muestra la interfaz. Esta nueva revisión
+  complementa las comprobaciones anteriores de P04, P05 y P06.
+  **Parcial — AUDITOR:** corregidas integridad y firma al activar/verificar,
+  restauración segura al arrancar, dependencias, limpieza de runtimes,
+  cuarentena persistente y escrituras concurrentes. Falta la propagación
+  inmediata de cambios y revocaciones a todos los runtimes e interfaces ya
+  abiertos; las operaciones con una revisión antigua se rechazan y piden recarga.
+  Verificación final: 43 regresiones nuevas; suite completa con 1.013 pruebas y
+  643 subpruebas aprobadas, 1 omisión POSIX y cobertura del 67,83 %.
+- [ ] **P35.** Revisar el feedback del sistema de temas y paletas de colores:
+  comprobar cómo se reflejan los cambios seleccionados en la interfaz y en los
+  ajustes guardados. Definir y añadir opciones básicas de configuración de la
+  GUI; las opciones concretas quedan por determinar en esa revisión.
+- [x] **P36.** Al crear un proyecto, rellenar automáticamente el campo de carpeta
+  de guardado con la ruta predeterminada. Permitir que el usuario la edite o
+  seleccione otra carpeta si lo desea, sin exigir una selección manual para
+  aceptar la ubicación predeterminada.
+
+## Observaciones de GUI del 16/10/2026
+
+- [x] **P37.** Ajustar Inicio al área útil inicial, incluyendo escalado de Windows,
+  para mostrar los cinco launchers completos sin scroll. Mantener cabecera y pie
+  visibles al redimensionar.
+- [x] **P38.** Completar Configuración GUI con las opciones de programa y proyecto
+  agrupadas por temas, reutilizando el catálogo y las validaciones compartidas
+  del CLI. Diferenciar campos editables y automáticos y comprobar persistencia.
+- [x] **P39.** Hacer que la terminal integrada ocupe el espacio disponible al
+  redimensionar; solo la salida debe desplazarse, con entrada y pie visibles.
+- [ ] **P40.** Revisar con AUDITOR el diálogo de permisos de plugins y el bloqueo
+  por firma no válida (mDNS + SSDP Discovery). Distinguir permisos, firma y
+  confianza del editor; relacionado con P34/P05. No asumir fallo del backend
+  ni retirar validaciones de seguridad. Anotación enviada a AUDITOR.
+  **Parcial — AUDITOR:** confirmado que los LCP incluidos de mDNS/SSDP y WOL
+  carecen de firma; el bloqueo es correcto. Corregidos fallos independientes del
+  backend de validación, estado y persistencia, con regresiones. Sigue pendiente
+  distribuir LCP firmados por el editor del proyecto y verificar su instalación
+  real. P42 conserva la evidencia del mismo caso; no es una incidencia adicional.
+- [x] **P41.** Ampliar P36: proponer valores iniciales editables para metadatos
+  técnicos de proyectos, especialmente LAN, sin copiar datos privados del
+  proyecto anterior ni sobrescribir VLF existentes.
+
+La confirmación de cambios sin guardar de LANCTL utiliza ahora un diálogo
+propio con botón principal verde lima, en lugar del aviso «Esta página dice».
+- [ ] **P42.** Seguimiento de P40: revisar permisos y firmas de plugins a partir del
+  bloqueo reportado al activar **LANCTL mDNS + SSDP Discovery**. Relacionado con
+  P34 y con el antecedente de Wake-on-LAN de P05.
+
+  Evidencia reportada: captura del 16/10/2026 del diálogo «Activar LANCTL mDNS +
+  SSDP Discovery», que muestra los permisos `scanner.register`,
+  `functions.register` y `network.scan`. El diálogo informa de que el paquete
+  no tiene una firma válida, solicita un LCP firmado y no permite activarlo.
+  La captura por sí sola no demuestra un fallo del backend: el bloqueo de este
+  paquete sin firma es correcto. La auditoría posterior encontró y corrigió
+  otros fallos de integridad, activación y persistencia, registrados en la matriz.
+
+  Revisión técnica realizada: permisos solicitados/concedidos, autorización
+  del runtime `trusted`, validez de la firma y confianza del editor. La firma de
+  los cuatro plugins `trusted` del catálogo sigue pendiente de distribución;
+  no se ha generado ni autorizado una identidad oficial durante la auditoría.
+
+
+Implementación GUI del 16/10/2026: P36/P37/P38/P39/P41 completados con
+validación local de catálogo compartido, persistencia y distribución a tamaños
+790×570, 960×590, 660×460 y 1440×900. P40/P42: el flujo gráfico ahora permite
+instalar una versión firmada verificada sin recurrir a comandos; la auditoría
+de la distribución/firma de los paquetes sigue separada. No se autoriza un
+paquete sin firma por marcar sus permisos.

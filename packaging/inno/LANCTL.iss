@@ -18,7 +18,7 @@ OutputDir=..\..\dist\release
 OutputBaseFilename=LANCTL-{#MyAppVersion}-windows-x64-setup
 Compression=lzma2/max
 SolidCompression=yes
-SetupIconFile=..\..\assets\lanctl-v3.ico
+SetupIconFile=..\..\assets\launcher-icons\lanctl.ico
 PrivilegesRequired=admin
 UninstallDisplayIcon={app}\LANCTL.exe
 ChangesEnvironment=yes
@@ -49,6 +49,7 @@ Name: "{commonappdata}\LANCTL\projects"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\automation"; Permissions: users-modify
 
 [Files]
+Source: "..\..\assets\launcher-icons\terminal.ico"; DestDir: "{app}\assets\launcher-icons"; Flags: ignoreversion; Components: core
 Source: "{#BuildRoot}\LANCTL.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "{#BuildRoot}\lanip.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "{#BuildRoot}\lanwire.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
@@ -65,17 +66,17 @@ Type: files; Name: "{app}\LANCTL-GUI.exe"
 Type: files; Name: "{app}\landemo.exe"
 
 [Icons]
-Name: "{group}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"
-Name: "{group}\LANCTL CLI"; Filename: "{app}\LANCTL.exe"; Parameters: "--cli"; WorkingDir: "{app}"
-Name: "{group}\LANIP"; Filename: "{app}\lanip.exe"; Parameters: "--tui"; WorkingDir: "{app}"
+Name: "{group}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANCTL CLI"; Filename: "{app}\LANCTL.exe"; Parameters: "--cli"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANIP"; Filename: "{app}\lanip.exe"; Parameters: "--tui"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
 Name: "{group}\LANIP GUI"; Filename: "{app}\lanip.exe"; Parameters: "--gui"; WorkingDir: "{app}"; Tasks: ipgui
-Name: "{group}\LANWIRE Physical"; Filename: "{app}\lanwire.exe"; WorkingDir: "{app}"
-Name: "{group}\LANMON Monitor"; Filename: "{app}\lanmon.exe"; WorkingDir: "{app}"
-Name: "{group}\LANMON Events"; Filename: "{app}\lanmon.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: eventviewer
-Name: "{group}\LANACCESS Administrator (UAC)"; Filename: "{app}\LANCTL.exe"; Parameters: "--admin lanaccess --tui"; WorkingDir: "{app}"; Tasks: accessadmin
-Name: "{group}\LANRACK Viewer"; Filename: "{app}\lanrack.exe"; WorkingDir: "{app}"
-Name: "{group}\LANACCESS Credentials"; Filename: "{app}\lanaccess.exe"; WorkingDir: "{app}"
-Name: "{autodesktop}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\LANWIRE Physical"; Filename: "{app}\lanwire.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANMON Monitor"; Filename: "{app}\lanmon.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANMON Events"; Filename: "{app}\lanmon.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: eventviewer; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANACCESS Administrator (UAC)"; Filename: "{app}\LANCTL.exe"; Parameters: "--admin lanaccess --tui"; WorkingDir: "{app}"; Tasks: accessadmin; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANRACK Viewer"; Filename: "{app}\lanrack.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANACCESS Credentials"; Filename: "{app}\lanaccess.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{autodesktop}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: desktopicon; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
 
 [Tasks]
 Name: ipgui; Description: "Crear acceso directo a la interfaz gráfica de LANIP (requiere WebView2)"; Flags: unchecked

@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="desktop.css">
   <link rel="stylesheet" href="lanip.css">
-</head>
+<link rel="icon" href="../assets/launcher-icons/lanip.svg"></head>
 <body>
 <div class="app-shell" data-component-id="lanctl.app-shell">
   <header class="topbar" data-component-id="lanctl.topbar">
@@ -126,6 +126,7 @@
   </div>
   <p id="record-message" role="status" aria-live="polite"></p>
 </dialog>
+<script src="app-dialogs.js"></script>
 <script src="app.js"></script>
 <dialog id="desktop-dialog"><form id="desktop-form"><h2 id="desktop-dialog-title"></h2><div id="desktop-fields"></div><p id="desktop-error" role="alert"></p><div class="dialog-actions"><button type="button" id="desktop-dismiss">Cancelar</button><button type="submit" class="primary">Aceptar</button></div></form></dialog>
 <dialog id="save-dialog"><h2>Cambios pendientes</h2><p>El proyecto tiene modificaciones sin guardar.</p><div class="dialog-actions"><button data-decision="cancel">Cancelar</button><button data-decision="discard">Descartar</button><button data-decision="save" class="primary">Guardar</button></div></dialog>

@@ -137,6 +137,31 @@ class SuiteApi:
 
         return self._respond("PublisherTrust", operation)
 
+    def install_signed_plugin(self, plugin_id):
+        def operation():
+            import webview
+
+            from lanctl.core.plugins.package import verify_package
+
+            manager = get_plugin_manager()
+            manager.get(plugin_id)
+            if self._desktop._window is None:
+                raise RuntimeError("No hay ventana disponible para seleccionar el LCP firmado")
+            selected = self._desktop._window.create_file_dialog(
+                webview.OPEN_DIALOG, allow_multiple=False, file_types=("Plugin firmado (*.lcp)",)
+            )
+            if not selected:
+                return {"cancelled": True}
+            result = verify_package(selected[0])
+            if result["manifest"].plugin_id != plugin_id:
+                raise ValueError("El paquete no corresponde al plugin seleccionado")
+            if not result["signature"].startswith("VALID_ED25519:"):
+                raise ValueError("El paquete necesita una firma Ed25519 válida")
+            manager.install(selected[0])
+            return self._plugin_payload()
+
+        return self._respond("PluginSignedInstall", operation)
+
     def create_project(self, name, directory="", metadata=None):
         # The existing adapter writes/validates a real VLF before returning success.
         with self._lock:
@@ -181,6 +206,89 @@ class SuiteApi:
 
     def get_settings(self):
         return self._desktop.get_settings()
+
+    def project_defaults(self):
+        def operation():
+            from lanctl.core.projects.paths import resolve_project_path
+
+            return {
+                "directory": str(
+                    resolve_project_path(
+                        "Nuevo proyecto.vlf", load_config().get("projectsDirectory")
+                    ).parent
+                ),
+                "lan": "LAN principal",
+            }
+
+        return self._respond("ProjectDefaults", operation)
+
+    def settings_catalog(self, scope="program"):
+        def operation():
+            # Compatibility adapter: preserves the CLI service validation and
+            # remote backend side effects until this adapter moves to core.
+            from lanctl.apps.ip.interfaces.cli.commands.settings_menu import _entries
+            from lanctl.core.settings_catalog import CATEGORIES
+
+            if scope not in {"program", "project"}:
+                raise ValueError("Ámbito de configuración desconocido")
+            return {
+                "entries": _entries(scope),
+                "categories": {
+                    **CATEGORIES,
+                    "identity": "Identidad del proyecto",
+                    "lan": "Identidad LAN",
+                    "vlan": "VLAN del proyecto",
+                },
+            }
+
+        return self._respond("SettingsCatalog", operation)
+
+    def save_catalog_setting(self, scope, path, value):
+        def operation():
+            import json
+
+            from lanctl.apps.ip.interfaces.cli.commands.settings_menu import _set
+
+            if scope not in {"program", "project"}:
+                raise ValueError("Ámbito de configuración desconocido")
+            _set(scope, path, json.dumps(value, ensure_ascii=False))
+            return {"message": "Configuración guardada"}
+
+        return self._respond("SettingsCatalogSave", operation)
+
+    @staticmethod
+    def _launcher_categories(launcher):
+        return {
+            "lanip": ("ip", "network", "wol"),
+            "lanwire": ("projects", "storage"),
+            "lanrack": ("projects", "storage"),
+            "lanaccess": ("access", "storage"),
+            "lanmon": ("monitor", "logging"),
+        }[launcher]
+
+    def launcher_settings(self, launcher):
+        def operation():
+            from lanctl.apps.ip.interfaces.cli.commands.settings_menu import _entries
+            from lanctl.core.settings_catalog import CATEGORIES
+
+            categories = self._launcher_categories(launcher)
+            entries = [e for e in _entries("program") if e["category"] in categories]
+            return {"entries": entries, "categories": CATEGORIES}
+
+        return self._respond("LauncherSettings", operation)
+
+    def save_launcher_setting(self, launcher, path, value):
+        def operation():
+            import json
+
+            from lanctl.apps.ip.interfaces.cli.commands.settings_menu import _set
+
+            if path.split(".")[0] not in self._launcher_categories(launcher):
+                raise ValueError("El ajuste no pertenece a este launcher")
+            _set("program", path, json.dumps(value, ensure_ascii=False))
+            return {"message": "Configuración guardada"}
+
+        return self._respond("LauncherSettingSave", operation)
 
     def save_settings(self, values):
         with self._lock:
@@ -316,7 +424,7 @@ def run_gui():
     if session:
         session.subscribers.append(observe)
     try:
-        webview.start()
+        webview.start(icon=str(bundled_path("assets/launcher-icons/lanctl.png")))
     finally:
         agent.stop()
         if session:

@@ -101,12 +101,12 @@ def test_project_edit_form_discard_confirmation_and_preserved_revision():
         page.locator('[data-edit-project="example.vlf"]').click()
         assert page.locator("#fields input").count() == 7
         page.locator('[name="name"]').fill("Renamed")
-        page.once("dialog", lambda dialog: dialog.dismiss())
         page.locator("#dismiss").click()
+        page.locator("#confirmation-cancel").click()
         assert page.locator("#dialog").is_visible()
         assert page.evaluate("saved.length") == 0
-        page.once("dialog", lambda dialog: dialog.dismiss())
-        page.evaluate("suiteClose()")
+        page.evaluate("void suiteClose()")
+        page.locator("#confirmation-cancel").click()
         assert page.locator("#dialog").is_visible()
         assert page.evaluate("saved.length") == 0
         page.locator("#submit").click()
@@ -114,4 +114,33 @@ def test_project_edit_form_discard_confirmation_and_preserved_revision():
         assert page.evaluate("saved[0][2]") == "rev-1"
         assert page.evaluate("saved[0][1].name") == "Renamed"
         assert page.locator(".panel h2").inner_text() == "Renamed"
+        browser.close()
+
+
+def test_home_terminal_and_project_defaults_fit_client_area():
+    playwright = pytest.importorskip("playwright.sync_api")
+    with playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch(channel="msedge", headless=True)
+        page = browser.new_page()
+        page.goto((Path(__file__).resolve().parents[1] / "gui/suite.html").as_uri())
+        page.evaluate("""() => {
+          window.pywebview={api:{
+            project_state:async()=>({ok:true,dirty:false}),
+            project_defaults:async()=>({ok:true,directory:'C:/Projects',lan:'LAN principal'})
+          }};
+        }""")
+        for width, height in ((790, 570), (660, 460), (1440, 900)):
+            page.set_viewport_size({"width": width, "height": height})
+            page.evaluate("state.page='home';render()")
+            assert page.locator("#content").evaluate("e=>e.scrollHeight<=e.clientHeight+1")
+            assert page.locator("[data-launcher-settings]").count() == 5
+            page.evaluate("state.page='terminal';render()")
+            page.locator("#terminal-output").evaluate("e=>e.textContent='line\\n'.repeat(500)")
+            assert page.locator("#content").evaluate("e=>e.scrollHeight<=e.clientHeight+1")
+            assert page.locator("#command").is_visible()
+            assert page.locator("#terminal-output").evaluate("e=>e.scrollHeight>e.clientHeight")
+        page.evaluate("void newProject()")
+        assert page.locator('[name="directory"]').input_value() == "C:/Projects"
+        assert page.locator('[name="directory"]').is_editable()
+        assert page.locator('[name="lan"]').input_value() == "LAN principal"
         browser.close()

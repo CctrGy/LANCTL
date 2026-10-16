@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from lanctl.core.file_transaction import atomic_write_json, locked_file
+from lanctl.core.file_transaction import atomic_write_json, locked_file, transactional_method
 from lanctl.core.paths import application_path
 from lanctl.core.plugins.package import verify_package
 
@@ -20,6 +21,7 @@ class TrustedPublisherStore:
     def list(self) -> list[dict]:
         return sorted(self._read().values(), key=lambda item: item["name"].casefold())
 
+    @transactional_method
     def trust_package(self, package: str | Path, name: str = "") -> dict:
         result = verify_package(package)
         signature = str(result["signature"])
@@ -38,6 +40,7 @@ class TrustedPublisherStore:
         self._write(publishers)
         return entry
 
+    @transactional_method
     def revoke(self, fingerprint: str) -> bool:
         normalized = fingerprint.strip().casefold()
         publishers = self._read()
@@ -55,9 +58,20 @@ class TrustedPublisherStore:
             return {}
         try:
             document = json.loads(self.path.read_text(encoding="utf-8"))
+            if not isinstance(document, dict) or document.get("schemaVersion") != 1:
+                raise ValueError("schema de editores no compatible")
             values = document.get("publishers", {})
             if not isinstance(values, dict):
                 raise ValueError("publishers debe ser un objeto")
+            for key, value in values.items():
+                if (
+                    not re.fullmatch(r"[0-9a-fA-F]{64}", key)
+                    or not isinstance(value, dict)
+                    or not isinstance(value.get("fingerprint"), str)
+                    or value.get("fingerprint", "").casefold() != key.casefold()
+                    or not isinstance(value.get("name"), str)
+                ):
+                    raise ValueError("entrada de editor no válida")
             return {str(key).casefold(): dict(value) for key, value in values.items()}
         except (OSError, json.JSONDecodeError, TypeError, ValueError) as error:
             raise ValueError(f"almacén de editores confiables no válido: {self.path}") from error
