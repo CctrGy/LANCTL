@@ -273,7 +273,7 @@ class TuiTests(unittest.TestCase):
         tui._manual_save.assert_called_once_with()
         self.assertIn("Proyecto guardado", tui.modal.footer)
 
-    def test_ctrl_s_does_not_save_settings_directly(self):
+    def test_ctrl_s_saves_settings_without_saving_project(self):
         field = SettingField("workers", "Workers", "--workers", "64", "64", "entero")
         tui = LanctlTui.__new__(LanctlTui)
         tui.modal = ModalState("settings", "SETTINGS", ["GENERAL"], [[]], items=[field])
@@ -283,7 +283,7 @@ class TuiTests(unittest.TestCase):
         tui.handle_key("CTRL_S")
 
         tui._manual_save.assert_not_called()
-        tui._save_settings.assert_not_called()
+        tui._save_settings.assert_called_once_with(tui.modal)
 
     def test_settings_exit_menu_saves_through_the_settings_command(self):
         tui = LanctlTui.__new__(LanctlTui)

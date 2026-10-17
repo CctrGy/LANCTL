@@ -1,0 +1,1580 @@
+/* LANWIRE workspace: independent list and interactive topology, real RPC operations. */
+const wireBase = { render, refresh, records, fullDetails, settings, wireEdit };
+const wireNames = {
+  "device.switch": "Switch de red",
+  "device.router": "Router",
+  "device.pc": "Ordenador",
+  "device.server": "Servidor",
+  "device.outlet": "Toma de red",
+  "device.panel": "Panel de conexiones",
+  panel: "Panel de conexiones",
+  wire: "Cable",
+  rack: "Rack",
+  "external.supply": "Suministro del proveedor",
+  "wire.copper": "Cable de cobre",
+  "wire.fiber": "Cable de fibra",
+  "wire.dac": "Cable DAC",
+  element: "Elemento",
+  "device.gateway": "Puerta de enlace",
+  "device.workstation": "Estación de trabajo",
+  "connection.rj45": "RJ45",
+  "connection.fiber": "Fibra óptica",
+  "connection.dac": "DAC",
+  "connection.unknown": "Sin especificar",
+};
+function wireName(v) {
+  return (
+    wireNames[v] ||
+    String(v || "Elemento")
+      .replace(/^device\./, "")
+      .replace(/[._]/g, " ")
+  );
+}
+const wireModes = [
+  ["wired", "Cable"],
+  ["wifi", "Wi-Fi"],
+  ["mixed", "Cable y Wi-Fi"],
+];
+function wireReadPrefs() {
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem("lanwire.gui.preferences") || "{}",
+    );
+    if (saved.schemaVersion !== 1) return {};
+    return {
+      ...saved,
+      view: ["map", "list"].includes(saved.view) ? saved.view : "map",
+      depth:
+        Number.isInteger(saved.depth) && saved.depth >= 1 && saved.depth <= 10
+          ? saved.depth
+          : 1,
+      columns: Array.isArray(saved.columns)
+        ? saved.columns
+        : ["id", "type", "connections", "rack", "mode"],
+    };
+  } catch {
+    return {};
+  }
+}
+let wirePrefs = {
+  schemaVersion: 1,
+  depth: 1,
+  labels: true,
+  minimap: false,
+  view: "map",
+  columns: ["id", "type", "connections", "rack", "mode"],
+  ...wireReadPrefs(),
+};
+view = wirePrefs.view;
+let wireFilter = {
+    kind: "",
+    prefix: "",
+    group: "",
+    rack: "",
+    mode: "",
+    status: "",
+    medium: "",
+  },
+  wireSort = { key: "name", direction: 1 };
+let camera = { x: 40, y: 40, z: 1 },
+  wirePositions = {},
+  wireFocus = null,
+  wireHidden = new Set(),
+  wireHistory = [],
+  wireHistoryIndex = -1,
+  wireDragging = false,
+  wireGraph = null,
+  wireInitialized = false;
+function wireStore() {
+  localStorage.setItem("lanwire.gui.preferences", JSON.stringify(wirePrefs));
+}
+function wirePositionKey() {
+  return "lanwire.layout." + state.storage;
+}
+function wireLoadPositions() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(wirePositionKey()) || "{}");
+    wirePositions = saved.schemaVersion === 1 ? saved.positions || {} : {};
+  } catch {
+    wirePositions = {};
+  }
+}
+function wireSavePositions() {
+  localStorage.setItem(
+    wirePositionKey(),
+    JSON.stringify({ schemaVersion: 1, positions: wirePositions }),
+  );
+}
+function wireConnections(r) {
+  return state.records.filter(
+    (w) =>
+      w.data.type === "wire" &&
+      (w.data.endpoints || []).some((e) => e.device === r.id),
+  );
+}
+function wireFree(r) {
+  return Object.keys(r.data.ports || {}).some(
+    (p) =>
+      !wireConnections(r).some((w) =>
+        w.data.endpoints.some((e) => e.device === r.id && e.port === p),
+      ),
+  );
+}
+records = function () {
+  if (state.launcher !== "lanwire") return wireBase.records();
+  const query = $("#search").value.trim().toLocaleLowerCase(),
+    type = $("#filter").value;
+  let rows = state.records.filter((r) => {
+    const d = r.data,
+      f = wireFilter;
+    return (
+      (!type || d.type === type) &&
+      (!query ||
+        [
+          r.id,
+          r.prefix,
+          d.name,
+          d.alias,
+          d.description,
+          d.ip,
+          ...(r.filterGroups || []),
+          wireName(d.type),
+        ]
+          .join(" ")
+          .toLocaleLowerCase()
+          .includes(query)) &&
+      (!f.kind || (f.kind === "wires") === (d.type === "wire")) &&
+      (!f.prefix || r.prefix === f.prefix) &&
+      (!f.group || (r.filterGroups || d.groups || []).includes(f.group)) &&
+      (!f.rack || view === "map" || d.location?.rack === f.rack) &&
+      (!f.mode || (d.connectionMode || "wired") === f.mode) &&
+      (!f.medium ||
+        d.kind === f.medium ||
+        Object.values(d.ports || {}).some((p) => p.kind === f.medium)) &&
+      (!f.status ||
+        (f.status === "free"
+          ? wireFree(r)
+          : f.status === "connected"
+            ? d.type === "wire"
+              ? d.endpoints?.length
+              : wireConnections(r).length
+            : !(d.type === "wire"
+                ? d.endpoints?.length
+                : wireConnections(r).length)))
+    );
+  });
+  const value = (r) =>
+    wireSort.key === "name"
+      ? labelOf(r)
+      : wireSort.key === "type"
+        ? wireName(r.data.type)
+        : r.id;
+  return rows.sort(
+    (a, b) =>
+      String(value(a)).localeCompare(String(value(b)), "es", {
+        numeric: true,
+      }) * wireSort.direction,
+  );
+};
+refresh = async function () {
+  if (wireDragging) return;
+  await wireBase.refresh();
+  if (state.launcher !== "lanwire") return;
+  for (const o of $("#filter").options) {
+    if (o.value) {
+      const identifier = o.value;
+      o.value = identifier;
+      o.textContent = wireName(identifier);
+    }
+  }
+  if (!wireInitialized) {
+    wireInitialized = true;
+    document.body.classList.add("wire-app");
+    const project = document.createElement("button");
+    project.id = "wire-project";
+    project.textContent = "Cambiar proyecto";
+    project.onclick = () =>
+      wireProjects().catch((e) => message(e.message, true));
+    $("#project-name").parentNode.after(project);
+    const more = document.createElement("button");
+    more.id = "wire-filters";
+    more.textContent = "Filtros";
+    more.onclick = wireFilters;
+    $("#filter").after(more);
+    const clear = document.createElement("button");
+    clear.textContent = "Limpiar";
+    clear.onclick = wireClearFilters;
+    more.after(clear);
+    const active = document.createElement("span");
+    active.id = "wire-active-filters";
+    $(".filterbar").after(active);
+  }
+  $("#wire-active-filters").textContent =
+    Object.values(wireFilter).filter(Boolean).length +
+    " filtros adicionales · Almacén físico compartido";
+};
+renderWire = function (rows, r) {
+  if (!wireInitialized) wireLoadPositions();
+  if (view === "list") {
+    const cols = {
+      id: ["Identificador", (x) => x.id],
+      type: ["Tipo", (x) => wireName(x.data.type)],
+      connections: [
+        "Conexiones",
+        (x) =>
+          x.data.type === "wire"
+            ? (x.data.endpoints || [])
+                .map((e) => e.device + " · " + e.port)
+                .join(" ↔ ")
+            : wireConnections(x)
+                .map((w) => w.id)
+                .join(", "),
+      ],
+      rack: [
+        "Rack / unidad",
+        (x) =>
+          [x.data.location?.rack, x.data.location?.unit]
+            .filter(Boolean)
+            .join(" / "),
+      ],
+      mode: [
+        "Conexión",
+        (x) =>
+          wireModes.find(
+            (m) => m[0] === (x.data.connectionMode || "wired"),
+          )?.[1],
+      ],
+      alias: ["Alias", (x) => x.data.alias],
+      group: [
+        "Grupos",
+        (x) => (x.filterGroups || x.data.groups || []).join(", "),
+      ],
+    };
+    const visible = wirePrefs.columns.filter((k) => cols[k]);
+    $("#canvas").innerHTML =
+      '<div class="wire-list-tools"><button id="wire-columns">Columnas</button><label>Ordenar <select id="wire-sort"><option value="name">Nombre</option><option value="id">Identificador</option><option value="type">Tipo</option></select></label><button id="wire-direction">' +
+      (wireSort.direction === 1 ? "Ascendente ↑" : "Descendente ↓") +
+      "</button></div>" +
+      table(["Elemento", ...visible.map((k) => cols[k][0])], rows, (x) => [
+        labelOf(x),
+        ...visible.map((k) => cols[k][1](x)),
+      ]);
+    $("#wire-columns").onclick = wireColumns;
+    $("#wire-sort").value = wireSort.key;
+    $("#wire-sort").onchange = (e) => {
+      wireSort.key = e.target.value;
+      render();
+    };
+    $("#wire-direction").onclick = () => {
+      wireSort.direction *= -1;
+      render();
+    };
+    wireResizeColumns();
+    return;
+  }
+  wireRenderTopology(rows);
+};
+render = function () {
+  wireBase.render();
+  if (state.launcher !== "lanwire") return;
+  wirePrefs.view = view;
+  wireStore();
+  if (!state.records.length && !$("#wire-board")) return;
+};
+function wireClearFilters() {
+  wireFilter = {
+    kind: "",
+    prefix: "",
+    group: "",
+    rack: "",
+    mode: "",
+    status: "",
+    medium: "",
+  };
+  $("#search").value = "";
+  $("#filter").value = "";
+  wireHidden.clear();
+  render();
+}
+function wireFilters() {
+  const opts = (key, label, values) =>
+    field(label, key, wireFilter[key], "text", [["", "Todos"], ...values]);
+  const unique = (values) =>
+    [...new Set(values.filter(Boolean))].map((v) => [v, v]);
+  showForm(
+    "Filtros de elementos",
+    [
+      opts("kind", "Mostrar", [
+        ["elements", "Equipos e infraestructura"],
+        ["wires", "Cables"],
+      ]),
+      opts("prefix", "Prefijo", unique(state.records.map((r) => r.prefix))),
+      opts(
+        "group",
+        "Grupo",
+        unique(
+          state.records.flatMap((r) => r.filterGroups || r.data.groups || []),
+        ).map(([v]) => [
+          v,
+          {
+            WIRE: "Cables",
+            SWITCHS: "Equipos de distribución",
+            PC: "Ordenadores y servidores",
+          }[v] || v,
+        ]),
+      ),
+      opts(
+        "rack",
+        "Rack",
+        state.records
+          .filter((r) => r.data.type === "rack")
+          .map((r) => [r.id, labelOf(r)]),
+      ),
+      opts("mode", "Tipo de conexión", wireModes),
+      opts("status", "Disponibilidad", [
+        ["connected", "Conectados"],
+        ["disconnected", "Sin conectar"],
+        ["free", "Con puertos libres"],
+      ]),
+      opts("medium", "Medio", [
+        ["wire.copper", "Cobre"],
+        ["wire.fiber", "Fibra"],
+        ["wire.dac", "DAC"],
+      ]),
+    ],
+    async (values) => {
+      wireFilter = values;
+    },
+  );
+}
+function wireColumns() {
+  const note = document.createElement("p");
+  note.textContent =
+    "Identificador, Tipo, Conexiones, Rack, Conexión, Alias y Grupos.";
+  const box = document.createElement("div");
+  for (const [key, label] of [
+    ["id", "Identificador"],
+    ["type", "Tipo"],
+    ["connections", "Conexiones"],
+    ["rack", "Rack"],
+    ["mode", "Conexión"],
+    ["alias", "Alias"],
+    ["group", "Grupos"],
+  ]) {
+    const f = field(label, key, "", "checkbox");
+    f.querySelector("input").checked = wirePrefs.columns.includes(key);
+    box.append(f);
+  }
+  showForm("Columnas de la lista", [note, box], async (v) => {
+    wirePrefs.columns = Object.keys(v);
+    wireStore();
+  });
+}
+function wireEdges() {
+  return state.records
+    .filter((r) => r.data.type === "wire")
+    .map((w) => {
+      const ends = [
+        ...(w.data.source
+          ? [{ device: w.data.source, port: "Proveedor" }]
+          : []),
+        ...(w.data.endpoints || []),
+      ];
+      return { wire: w, a: ends[0], b: ends[1] };
+    });
+}
+function wireNeighborhood(id, depth) {
+  const found = new Set([id]);
+  for (let i = 0; i < depth; i++) {
+    const before = new Set(found);
+    for (const e of wireEdges())
+      if (
+        before.has(e.a?.device) ||
+        before.has(e.b?.device) ||
+        before.has(e.wire.id)
+      ) {
+        found.add(e.wire.id);
+        if (e.a) found.add(e.a.device);
+        if (e.b) found.add(e.b.device);
+      }
+  }
+  return found;
+}
+function wireLayout(nodes) {
+  const levels = new Map(),
+    seen = new Set(),
+    adj = new Map(nodes.map((n) => [n.id, []]));
+  for (const e of wireEdges())
+    if (adj.has(e.a?.device) && adj.has(e.b?.device)) {
+      adj.get(e.a.device).push(e.b.device);
+      adj.get(e.b.device).push(e.a.device);
+    }
+  const roots = [...nodes].sort(
+    (a, b) => (adj.get(b.id)?.length || 0) - (adj.get(a.id)?.length || 0),
+  );
+  let offset = 0,
+    rowY = 0,
+    rowHeight = 0;
+  for (const root of roots) {
+    if (seen.has(root.id)) continue;
+    const queue = [[root.id, 0]],
+      width = new Map(),
+      component = new Map();
+    while (queue.length) {
+      const [id, level] = queue.shift();
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const col = width.get(level) || 0;
+      width.set(level, col + 1);
+      component.set(id, { x: col * 235, y: level * 170 });
+      for (const next of adj.get(id) || [])
+        if (!seen.has(next)) queue.push([next, level + 1]);
+    }
+    const componentWidth = Math.max(1, ...width.values()) * 235;
+    const componentHeight = width.size * 170;
+    if (offset && offset + componentWidth > 1200) {
+      offset = 0;
+      rowY += rowHeight + 70;
+      rowHeight = 0;
+    }
+    for (const [id, p] of component)
+      levels.set(id, { x: offset + p.x, y: rowY + p.y });
+    offset += componentWidth + 70;
+    rowHeight = Math.max(rowHeight, componentHeight);
+  }
+  return levels;
+}
+function wireRenderTopology(rows) {
+  let allowed = new Set(rows.map((r) => r.id));
+  // A matching cable needs its endpoint equipment as visual context, even
+  // when the type filter or search matches only the cable itself.
+  for (const edge of wireEdges()) {
+    if (allowed.has(edge.wire.id)) {
+      if (edge.a) allowed.add(edge.a.device);
+      if (edge.b) allowed.add(edge.b.device);
+    }
+  }
+  if (wireFocus) {
+    const neighborhood = wireNeighborhood(wireFocus, Number(wirePrefs.depth));
+    allowed = new Set([...allowed].filter((id) => neighborhood.has(id)));
+  }
+  const nodes = state.records.filter(
+    (r) =>
+      r.data.type !== "wire" &&
+      r.data.type !== "rack" &&
+      allowed.has(r.id) &&
+      !wireHidden.has(r.id) &&
+      (wirePrefs.showWifi || r.data.connectionMode !== "wifi"),
+  );
+  const automatic = wireLayout(nodes);
+  for (const n of nodes)
+    if (!wirePositions[n.id]) wirePositions[n.id] = automatic.get(n.id);
+  wireGraph = {
+    nodes,
+    edges: wireEdges().filter(
+      (e) =>
+        allowed.has(e.wire.id) ||
+        (allowed.has(e.a?.device) && allowed.has(e.b?.device)),
+    ),
+  };
+  $("#canvas").innerHTML =
+    '<section class="wire-topology"><div class="wire-navigation"><button data-nav="back" title="Vista anterior">←</button><button data-nav="forward" title="Vista siguiente">→</button><button data-nav="out" aria-label="Alejar">−</button><button id="wire-zoom" data-nav="reset">100 %</button><button data-nav="in" aria-label="Acercar">+</button><button data-nav="fit">Ver todo</button><button data-nav="center">Centrar selección</button><button data-nav="focus">Ver conexiones</button><label>Niveles <select id="wire-depth"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></label><button data-nav="all">Topología completa</button><button data-nav="layout">Reorganizar</button><button data-nav="mini">Minimapa</button></div><div id="wire-board" tabindex="0" aria-label="Lienzo de topología. Arrastra el fondo para desplazarte; usa la rueda para ampliar."><div id="wire-world"><svg id="wire-lines"></svg>' +
+    nodes
+      .map(
+        (n) =>
+          `<button class="wire-node ${n.id === selected ? "selected" : ""}" data-node="${esc(n.id)}"><strong>${esc(labelOf(n))}</strong><small>${esc(n.id)} · ${esc(wireName(n.data.type))}</small><span class="wire-ports" ${wirePrefs.showPorts === false ? "hidden" : ""}>${wireOrderedPorts(
+            n,
+          )
+            .map(
+              (p) =>
+                `<span data-port="${esc(p)}" class="${wireConnections(n).some((w) => (w.data.endpoints || []).some((e) => e.device === n.id && e.port === p)) ? "occupied" : "free"}" title="${esc(p)}">▣ ${esc(p)}</span>`,
+            )
+            .join("")}</span></button>`,
+      )
+      .join("") +
+    '</div><svg id="wire-minimap" aria-label="Minimapa"></svg><div class="wire-hint">Arrastrar: mover · Rueda: zoom · Doble clic: detalles · Clic derecho: acciones' +
+    (wireFocus ? " · Enfoque: " + esc(wireFocus) : "") +
+    "</div></div></section>";
+  $("#wire-depth").value = wirePrefs.depth;
+  $("#wire-depth").onchange = (e) => {
+    wirePrefs.depth = Number(e.target.value);
+    wireStore();
+    render();
+    wireFit();
+  };
+  $("#wire-board").onwheel = (e) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    wireZoom(
+      Math.exp(-e.deltaY * 0.001),
+      e.clientX - rect.left,
+      e.clientY - rect.top,
+    );
+  };
+  $("#wire-board").onpointerdown = wirePointer;
+  $("#wire-board").ondblclick = (e) => {
+    const node = e.target.closest("[data-node]");
+    if (node) {
+      clearTimeout(clickTimer);
+      selected = node.dataset.node;
+      fullDetails(state.records.find((r) => r.id === selected));
+    }
+  };
+  $("#wire-board").oncontextmenu = (e) => {
+    e.preventDefault();
+    const n = e.target.closest("[data-node]");
+    if (n) {
+      selected = n.dataset.node;
+      wireContext(state.records.find((r) => r.id === selected));
+    }
+  };
+  $("#wire-board").onkeydown = (e) => {
+    if (
+      [
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+        "+",
+        "-",
+        "Home",
+      ].includes(e.key)
+    )
+      e.preventDefault();
+    if (e.key === "+") wireZoom(1.2);
+    else if (e.key === "-") wireZoom(1 / 1.2);
+    else if (e.key === "Home") wireFit();
+    else {
+      camera.x += e.key === "ArrowLeft" ? 40 : e.key === "ArrowRight" ? -40 : 0;
+      camera.y += e.key === "ArrowUp" ? 40 : e.key === "ArrowDown" ? -40 : 0;
+      wirePaint();
+    }
+  };
+  wirePaint();
+}
+function wirePaint() {
+  if (!$("#wire-world") || !wireGraph) return;
+  $("#wire-world").style.transform =
+    `translate(${camera.x}px,${camera.y}px) scale(${camera.z})`;
+  for (const n of wireGraph.nodes) {
+    const el = document.querySelector('[data-node="' + CSS.escape(n.id) + '"]'),
+      p = wirePositions[n.id];
+    el.style.left = p.x + "px";
+    el.style.top = p.y + "px";
+    el.classList.toggle("selected", n.id === selected);
+    el.classList.toggle("no-labels", !wirePrefs.labels);
+  }
+  const visible = new Set(wireGraph.nodes.map((n) => n.id)),
+    near = wireNeighborhood(selected, 1);
+  $("#wire-lines").innerHTML = wireGraph.edges
+    .filter((e) => visible.has(e.a?.device) || visible.has(e.b?.device))
+    .map((original) => {
+      const e = visible.has(original.a?.device)
+        ? original
+        : { ...original, a: original.b, b: original.a };
+      const a = wireAnchor(e.a),
+        b = visible.has(e.b?.device)
+          ? wireAnchor(e.b)
+          : { x: a.x + 220, y: a.y + 120 };
+      return `<g data-cable="${esc(e.wire.id)}" class="${near.has(e.wire.id) ? "highlight" : ""}"><path d="M${a.x} ${a.y} C${a.x} ${(a.y + b.y) / 2},${b.x} ${(a.y + b.y) / 2},${b.x} ${b.y}"/><text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2}">${wirePrefs.labels ? esc(e.wire.id + " · " + e.a.port + " ↔ " + (e.b?.port || "Sin conectar")) : ""}</text></g>`;
+    })
+    .join("");
+  $("#wire-lines").onclick = (e) => {
+    const cable = e.target.closest("[data-cable]");
+    if (cable) {
+      selected = cable.dataset.cable;
+      fullDetails(state.records.find((r) => r.id === selected));
+    }
+  };
+  $("#wire-zoom").textContent = Math.round(camera.z * 100) + " %";
+  wireMini();
+  wireNavAvailability();
+}
+function wireNavAvailability() {
+  const back = document.querySelector('[data-nav="back"]');
+  const forward = document.querySelector('[data-nav="forward"]');
+  if (back) back.disabled = wireHistoryIndex <= 0;
+  if (forward) forward.disabled = wireHistoryIndex >= wireHistory.length - 1;
+}
+function wireAnchor(endpoint) {
+  const node = document.querySelector(
+    `[data-node="${CSS.escape(endpoint.device)}"]`,
+  );
+  const port = node?.querySelector(
+    `[data-port="${CSS.escape(endpoint.port || "")}"]`,
+  );
+  if (port && wirePrefs.showPorts !== false) {
+    const rect = port.getBoundingClientRect(),
+      board = $("#wire-board").getBoundingClientRect();
+    return {
+      x: (rect.x + rect.width / 2 - board.x - camera.x) / camera.z,
+      y: (rect.y + rect.height / 2 - board.y - camera.y) / camera.z,
+    };
+  }
+  const position = wirePositions[endpoint.device];
+  return { x: position.x + 95, y: position.y + 45 };
+}
+function wireZoom(factor, x, y) {
+  const board = $("#wire-board");
+  if (!board) return;
+  x ??= board.clientWidth / 2;
+  y ??= board.clientHeight / 2;
+  const z = Math.max(0.02, Math.min(3, camera.z * factor));
+  camera.x = x - ((x - camera.x) * z) / camera.z;
+  camera.y = y - ((y - camera.y) * z) / camera.z;
+  camera.z = z;
+  wirePaint();
+}
+function wireBounds() {
+  const ps = wireGraph.nodes.map((n) => wirePositions[n.id]);
+  return {
+    x: Math.min(0, ...ps.map((p) => p.x)),
+    y: Math.min(0, ...ps.map((p) => p.y)),
+    right: Math.max(200, ...ps.map((p) => p.x + 190)),
+    bottom: Math.max(100, ...ps.map((p) => p.y + 100)),
+  };
+}
+function wireFit() {
+  if (!$("#wire-board") || !wireGraph) return;
+  const b = wireBounds(),
+    el = $("#wire-board");
+  camera.z = Math.max(
+    0.02,
+    Math.min(
+      1.5,
+      (el.clientWidth - 80) / (b.right - b.x),
+      (el.clientHeight - 80) / (b.bottom - b.y),
+    ),
+  );
+  camera.x = (el.clientWidth - (b.right - b.x) * camera.z) / 2 - b.x * camera.z;
+  camera.y =
+    (el.clientHeight - (b.bottom - b.y) * camera.z) / 2 - b.y * camera.z;
+  wirePaint();
+}
+function wireCenter() {
+  let p = wirePositions[selected];
+  const el = $("#wire-board");
+  if (!p) {
+    const edge = wireEdges().find((e) => e.wire.id === selected);
+    const points = [edge?.a, edge?.b]
+      .filter((e) => e && wirePositions[e.device])
+      .map((e) => wirePositions[e.device]);
+    if (points.length)
+      p = {
+        x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+        y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
+      };
+  }
+  if (!p || !el) {
+    message("Selecciona un equipo visible para centrarlo.");
+    return;
+  }
+  camera.x = el.clientWidth / 2 - (p.x + 95) * camera.z;
+  camera.y = el.clientHeight / 2 - (p.y + 45) * camera.z;
+  wirePaint();
+}
+function wireRemember() {
+  wireHistory = wireHistory.slice(0, wireHistoryIndex + 1);
+  wireHistory.push({ camera: { ...camera }, focus: wireFocus, selected });
+  wireHistoryIndex = wireHistory.length - 1;
+  wireNavAvailability();
+}
+function wireNavigate(action) {
+  if (action === "back" || action === "forward") {
+    const next = wireHistoryIndex + (action === "back" ? -1 : 1);
+    if (next < 0 || next >= wireHistory.length) return;
+    wireHistoryIndex = next;
+    const h = wireHistory[next];
+    camera = { ...h.camera };
+    wireFocus = h.focus;
+    selected = h.selected;
+    render();
+    return;
+  }
+  if (!wireHistory.length) wireRemember();
+  if (action === "in") wireZoom(1.25);
+  if (action === "out") wireZoom(0.8);
+  if (action === "reset") {
+    wireZoom(1 / camera.z);
+  }
+  if (action === "fit") wireFit();
+  if (action === "center") wireCenter();
+  if (action === "focus") {
+    wireFocus = selected;
+    wireHidden.clear();
+    render();
+    wireFit();
+  }
+  if (action === "all") {
+    wireFocus = null;
+    wireHidden.clear();
+    render();
+    wireFit();
+  }
+  if (action === "layout") {
+    wirePositions = {};
+    render();
+    wireFit();
+    wireSavePositions();
+  }
+  if (action === "mini") {
+    wirePrefs.minimap = !wirePrefs.minimap;
+    wireStore();
+    wirePaint();
+  }
+  wireRemember();
+}
+function wireMini() {
+  const mini = $("#wire-minimap");
+  if (!mini) return;
+  mini.style.display = wirePrefs.minimap ? "block" : "none";
+  const b = wireBounds(),
+    w = b.right - b.x + 80,
+    h = b.bottom - b.y + 80;
+  mini.setAttribute("viewBox", `${b.x - 40} ${b.y - 40} ${w} ${h}`);
+  mini.innerHTML =
+    wireGraph.nodes
+      .map((n) => {
+        const p = wirePositions[n.id];
+        return `<rect x="${p.x}" y="${p.y}" width="${physicalSize(n).w}" height="${physicalSize(n).h}"/>`;
+      })
+      .join("") +
+    `<rect class="viewport" x="${-camera.x / camera.z}" y="${-camera.y / camera.z}" width="${$("#wire-board").clientWidth / camera.z}" height="${$("#wire-board").clientHeight / camera.z}"/>`;
+  mini.onclick = (e) => {
+    const r = mini.getBoundingClientRect(),
+      scale = Math.min(r.width / w, r.height / h),
+      ox = (r.width - w * scale) / 2,
+      oy = (r.height - h * scale) / 2;
+    camera.x =
+      $("#wire-board").clientWidth / 2 -
+      ((e.clientX - r.left - ox) / scale + b.x - 40) * camera.z;
+    camera.y =
+      $("#wire-board").clientHeight / 2 -
+      ((e.clientY - r.top - oy) / scale + b.y - 40) * camera.z;
+    wirePaint();
+  };
+}
+function wirePointer(e) {
+  if (e.button !== 0 || e.target.closest("#wire-minimap")) return;
+  if (e.target.closest("[data-cable]") && !physicalNodeAt(e)) return;
+  const node = e.target.closest("[data-node]") || physicalNodeAt(e);
+  const start = {
+    x: e.clientX,
+    y: e.clientY,
+    c: { ...camera },
+    p: node ? { ...wirePositions[node.dataset.node] } : null,
+  };
+  let moved = false;
+  wireDragging = true;
+  const board = e.currentTarget;
+  (node || board).setPointerCapture(e.pointerId);
+  const move = (ev) => {
+    const dx = ev.clientX - start.x,
+      dy = ev.clientY - start.y;
+    moved ||= Math.abs(dx) + Math.abs(dy) > 4;
+    if (node) {
+      wirePositions[node.dataset.node] = {
+        x: start.p.x + dx / camera.z,
+        y: start.p.y + dy / camera.z,
+      };
+    } else {
+      camera.x = start.c.x + dx;
+      camera.y = start.c.y + dy;
+    }
+    wirePaint();
+  };
+  const up = () => {
+    wireDragging = false;
+    board.removeEventListener("pointermove", move);
+    board.removeEventListener("pointerup", up);
+    if (node) {
+      selected = node.dataset.node;
+      document
+        .querySelectorAll("[data-node]")
+        .forEach((n) =>
+          n.classList.toggle("selected", n.dataset.node === selected),
+        );
+      $("#selection").textContent = labelOf(
+        state.records.find((r) => r.id === selected),
+      );
+      if (moved) wireSavePositions();
+      else {
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(render, 260);
+      }
+    }
+    if (moved) wireRemember();
+  };
+  board.addEventListener("pointermove", move);
+  board.addEventListener("pointerup", up, { once: true });
+  board.addEventListener("pointercancel", up, { once: true });
+}
+function wireContext(r) {
+  const box = document.createElement("div");
+  for (const [label, fn] of [
+    ["Ver y editar datos", () => fullDetails(r)],
+    ["Centrar", () => wireCenterFromDetails(r)],
+    [
+      "Ver conexiones",
+      () => {
+        wireFocus = r.id;
+        view = "map";
+        render();
+        wireFit();
+      },
+    ],
+    [
+      "Contraer esta rama",
+      () => {
+        for (const id of wireNeighborhood(r.id, Number(wirePrefs.depth)))
+          if (id !== r.id) wireHidden.add(id);
+        render();
+      },
+    ],
+    [
+      "Expandir ramas",
+      () => {
+        wireHidden.clear();
+        wirePrefs.depth = Math.min(10, Number(wirePrefs.depth) + 1);
+        render();
+        wireFit();
+      },
+    ],
+  ]) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.onclick = async () => {
+      await dismiss();
+      if (!$("#detail").open) fn();
+    };
+    box.append(b);
+  }
+  showForm("Acciones · " + labelOf(r), [box]);
+}
+async function wireCenterFromDetails(r) {
+  await dismiss();
+  if ($("#detail").open) return;
+  view = "map";
+  selected = r.id;
+  const filtered =
+    !records().some((x) => x.id === r.id) ||
+    (r.data.connectionMode === "wifi" && !wirePrefs.showWifi);
+  if (
+    filtered &&
+    !(await appDecision(
+      "Los filtros ocultan este elemento. ¿Limpiarlos para mostrarlo?",
+    ))
+  )
+    return;
+  if (filtered) {
+    wireClearFilters();
+    wirePrefs.showWifi = true;
+  }
+  wireFocus = null;
+  wireHidden.clear();
+  render();
+  if (r.data.type === "wire") {
+    wireFocus = r.id;
+    render();
+    wireFit();
+  } else wireCenter();
+  wireRemember();
+}
+function wireTabs(sections) {
+  const container = document.createElement("div"),
+    nav = document.createElement("nav");
+  nav.className = "wire-tabs";
+  container.append(nav);
+  sections.forEach(([label, nodes], index) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.setAttribute("role", "tab");
+    const panel = document.createElement("section");
+    panel.className = "wire-tab-panel";
+    panel.hidden = index !== 0;
+    panel.append(...nodes);
+    b.classList.toggle("active", index === 0);
+    b.onclick = () => {
+      container
+        .querySelectorAll(".wire-tab-panel")
+        .forEach((p) => (p.hidden = p !== panel));
+      nav.querySelectorAll("button").forEach((x) => {
+        x.classList.toggle("active", x === b);
+        x.setAttribute("aria-selected", x === b);
+      });
+    };
+    nav.append(b);
+    container.append(panel);
+  });
+  return container;
+}
+function wireAction(label, fn) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = label;
+  b.onclick = () =>
+    Promise.resolve(fn()).catch(
+      (e) => ($("#detail-error").textContent = e.message),
+    );
+  return b;
+}
+fullDetails = function (r) {
+  if (state.launcher !== "lanwire") return wireBase.fullDetails(r);
+  const d = r.data,
+    racks = state.records.filter(
+      (x) => x.data.type === "rack" && x.id !== r.id,
+    );
+  const identity = document.createElement("p");
+  identity.textContent = r.id + " · " + wireName(d.type);
+  const general = [
+    identity,
+    field("Nombre", "name", d.name),
+    field("Alias", "alias", d.alias),
+    field("Descripción", "description", d.description, "textarea"),
+    field(
+      "Conexión",
+      "connectionMode",
+      d.connectionMode || "wired",
+      "text",
+      wireModes,
+    ),
+  ];
+  const location = [
+    field("Rack", "rack", d.location?.rack, "text", [
+      ["", "Sin rack"],
+      ...racks.map((x) => [x.id, labelOf(x)]),
+    ]),
+    field("Unidad", "unit", d.location?.unit, "number"),
+  ];
+  const ports = document.createElement("div");
+  for (const [p, value] of Object.entries(d.ports || {})) {
+    const row = document.createElement("div");
+    row.className = "wire-port-row";
+    const text = document.createElement("span");
+    text.textContent =
+      p +
+      " · " +
+      wireName(value.kind) +
+      " · " +
+      (value.connector || "") +
+      " · " +
+      (wireConnections(r).find((w) =>
+        w.data.endpoints.some((e) => e.device === r.id && e.port === p),
+      )?.id || "Libre");
+    row.append(
+      text,
+      field("Medio", "port_kind_" + p, value.kind || "wire.copper", "text", [
+        ["wire.copper", "Cobre"],
+        ["wire.fiber", "Fibra"],
+        ["wire.dac", "DAC"],
+        ["connection.rj45", "RJ45"],
+        ["connection.fiber", "Fibra óptica"],
+        ["connection.dac", "DAC (conector)"],
+        ["connection.unknown", "Sin especificar"],
+      ]),
+      field("PoE", "port_poe_" + p, String(!!value.poe), "text", [
+        ["false", "No"],
+        ["true", "Sí"],
+      ]),
+      wireAction("Editar puerto", () =>
+        wireOpenAfterSave(() => wirePort(r, p)),
+      ),
+      wireAction("Conexiones", () =>
+        wireOpenAfterSave(() => wirePortConnections(r, p)),
+      ),
+    );
+    ports.append(row);
+  }
+  if (!ports.childNodes.length)
+    ports.textContent = "Este elemento no tiene puertos.";
+  const connections = document.createElement("div");
+  for (const w of d.type === "wire" ? [r] : wireConnections(r)) {
+    const p = document.createElement("p");
+    p.textContent =
+      labelOf(w) +
+      " · " +
+      (w.data.endpoints || [])
+        .map((e) => e.device + " · " + e.port)
+        .join(" ↔ ");
+    connections.append(
+      p,
+      wireAction("Editar conexión", () =>
+        wireOpenAfterSave(() => wireConnect(w)),
+      ),
+    );
+  }
+  if (!connections.childNodes.length)
+    connections.textContent = "Sin conexiones almacenadas.";
+  const technical = document.createElement("dl");
+  const technicalFields = [
+    field(
+      "Grupos (separados por comas)",
+      "groups",
+      (d.groups || []).join(", "),
+    ),
+    field("Dirección IP", "ip", d.ip),
+    field(
+      "Velocidades (separadas por comas)",
+      "speeds",
+      (d.speeds || []).join(", "),
+    ),
+  ];
+  if (d.type === "wire")
+    technicalFields.push(
+      field("Medio del cable", "kind", d.kind || "wire.copper", "text", [
+        ["wire.copper", "Cobre"],
+        ["wire.fiber", "Fibra"],
+        ["wire.dac", "DAC"],
+      ]),
+    );
+  if (d.type === "rack")
+    technicalFields.push(
+      Object.assign(document.createElement("p"), {
+        textContent: `Altura: ${d.units ?? "Sin especificar"} U · Ancho de montaje: ${d.rackDimensions?.widthInches ? d.rackDimensions.widthInches + "″" : "Pendiente de especificar"}. Edita las dimensiones en LANRACK.`,
+      }),
+      wireAction("Abrir LANRACK", () => call("open_gui", "lanrack")),
+    );
+  for (const [k, v] of Object.entries({
+    ...d,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  })) {
+    if (
+      [
+        "ports",
+        "endpoints",
+        "name",
+        "alias",
+        "description",
+        "location",
+      ].includes(k)
+    )
+      continue;
+    const dt = document.createElement("dt"),
+      dd = document.createElement("dd");
+    dt.textContent = wireTechnicalName(k);
+    dd.textContent =
+      typeof v === "object" ? JSON.stringify(v) : String(v ?? "—");
+    technical.append(dt, dd);
+  }
+  const raw = document.createElement("textarea");
+  raw.readOnly = true;
+  raw.rows = 15;
+  raw.value = JSON.stringify(r, null, 2);
+  raw.setAttribute("aria-label", "Registro JSON");
+  const copy = wireAction("Copiar JSON", async () => {
+    try {
+      await navigator.clipboard.writeText(raw.value);
+      message("JSON copiado");
+    } catch {
+      raw.focus();
+      raw.select();
+      if (!document.execCommand("copy"))
+        throw Error("Selecciona el texto y pulsa Ctrl+C.");
+    }
+  });
+  const center = wireAction("Centrar en Topología", () =>
+    wireCenterFromDetails(r),
+  );
+  showForm(
+    "Detalle · " + labelOf(r),
+    [
+      center,
+      wireTabs([
+        ["General", general],
+        ["Ubicación", location],
+        ["Puertos", [ports]],
+        ["Conexiones", [connections]],
+        ["Datos técnicos", [...technicalFields, technical]],
+        ["JSON", [copy, raw]],
+      ]),
+    ],
+    (v) =>
+      call("wire_update", r.id, r.revision, {
+        name: v.name,
+        alias: v.alias,
+        description: v.description,
+        connectionMode: v.connectionMode,
+        rack: v.rack,
+        unit: v.unit ? Number(v.unit) : null,
+        groups: v.groups
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean),
+        ip: v.ip,
+        speeds: v.speeds
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean),
+        ...(v.kind ? { kind: v.kind } : {}),
+        ...(v.units ? { units: Number(v.units) } : {}),
+        portChanges: Object.fromEntries(
+          Object.keys(d.ports || {}).map((p) => [
+            p,
+            { kind: v["port_kind_" + p], poe: v["port_poe_" + p] === "true" },
+          ]),
+        ),
+      }),
+  );
+};
+wireEdit = function (r) {
+  if (state.launcher === "lanwire") return fullDetails(r);
+  return wireBase.wireEdit(r);
+};
+async function wireOpenAfterSave(fn) {
+  if (formOriginal !== JSON.stringify([...new FormData($("#detail-form"))])) {
+    message(
+      "Guarda o cancela los cambios antes de editar puertos o conexiones.",
+    );
+    $("#detail-error").textContent = "Guarda primero los cambios del elemento.";
+    return;
+  }
+  await dismiss();
+  if (!$("#detail").open) fn();
+}
+wirePort = function (r, p) {
+  const ports = Object.keys(r.data.ports || {});
+  p = p || ports[0];
+  const fields = [
+    field(
+      "Puerto",
+      "port",
+      p,
+      "text",
+      ports.map((x) => [x, x]),
+    ),
+    field("Nombre nuevo", "name", p),
+    field("Posición", "position", ports.indexOf(p) + 1, "number"),
+  ];
+  fields[0].querySelector("select").onchange = (e) => {
+    fields[1].querySelector("input").value = e.target.value;
+    fields[2].querySelector("input").value = ports.indexOf(e.target.value) + 1;
+  };
+  showForm("Renombrar o reordenar puerto", fields, (v) =>
+    call("wire_port", r.id, r.revision, v.port, v.name, Number(v.position)),
+  );
+};
+function wirePortConnections(r, p) {
+  const existing = wireConnections(r).find((w) =>
+    w.data.endpoints.some((e) => e.device === r.id && e.port === p),
+  );
+  if (existing) {
+    wireConnect(existing);
+    return;
+  }
+  const cables = state.records.filter(
+    (w) => w.data.type === "wire" && (w.data.endpoints || []).length < 2,
+  );
+  showForm(
+    "Conectar puerto · " + r.id + " · " + p,
+    [
+      field(
+        "Cable disponible",
+        "wire",
+        cables[0]?.id || "",
+        "text",
+        cables.map((w) => [w.id, labelOf(w)]),
+      ),
+    ],
+    async (v) => {
+      const w = state.records.find((x) => x.id === v.wire);
+      if (!w) throw Error("Crea primero un cable con un extremo libre.");
+      await call("wire_connect", w.id, w.revision, [
+        ...(w.data.endpoints || []),
+        { device: r.id, port: p },
+      ]);
+    },
+  );
+}
+async function wireProjects() {
+  const payload = await call("projects");
+  showForm(
+    "Cambiar proyecto",
+    [
+      field(
+        "Proyecto",
+        "project",
+        state.project,
+        "text",
+        payload.projects.map((p) => [p.path, p.name]),
+      ),
+      wireAction("Abrir archivo VLF…", async () => {
+        const result = await call("select_project_file");
+        if (result.path)
+          $("#detail-fields select").add(
+            new Option(result.path, result.path, true, true),
+          );
+      }),
+      Object.assign(document.createElement("p"), {
+        textContent:
+          "El proyecto define el contexto de la suite. Los elementos físicos de LANWIRE pertenecen al almacén compartido indicado en la barra inferior.",
+      }),
+    ],
+    async (v) => {
+      if (!v.project) throw Error("Selecciona un proyecto.");
+      if ((await call("project_state")).dirty) {
+        if (
+          !(await appDecision(
+            "Hay cambios pendientes. ¿Guardarlos antes de cambiar de proyecto?",
+          ))
+        )
+          throw Error("Cambio cancelado; se conserva el proyecto actual.");
+        await call("save_project");
+      }
+      await call("use_project", v.project);
+      wireFocus = null;
+      wirePositions = {};
+      selected = null;
+    },
+  );
+}
+function wireTechnicalName(path) {
+  const names = {
+    type: "Tipo",
+    subtype: "Variante",
+    kind: "Medio",
+    groups: "Grupos",
+    ip: "Dirección IP",
+    speeds: "Velocidades",
+    units: "Altura en unidades",
+    connectionMode: "Tipo de conexión",
+    created_at: "Fecha de creación",
+    updated_at: "Última modificación",
+    portCount: "Número de puertos",
+    portNaming: "Nombres de puertos",
+    portTemplate: "Plantilla de puertos",
+    lanipDevice: "Equipo vinculado en LANIP",
+    schemaVersion: "Versión de formato",
+    active: "Activo",
+    directory: "Carpeta",
+    database: "Base de datos",
+    devices: "Equipos",
+    groups: "Grupos",
+    physical: "Inventario físico",
+    saveMode: "Modo de guardado",
+    saveIntervalMinutes: "Intervalo de guardado (minutos)",
+    networkDatabase: "Inventario de red",
+    networkGroups: "Grupos de red",
+    databaseLog: "Registro de base de datos",
+    credentials: "Almacén de credenciales",
+    iconsDirectory: "Carpeta de iconos",
+    workspace: "Espacio de trabajo",
+    project: "Proyecto",
+    projectId: "Identificador del proyecto",
+    contentHash: "Huella de contenido",
+    metadata: "Metadatos",
+    monitor: "Monitor",
+    monitoring: "Monitorización",
+    runtime: "Ejecución",
+    incidents: "Incidencias",
+    lock: "Bloqueo",
+    profiles: "Perfiles",
+    assignments: "Asignaciones",
+    databases: "Bases de datos",
+    storage: "Almacenamiento",
+    projects: "Proyecto",
+  };
+  return path
+    .split(".")
+    .map(
+      (k) =>
+        names[k] || k.replace(/([a-z])([A-Z])/g, "$1 $2").replaceAll("_", " "),
+    )
+    .join(" › ");
+}
+settings = async function () {
+  if (state.launcher !== "lanwire") return wireBase.settings();
+  const payload = await call("settings");
+  const general = [
+      field("Vista inicial", "pref_view", wirePrefs.view, "text", [
+        ["map", "Topología"],
+        ["list", "Lista"],
+      ]),
+    ],
+    list = [
+      field("Ordenar por", "pref_sort", wireSort.key, "text", [
+        ["name", "Nombre"],
+        ["id", "Identificador"],
+        ["type", "Tipo"],
+      ]),
+    ],
+    topology = [
+      field(
+        "Mostrar nombres y etiquetas",
+        "pref_labels",
+        String(wirePrefs.labels),
+        "text",
+        [
+          ["true", "Sí"],
+          ["false", "No"],
+        ],
+      ),
+      field(
+        "Mostrar enlaces Wi-Fi",
+        "pref_showWifi",
+        String(!!wirePrefs.showWifi),
+        "text",
+        [
+          ["false", "No"],
+          ["true", "Sí"],
+        ],
+      ),
+      field(
+        "Mostrar minimapa",
+        "pref_minimap",
+        String(wirePrefs.minimap),
+        "text",
+        [
+          ["true", "Sí"],
+          ["false", "No"],
+        ],
+      ),
+      field("Niveles de conexiones", "pref_depth", wirePrefs.depth, "number"),
+    ];
+  const connectionsSettings = [
+    field(
+      "Conexión predeterminada de elementos nuevos",
+      "pref_connectionMode",
+      wirePrefs.connectionMode || "wired",
+      "text",
+      wireModes,
+    ),
+    field(
+      "Mostrar puertos en el lienzo",
+      "pref_showPorts",
+      String(wirePrefs.showPorts !== false),
+      "text",
+      [
+        ["true", "Sí"],
+        ["false", "No"],
+      ],
+    ),
+  ];
+  const sections = [
+      ["General", general],
+      ["Puertos y conexiones", connectionsSettings],
+      ["Lista y búsqueda", list],
+      ["Topología", topology],
+    ],
+    entries = new Map();
+  for (const category of ["storage", "projects", "logging"]) {
+    const nodes = [];
+    for (const e of payload.entries.filter((e) => e.category === category)) {
+      const object = e.value === null || typeof e.value === "object",
+        boolean = typeof e.value === "boolean";
+      const f = field(
+        wireTechnicalName(e.path),
+        "setting_" + e.path,
+        object ? JSON.stringify(e.value, null, 2) : String(e.value),
+        object ? "textarea" : typeof e.value === "number" ? "number" : "text",
+        boolean
+          ? [
+              ["true", "Activado"],
+              ["false", "Desactivado"],
+            ]
+          : null,
+      );
+      const input = f.querySelector("input,select,textarea");
+      input.disabled = !!e.readOnly;
+      const note = document.createElement("small");
+      note.textContent =
+        e.readOnly ||
+        "Ajuste compartido de la suite. Las rutas se aplican al volver a abrir la interfaz.";
+      f.append(note);
+      if (!e.readOnly && /directory$/i.test(e.path)) {
+        f.append(
+          wireAction("Elegir carpeta…", async () => {
+            const selected = await call("select_project_directory");
+            if (selected.path) input.value = selected.path;
+          }),
+        );
+      }
+      nodes.push(f);
+      entries.set("setting_" + e.path, e);
+    }
+    sections.push([
+      category === "storage"
+        ? "Almacenamiento"
+        : category === "projects"
+          ? "Proyecto"
+          : "Avanzado",
+      nodes,
+    ]);
+  }
+  const search = field("Buscar configuración", "settings_search");
+  const tabs = wireTabs(sections);
+  search.querySelector("input").oninput = (e) => {
+    const q = e.target.value.toLocaleLowerCase();
+    tabs.querySelectorAll(".wire-tab-panel").forEach((p) => {
+      p.hidden = !!q ? false : p !== tabs.querySelector(".wire-tab-panel");
+      p.querySelectorAll("label").forEach(
+        (l) =>
+          (l.hidden = !!q && !l.textContent.toLocaleLowerCase().includes(q)),
+      );
+    });
+  };
+  const reset = wireAction("Restaurar preferencias visuales", () => {
+    for (const [name, val] of Object.entries({
+      pref_view: "map",
+      pref_sort: "name",
+      pref_labels: "true",
+      pref_showWifi: "false",
+      pref_minimap: "false",
+      pref_depth: 1,
+      pref_connectionMode: "wired",
+      pref_showPorts: "true",
+    }))
+      tabs.querySelector(`[name="${name}"]`).value = val;
+  });
+  showForm(
+    "Configuración de LANWIRE",
+    [search, reset, tabs],
+    async (values) => {
+      const depth = Number(values.pref_depth);
+      if (!Number.isInteger(depth) || depth < 1 || depth > 10)
+        throw Error("Los niveles deben estar entre 1 y 10.");
+      for (const [key, e] of entries) {
+        if (e.readOnly || !(key in values)) continue;
+        const raw = values[key],
+          value =
+            typeof e.value === "boolean"
+              ? raw === "true"
+              : typeof e.value === "number"
+                ? Number(raw)
+                : e.value === null || typeof e.value === "object"
+                  ? JSON.parse(raw)
+                  : raw;
+        if (JSON.stringify(value) !== JSON.stringify(e.value))
+          await call("save_setting", e.path, value);
+      }
+      wirePrefs = {
+        ...wirePrefs,
+        view: values.pref_view,
+        depth,
+        labels: values.pref_labels === "true",
+        showWifi: values.pref_showWifi === "true",
+        minimap: values.pref_minimap === "true",
+        connectionMode: values.pref_connectionMode,
+        showPorts: values.pref_showPorts === "true",
+      };
+      wireSort.key = values.pref_sort;
+      view = wirePrefs.view;
+      wireStore();
+    },
+  );
+};
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-nav]");
+  if (b) wireNavigate(b.dataset.nav);
+});
+let wireLastSize = "";
+new ResizeObserver(() => {
+  if (state.launcher === "lanwire" && view === "map" && $("#wire-board")) {
+    const size =
+      $("#wire-board").clientWidth + ":" + $("#wire-board").clientHeight;
+    if (size !== wireLastSize) {
+      wireLastSize = size;
+      wireFit();
+    } else wirePaint();
+  }
+}).observe($("#canvas"));
+wireNew = function () {
+  const choices = [
+    ["switch.5ports", "Switch · 5 puertos", "SW"],
+    ["switch.12ports", "Switch · 12 puertos", "SW"],
+    ["switch.24ports", "Switch · 24 puertos", "SW"],
+    ["switch.48ports", "Switch · 48 puertos", "SW"],
+    ["router.gateway", "Router", "RT"],
+    ["pc.1port", "Ordenador · 1 puerto", "PC"],
+    ["pc.2ports", "Ordenador · 2 puertos", "PC"],
+    ["server.2ports", "Servidor · 2 puertos", "SR"],
+    ["panel", "Panel de conexiones · 24 puertos", "PN"],
+    ["outlet", "Toma de red · pared y habitación", "PX"],
+    ["wire.copper", "Cable de cobre", "WL"],
+    ["wire.fiber", "Cable de fibra", "FB"],
+    ["wire.dac", "Cable DAC", "WL"],
+    ["rack", "Rack", "RK"],
+  ];
+  const fields = [
+    field(
+      "Tipo",
+      "kind",
+      "switch.24ports",
+      "text",
+      choices.map(([v, l]) => [v, l]),
+    ),
+    field("Prefijo del identificador", "prefix", "SW"),
+    field("Nombre", "name"),
+    field("Alias", "alias"),
+    field("Descripción", "description", "", "textarea"),
+    field(
+      "Tipo de conexión",
+      "connectionMode",
+      wirePrefs.connectionMode || "wired",
+      "text",
+      wireModes,
+    ),
+    field("Altura del rack (unidades)", "units", 42, "number"),
+    field("Ancho de montaje (pulgadas)", "widthInches", 19, "text", [
+      [10, "10″"],
+      [19, "19″"],
+      [21, "21″"],
+      [23, "23″"],
+    ]),
+  ];
+  const height = fields.at(-2).querySelector("input");
+  height.min = 4;
+  height.max = 52;
+  height.step = 1;
+  const change = () => {
+    const kind = fields[0].querySelector("select").value;
+    fields[1].querySelector("input").value = choices.find(
+      (x) => x[0] === kind,
+    )[2];
+    fields.at(-1).hidden = fields.at(-2).hidden = kind !== "rack";
+    height.required = kind === "rack";
+  };
+  fields[0].querySelector("select").onchange = change;
+  change();
+  showForm("Nuevo elemento físico", fields, async (values) => {
+    const { units, widthInches, ...data } = values;
+    const result = await call("wire_create", {
+      ...data,
+      ...(values.kind === "rack"
+        ? { units: Number(units), widthInches: Number(widthInches) }
+        : {}),
+    });
+    selected = result.id;
+  });
+};
+function wireResizeColumns() {
+  document.querySelectorAll("#canvas th").forEach((th) => {
+    const key = th.textContent;
+    const saved = wirePrefs.widths?.[key];
+    if (saved) th.style.width = saved + "px";
+    const grip = document.createElement("span");
+    grip.className = "wire-column-grip";
+    grip.title = "Arrastrar para cambiar la anchura";
+    th.append(grip);
+    grip.onpointerdown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const start = e.clientX,
+        width = th.getBoundingClientRect().width;
+      grip.setPointerCapture(e.pointerId);
+      grip.onpointermove = (ev) => {
+        th.style.width = Math.max(90, width + ev.clientX - start) + "px";
+      };
+      grip.onpointerup = () => {
+        wirePrefs.widths = {
+          ...wirePrefs.widths,
+          [key]: th.getBoundingClientRect().width,
+        };
+        wireStore();
+        grip.onpointermove = null;
+      };
+    };
+  });
+}

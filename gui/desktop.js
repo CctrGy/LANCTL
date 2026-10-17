@@ -73,13 +73,15 @@ async function protectProject() {
   return true;
 }
 async function desktopClose() {
-  if(desktopBusy) return message("Espera a que termine la operación o cancela el escaneo.", true);
+  if(window.desktopClosing)return;window.desktopClosing=true;
   try {
+    if(desktopBusy){await call("cancel_scan");let stopped=false;for(let i=0;i<100;i++){if(!(await call("scan_status")).running){stopped=true;break;}await new Promise(resolve=>setTimeout(resolve,100));}if(!stopped)return message("Cancelación solicitada. Espera a que termine la operación y vuelve a cerrar.",true);}
     const status = await call("project_state");
     const decision = status.dirty || editorDirty() ? await chooseSave() : "discard";
     if(decision === "save") await commitEditor();
     if(decision !== "cancel") await call("request_close", decision);
   } catch(error) { message(error.message, true); }
+  finally {window.desktopClosing=false;}
 }
 function showForm(title, fields, submit) {
   const dialog = $("#desktop-dialog"), host = $("#desktop-fields");
@@ -87,6 +89,9 @@ function showForm(title, fields, submit) {
   $("#desktop-error").textContent = "";
   host.replaceChildren();
   fields.forEach(field => {
+    if(field.section && ![...host.querySelectorAll("h3")].some(heading=>heading.textContent===field.section)) {
+      const heading=document.createElement("h3");heading.textContent=field.section;host.append(heading);
+    }
     const choices=field.choices || {discovery:["icmp","arp","hybrid"],scanProfile:["fast","normal","accurate"],projectSaveMode:["manual","manual.inCloseConsult","automatic.toClose","automatic.toScan","automatic.timeToSave","automatic.allChanges"]}[field.key];
     const label = document.createElement("label"), input = document.createElement(choices?"select":"input");
     if(choices) choices.forEach(choice=>input.add(new Option(choice.label||choice,choice.value||choice)));
@@ -109,19 +114,27 @@ renderInventory = function(payload) {
   inventorySnapshot = payload;
   const select = $("#group-filter"), previous = select.value;
   select.replaceChildren(new Option("Todos los grupos", ""));
-  [...new Set((payload.devices||[]).flatMap(device=>device.groups))].sort().forEach(group=>select.add(new Option(group, group)));
+  [...new Set([...(payload.devices||[]).flatMap(device=>device.groups),...(payload.groupCatalog||[]).map(group=>group.name)])].sort().forEach(group=>select.add(new Option(group, group)));
   select.value = previous;
+  for(const [id,values] of [["#vendor-filter",(payload.devices||[]).map(d=>d.manufacturer)],["#protocol-filter",(payload.devices||[]).flatMap(d=>d.protocols)]]){
+    const input=$(id),value=input.value;input.replaceChildren(new Option("Todos",""));[...new Set(values.filter(Boolean))].sort().forEach(item=>input.add(new Option(item,item)));input.value=value;
+  }
   filterInventory();
 };
 function filterInventory() {
   if(!inventorySnapshot) return;
   const filter = $("#state-filter").value, group = $("#group-filter").value;
   const query = $("#device-search").value.toLocaleLowerCase();
+  const vendor=$("#vendor-filter").value,protocol=$("#protocol-filter").value,cnf=$("#cnf-filter").value,membership=$("#membership-filter").value;
   const mapping = {vendor:"manufacturer", group:"groups", latency:"responseMs", state:"active"};
   const key = mapping[sortColumn] || sortColumn;
   const devices = (inventorySnapshot.devices||[]).filter(device =>
     (filter === "all" || (filter === "active" ? device.active : !device.active)) &&
     (!group || device.groups.includes(group)) &&
+    (!vendor || device.manufacturer===vendor) &&
+    (!protocol || device.protocols.includes(protocol)) &&
+    (!cnf || (device.editableCnf??device.cnf)===cnf) &&
+    (!membership || (membership==="grouped"?device.groups.length>0:device.groups.length===0)) &&
     [device.ip,device.mac,device.alias,device.name,device.manufacturer,...device.groups].join(" ").toLocaleLowerCase().includes(query)
   ).sort((a,b)=>sortDirection*String(a[key]??"").localeCompare(String(b[key]??""),undefined,{numeric:true}));
   inventoryRenderer({...inventorySnapshot,devices});
@@ -132,7 +145,7 @@ window.addEventListener("pywebviewready", () => {
   desktopReady = true;
   replaceHandler("#project-save","click",async()=>{
     setBusy(true,"Guardando proyecto…");
-    try {await commitEditor(); const payload=await call("save_project"); renderProjects(payload); renderInventory(payload); message(payload.message);}
+    try {await commitEditor(); const payload=await call("save_project"); renderProjects(payload); renderInventory(payload);message(payload.message);}
     catch(error){message(error.message,true);} finally{setBusy(false);}
   });
   replaceHandler("#save-device","click",async()=>{
@@ -166,14 +179,13 @@ window.addEventListener("pywebviewready", () => {
     filterInventory();
   }));
   replaceHandler("#scan-network", "click", async()=>{
-    if(!confirm("¿Escanear la red autorizada con el perfil seleccionado?")) return;
     setBusy(true,"Escaneando la red…");
     $("#cancel-scan").hidden=false; $("#scan-progress").hidden=false;
     const poll=setInterval(async()=>{
       try {const status=await call("scan_status"); $("#scan-progress").value=100*status.current/Math.max(1,status.total);}
       catch(error) { message(error.message,true); }
     },500);
-    try {const payload=await call("scan_network",$("#scan-profile").value); renderInventory(payload); message(payload.message);}
+    try {const target=window.lanipScanTarget;const payload=await call("scan_network",$("#scan-profile").value,...(target?[target.source,target.network]:[])); renderInventory(payload);window.lanipScanCompleted?.(); message(payload.message);}
     catch(error) {message(error.message,true);}
     finally {clearInterval(poll); $("#cancel-scan").hidden=true; $("#scan-progress").hidden=true; setBusy(false);}
   });

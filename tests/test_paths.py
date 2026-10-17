@@ -53,10 +53,10 @@ class ApplicationPathTests(unittest.TestCase):
                 patch.object(sys, "executable", str(executable)),
                 patch.dict("os.environ", {}, clear=True),
             ):
-                self.assertEqual(data_root(), root / "data" / "lanctl")
+                self.assertEqual(data_root(), (root / "data" / "lanctl").resolve())
                 self.assertEqual(
                     application_path("data/lc/monitor.db"),
-                    root / "data" / "lanctl" / "monitoring" / "monitor.db",
+                    (root / "data" / "lanctl" / "monitoring" / "monitor.db").resolve(),
                 )
             override = root / "explicit"
             with (
@@ -64,7 +64,7 @@ class ApplicationPathTests(unittest.TestCase):
                 patch.object(sys, "executable", str(executable)),
                 patch.dict("os.environ", {"LANCTL_DATA_DIR": str(override)}, clear=True),
             ):
-                self.assertEqual(data_root(), override)
+                self.assertEqual(data_root(), override.resolve())
 
     @unittest.skipUnless(sys.platform == "win32", "semántica de rutas de Windows")
     def test_windows_service_secrets_are_not_taken_from_a_user_profile(self):
@@ -101,8 +101,8 @@ class ApplicationPathTests(unittest.TestCase):
                 patch("lanctl.core.paths.Path.home", return_value=home),
                 patch.dict("os.environ", {}, clear=True),
             ):
-                self.assertEqual(data_root(), home / ".local/share/lanctl")
-                self.assertEqual(secret_root(), home / ".config/lanctl/access")
+                self.assertEqual(data_root(), (home / ".local/share/lanctl").resolve())
+                self.assertEqual(secret_root(), (home / ".config/lanctl/access").resolve())
             with (
                 patch.object(sys, "frozen", True, create=True),
                 patch.object(sys, "executable", str(executable)),
@@ -119,16 +119,19 @@ class ApplicationPathTests(unittest.TestCase):
         ):
             root = Path(temporary)
             self.assertEqual(
-                application_path("data/lc/icons/router.png"), root / "config/icons/router.png"
+                application_path("data/lc/icons/router.png"),
+                (root / "config/icons/router.png").resolve(),
             )
-            self.assertEqual(application_path("data/lc/log/now.log"), root / "logs/now.log")
+            self.assertEqual(
+                application_path("data/lc/log/now.log"), (root / "logs/now.log").resolve()
+            )
             self.assertEqual(
                 application_path("data/lc/recurrent-elements.json"),
-                root / "automation/recurrent-elements.json",
+                (root / "automation/recurrent-elements.json").resolve(),
             )
             self.assertEqual(
                 application_path("data/lc/plugins/demo/plugin.info"),
-                root / "plugins/demo/plugin.info",
+                (root / "plugins/demo/plugin.info").resolve(),
             )
 
 

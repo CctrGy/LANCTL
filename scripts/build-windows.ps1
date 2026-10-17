@@ -1,5 +1,5 @@
 [CmdletBinding()] param(
-    [string]$Version = '0.3.3',
+    [string]$Version = '0.3.4-alpha.1',
     [switch]$SkipInstaller,
     [switch]$AllowDirty,
     [string]$SigningCertificateThumbprint = '',
@@ -114,6 +114,11 @@ try {
     Copy-Item dist\lanrack.exe (Join-Path $portable 'lanrack.exe')
     Copy-Item dist\lanaccess.exe (Join-Path $portable 'lanaccess.exe')
     Copy-Item packaging\portable\README-portable.txt (Join-Path $portable 'README-portable.txt')
+    Copy-Item packaging\portable\prepare.ps1 (Join-Path $portable 'prepare.ps1')
+    $ClinkDirectory = Join-Path $portable 'clink'
+    New-Item -ItemType Directory -Path $ClinkDirectory | Out-Null
+    Copy-Item packaging\clink\lanctl.lua (Join-Path $ClinkDirectory 'lanctl.lua')
+    Copy-Item packaging\clink\README.md (Join-Path $ClinkDirectory 'README.md')
     Set-Content -LiteralPath (Join-Path $portable 'LANCTL.portable') -Value 'LANCTL-PORTABLE-V1' -Encoding ascii
     Compress-Archive -Path "$portable\*" -DestinationPath "dist\release\LANCTL-$Version-windows-x64-portable.zip" -Force
     if (-not $SkipInstaller) {

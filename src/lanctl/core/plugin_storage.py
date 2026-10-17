@@ -13,12 +13,14 @@ _PLUGIN_ID = re.compile(r"^[a-z][a-z0-9.-]+$")
 class PluginStorage:
     """JSON transportable, transaccional y separado del inventario Device."""
 
-    def __init__(self, root: str | Path, plugin_id: str):
+    def __init__(self, root: str | Path, plugin_id: str, *, authorize=None):
         if not _PLUGIN_ID.fullmatch(plugin_id):
             raise ValueError("id de plugin no válido")
         self.path = Path(root) / f"{plugin_id}.json"
+        self._authorize = authorize or (lambda: None)
 
     def load(self) -> dict:
+        self._authorize()
         if not self.path.exists():
             return {"schemaVersion": 1, "observations": {}}
         value = json.loads(self.path.read_text(encoding="utf-8"))
@@ -34,6 +36,7 @@ class PluginStorage:
     def put_observations(self, observations: Mapping[str, dict]) -> None:
         """Guarda un lote con una sola lectura y una sola escritura del JSON."""
 
+        self._authorize()
         batch: dict[str, dict] = {}
         for device_id, observation in observations.items():
             if not device_id or not isinstance(observation, dict):

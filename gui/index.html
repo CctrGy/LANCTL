@@ -6,44 +6,48 @@
   <title>LANIP</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="desktop.css">
-</head>
+  <link rel="stylesheet" href="lanip.css">
+<link rel="icon" href="../assets/launcher-icons/lanip.svg"><link rel="stylesheet" href="app-preferences.css"></head>
 <body>
 <div class="app-shell" data-component-id="lanctl.app-shell">
   <header class="topbar" data-component-id="lanctl.topbar">
-    <div class="brand"><img src="../assets/lanctl-icon-v3.png" alt=""><strong>LANIP</strong><small>Inventario de red</small></div>
+    <div class="brand"><svg class="launcher-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="5" rx="1"/><rect x="2" y="17" width="7" height="5" rx="1"/><rect x="15" y="17" width="7" height="5" rx="1"/><path d="M12 7v5M5.5 17v-5h13v5"/></svg><div><strong>LAN<span>IP</span></strong><small>NETWORK INVENTORY</small></div></div>
     <div class="project"><span>Proyecto</span><select id="project-select" aria-label="Proyecto activo"><option value="">Sin proyecto</option></select><button id="project-open" title="Seleccionar un archivo VLF">Abrir…</button><button id="project-new" title="Crear proyecto y elegir ubicación">＋</button><button id="project-save" title="Guardar proyecto">Guardar</button></div>
-    <button id="desktop-settings">Configuración</button>
-    <div class="connection"><span>Sesión local</span></div>
+    <button id="new-group">＋ Nuevo grupo</button><button id="desktop-settings">Configuración</button>
+    <div class="connection"><span>● Sesión local</span></div>
   </header>
 
-  <nav class="main-navigation"><button class="active" data-panel="devices">Dispositivos</button><span id="plugin-navigation"></span><button data-panel="activity">Historial</button></nav>
+  <nav class="main-navigation"><button class="active" data-panel="devices">Volver al inventario</button><span id="plugin-navigation"></span><button data-panel="activity">Historial</button></nav>
   <main id="devices-panel" class="content" data-component-id="lanctl.content">
     <section class="commandbar">
+      <div class="scan-controls" role="group" aria-label="Escaneo y actualización">
       <button id="scan-network" class="primary" data-component-id="lanctl.primary-action">↻ Escanear red</button>
       <select id="scan-profile" aria-label="Perfil de escaneo"><option value="fast">Rápido</option><option value="normal" selected>Normal</option><option value="accurate">Preciso</option></select>
       <button id="cancel-scan" hidden>Cancelar escaneo</button>
+      <button id="refresh-devices" data-component-id="lanctl.secondary-action" title="Actualizar la vista sin escanear">Actualizar</button>
+      </div>
+      <label class="search"><span aria-hidden="true">⌕</span><input id="device-search" aria-label="Buscar dispositivos" placeholder="Buscar por IP, MAC, nombre o fabricante…"><kbd>Ctrl K</kbd></label>
+      <div class="filter-controls" role="group" aria-label="Filtros de inventario">
+      <span class="control-caption">FILTRAR</span>
       <select id="state-filter" aria-label="Filtrar estado"><option value="all">Todos</option><option value="active">Activos</option><option value="inactive">No detectados</option></select>
       <select id="group-filter" aria-label="Filtrar grupo"><option value="">Todos los grupos</option></select>
-      <button id="refresh-devices" data-component-id="lanctl.secondary-action">Actualizar inventario</button>
-      <button id="undo-edit" title="Deshacer última edición (Ctrl+Z)" disabled>↶ Deshacer</button>
-      <button id="redo-edit" title="Rehacer última edición (Ctrl+Y)" disabled>↷ Rehacer</button>
+      <details id="advanced-filters"><summary>Más filtros</summary><div><label>Fabricante<select id="vendor-filter"><option value="">Todos</option></select></label><label>Protocolo<select id="protocol-filter"><option value="">Todos</option></select></label><label>Confirmación<select id="cnf-filter"><option value="">Todas</option><option>O</option><option>X</option><option>S</option><option>F</option><option>-</option></select></label><label>Agrupación<select id="membership-filter"><option value="">Todos</option><option value="grouped">Con grupo</option><option value="ungrouped">Sin grupo</option></select></label><button id="clear-filters" type="button">Limpiar filtros</button></div></details>
+      </div>
+      <div class="list-controls" role="group" aria-label="Vista y edición">
+      <label class="view-picker">Vista <select id="inventory-view"><option value="essential">Esencial</option><option value="complete">Completa</option><option value="custom">Personalizada</option></select></label>
       <details class="column-menu"><summary>Columnas</summary><div id="column-options"></div></details>
-      <label class="search">⌕<input id="device-search" placeholder="Filtrar por IP, MAC, alias, nombre, fabricante o grupo"></label>
-      <div class="summary" data-component-id="lanctl.status-cards">
-        <span><b id="metric-total">0</b> elementos</span>
-        <span class="healthy"><b id="metric-active">0</b> activos</span>
-        <span class="warning-text"><b id="metric-alerts">0</b> no detectados</span>
-        <span><b id="metric-switches">0</b> switches</span>
+      <button id="undo-edit" title="Deshacer última edición (Ctrl+Z)" aria-label="Deshacer edición" disabled>↶</button>
+      <button id="redo-edit" title="Rehacer última edición (Ctrl+Y)" aria-label="Rehacer edición" disabled>↷</button>
       </div>
     </section>
 
     <section class="table-panel" data-component-id="lanctl.device-table">
       <div class="table-title">
-        <div><h1>Elementos de red</h1><p id="status-message" role="status" aria-live="polite">Cargando inventario del núcleo de LANCTL…</p><progress id="scan-progress" hidden max="100" value="0"></progress></div>
-        <div class="legend"><span><i></i>Activo</span><span><i class="warning"></i>No detectado</span></div>
+        <div><h1>Inventario de red</h1><p id="status-message" role="status" aria-live="polite">Cargando inventario del núcleo de LANCTL…</p><progress id="scan-progress" hidden max="100" value="0"></progress></div>
+        <div class="summary" data-component-id="lanctl.status-cards"><span><b id="metric-total">0</b> equipos</span><span class="healthy"><b id="metric-active">0</b> activos</span><span class="warning-text"><b id="metric-alerts">0</b> sin respuesta</span><span><b id="metric-switches">0</b> switches</span></div>
       </div>
-      <div class="table-scroll">
-        <table>
+      <div class="table-scroll" tabindex="0" aria-label="Lista de dispositivos; desplazamiento horizontal disponible">
+        <table aria-label="Inventario de dispositivos">
           <thead><tr>
             <th class="state-column" data-column="state">Estado</th><th data-column="icon">Tipo</th><th data-column="ip">IP</th><th data-column="latency">ms</th><th data-column="cnf">CNF</th>
             <th data-column="alias">Alias</th><th data-column="mac">MAC</th><th data-column="name">Nombre</th><th data-column="vendor">Fabricante</th>
@@ -66,6 +70,7 @@
         <div><dt>Fabricante</dt><dd id="selected-vendor">-</dd></div>
         <div><dt>Protocolos</dt><dd id="selected-protocols">-</dd></div>
       </dl>
+      <details class="inspector-section"><summary>Editar identificación</summary>
       <div class="editable-fields">
         <label>Tipo<select id="edit-icon" class="field"></select></label>
         <label>Alias<input id="edit-alias" class="field" maxlength="80"></label>
@@ -73,16 +78,17 @@
         <label>Confirmación<select id="edit-cnf" class="field"><option>O</option><option>X</option><option>S</option><option>F</option><option>-</option></select></label>
         <label class="description-field">Descripción<input id="edit-description" class="field" maxlength="1000"></label>
       </div>
+      <div class="editor-actions"><button id="save-device" class="primary" data-component-id="lanctl.secondary-action">Guardar cambios</button><button id="device-groups">Grupos</button></div>
+      </details>
+      <div class="inspector-section"><h3>Acceso al equipo</h3>
       <div class="element-actions">
-        <button id="save-device" data-component-id="lanctl.secondary-action">Guardar</button>
-        <button id="device-groups">Grupos</button>
-        <button id="diagnose-device" data-component-id="lanctl.secondary-action">Diagnosticar</button>
-        <button id="show-details" data-component-id="lanctl.secondary-action">Ver detalles</button>
-        <button id="show-shares" data-component-id="lanctl.secondary-action">Ver recursos compartidos</button>
-        <button id="wake-device" data-component-id="lanctl.secondary-action" disabled>Encender</button>
         <button id="open-device" data-component-id="lanctl.secondary-action">Abrir conexión</button>
-        <button id="open-terminal" class="primary" data-component-id="lanctl.primary-action">⌁ Terminal</button>
+        <button id="open-terminal" data-component-id="lanctl.primary-action">›_ Terminal</button>
+        <button id="show-shares" data-component-id="lanctl.secondary-action">Recursos compartidos</button>
+        <button id="wake-device" data-component-id="lanctl.secondary-action" disabled>Encender · WOL</button>
       </div>
+      </div>
+      <div class="inspector-section"><h3>Diagnóstico y servicios</h3><div class="element-actions"><button id="diagnose-device" data-component-id="lanctl.secondary-action">Diagnosticar</button><button id="show-details" data-component-id="lanctl.secondary-action">Ver detalles</button></div></div>
       <pre id="diagnostic-output" hidden></pre>
       <button class="danger contract-only" data-component-id="lanctl.danger-action" disabled aria-hidden="true">Eliminar dispositivo</button>
     </section>
@@ -90,7 +96,7 @@
   <main id="plugin-panel" class="plugin-panel" hidden><section class="plugin-toolbar"><div><h1 id="plugin-title">Recursos compartidos</h1><p id="plugin-description"></p></div><div id="plugin-toolbar-actions"></div></section><section id="plugin-metrics" class="plugin-metrics"></section><section class="plugin-browser"><div class="plugin-table"><input id="plugin-search" placeholder="Buscar servidor, carpeta, impresora o grupo de trabajo"><table><thead><tr id="plugin-head"></tr></thead><tbody id="plugin-rows"></tbody></table><div id="plugin-empty" class="empty-state"></div></div><aside id="plugin-detail"><h2>Selecciona un recurso</h2></aside></section></main>
   <main id="activity-panel" class="plugin-panel" hidden><section class="activity-card"><div class="activity-toolbar"><div><h1>Historial del proyecto</h1><p>Cambios y eventos registrados en el proyecto activo</p></div><button id="activity-refresh">Actualizar</button></div><div class="table-scroll"><table class="activity-table"><thead><tr><th>Fecha</th><th>Elemento</th><th>Evento</th><th>Resultado</th><th>Resumen</th></tr></thead><tbody id="activity-rows"></tbody></table><div id="activity-empty" class="empty-state">No hay eventos registrados.</div></div></section></main>
 
-  <footer class="statusbar"><span>LANCTL <b id="app-version">—</b></span><span>Vista de inventario lógico</span><span id="row-count">0 filas</span></footer>
+  <footer class="statusbar"><span><span class="footer-dot">●</span> LANIP · LANCTL <b id="app-version">—</b> <button id="lanctl-gui">LANCTL</button><button id="lanip-cli">›_ CLI</button><details id="panel-menu"><summary>Paneles</summary><div id="panel-menu-items"></div></details></span><span>Inventario lógico · Ctrl K buscar · Ctrl S guardar</span><span id="row-count">0 filas</span></footer>
 </div>
 <div id="device-context-menu" class="context-menu" role="menu" hidden>
   <button type="button" role="menuitem" data-context-action="select">Seleccionar</button>
@@ -110,6 +116,7 @@
     <button id="close-details" aria-label="Cerrar">×</button>
   </div>
   <div id="details-loading" class="details-loading">Inspeccionando servicios y puertos…</div>
+  <nav class="device-tabs" role="tablist" aria-label="Datos del elemento"><button id="tab-overview" role="tab" aria-selected="true" aria-controls="pane-overview" data-device-tab="overview">Resumen</button><button id="tab-edit" role="tab" aria-selected="false" aria-controls="pane-edit" data-device-tab="edit">Editar</button><button id="tab-groups" role="tab" aria-selected="false" aria-controls="pane-groups" data-device-tab="groups">Grupos</button><button id="tab-ports" role="tab" aria-selected="false" aria-controls="pane-ports" data-device-tab="ports">Puertos y servicios</button><button id="tab-record" role="tab" aria-selected="false" aria-controls="pane-record" data-device-tab="record">Registro completo</button></nav>
   <div id="details-content" hidden>
     <dl id="details-fields" class="details-fields"></dl>
     <section class="services-section">
@@ -117,11 +124,16 @@
       <div id="details-services" class="service-list"></div>
     </section>
   </div>
+  <p id="record-message" role="status" aria-live="polite"></p>
 </dialog>
+<script src="app-dialogs.js"></script>
 <script src="app.js"></script>
 <dialog id="desktop-dialog"><form id="desktop-form"><h2 id="desktop-dialog-title"></h2><div id="desktop-fields"></div><p id="desktop-error" role="alert"></p><div class="dialog-actions"><button type="button" id="desktop-dismiss">Cancelar</button><button type="submit" class="primary">Aceptar</button></div></form></dialog>
 <dialog id="save-dialog"><h2>Cambios pendientes</h2><p>El proyecto tiene modificaciones sin guardar.</p><div class="dialog-actions"><button data-decision="cancel">Cancelar</button><button data-decision="discard">Descartar</button><button data-decision="save" class="primary">Guardar</button></div></dialog>
 <aside id="event-tray" aria-label="Eventos de sesión"><details><summary>Eventos de sesión</summary><ol id="session-events"></ol></details></aside>
 <script src="desktop.js"></script>
-</body>
+<script src="lanip.js"></script>
+<script src="device-sheet.js"></script>
+<script src="lanip-controls.js"></script>
+<script src="app-preferences.js"></script><script src="app-support.js"></script><script src="first-scan.js"></script></body>
 </html>

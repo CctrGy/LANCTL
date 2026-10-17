@@ -1,0 +1,199 @@
+// LANCTL - preferencias editables del usuario por interfaz (17/10/2026).
+// DOCUMENTO DE REVISION: agrupaciones y editar_desde son politica propuesta, no claves del programa.
+// No importar este texto como configuracion. Valores: predeterminados o contexto indicado.
+// REGLA: toda interfaz ofrece los ajustes COMUNES y solo sus preferencias especificas.
+// GUI excluye preferencias CLI/TUI; TUI excluye GUI/CLI; CLI excluye GUI/TUI.
+// CLI/TUI se usa unicamente cuando ambos consumen el mismo ajuste, como ip.listColumns.
+// Un terminal CLI integrado conserva su modo CLI; no convierte sus preferencias en ajustes GUI.
+// El launcher y la interfaz son dimensiones diferentes: LANIP GUI y LANIP TUI comparten dominio, no apariencia.
+// El nombre de un valor (ej. cli.bottom o startup.interface=gui) no determina por si solo su ambito.
+// editar_desde indica exposicion deseada en configuracion; no certifica que exista ya ese control en cada interfaz.
+// Solo editar mediante servicios con validacion. Los campos administrativos requieren autorizacion y flujo propio.
+// P1/P2 son prioridad de exposicion; nunca conceden permisos ni habilitan edicion arbitraria.
+// Excluidos: estado automatico, rutas internas, bases, locks, esquemas, IDs, sesiones, inventario y secretos.
+// Los metadatos editables del proyecto permanecen en su editor de proyecto, separados de preferencias del programa.
+// Los tokens de temas pertenecen al autor del plugin; no hay aqui un editor libre de contratos theme.
+// Plugins: publicar solo preferencias declaradas y validadas, filtradas por interfaz; no exponer su manifiesto.
+// CFG = RAIZ_DATOS/config/config.json. localStorage = perfil/origen del WebView.
+// Hallazgos en el codigo actual, pendientes de corregir en una implementacion posterior:
+// - suite/gui.py settings_catalog entrega _entries(scope) completo y save_catalog_setting delega en _set sin filtro de interfaz.
+// - _launcher_categories filtra categorias por launcher, pero no distingue GUI/TUI/CLI dentro de una categoria.
+// - GUI desktop.SETTINGS incluye cliCommandChaining; TUI show_settings incluye closeGuiOnLaunch y otras preferencias CLI.
+// - settings_catalog.read_only bloquea pocos campos automaticos y admite rutas tecnicas; no basta como lista de ajustes del usuario.
+// Aplicar la misma lista permitida en lectura y escritura del backend; ocultar controles por si solo no impide modificarlos.
+// Este cambio revisa el documento: no implementa esos filtros en el programa.
+{
+  "TUI / LANWIRE": {
+    "panelLayout": "cli.bottom",  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANWIRE TUI | archivo=data/lw/tui.config | origen=src/lanctl/apps/wire/tui/settings.py:16 | prioridad=P1
+    "cliHeight": 12,  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANWIRE TUI | archivo=data/lw/tui.config | origen=src/lanctl/apps/wire/tui/settings.py:16 | prioridad=P1
+    "tableDensity": "comfortable",  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANWIRE TUI | archivo=data/lw/tui.config | origen=src/lanctl/apps/wire/tui/settings.py:16 | prioridad=P1
+    "confirmExit": true,  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANWIRE TUI | archivo=data/lw/tui.config | origen=src/lanctl/apps/wire/tui/settings.py:16 | prioridad=P1
+    "showDescriptions": true,  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANWIRE TUI | archivo=data/lw/tui.config | origen=src/lanctl/apps/wire/tui/settings.py:16 | prioridad=P1
+    "showGroups": true,  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANWIRE TUI | archivo=data/lw/tui.config | origen=src/lanctl/apps/wire/tui/settings.py:16 | prioridad=P1
+    "columnWidths": {"idf": 10, "type": 14, "name": 18, "group": 12, "description": 0}  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANWIRE TUI | archivo=data/lw/tui.config | origen=src/lanctl/apps/wire/tui/settings.py:16 | prioridad=P1 | descripcion=Anchura de las columnas de LANWIRE TUI
+  },
+
+  "GUI / LANIP": {
+    "lanctl.columns": {},  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANIP GUI | archivo=localStorage | origen=gui/lanip.js | prioridad=P1
+    "lanctl.width.<columna>": "ancho px"  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANIP GUI | archivo=localStorage | origen=gui/lanip.js | prioridad=P1
+  },
+
+  "GUI / LANWIRE": {
+    "lanwire.gui.preferences.depth": 1,  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANWIRE GUI | archivo=localStorage | origen=gui/wire-gui.js | prioridad=P1
+    "lanwire.gui.preferences.labels": true,  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANWIRE GUI | archivo=localStorage | origen=gui/wire-gui.js | prioridad=P1
+    "lanwire.gui.preferences.minimap": false,  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANWIRE GUI | archivo=localStorage | origen=gui/wire-gui.js | prioridad=P1
+    "lanwire.gui.preferences.view": "map",  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANWIRE GUI | archivo=localStorage | origen=gui/wire-gui.js | prioridad=P1
+    "lanwire.gui.preferences.columns": ["id", "type", "connections", "rack", "mode"],  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANWIRE GUI | archivo=localStorage | origen=gui/wire-gui.js | prioridad=P1
+    "lanwire.gui.preferences.showWifi": false,  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANWIRE GUI | archivo=localStorage | origen=gui/wire-gui.js | prioridad=P1 | descripcion=Mostrar enlaces Wi-Fi en el lienzo
+    "lanwire.gui.preferences.connectionMode": "wired",  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANWIRE GUI | archivo=localStorage | origen=gui/wire-gui.js | prioridad=P1 | descripcion=Conexión predeterminada para elementos nuevos: wired, wifi o mixed
+    "lanwire.gui.preferences.showPorts": true  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANWIRE GUI | archivo=localStorage | origen=gui/wire-gui.js | prioridad=P1 | descripcion=Mostrar puertos en el lienzo
+  },
+
+  "COMUN / Programa / access": {
+    "access.remote.enabled": false,  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "access.remote.bind": "",  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "access.remote.cidr": "",  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "access.remote.port": 2222,  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "access.remote.passwordAuthentication": false,  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "access.remote.backend": "service",  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2 | opciones=["service", "user"]
+    "access.remote.forcedView": "off"  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2 | opciones=["off", "gui", "tui", "plugins", "projects", "settings"]
+  },
+
+  "CLI / consola": {
+    "cli.promptSaveOnCommandExit": false,  // editar_desde=CLI | acceso=usuario; validacion del servicio | launcher=Consolas CLI compartidas | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1
+    "cli.commandChaining": true,  // editar_desde=CLI | acceso=usuario; validacion del servicio | launcher=Consolas CLI compartidas | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1
+    "ip.progress": true  // editar_desde=CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Progreso textual de comandos; no controla el progreso propio de la GUI o TUI
+  },
+
+  "COMUN / Programa / ip": {
+    "ip.workers": 64,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "ip.timeout": 0.8,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "ip.maxHosts": 4096,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "ip.discovery": "hybrid",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | opciones=["icmp", "arp", "hybrid"]
+    "ip.scanProfile": "normal",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | opciones=["fast", "normal", "accurate"]
+    "ip.scanOrder": "ascending",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | opciones=["ascending", "descending", "random"]
+    "ip.serviceIdentification": true,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1
+    "ip.disconnectedRetention": "permanent",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | opciones=["permanent", "session", "forget"]
+    "ip.disconnectedRetentionTarget": "unconfirmed",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | opciones=["unconfirmed", "all"]
+    "ip.disconnectedRetentionScope": "all",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | opciones=["all", "dhcp"]
+    "ip.radminViewer": null  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | null=sin valor configurado
+  },
+
+  "CLI y TUI / columnas LANIP": {
+    "ip.listColumns": ["ip", "cnf", "alias", "mac", "name", "group", "description"]  // editar_desde=CLI/TUI | acceso=usuario; validacion del servicio | launcher=LANIP | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Columnas de list y del inventario TUI; la GUI usa preferencias locales separadas
+  },
+
+  "COMUN / Programa / localization": {
+    "localization.language": "en"  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Idioma de la interfaz
+  },
+
+  "COMUN / Programa / logging": {
+    "logging.cleanupEnabled": false,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Limpieza automática de registros
+    "logging.retentionDays": 90,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Días de conservación de registros
+    "logging.errorLevel": 20  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2 | descripcion=Umbral de registro de errores; ajuste avanzado
+  },
+
+  "COMUN / Programa / monitor": {
+    "monitor.enabled": false,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1
+    "monitor.profile": "normal",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1
+    "monitor.mode": "permanent",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | opciones=["permanent", "temporary", "diagnostic", "once"]
+    "monitor.authority": "observe",  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | opciones=["observe", "operate", "administer"]
+    "monitor.interface": "",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1
+    "monitor.cidr": "",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1
+    "monitor.duration": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | null=sin valor configurado
+    "monitor.execution.workers": 32,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.execution.timeout": 0.8,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.execution.scanOrder": "ascending",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2 | opciones=["ascending", "descending", "random"]
+    "monitor.execution.failureThreshold": 3,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.execution.recoveryThreshold": 2,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.intervals.criticalDevices": 15,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.intervals.deviceStatus": 60,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.intervals.networkDiscovery": 300,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.intervals.serviceScan": 1800,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.intervals.fullScan": 86400,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.retention.rawSamples": "24h",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.retention.fiveMinuteAggregates": "30d",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.retention.hourlyAggregates": "365d",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "monitor.retention.events": "permanent"  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANMON | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+  },
+
+  "COMUN / Programa / network": {
+    "network.range": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP; LANMON según operación | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Rango de red utilizado por LANIP | null=sin valor configurado
+    "network.dhcpRange": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP; LANMON según operación | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Rango DHCP de referencia; no reconfigura por sí solo el router | null=sin valor configurado
+    "network.tr064Port": 49000,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP; LANMON según operación | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2 | descripcion=Puerto del servicio TR-064
+    "network.tr064Host": null  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP; LANMON según operación | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2 | descripcion=Host del servicio TR-064 | null=sin valor configurado
+  },
+
+  "COMUN / Programa / plugins": {
+    "plugins.safeMode": false  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2 | descripcion=Modo seguro de plugins para diagnóstico
+  },
+
+  "COMUN / Programa / projects": {
+    "projects.saveMode": "manual",  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | opciones=["manual", "manual.inCloseConsult", "automatic.toClose", "automatic.toScan", "automatic.timeToSave", "automatic.allChanges"]
+    "projects.saveIntervalMinutes": 5,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1
+    "projects.directory": null  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Carpeta de proyectos elegida por el usuario; null conserva la resolución predeterminada | null=sin valor configurado
+  },
+
+  "COMUN / Programa / startup": {
+    "startup.interface": "cli"  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Interfaz de inicio | opciones=["cli", "tui", "gui"] | descripcion=Preferencia global de inicio, aunque el valor elegido sea cli, tui o gui
+  },
+
+  "GUI / LANCTL": {
+    "startup.closeGuiOnLaunch": false  // editar_desde=GUI | acceso=usuario; validacion del servicio | launcher=LANCTL | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Cerrar la GUI al lanzar una aplicación
+  },
+
+  "TUI / LANIP": {
+    "tui.panelLayout": "cli.bottom",  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANIP TUI | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=El bloque TUI general corresponde a LANIP; LANWIRE tiene preferencias independientes.
+    "tui.cliHeightPercent": 28,  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANIP TUI | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=El bloque TUI general corresponde a LANIP; LANWIRE tiene preferencias independientes.
+    "tui.footerButtons": ["help", "info", "ping", "refresh", "plugins", "projects", "settings", "select"],  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANIP TUI | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=El bloque TUI general corresponde a LANIP; LANWIRE tiene preferencias independientes.
+    "tui.keyBindings": {"help": "F1", "info": "F2", "ping": "F3", "refresh": "F5", "plugins": "F7", "projects": "F9", "settings": "F12", "history": "CTRL_H", "search": "CTRL_F", "reload": "CTRL_R", "edit": "CTRL_E", "groups": "CTRL_G", "ports": "CTRL_P", "open": "CTRL_O", "save": "CTRL_S", "differences": "CTRL_D", "copyLine": "CTRL_X", "copyJson": "CTRL_J", "console": "CTRL_L", "quit": "CTRL_Q", "deviceHistory": null, "scanSelected": null, "filterActive": null, "filterDisconnected": null, "filterAll": null, "ssh": null, "terminal": null, "credentials": null, "wakeOnLan": null, "copyIp": null, "copyMac": null, "projectStatus": null},  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANIP TUI | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Atajos personalizables; null deja la acción sin tecla asignada
+    "tui.columnWidths": {"IP": "15ch", "responseMs": "4%", "cnf": "2%", "ALIAS": "10%", "MAC": "17ch", "NAME": "12%", "GROUP": "12%", "description": "33%", "manufacturer": "17%", "users": "10%"}  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANIP TUI | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P1 | descripcion=Anchura de las columnas de LANIP TUI
+  },
+
+  "COMUN / Programa / wol": {
+    "wol.port": 9,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP; plugin WOL | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "wol.repeat": 3,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP; plugin WOL | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "wol.interval": 0.5,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP; plugin WOL | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "wol.wait": 60,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP; plugin WOL | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2
+    "wol.method": "auto"  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANIP; plugin WOL | archivo=CFG | origen=src/lanctl/core/config.py:54 | prioridad=P2 | opciones=["auto", "arp", "ping", "port"]
+  },
+
+  "COMUN / Proyecto VLF / identity": {
+    "author": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=project.info | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "description": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=project.info | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "name": null  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=project.info | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+  },
+
+  "COMUN / Proyecto VLF / lan": {
+    "company": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/lanIdentifier.info | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "description": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/lanIdentifier.info | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "location": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/lanIdentifier.info | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "name": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/lanIdentifier.info | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "responsible": null  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/lanIdentifier.info | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+  },
+
+  "COMUN / Proyecto VLF / network": {
+    "cidr": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/network.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "dhcpRange": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/network.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "discovery": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/network.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "dns": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/network.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "gateway": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/network.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "saveIntervalMinutes": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/network.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "saveMode": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/network.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "scanOrder": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/network.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "scanProfile": null  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/network.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+  },
+
+  "COMUN / Proyecto VLF / vlan": {
+    "managementVlan": null,  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/vlan.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+    "nativeVlan": null  // editar_desde=GUI/TUI/CLI | acceso=usuario; validacion del servicio | launcher=LANCTL general / proyecto compartido | archivo=lan/vlan.config | origen=src/lanctl/core/projects/settings.py:22 | prioridad=P1 | null=valor propio del proyecto, no predeterminado universal
+  },
+
+  "COMUN / Servicio de acceso": {
+    "https.enabled": false,  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=access.config resuelto desde configuración general | origen=src/lanctl/apps/access/service.py:15 | prioridad=P2
+    "https.bind": null,  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=access.config resuelto desde configuración general | origen=src/lanctl/apps/access/service.py:15 | prioridad=P2 | null=sin valor configurado
+    "https.cidr": null,  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=access.config resuelto desde configuración general | origen=src/lanctl/apps/access/service.py:15 | prioridad=P2 | null=sin valor configurado
+    "https.port": 8443  // editar_desde=GUI/TUI/CLI | acceso=administracion autorizada; servicio especifico | launcher=LANACCESS | archivo=access.config resuelto desde configuración general | origen=src/lanctl/apps/access/service.py:15 | prioridad=P2
+  }
+
+}

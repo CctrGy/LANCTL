@@ -10,7 +10,6 @@ import signal
 import ssl
 import subprocess
 from contextlib import suppress
-from dataclasses import asdict
 from pathlib import Path
 
 from lanctl.apps.access.keys import generate_certificate, generate_host_key
@@ -259,7 +258,7 @@ def _user(service, args, words):
             if password != confirmation:
                 raise ValueError("las contraseñas no coinciden")
         keys = [Path(path).read_text(encoding="utf-8").strip() for path in args.ssh_key]
-        return asdict(
+        return _public_user(
             service.auth.add_user(words[1], args.role or ["viewer"], password, keys, args.expires)
         )
     user = service.auth.user(words[1])
@@ -295,6 +294,25 @@ def _user(service, args, words):
         service._audit("access.user.deleted", user, "success")
         return {"deleted": user.userId}
     raise ValueError("acción de usuario no válida")
+
+
+def _public_user(user):
+    """Preserve CLI metadata without exposing current or future authenticators."""
+    return {
+        "userId": user.userId,
+        "username": user.username,
+        "roles": user.roles,
+        "enabled": user.enabled,
+        "expiresAt": user.expiresAt,
+        "lockedUntil": user.lockedUntil,
+        "failedAttempts": user.failedAttempts,
+        "passwordHash": "",  # Compatibility key: authenticators never leave the store.
+        "passwordConfigured": bool(user.passwordHash),
+        "sshKeys": user.sshKeys,
+        "createdAt": user.createdAt,
+        "updatedAt": user.updatedAt,
+        "passwordRotatedAt": user.passwordRotatedAt,
+    }
 
 
 def _public_session(session):

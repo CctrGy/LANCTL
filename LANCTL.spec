@@ -29,6 +29,7 @@ datas = collect_data_files("manuf") + [
     ("bundled/lanctl.lab.network-emulator.lcp", "bundled"),
     ("bundled/plugin-catalog.json", "bundled"),
     ("assets/lanctl-icon-v3.png", "assets"),
+    ("assets/launcher-icons", "assets/launcher-icons"),
     ("assets/device-icons", "assets/device-icons"),
     ("errorList.txt", "."),
 ]
@@ -62,7 +63,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=True,
-    icon="assets/lanctl-v3.ico",
+    icon="assets/launcher-icons/lanctl.ico",
     version=VERSION_INFO,
 )
 
@@ -97,7 +98,7 @@ ip_exe = EXE(
     strip=False,
     upx=True,
     console=True,
-    icon="assets/lanctl-v3.ico",
+    icon="assets/launcher-icons/lanip.ico",
     version=VERSION_INFO,
 )
 
@@ -108,12 +109,12 @@ physical_a = Analysis(
     ["packaging/entrypoints/lanwire_entry.py"],
     pathex=[str(SOURCE_ROOT)],
     binaries=[],
-    datas=[],
-    hiddenimports=collect_submodules("lanctl.apps.wire"),
+    datas=datas,
+    hiddenimports=["paramiko", "cryptography"] + collect_runtime_modules(),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["PIL", "numpy"],
+    excludes=LEGACY_GUI_EXCLUDES,
     noarchive=False,
     optimize=0,
 )
@@ -131,7 +132,7 @@ physical_exe = EXE(
     strip=False,
     upx=True,
     console=True,
-    icon="assets/lanctl-v3.ico",
+    icon="assets/launcher-icons/lanwire.ico",
     version=VERSION_INFO,
 )
 
@@ -163,7 +164,7 @@ monitor_exe = EXE(
     strip=False,
     upx=True,
     console=True,
-    icon="assets/lanctl-v3.ico",
+    icon="assets/launcher-icons/lanmon.ico",
     version=VERSION_INFO,
 )
 
@@ -180,7 +181,7 @@ rack_pyz = PYZ(rack_a.pure)
 rack_exe = EXE(
     rack_pyz, rack_a.scripts, rack_a.binaries, rack_a.datas, [], name="lanrack",
     debug=False, bootloader_ignore_signals=False, strip=False, upx=True, console=True,
-    icon="assets/lanctl-v3.ico", version=VERSION_INFO,
+    icon="assets/launcher-icons/lanrack.ico", version=VERSION_INFO,
 )
 
 access_a = Analysis(
@@ -196,5 +197,5 @@ access_pyz = PYZ(access_a.pure)
 access_exe = EXE(
     access_pyz, access_a.scripts, access_a.binaries, access_a.datas, [], name="lanaccess",
     debug=False, bootloader_ignore_signals=False, strip=False, upx=True, console=True,
-    icon="assets/lanctl-v3.ico", version=VERSION_INFO,
+    icon="assets/launcher-icons/lanaccess.ico", version=VERSION_INFO,
 )

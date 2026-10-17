@@ -140,6 +140,14 @@ def create_project(
             shutil.copy2(root / "devices/elements.db", root / "devices/backup.db")
 
         network = _network_document(active, devices)
+        overrides_path = root / "lan/settings.override.json"
+        if overrides_path.exists():
+            overrides = json.loads(overrides_path.read_text(encoding="utf-8"))
+            if overrides.get("schemaVersion") != 1 or not isinstance(
+                overrides.get("network"), dict
+            ):
+                raise ValueError("Configuración de proyecto incompatible")
+            network.update(overrides["network"])
         _write_json(root / "lan/network.config", network)
         if not (root / "lan/vlan.config").exists():
             _write_json(
@@ -169,7 +177,7 @@ def create_project(
                 "location": location or old_lan.get("location", ""),
                 "company": company or old_lan.get("company", ""),
                 "responsible": responsible or old_lan.get("responsible", ""),
-                "description": description or old_lan.get("description", ""),
+                "description": old_lan.get("description", description) if template else description,
             },
         )
 
@@ -564,6 +572,7 @@ def _copy_logs(destination: Path, config: Mapping) -> None:
 def _copy_template_entries(source: Path, destination: Path) -> None:
     preserved = {
         "lan/lanIdentifier.info",
+        "lan/settings.override.json",
         "lan/vlan.config",
         "lan/topology.map",
         "auth/keys/logon/access.info",

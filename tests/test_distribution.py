@@ -139,17 +139,21 @@ class DistributionTests(unittest.TestCase):
         self.assertIn('["packaging/entrypoints/lanctl_entry.py"]', spec)
         self.assertNotIn('["main.py"]', spec)
         self.assertIn("a.datas", spec)
-        self.assertIn('icon="assets/lanctl-v3.ico"', spec)
+        for launcher in ("lanctl", "lanip", "lanwire", "lanrack", "lanaccess", "lanmon"):
+            self.assertIn(f'icon="assets/launcher-icons/{launcher}.ico"', spec)
+            self.assertTrue((root / f"assets/launcher-icons/{launcher}.ico").is_file())
         self.assertIn('["packaging/entrypoints/lanip_entry.py"]', spec)
         self.assertIn('["packaging/entrypoints/lanwire_entry.py"]', spec)
         self.assertIn('["packaging/entrypoints/lanmon_entry.py"]', spec)
         self.assertNotIn('["packaging/entrypoints/landemo_entry.py"]', spec)
         self.assertIn('["packaging/entrypoints/lanrack_entry.py"]', spec)
         self.assertIn('["packaging/entrypoints/lanaccess_entry.py"]', spec)
-        self.assertIn('collect_submodules("lanctl.apps.wire")', spec)
+        self.assertIn(
+            'hiddenimports=["paramiko", "cryptography"] + collect_runtime_modules()', spec
+        )
         self.assertIn('("assets/lanctl-icon-v3.png", "assets")', spec)
         self.assertNotIn("lanctl-v2.ico", spec)
-        self.assertIn("SetupIconFile=..\\..\\assets\\lanctl-v3.ico", inno)
+        self.assertIn("SetupIconFile=..\\..\\assets\\launcher-icons\\lanctl.ico", inno)
         self.assertIn("dist\\LANCTL.exe", build)
         self.assertNotIn("dist\\LANCTL-GUI.exe", build)
         self.assertIn("dist\\lanip.exe", build)
@@ -208,6 +212,16 @@ class DistributionTests(unittest.TestCase):
             self.assertIn(expected, release)
         for expected in ("pull_request", "--source=src", "pip_audit", "git diff --check"):
             self.assertIn(expected, ci)
+        # The default suite exercises GUI adapters even on a headless runner.
+        # Both validation paths must install the optional webview dependency.
+        for workflow in (ci, release):
+            self.assertIn('python -m pip install -e ".[dev,gui]"', workflow)
+            self.assertIn("--junitxml=pytest.xml", workflow)
+            self.assertIn("if: always()", workflow)
+        self.assertIn("runs-on: windows-2022", ci)
+        self.assertIn("python-version: ['3.10', '3.11']", ci)
+        self.assertIn("LANCTL_GUI_BROWSER_TESTS: '1'", ci)
+        self.assertIn("python -m pip install playwright==1.63.0", ci)
         self.assertNotIn("--ignore-vuln", ci)
         self.assertNotIn("--ignore-vuln", release)
         app_source = "\n".join(
@@ -219,7 +233,14 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("dependency-review-action", security)
         self.assertIn("generate_cli_reference.py --check", ci)
         self.assertIn("generate_cli_reference.py --check", release)
-        self.assertIn("branches: ['stable/**']", release)
+        self.assertIn("branches: ['stable/**', 'experimental-gui']", release)
+        self.assertIn("experimental-gui requires an alpha version", release)
+        self.assertIn(
+            "make_latest: ${{ needs.prepare.outputs.stable_branch == 'true' && 'true' || 'false' }}",
+            release,
+        )
+        self.assertIn("stable_branch == 'true' && format('LANCTL {0}',", release)
+        self.assertIn("python tests/portable_smoke.py $portable", release)
         self.assertIn('version="${GITHUB_REF_NAME#stable/}"', release)
         self.assertIn('python scripts/verify-version.py "$version"', release)
         self.assertIn("tag_name: v${{ needs.prepare.outputs.version }}", release)

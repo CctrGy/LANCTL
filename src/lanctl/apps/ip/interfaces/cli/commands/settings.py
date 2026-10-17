@@ -47,6 +47,16 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         help="Consulta o modifica la configuración persistente de LANCTL.",
     )
     command.add_argument(
+        "--startup-interface",
+        choices=("cli", "tui", "gui"),
+        help="Interfaz preferida al abrir LANCTL sin argumentos.",
+    )
+    command.add_argument(
+        "--close-gui-on-launch",
+        choices=("on", "off"),
+        help="Cierra la GUI principal cuando el launcher solicitado esté disponible.",
+    )
+    command.add_argument(
         "-range",
         dest="network_range",
         metavar="CIDR",
@@ -229,7 +239,10 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         metavar="ACCIÓN=on|off",
         help="Muestra u oculta una acción concreta de la barra inferior. Puede repetirse.",
     )
-    command.set_defaults(handler=run_settings)
+    from .settings_menu import dispatch_settings, register_catalog_options
+
+    register_catalog_options(command)
+    command.set_defaults(handler=dispatch_settings)
 
 
 @transactional_file(CONFIG_PATH)
@@ -237,6 +250,8 @@ def run_settings(args: argparse.Namespace) -> int:
     config = load_config()
     if (
         args.network_range is None
+        and getattr(args, "startup_interface", None) is None
+        and getattr(args, "close_gui_on_launch", None) is None
         and args.list_fields is None
         and args.dhcp_range is None
         and args.credentials is None
@@ -255,6 +270,7 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.physical_database is None
         and args.groups is None
         and args.log is None
+        and args.error_log_level is None
         and args.projects_directory is None
         and args.save_mode is None
         and args.save_interval is None
@@ -281,6 +297,12 @@ def run_settings(args: argparse.Namespace) -> int:
         return 0
 
     changes: list[str] = []
+    if getattr(args, "startup_interface", None) is not None:
+        config["startupInterface"] = args.startup_interface
+        changes.append(f"Interfaz de inicio: {args.startup_interface}")
+    if getattr(args, "close_gui_on_launch", None) is not None:
+        config["closeGuiOnLaunch"] = args.close_gui_on_launch == "on"
+        changes.append(f"Cerrar GUI al abrir launcher: {args.close_gui_on_launch}")
     if args.save_mode is not None:
         from lanctl.core.projects.save_policy import available_save_modes, normalize_save_mode
 

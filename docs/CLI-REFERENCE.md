@@ -6,36 +6,43 @@ No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.
 ## `LANCTL`
 
 ```text
-Usage: LANCTL [-h] [--version] [--cli | -tui] [--admin] LAUNCHER ...
+Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [-web | -github | -reference] [--admin]
+              LAUNCHER ...
 
 Orquestador raíz de las aplicaciones de la suite LANCTL.
 
 Arguments:
   LAUNCHER
-    lanip (ip)        Inventario lógico, descubrimiento, IP, MAC y servicios.
-    lanwire (wire)    Cableado, puertos, paneles y topología física.
-    lanrack (rack)    Salas técnicas, racks, unidades U y equipos.
-    lanaccess (access)
-                      Usuarios, credenciales y accesos remotos.
-    lanmon (monitor)  Monitorización, eventos, incidencias e historial.
-    plugin            Administración compartida de la suite.
-    settings          Administración compartida de la suite.
-    language          Administración compartida de la suite.
-    backend           Administración compartida de la suite.
+    lanip (ip)             Inventario lógico, descubrimiento, IP, MAC y servicios.
+    lanwire (wire)         Cableado, puertos, paneles y topología física.
+    lanrack (rack)         Salas técnicas, racks, unidades U y equipos.
+    lanaccess (access)     Usuarios, credenciales y accesos remotos.
+    lanmon (monitor)       Monitorización, eventos, incidencias e historial.
+    plugin                 Administración compartida de la suite.
+    settings               Administración compartida de la suite.
+    language               Administración compartida de la suite.
+    backend                Administración compartida de la suite.
+    setup-defaults         Inicializa preferencias de instalación sin sobrescribir las existentes.
+    completions            Registra o retira el completado Clink del usuario actual.
+    post-install           Abre LANIP con el usuario normal al finalizar la instalación.
 
 Options:
-  -h, --help          Show this help and exit.
-  --version           Muestra la versión común de la suite y termina.
-  --cli, -cli         Abre la consola principal.
-  -tui, --tui         Abre el TUI principal.
-  --admin             Solicita UAC explícitamente para un launcher instalado en Windows.
+  -h, --help               Show this help and exit.
+  --version                Muestra la versión común de la suite y termina.
+  --cli, -cli              Abre la consola principal.
+  -tui, --tui              Abre el TUI principal.
+  --gui                    Abre el centro gráfico de LANCTL.
+  -web, --web              Muestra y abre la web oficial.
+  -github, --github        Muestra y abre GitHub oficial.
+  -reference, --reference  Muestra y abre la referencia oficial.
+  --admin                  Solicita UAC explícitamente para un launcher instalado en Windows.
 ```
 
 ## `LANIP`
 
 ```text
-Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]
-             [-project ARCHIVO.vlf]
+Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--first-scan] [--cli]
+             [-tui [VENTANA]] [-project ARCHIVO.vlf]
              COMANDO ...
 
 Logical control of LAN devices and infrastructure.
@@ -88,6 +95,8 @@ Options:
   --quiet                     Omite la salida correcta; conserva errores.
   --verbose                   Añade diagnóstico de ejecución a stderr.
   --gui                       Abre la interfaz gráfica de LANIP.
+  --first-scan                Solicita confirmación del primer escaneo al abrir la GUI; no escanea
+                              automáticamente.
   --cli, -cli                 Open the persistent interactive LANCTL terminal.
   -tui [VENTANA], --tui [VENTANA]
                               Open the advanced full-screen terminal interface. Puede abrir
@@ -125,11 +134,11 @@ Options:
 ## `LANIP list`
 
 ```text
-Usage: LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]
-                  [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]
-                  [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]
-                  [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]
-                  [--discovery {icmp,arp,hybrid}]
+Usage: LANIP list [-h] [--network NETWORK] [--interface INTERFACE] [--database DATABASE]
+                  [--groups GROUPS] [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent]
+                  [--where WHERE] [-w WORKERS] [-t TIMEOUT]
+                  [--scan-order {ascending,descending,random}] [--include-unknown]
+                  [--resolve-names] [--max-hosts MAX_HOSTS] [--discovery {icmp,arp,hybrid}]
                   [--profile {fast,normal,accurate} | --fast | --normal | --accurate]
                   [--progress | --no-progress] [--show-discovery] [--include-arp-cache]
                   [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]
@@ -140,6 +149,8 @@ Realiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muest
 Options:
   -h, --help                  Show this help and exit.
   --network NETWORK           Red CIDR. Por defecto detecta la LAN como /24.
+  --interface INTERFACE       Origen IPv4 local o ID de interfaz; usa su máscara real. Solo
+                              ICMP/ARP, sin DNS ni descubridores externos.
   --database DATABASE         Archivo JSON de elementos.
   --groups GROUPS             Archivo JSON de grupos.
   -f {table,json,csv,html,xml,yaml}, --format {table,json,csv,html,xml,yaml}
@@ -257,7 +268,8 @@ Options:
 ## `LANIP settings`
 
 ```text
-Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]
+Usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]
+                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]
                       [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]
                       [--scan-profile {fast,normal,accurate}] [--progress {on,off}]
                       [--service-identification {on,off}]
@@ -277,9 +289,16 @@ Usage: LANIP settings [-h] [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp
                       [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]
                       [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]
                       [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]
+                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]
+                      [--scope {program,project}] [--category CATEGORY]
 
 Options:
   -h, --help                  Show this help and exit.
+  --startup-interface {cli,tui,gui}
+                              Interfaz preferida al abrir LANCTL sin argumentos.
+  --close-gui-on-launch {on,off}
+                              Cierra la GUI principal cuando el launcher solicitado esté
+                              disponible.
   -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.
   -list-fields CAMPO [CAMPO ...], --list-fields CAMPO [CAMPO ...], -list CAMPO [CAMPO ...]
                               Columnas mostradas por list, separadas por espacios o comas.
@@ -352,6 +371,12 @@ Options:
   --tui-footer-button ACCIÓN=on|off
                               Muestra u oculta una acción concreta de la barra inferior. Puede
                               repetirse.
+  --menu                      Editor interactivo por categorías de programa y proyecto.
+  --catalog                   Lista todos los ajustes por categorías, con valor y estado editable.
+  --get RUTA                  Consulta un ajuste por su ruta, por ejemplo ip.workers.
+  --set RUTA VALOR            Modifica un ajuste; listas y booleanos usan JSON.
+  --scope {program,project}   Ámbito de configuración (predeterminado: program).
+  --category CATEGORY         Filtra el catálogo por categoría, por ejemplo network o monitor.
 ```
 
 ## `LANIP call`
@@ -885,7 +910,7 @@ Options:
   -alias NEW_ALIAS, --alias NEW_ALIAS
                               Asigna ALIAS al elemento indicado.
   -description NEW_DESCRIPTION, --description NEW_DESCRIPTION
-                              Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).
+                              Asigna DESCRIPTION al elemento indicado.
   -cnf NEW_CNF, --cnf NEW_CNF
                               Asigna el estado CNF.
   -idf NEW_IDF, --idf NEW_IDF
@@ -1616,7 +1641,7 @@ Options:
 ## `LANWIRE`
 
 ```text
-Usage: LANWIRE [-h] [--version] [--database ARCHIVO.db] [-tui | --cli] COMANDO ...
+Usage: LANWIRE [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli] COMANDO ...
 
 Gestión física, IDF, cableado y topología de la suite LANCTL.
 
@@ -1640,6 +1665,7 @@ Options:
   -h, --help             Show this help and exit.
   --version              Muestra la versión común de la suite y termina.
   --database ARCHIVO.db  Base física IDF; por defecto usa physical/idf.db en la raíz compartida.
+  --gui                  Abre la interfaz gráfica de escritorio.
   -tui, --tui            Abre la interfaz de pantalla completa.
   --cli, -cli            Abre la consola interactiva de LANWIRE.
 ```
@@ -1949,21 +1975,24 @@ Options:
 ## `LANRACK`
 
 ```text
-Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [-tui | --cli] {list,ls,show} ...
+Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]
+               {list,ls,show,dimensions} ...
 
 Visualiza racks y sus equipos.
 
 Arguments:
-  {list,ls,show}
-    list (ls)            Lista los racks disponibles.
-    show                 Muestra un rack y sus ocupantes.
+  {list,ls,show,dimensions}
+    list (ls)                Lista los racks disponibles.
+    show                     Muestra un rack y sus ocupantes.
+    dimensions               Edita altura y ancho de montaje del rack.
 
 Options:
-  -h, --help             Show this help and exit.
-  --version              Muestra la versión común de la suite y termina.
-  --database ARCHIVO.db  Base física IDF compartida.
-  -tui, --tui            Abre la interfaz de pantalla completa.
-  --cli, -cli            Abre la consola interactiva.
+  -h, --help                 Show this help and exit.
+  --version                  Muestra la versión común de la suite y termina.
+  --database ARCHIVO.db      Base física IDF compartida.
+  --gui                      Abre la interfaz gráfica de escritorio.
+  -tui, --tui                Abre la interfaz de pantalla completa.
+  --cli, -cli                Abre la consola interactiva.
 ```
 
 ## `LANRACK list`
@@ -1987,18 +2016,36 @@ Options:
   -h, --help  Show this help and exit.
 ```
 
+## `LANRACK dimensions`
+
+```text
+Usage: LANRACK dimensions [-h] --units UNITS --width-inches {10,19,21,23} rack
+
+Arguments:
+  rack                        ID del rack.
+
+Options:
+  -h, --help                  Show this help and exit.
+  --units UNITS               Altura de 4 a 52 U.
+  --width-inches {10,19,21,23}
+                              Ancho de montaje en pulgadas.
+```
+
 ## `LANACCESS`
 
 ```text
 Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]
                  [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]
-                 [--project-dir PROJECT_DIR] [-tui | --cli]
-                 {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ...
+                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]
+                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
+                 ...
 
 Gestiona credenciales cifradas del entorno LANCTL.
 
 Arguments:
-  {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
+  {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
+    remote-setup              Crea la primera cuenta remota del servicio en Windows (requiere
+                              administrador).
     list (ls)                 Lista metadatos; nunca secretos.
     show                      Muestra metadatos de una credencial.
     set                       Crea o actualiza una credencial.
@@ -2019,8 +2066,18 @@ Options:
   --scope {program,windows,project}
                               Ubicación; no cambia permisos ni copia secretos automáticamente.
   --project-dir PROJECT_DIR   Directorio del proyecto para su almacén independiente.
+  --gui                       Abre la interfaz gráfica de escritorio.
   -tui, --tui                 Abre la interfaz de pantalla completa.
   --cli, -cli                 Abre la consola interactiva.
+```
+
+## `LANACCESS remote-setup`
+
+```text
+Usage: LANACCESS remote-setup [-h]
+
+Options:
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANACCESS list`
@@ -2253,8 +2310,8 @@ Usage: LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DUR
               [--profiles PROFILES] [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]
               [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]
               [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]
-              [--timeout TIMEOUT] [--cli | --tui] [--source {all,program,project}] [--limit LIMIT]
-              [--window] [--level LEVEL]
+              [--timeout TIMEOUT] [--gui | --cli | --tui] [--source {all,program,project}]
+              [--limit LIMIT] [--window] [--level LEVEL]
               [words ...]
 
 Monitorización, eventos e incidencias de la suite LANCTL.
@@ -2301,6 +2358,7 @@ Options:
   --deep DEEP                 Intervalo profundo.
   --workers WORKERS           Workers del perfil.
   --timeout TIMEOUT           Timeout del perfil.
+  --gui                       Abre la interfaz gráfica de escritorio.
   --cli, -cli                 Abre la consola de comandos.
   --tui, -tui                 Abre el visor tabular de eventos.
   --source {all,program,project}

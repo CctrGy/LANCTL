@@ -42,7 +42,7 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
         "-description",
         "--description",
         dest="new_description",
-        help="Asigna DESCRIPTION al elemento indicado (máximo 42 caracteres).",
+        help="Asigna DESCRIPTION al elemento indicado.",
     )
     command.add_argument("-cnf", "--cnf", dest="new_cnf", help="Asigna el estado CNF.")
     command.add_argument(

@@ -1,6 +1,6 @@
 # Integración de LANCTL con Clink
 
-`lanctl.lua`, compatible con LANCTL 0.3.3, registra completado contextual
+`lanctl.lua`, compatible con LANCTL 0.3.4-alpha.1, registra completado contextual
 para `lanctl`, `lanip`, el alias histórico `als` y los ejecutables especializados
 `lanwire`, `lanrack`, `lanaccess` y `lanmon`, incluidas sus variantes `.exe`.
 El orquestador completa además cada launcher y su alias corto.
@@ -31,7 +31,25 @@ clink installscripts "C:\ruta\a\LANCTL\packaging\clink"
 Comprueba las rutas activas con `clink info`. Para recargar scripts en una
 sesión abierta usa `Ctrl-X`, `Ctrl-R`, o abre una consola nueva.
 
-El instalador de LANCTL deberá copiar `lanctl.lua` a
-`C:\Program Files\LANCTL\clink\` y ejecutar `clink installscripts` solamente
-si detecta Clink. Al desinstalar deberá usar `clink uninstallscripts` con la
-misma ruta.
+El instalador copia `lanctl.lua` y estas instrucciones a
+`C:\Program Files\LANCTL\clink\`. Ejecuta `lanctl completions install` con
+el usuario original; el adaptador detecta Clink y usa `clink installscripts`
+con argumentos separados, sin shell. Repetir la instalación no añade otra ruta.
+Una instalación iniciada ya elevada omite el registro para evitar asociarlo
+a la cuenta administrativa: ejecuta el comando desde tu sesión normal.
+
+El desinstalador usa `lanctl completions uninstall`: únicamente retira la
+carpeta registrada por esta instalación y usuario. Si otro administrador
+desinstala la aplicación, o Clink solo existe en una ubicación privada no
+disponible al desinstalador elevado, el propietario debe ejecutar antes
+`lanctl completions uninstall` o `clink uninstallscripts RUTA`. No se recorren
+ni alteran perfiles de otros usuarios. El completado de los seis launchers y
+del contexto `lanctl ip history` se comprobó en CMD con Clink 1.9.34. También
+se verificaron registro repetido, retirada y registro original conservado para
+el usuario normal. Clink devuelve 1 si la ruta ya está en el estado solicitado;
+LANCTL consulta `installscripts --list` para comprobarlo antes de dar éxito.
+La desinstalación elevada desde otra cuenta sigue pendiente de certificación.
+
+El ZIP portable incluye `clink/` y `prepare.ps1`. Ejecuta `prepare.ps1` para
+registrar o `prepare.ps1 -RemoveClink` antes de mover/borrar el portable.
+Los demás launchers y Linux conservan su comportamiento previo.

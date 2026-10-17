@@ -296,21 +296,25 @@ class GuiApi:
         return self._respond(operation)
 
     def scan_network(self, profile: str = "normal") -> dict:
+        return self._scan_with_target(profile)
+
+    def _scan_with_target(self, profile="normal", source=None, network=None):
         def operation() -> dict:
             if profile not in {"fast", "normal", "accurate"}:
                 raise ValueError("perfil de escaneo GUI no válido")
             from lanctl.apps.ip.interfaces.cli.main import build_parser
 
-            args = build_parser().parse_args(
-                [
-                    "list",
-                    "--profile",
-                    profile,
-                    "--no-progress",
-                    "--format",
-                    "json",
-                ]
-            )
+            arguments = [
+                "list",
+                "--profile",
+                profile,
+                "--no-progress",
+                "--format",
+                "json",
+            ]
+            if source is not None:
+                arguments.extend(["--interface", source, "--network", network])
+            args = build_parser().parse_args(arguments)
 
             def capture(rows, activity) -> None:
                 for row, active in zip(rows, activity):

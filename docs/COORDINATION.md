@@ -25,6 +25,14 @@ sigue disponible para consumidores anteriores, pero las interfaces coordinadas
 se registran individualmente. Si hay varias ventanas, las órdenes requieren
 un ID de sesión; nunca se escoge arbitrariamente la última ventana abierta.
 
+Las GUI de LANCTL y LANIP añaden exclusión por launcher, usuario y raíz de datos
+mediante un bloqueo del SO mantenido durante la vida del proceso. Una segunda
+apertura espera a que la interfaz esté disponible y le envía `view gui`; restaura
+la ventana y solicita el primer plano. Al morir el proceso se libera el bloqueo.
+Un timeout informa del fallo sin crear una ventana duplicada. Launchers distintos
+conservan bloqueos independientes. Las órdenes explícitas de backend mantienen
+su requisito de destinatario; la apertura GUI resuelve su única instancia.
+
 ## Uso
 
 ```text

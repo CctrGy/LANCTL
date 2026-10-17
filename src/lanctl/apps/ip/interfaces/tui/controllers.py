@@ -8,7 +8,7 @@ from rich.text import Text
 from lanctl.apps.ip.interfaces.tui.modal import ModalState, SettingField
 from lanctl.core.layout import fit_text
 
-SETTINGS_FOOTER = "←/→ menú  ↑/↓ variable  Tab editar  Esc salir"
+SETTINGS_FOOTER = "←/→ menú  ↑/↓ variable  Tab editar  Ctrl+S guardar  Esc salir"
 
 
 class SettingsEditor:

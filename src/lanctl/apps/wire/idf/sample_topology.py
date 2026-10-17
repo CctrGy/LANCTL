@@ -61,6 +61,8 @@ def sample_elements() -> dict[str, dict[str, Any]]:
             "alias": "R0",
             "name": "Rack principal",
             "size_units": 18,
+            "units": 18,
+            "rackDimensions": {"schemaVersion": 1, "widthInches": 19},
             "layout": [
                 {"unit": 3, "height": 2, "kind": "tray", "label_lines": ["Bandeja", ""]},
                 {"unit": 5, "height": 4, "kind": "case", "label_lines": ["", "Server", "Case", ""]},
@@ -207,8 +209,17 @@ def seed_sample_topology(database: IDFDatabaseManager) -> tuple[str, ...]:
         if existing is None:
             database.add(identifier, data)
             created.append(identifier)
-        elif existing.get("data") != data:
-            raise ValueError(f"el registro existente difiere de la plantilla: {identifier}")
+        else:
+            expected = deepcopy(data)
+            stored = existing.get("data") or {}
+            if data.get("type") == "rack":
+                # Older samples did not store these fields. Compare without
+                # adding defaults to their persisted data or hiding edits.
+                for key in ("units", "rackDimensions"):
+                    if key not in stored:
+                        expected.pop(key, None)
+            if stored != expected:
+                raise ValueError(f"el registro existente difiere de la plantilla: {identifier}")
     return tuple(created)
 
 

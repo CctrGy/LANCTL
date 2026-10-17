@@ -17,6 +17,8 @@ from lanctl.core.paths import application_path
 
 class LogFollower:
     def __init__(self, directory, limit=100):
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("limit debe estar entre 1 y 1000")
         self.directory = Path(directory)
         self.limit = limit
         self.positions = {}
@@ -24,11 +26,14 @@ class LogFollower:
         self.initialized = False
 
     def poll(self):
-        rows = []
+        rows = deque(maxlen=self.limit) if not self.initialized else []
+        budget = 1024 * 1024
         paths = sorted(self.directory.glob("*.log"), key=lambda path: (_date(path.name), path.name))
         if not self.initialized:
             paths = paths[-5:]
         for path in paths:
+            if self.initialized and (len(rows) >= 1000 or budget <= 0):
+                break
             try:
                 stream = path.open("rb")
             except FileNotFoundError:
@@ -50,12 +55,21 @@ class LogFollower:
                         stream.readline()  # skip a partial first line
                 else:
                     stream.seek(start)
-                chunk = stream.read(1024 * 1024)
+                read_start = stream.tell()
+                chunk = stream.read(budget if self.initialized else 1024 * 1024)
+                budget -= len(chunk)
                 self.positions[path] = (identity, stream.tell())
-            data = self.pending.pop(path, b"") + chunk
+            previous_pending = self.pending.pop(path, b"")
+            data = previous_pending + chunk
             lines = data.split(b"\n")
             self.pending[path] = lines.pop()[-65536:]
-            for line in lines:
+            selected = lines if not self.initialized else lines[: 1000 - len(rows)]
+            if len(selected) < len(lines):
+                # Leave the unconsumed bytes on disk, not in an unbounded queue.
+                consumed = sum(len(line) + 1 for line in selected)
+                self.positions[path] = (identity, read_start + consumed - len(previous_pending))
+                self.pending.pop(path, None)
+            for line in selected:
                 rows.extend(_rows(line.decode("utf-8", errors="replace"), "program", path.name, 1))
         if not self.initialized:
             # Record older files at EOF, without displaying their history later.
@@ -71,7 +85,7 @@ class LogFollower:
         self.positions = {path: value for path, value in self.positions.items() if path in live}
         self.pending = {path: value for path, value in self.pending.items() if path in live}
         self.initialized = True
-        return rows
+        return list(rows)
 
 
 def follow_logs(*, limit=100, minimum=1):
@@ -90,7 +104,7 @@ def follow_logs(*, limit=100, minimum=1):
         return 0
 
 
-def open_log_window(*, limit=100, minimum=1):
+def open_log_window(*, limit=100, minimum=1, tui=False):
     if not 1 <= limit <= 1000 or not 1 <= minimum <= 59:
         raise ValueError("limit debe estar entre 1-1000 y level entre 1-59")
     if getattr(sys, "frozen", False):
@@ -109,6 +123,8 @@ def open_log_window(*, limit=100, minimum=1):
         "--level",
         str(minimum),
     ]
+    if tui:
+        command.append("--tui")
     if os.name == "nt":
         subprocess.Popen(command, creationflags=subprocess.CREATE_NEW_CONSOLE)
     else:

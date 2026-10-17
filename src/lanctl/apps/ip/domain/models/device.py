@@ -196,8 +196,6 @@ class Device(MutableMapping[str, Any]):
         if isinstance(raw_groups, str):
             raw_groups = [raw_groups] if raw_groups else []
         description = str(value.get("description", "-")) or "-"
-        if len(description) > 42:
-            raise ValueError("la descripción de un elemento no puede superar 42 caracteres")
         return cls(
             ip=str(value["IP"]),
             cnf=normalize_cnf(value.get("cnf", False)),
@@ -250,8 +248,6 @@ class Device(MutableMapping[str, Any]):
         self.cnf = normalize_cnf(self.cnf)
         if self.mac:
             self.mac = normalize_mac(self.mac)
-        if len(self.description) > 42:
-            raise ValueError("la descripción de un elemento no puede superar 42 caracteres")
         self.groups = list(dict.fromkeys(group.upper() for group in self.groups))
         self.device_id = self.device_id or device_identifier(self.mac, self.ip)
         self.protocols = list(dict.fromkeys(normalize_protocol(item) for item in self.protocols))

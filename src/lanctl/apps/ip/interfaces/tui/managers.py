@@ -30,12 +30,19 @@ def project_detail(project: Any, active: str) -> list[str]:
         from lanctl.core.projects.vlf import inspect_project
 
         info = inspect_project(path)
+        from lanctl.core.projects.metadata import read_metadata
+
+        metadata = read_metadata(path)["values"]
         return [
             f"Nombre       : {info.get('name') or path.stem}",
             f"Activo       : {'Sí' if str(path.resolve()).casefold() == str(active).casefold() else 'No'}",
             f"UUID         : {info.get('id') or '-'}",
             f"Descripción  : {info.get('description') or '-'}",
             f"Autor        : {info.get('author') or '-'}",
+            f"LAN          : {metadata['lan'] or '-'}",
+            f"Ubicación    : {metadata['location'] or '-'}",
+            f"Empresa      : {metadata['company'] or '-'}",
+            f"Responsable  : {metadata['responsible'] or '-'}",
             f"LANCTL       : {info.get('lanctlVersion') or '-'}",
             f"Actualizado  : {info.get('updated') or '-'}",
             f"Dispositivos : {info.get('devices', '-')}",
@@ -77,6 +84,6 @@ def project_manager_modal(projects: list[Any], active: str, root: Path) -> Modal
         tabs=["Proyectos", "Información"],
         pages=[listing, details[0] if details else ["No hay información disponible."]],
         items=projects,
-        footer="Ctrl+N nuevo  Ctrl+S guardar  Supr eliminar  ↑/↓ seleccionar  → información  Enter activar  Ctrl+R recargar  Esc cerrar",
+        footer="Ctrl+N nuevo  Ctrl+E editar  Ctrl+S guardar  Supr eliminar  ↑/↓ seleccionar  → información  Enter activar  Ctrl+R recargar  Esc cerrar",
         max_width=120,
     )

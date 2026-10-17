@@ -225,6 +225,20 @@ class IDFDatabaseManager:
             if identifier.value not in database["records"]:
                 raise KeyError(identifier.value)
             record = database["records"][identifier.value]
+            if record.get("prefix") == "RK" or (record.get("data") or {}).get("type") == "rack":
+                from lanctl.apps.rack.skins import span
+                from lanctl.core.rack_dimensions import validate_dimension_change
+
+                occupants = [
+                    (
+                        (r.get("data") or {}).get("location", {}).get("unit"),
+                        span(r.get("data") or {}),
+                    )
+                    for r in database["records"].values()
+                    if str((r.get("data") or {}).get("location", {}).get("rack", "")).casefold()
+                    == identifier.value.casefold()
+                ]
+                validate_dimension_change(record.get("data") or {}, data, occupants)
             old_ports = set((record.get("data") or {}).get("ports") or {})
             new_ports = set(data.get("ports") or {})
             removed_ports = old_ports - new_ports
@@ -353,6 +367,11 @@ class IDFDatabaseManager:
     @staticmethod
     def _new_record(identifier: IDF, data: dict[str, Any] | None) -> dict[str, Any]:
         timestamp = IDFDatabaseManager._timestamp()
+        normalized = apply_prefix_defaults(identifier.prefix, data)
+        if identifier.prefix == "RK" or normalized.get("type") == "rack":
+            from lanctl.core.rack_dimensions import new_rack_dimensions
+
+            normalized = new_rack_dimensions(normalized)
         return {
             "id": identifier.value,
             "size": identifier.size.value if identifier.size else "custom",
@@ -360,7 +379,7 @@ class IDFDatabaseManager:
             "number_width": identifier.number_width,
             "prefix": identifier.prefix,
             "number": identifier.number,
-            "data": apply_prefix_defaults(identifier.prefix, data),
+            "data": normalized,
             "created_at": timestamp,
             "updated_at": timestamp,
         }

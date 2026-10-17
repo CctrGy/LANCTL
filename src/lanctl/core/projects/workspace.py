@@ -270,7 +270,12 @@ def activate_project_workspace(
         discard_changes=discard_changes,
     )
 
+    from lanctl.core.projects.settings import project_network_overrides
+
+    network_preferences = project_network_overrides(source)
+
     def select(current: dict) -> None:
+        current.update(network_preferences)
         previous = current.get("projectWorkspace")
         previous_database = str(previous.get("database", "")) if isinstance(previous, dict) else ""
         previous_groups = str(previous.get("groups", "")) if isinstance(previous, dict) else ""

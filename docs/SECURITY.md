@@ -38,6 +38,17 @@ interna no es una API pública para plugins. Los audit hooks y los límites del
 proceso siguen sin equivaler a un sandbox del sistema operativo para código
 hostil, como se indica en README.
 
+Cada activación recibe una concesión nueva para el API del Core. Se comprueban
+los permisos persistidos y la confianza del editor en cada acceso; las
+referencias retenidas de callbacks, funciones, checks y almacenes dejan de ser
+válidas al revocar. El gestor global reconcilia también cambios externos cada
+0,5 s. La limpieza externa ocurre fuera de los locks del registro y no bloquea
+la interfaz indefinidamente; una limpieza pendiente impide reactivar el plugin.
+Esto no termina hilos nativos arbitrarios del runtime `trusted` heredado ni
+deshace operaciones ya iniciadas. Su estado expone `restartRequired` y conserva
+ese aviso durante la vida del gestor. La migración de runtime cancelable sigue
+en REF-P34-runtime; no se declara esa frontera resuelta por invalidar callbacks.
+
 Los VLF requieren un UUID canónico y su workspace resuelto debe permanecer
 dentro de la raíz configurada. Los checksums validan integridad, no confianza en
 las rutas proporcionadas por el archivo. Los paquetes LCP se extraen y verifican

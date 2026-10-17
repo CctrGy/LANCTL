@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 import shutil
 import tempfile
 import zipfile
@@ -68,8 +69,9 @@ def install_package(path: str | Path, destination_root: Path) -> tuple[PluginMan
                 target.parent.mkdir(parents=True, exist_ok=True)
                 with archive.open(item) as source, target.open("wb") as output:
                     shutil.copyfileobj(source, output)
-        if directory_hash(staging, {"meta/checksum", "meta/signature"}) != result["checksum"]:
-            raise ValueError("el paquete LCP cambió durante la instalación")
+        verify_directory(
+            staging, expected_checksum=result["checksum"], expected_signature=result["signature"]
+        )
         old = destination.with_name(destination.name + ".old")
         if old.exists() and not destination.exists():
             old.replace(destination)
@@ -168,14 +170,20 @@ def archive_hash(archive: zipfile.ZipFile, excluded: set[str]) -> str:
 def _verify_signature(archive: zipfile.ZipFile, checksum: str, names: set[str]) -> str:
     if "meta/public-key.pem" not in names:
         raise ValueError("el LCP contiene firma pero no meta/public-key.pem")
+    return _verify_signature_bytes(
+        archive.read("meta/signature"), archive.read("meta/public-key.pem"), checksum
+    )
+
+
+def _verify_signature_bytes(signature: bytes, key: bytes, checksum: str) -> str:
     try:
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-        document = json.loads(archive.read("meta/signature").decode("utf-8"))
+        document = json.loads(signature.decode("utf-8"))
         if str(document.get("algorithm", "")).casefold() != "ed25519":
             raise ValueError("algoritmo de firma LCP no soportado")
-        public_key = serialization.load_pem_public_key(archive.read("meta/public-key.pem"))
+        public_key = serialization.load_pem_public_key(key)
         if not isinstance(public_key, Ed25519PublicKey):
             raise ValueError("la clave de firma LCP no es Ed25519")
         public_key.verify(
@@ -191,9 +199,49 @@ def _verify_signature(archive: zipfile.ZipFile, checksum: str, names: set[str]) 
         raise ValueError(f"firma LCP no válida: {error}") from error
 
 
+def verify_directory(
+    root: Path, *, expected_checksum: str = "", expected_signature: str | None = None
+) -> dict:
+    """Verify installed bytes, never treating registry signature text as proof."""
+    checksum = directory_hash(root, {"meta/checksum", "meta/signature"})
+    checksum_path = root / "meta/checksum"
+    if checksum_path.exists():
+        declared = checksum_path.read_text(encoding="ascii").strip().casefold()
+        # Preserve the historic '<algorithm> <digest>' checksum representation.
+        parts = declared.split()
+        declared = parts[-1] if parts else ""
+        if not re.fullmatch(r"[0-9a-f]{64}", declared) or declared != checksum:
+            raise ValueError("integridad del plugin modificada: checksum no coincide")
+    if expected_checksum and checksum != expected_checksum.casefold():
+        raise ValueError("integridad del plugin modificada: checksum instalado no coincide")
+    manifest = PluginManifest.from_dict(json.loads((root / "plugin.info").read_text("utf-8")))
+    signature = "UNSIGNED"
+    signature_path = root / "meta/signature"
+    if signature_path.exists():
+        key_path = root / "meta/public-key.pem"
+        if not key_path.is_file():
+            raise ValueError("el LCP contiene firma pero no meta/public-key.pem")
+        signature = _verify_signature_bytes(
+            signature_path.read_bytes(), key_path.read_bytes(), checksum
+        )
+    if expected_signature is not None and signature != expected_signature:
+        raise ValueError("integridad del plugin modificada: firma instalada no coincide")
+    return {"valid": True, "manifest": manifest, "checksum": checksum, "signature": signature}
+
+
 def directory_hash(root: Path, excluded: set[str]) -> str:
     digest = hashlib.sha256()
-    files = (item for item in root.rglob("*") if item.is_file())
+    files = []
+    total = 0
+    for item in root.rglob("*"):
+        if item.is_symlink() or not item.resolve().is_relative_to(root.resolve()):
+            raise ValueError("ruta enlazada no segura dentro del plugin")
+        if item.is_file():
+            size = item.stat().st_size
+            total += size
+            if size > MAX_ENTRY_SIZE or total > MAX_TOTAL_SIZE:
+                raise ValueError("contenido del plugin demasiado grande")
+            files.append(item)
     for path in sorted(files, key=lambda item: item.relative_to(root).as_posix()):
         name = path.relative_to(root).as_posix()
         if name in excluded:

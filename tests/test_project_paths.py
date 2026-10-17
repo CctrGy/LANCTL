@@ -38,12 +38,23 @@ class ProjectPathTests(unittest.TestCase):
     def test_environment_variable_in_configured_directory_is_expanded(self):
         with (
             tempfile.TemporaryDirectory() as temporary,
+            patch.dict(os.environ, {"LANCTL_TEST_PROJECT_ROOT": temporary}),
+        ):
+            expected = Path(temporary) / "CustomProjects" / "Hogar.vlf"
+            self.assertEqual(
+                resolve_project_path("Hogar", "$LANCTL_TEST_PROJECT_ROOT/CustomProjects"),
+                expected.resolve(),
+            )
+
+    def test_legacy_default_falls_back_when_known_folder_is_unavailable(self):
+        with (
+            tempfile.TemporaryDirectory() as temporary,
+            patch("lanctl.core.projects.paths._known_documents_directory", return_value=None),
             patch.dict(os.environ, {"USERPROFILE": temporary}),
         ):
-            expected = Path(temporary) / "Documents" / "LanCTL" / "Hogar.vlf"
             self.assertEqual(
                 resolve_project_path("Hogar", r"%USERPROFILE%\Documents\LanCTL"),
-                expected.resolve(),
+                (Path(temporary) / "Documents" / "LanCTL" / "Hogar.vlf").resolve(),
             )
 
     def test_absolute_project_path_is_never_relocated(self):

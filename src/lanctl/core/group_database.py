@@ -242,14 +242,16 @@ class GroupDatabase:
         return groups
 
     @_transaction
-    def create(self, name: str) -> Group:
+    def create(self, name: str, description: str = "-") -> Group:
+        if not isinstance(description, str) or len(description) > 42:
+            raise ValueError("la descripción del grupo no puede superar 42 caracteres")
         normalized = name.upper()
         if not normalized:
             raise ValueError("el nombre del grupo no puede estar vacío")
         groups = self.load()
         if any(group.name == normalized for group in groups):
             raise ValueError(f"el grupo {normalized} ya existe")
-        group = Group(normalized)
+        group = Group(normalized, description or "-")
         groups.append(group)
         self._write(groups)
         return group

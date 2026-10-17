@@ -35,6 +35,7 @@ def build_parser() -> LANCTLArgumentParser:
         if action.dest == "words":
             action.help = "logs, events, status, attach, detach, once, session, incidents, service o foreground."
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--gui", action="store_true", help="Abre la interfaz gráfica de escritorio.")
     mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola de comandos.")
     mode.add_argument(
         "--tui", "-tui", action="store_true", help="Abre el visor tabular de eventos."
@@ -62,8 +63,21 @@ def _main(argv: list[str] | None = None) -> int:
 
         return run(arguments[1:])
     args = build_parser().parse_args(arguments or ["status"])
-    if args.window and (args.words != ["logs"] or args.cli or args.tui):
+    if getattr(args, "gui", False):
+        from lanctl.apps.suite.launcher_gui import run_gui
+
+        return run_gui("lanmon", project=args.project)
+    if args.window and (args.words != ["logs"] or args.cli):
         raise ValueError("--window solo se utiliza con logs")
+    if args.words == ["logs"] and args.tui and not args.cli:
+        from lanctl.apps.monitor.log_stream import open_log_window
+        from lanctl.apps.monitor.log_tui import follow_log_tui
+
+        if args.project or args.source == "project":
+            raise ValueError("La TUI en directo muestra el log operativo, no auditorías VLF.")
+        if args.window:
+            return open_log_window(limit=args.limit, minimum=args.level, tui=True)
+        return follow_log_tui(limit=args.limit, minimum=args.level)
     if args.cli or args.tui:
         from lanctl.core.interactive_console import command_console
 

@@ -306,6 +306,10 @@ def posix_terminal_mode(stream):
     previous = termios.tcgetattr(descriptor)
     try:
         tty.setcbreak(descriptor)
+        current = termios.tcgetattr(descriptor)
+        # Ctrl+S/Ctrl+Q must reach the application, not stop/start TTY output.
+        current[0] &= ~(termios.IXON | termios.IXOFF)
+        termios.tcsetattr(descriptor, termios.TCSADRAIN, current)
         yield
     finally:
         termios.tcsetattr(descriptor, termios.TCSADRAIN, previous)

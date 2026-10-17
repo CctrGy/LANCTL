@@ -220,6 +220,42 @@ el arranque si su huella no sigue autorizada; `--trust` no omite esa comprobaci�
 Además, `plugin install` muestra firma y permisos solicitados antes de modificar
 la instalación. `lanctl plugin revoke ID [PERMISOS]` desactiva el plugin antes
 de retirar permisos y confianza de ejecución.
+
+La verificación de un ID instalado comprueba de nuevo los archivos, el checksum
+y la firma Ed25519; no utiliza el texto de firma guardado en el registro como
+prueba criptográfica. Activar, recargar y restaurar al arrancar aplica estas
+comprobaciones antes de cargar código o extensiones, junto con permisos,
+compatibilidad y dependencias. Los plugins alterados quedan en cuarentena y
+deben reinstalarse desde un LCP verificado.
+
+Las dependencias se activan antes de sus consumidores. `depends[].version`
+admite una versión exacta, `*`, prefijos como `1.x` o `1.2.*` y comparaciones
+`>=`, `<=`, `>`, `<`, `==`, `!=` combinadas con comas, por ejemplo
+`>=1.0.0,<2.0.0`. Un ciclo o una dependencia fallida impide cargar el consumidor.
+Desactivar una dependencia descarga también sus consumidores activos locales.
+
+Los registros de plugins y editores validan su esquema y rechazan documentos
+corruptos sin reemplazarlos por un estado vacío. Las modificaciones se protegen
+con bloqueo entre procesos; los cambios de un plugin no sobrescriben los de
+otro. Si otro proceso ha modificado el mismo plugin, el gestor rechaza operar
+con su copia antigua y pide recargar. Esta protección no constituye una
+notificación inmediata de revocaciones a runtimes ya cargados en otros procesos.
+
+## Estado de la distribución de plugins — 16/10/2026
+
+Los paquetes incluidos de MAC Vendor, mDNS/SSDP, Windows SMB y Wake-on-LAN usan
+runtime `trusted` y actualmente **no llevan firma**. Su checksum válido no
+autoriza ejecutar código dentro del proceso. Marcar todos los permisos o usar
+`--trust` no sustituye una firma válida ni la confianza explícita en el editor.
+El tema predeterminado y el emulador de red usan runtime `isolated`.
+
+Para distribuir las variantes `trusted`, el editor debe construir los LCP con
+su clave Ed25519, verificar los paquetes y comunicar la huella por un canal
+independiente. Después se instala el paquete firmado, se autoriza su editor y
+se conceden los permisos y la ejecución `trusted`. La auditoría utiliza claves
+efímeras exclusivamente en pruebas: no crea una identidad oficial ni concede
+confianza automáticamente. La publicación de esos paquetes sigue pendiente.
+
 # Fachada Wake-on-LAN
 
 Los plugins trusted pueden solicitar `network.udp` y usar exclusivamente

@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+
 from lanctl.apps.access.manager_cli import AccessManager, main
 from lanctl.apps.ip.domain.models import Device
 from lanctl.core.database import DeviceDatabase
@@ -34,3 +36,32 @@ def test_lanaccess_tui_can_exit_without_credentials(tmp_path):
         patch("builtins.input", return_value="q"),
     ):
         assert main(["--database", "ignored", "--store", "ignored", "--tui"]) == 0
+
+
+@pytest.mark.parametrize("command", ["list", "show", "doctor", "settings", "protocol"])
+def test_metadata_commands_never_print_the_stored_secret(tmp_path, capsys, command):
+    manager = _manager(tmp_path)
+    secret = "regression-device-secret-not-for-output"
+    identifier = manager.set_secret("switch", "ssh", "operator", secret)
+    arguments = [command, identifier] if command == "show" else [command]
+    with patch("lanctl.apps.access.manager_cli.AccessManager", return_value=manager):
+        assert main(arguments) == 0
+    captured = capsys.readouterr()
+    assert captured.out
+    assert secret not in captured.out + captured.err
+    assert '"password"' not in captured.out
+    assert manager.store.get(identifier)["password"] == secret
+
+
+def test_tui_diagnostics_never_print_the_stored_secret(tmp_path, capsys):
+    manager = _manager(tmp_path)
+    secret = "regression-tui-secret-not-for-output"
+    manager.set_secret("switch", "ssh", "operator", secret)
+    with (
+        patch("lanctl.apps.access.manager_cli.AccessManager", return_value=manager),
+        patch("builtins.input", side_effect=["d", "", "q"]),
+    ):
+        assert main(["--tui"]) == 0
+    captured = capsys.readouterr()
+    assert '"missingSecrets"' in captured.out
+    assert secret not in captured.out + captured.err

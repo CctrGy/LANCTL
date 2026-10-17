@@ -560,8 +560,6 @@ class DeviceDatabase:
             device[deleted_field] = False
             device.cnf = "O"
         elif field == "description":
-            if len(value) > 42:
-                raise ValueError("la descripción no puede superar 42 caracteres")
             device.description = value or "-"
         elif field == "ip":
             try:
@@ -645,8 +643,6 @@ class DeviceDatabase:
                 normalized_ip = str(ipaddress.IPv4Address(ip.strip()))
             except ipaddress.AddressValueError as error:
                 raise ValueError(f"dirección IPv4 no válida: {ip}") from error
-        if len(description) > 42:
-            raise ValueError("la descripción no puede superar 42 caracteres")
         if alias.upper() in ("GATEWAY", "BRODCAST"):
             raise ValueError(f"el alias {alias.upper()} está reservado")
         if idf:

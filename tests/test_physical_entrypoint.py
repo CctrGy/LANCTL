@@ -66,14 +66,18 @@ class PhysicalEntrypointTests(unittest.TestCase):
             self.assertIn("Eliminado", call("idf", "delete", "FB-00"))
 
     def test_explicit_tui_and_cli_modes_are_dispatched(self):
-        with patch("lanctl.apps.wire.tui.run_tui", return_value=7) as tui:
-            self.assertEqual(main(["--tui"]), 7)
-        tui.assert_called_once_with(DEFAULT_DATABASE_PATH)
-
         cli_module = importlib.import_module("lanctl.apps.wire.cli.main")
-        with patch.object(cli_module, "run_cli", return_value=8) as cli:
-            self.assertEqual(main(["--cli"]), 8)
-        cli.assert_called_once_with(DEFAULT_DATABASE_PATH)
+        # The active project may override the default; keep this dispatch test isolated.
+        with patch.object(
+            cli_module, "load_config", return_value={"physicalDatabase": DEFAULT_DATABASE_PATH}
+        ):
+            with patch("lanctl.apps.wire.tui.run_tui", return_value=7) as tui:
+                self.assertEqual(main(["--tui"]), 7)
+            tui.assert_called_once_with(DEFAULT_DATABASE_PATH)
+
+            with patch.object(cli_module, "run_cli", return_value=8) as cli:
+                self.assertEqual(main(["--cli"]), 8)
+            cli.assert_called_once_with(DEFAULT_DATABASE_PATH)
 
 
 if __name__ == "__main__":

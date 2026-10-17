@@ -1,6 +1,13 @@
-# LANCTL
+# LANCTL — GUI experimental
+
+> **PROTOTIPO EXPERIMENTAL — NO ES UNA VERSIÓN ESTABLE.**
+> Rama `experimental-gui`, versión **0.3.4-alpha.1**. Para pruebas de la GUI en
+> Windows x64: [descargas e instrucciones](docs/RELEASE-0.3.4-alpha.1.md).
+> La versión estable sigue disponible en [Releases](https://github.com/CctrGy/LANCTL/releases/latest).
 
 Interfaces de los seis launchers: [CLI y TUI](docs/LAUNCHER-INTERFACES.md).
+
+Centro de administración GUI: `lanctl --gui`; consulta [GUI de LANCTL](docs/LANCTL-GUI.md).
 
 Interfaz de escritorio de LANIP: [GUI de LANIP](docs/LANIP-GUI.md).
 Se ejecuta con `lanip --gui` y se incluye en los instaladores de Windows de
@@ -17,8 +24,8 @@ La [LANCTL Reference](reference/index.html) ofrece un índice web con búsqueda,
 sintaxis, opciones y ejemplos de todos los launchers y comandos, además de
 proyectos VLF, plugins LCP y el catálogo de documentación.
 
-> Versión actual: **0.3.3**, canal estable. Consulta las
-> [notas y limitaciones](docs/RELEASE-0.3.3.md).
+> Versión de esta rama: **0.3.4-alpha.1**, GUI experimental, no estable.
+> Consulta las [notas de prueba](docs/RELEASE-0.3.4-alpha.1.md).
 > Conserva copias de seguridad; no utilices el programa como única fuente de inventario.
 
 ### Cambios de 0.3.3
@@ -414,11 +421,11 @@ plan sin ejecutar). Consulta [repositoryTerminal](repositoryTerminal/README.md)
 para requisitos y ejemplos. No cambia la versión ni realiza Git/push.
 
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.3
+.\scripts\build-windows.ps1 -Version 0.3.4-alpha.1
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.3
+./scripts/build-linux.sh 0.3.4-alpha.1
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.
@@ -474,3 +481,7 @@ archivos de documentación.
 
 Si LANCTL te resulta útil, puedes seguir y apoyar su desarrollo en
 [CctrGy Donations](https://cctrgy.github.io/donations.html).
+
+Configuración CLI completa, agrupada por programa y proyecto: [guía de ajustes](docs/CLI-SETTINGS.md).
+
+Interfaces gráficas de LANWIRE, LANRACK, LANACCESS y LANMON: [uso y funciones](docs/LAUNCHER-GUI.md).

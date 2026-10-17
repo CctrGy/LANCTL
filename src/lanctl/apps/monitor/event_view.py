@@ -18,10 +18,20 @@ def _rows(text, source, name, limit):
     rows = []
     for line in deque(text.splitlines(), maxlen=limit):
         level = None
-        if "ERROR_EVENT " in line:
+        marker = re.search(r"(?:^|\s)(ERROR_EVENT|GUI_ACTIVITY) ", line)
+        if marker:
             try:
-                event = json.loads(line.split("ERROR_EVENT ", 1)[1])
-                level = int(event["level"])
+                event = json.loads(line[marker.end() :])
+                if marker.group(1) == "ERROR_EVENT":
+                    level = int(event["level"])
+                elif (
+                    isinstance(event, dict)
+                    and type(event.get("schemaVersion")) is int
+                    and event["schemaVersion"] == 1
+                    and type(event.get("level")) is int
+                    and 1 <= event["level"] <= 59
+                ):
+                    level = event["level"]
             except (ValueError, KeyError, TypeError):
                 level = None
         # Strip terminal escapes and C0 controls from untrusted log content.

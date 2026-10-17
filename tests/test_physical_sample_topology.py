@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -29,6 +30,30 @@ class SampleTopologyTests(unittest.TestCase):
             self.assertEqual(len(seed_sample_topology(database)), 32)
             self.assertEqual(seed_sample_topology(database), ())
             self.assertEqual(len(database.all()), 32)
+            self.assertEqual(database.get("RK-00")["data"], sample_elements()["RK-00"])
+
+    def test_legacy_sample_reseed_does_not_fill_missing_dimensions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database = IDFDatabaseManager(Path(temporary) / "idf.db")
+            seed_sample_topology(database)
+            document = json.loads(database.path.read_text(encoding="utf-8"))
+            legacy = document["records"]["RK-00"]["data"]
+            legacy.pop("units")
+            legacy.pop("rackDimensions")
+            database.path.write_text(json.dumps(document), encoding="utf-8")
+            self.assertEqual(seed_sample_topology(database), ())
+            self.assertEqual(database.get("RK-00")["data"], legacy)
+
+    def test_reseed_rejects_changed_rack_dimensions_without_overwriting(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database = IDFDatabaseManager(Path(temporary) / "idf.db")
+            seed_sample_topology(database)
+            changed = database.get("RK-00")["data"]
+            changed["rackDimensions"]["widthInches"] = 23
+            database.update("RK-00", changed)
+            with self.assertRaisesRegex(ValueError, "RK-00"):
+                seed_sample_topology(database)
+            self.assertEqual(database.get("RK-00")["data"], changed)
 
 
 if __name__ == "__main__":

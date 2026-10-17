@@ -233,9 +233,8 @@ class Coordinator:
             if not row or not row[0]:
                 raise ValueError("la sesión no está disponible para recibir órdenes")
             if action == "view" and (
-                row[2] != "lanip"
-                or (row[3] == "gui" and value != "gui")
-                or (row[3] == "tui" and value == "gui")
+                (row[3] == "gui" and value != "gui")
+                or (row[3] == "tui" and (value == "gui" or row[2] != "lanip"))
                 or row[3] not in {"gui", "tui"}
             ):
                 raise ValueError("esa vista no es compatible con la interfaz destinataria")

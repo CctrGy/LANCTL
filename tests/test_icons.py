@@ -35,7 +35,9 @@ class IconTests(unittest.TestCase):
             manager = IconManager(root / "icons")
             entry = manager.register(source, icon_id="device.router", name="Router")
             self.assertEqual((entry.width, entry.height), (125, 125))
-            self.assertEqual(manager.resolve("device.router"), root / "icons/device.router.jpg")
+            self.assertEqual(
+                manager.resolve("device.router"), (root / "icons/device.router.jpg").resolve()
+            )
             self.assertEqual(manager.list()[0].name, "Router")
 
     def test_rejects_wrong_dimensions_and_non_jpeg(self):

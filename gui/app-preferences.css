@@ -1,0 +1,306 @@
+.gui-preferences-active {
+  color-scheme: dark;
+  --gui-font-scale: 1;
+}
+.gui-preferences-active body {
+  color: var(--color-text);
+  background: var(--color-background);
+}
+.gui-preferences-active header,
+.gui-preferences-active .controls,
+.gui-preferences-active footer {
+  background: color-mix(in srgb, var(--color-background), #000 12%);
+}
+.gui-preferences-active dialog,
+.gui-preferences-active .panel,
+.gui-preferences-active .launch,
+.gui-preferences-active .terminal header {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+.gui-preferences-active input,
+.gui-preferences-active select,
+.gui-preferences-active textarea,
+.gui-preferences-active pre {
+  background: var(--color-background);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+.gui-preferences-active button {
+  color: var(--color-text);
+}
+.gui-preferences-active button.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--gui-primary-ink, #182105) !important;
+}
+.gui-preferences-active nav button.active {
+  background: color-mix(in srgb, var(--color-accent) 15%, var(--color-surface));
+  color: var(--color-accent);
+}
+.gui-preferences-active
+  :is(p, label, td, th, button, input, select, textarea, dt, dd) {
+  font-size: calc(12px * var(--gui-font-scale));
+}
+.gui-preferences-active footer :is(button, span) {
+  font-size: calc(11px * var(--gui-font-scale));
+}
+.gui-preferences-active footer {
+  height: auto;
+  min-height: 32px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gui-preferences-active footer > span {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gui-preferences-active .app-shell {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.gui-preferences-active[data-density="compact"] :is(main, .content) {
+  padding: 10px;
+}
+.gui-preferences-active[data-density="compact"] :is(td, .panel, .launch) {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.gui-preferences-active[data-reduced-motion="true"] * {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+.preferences-dialog {
+  width: min(660px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  overflow: auto;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 22px;
+}
+.preferences-dialog::backdrop {
+  background: #0008;
+}
+.preferences-dialog form {
+  display: grid;
+  gap: 16px;
+}
+.preferences-dialog h2,
+.preferences-dialog p {
+  margin: 0;
+}
+.preferences-dialog label {
+  display: grid;
+  gap: 6px;
+}
+.preferences-dialog label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.preferences-dialog .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.theme-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 10px;
+}
+.theme-choices button {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  border: 1px solid var(--color-border);
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--color-background);
+}
+.theme-choices button[aria-pressed="true"] {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.theme-swatches {
+  display: flex;
+  height: 30px;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+.theme-swatches i {
+  flex: 1;
+}
+.preferences-feedback {
+  color: var(--color-danger);
+}
+.support-dialog {
+  width: min(740px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  overflow: auto;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 22px;
+}
+.support-dialog::backdrop {
+  background: #0008;
+}
+.support-dialog h2 {
+  margin: 0 0 16px;
+}
+.support-dialog p {
+  overflow-wrap: anywhere;
+}
+.support-dialog pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 40dvh;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 7px;
+  background: var(--color-background);
+}
+.support-dialog a,
+.support-dialog summary {
+  color: var(--color-accent);
+}
+.support-dialog .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.support-dialog button {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.support-dialog button.primary {
+  background: var(--color-accent);
+  color: var(--gui-primary-ink, #182105) !important;
+}
+.report-dialog form {
+  display: grid;
+  gap: 14px;
+}
+.report-dialog label {
+  display: grid;
+  gap: 6px;
+}
+.report-dialog textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 8px;
+  font: inherit;
+}
+.report-dialog fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+}
+.report-dialog fieldset label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.monitor-evidence {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.monitor-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+}
+.monitor-filters label {
+  display: grid;
+  gap: 5px;
+}
+.monitor-filters label.check {
+  display: flex;
+  align-items: center;
+  align-self: center;
+}
+#monitor-evidence {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  padding: 12px;
+  background: var(--color-background);
+}
+#monitor-evidence article {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+#monitor-evidence small {
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+#monitor-evidence pre {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.first-scan-dialog form {
+  display: grid;
+  gap: 14px;
+}
+.first-scan-dialog label {
+  display: grid;
+  gap: 6px;
+}
+.first-scan-dialog input,
+.first-scan-dialog select {
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  font: inherit;
+}
+.first-scan-error {
+  color: var(--color-danger);
+}
+.panel .plugin-runtime-warning {
+  border-left: 3px solid var(--color-warning);
+  padding: 8px 12px;
+  color: var(--color-text);
+  background: var(--color-background);
+}
+.statusbar {
+  height: auto;
+  min-height: 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+.statusbar > span:first-child {
+  flex-wrap: wrap;
+  white-space: normal;
+}
+@media (max-width: 850px) {
+  .statusbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+@media (max-width: 480px) {
+  .statusbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .statusbar > span:last-child {
+    text-align: left;
+  }
+}
