@@ -981,6 +981,18 @@ origen `user.passwordRotatedAt`, una fecha opcional de metadatos. El hash real
 ya no sale; el JSON conserva su clave como string vacío. No se cambia el
 contrato de fechas ni se renombra código para esquivar el analizador.
 
+Para evitar confundir el análisis incremental de la PR con el repositorio
+completo, se ejecutó también
+[CodeQL manual sobre la rama candidata](https://github.com/CctrGy/LANCTL/actions/runs/39069160510).
+El análisis completo 1973841429 de `2b8494a` termina sin errores ni advertencias
+del analizador, con 43 reglas y **10 resultados**: #6/#7/#10/#12/#14/#15/#16/#17/
+#18/#19. Se revisaron sus orígenes: fecha `passwordRotatedAt`, rutas de
+`secret_root`, IDs/metadatos de credenciales y etiquetas del detector de higiene.
+#19 corresponde a la ruta del archivo de configuración, antes registrada como
+#8 en `main`. Los dos hallazgos de host keys y el de cabecera HTTP no aparecen
+en este análisis completo. Los diez resultados de metadatos siguen visibles;
+no se han añadido exclusiones ni se han descartado alertas para obtener un verde.
+
 El SARIF histórico confirma que #10/#12/#16/#17 siguen IDs públicos y campos
 de metadatos desde el documento descifrado, no `password`; #14 sigue las
 etiquetas de patrones del detector, no los tokens encontrados; #6/#7/#8/#15/#18
@@ -1006,6 +1018,28 @@ proporcionar `subprocess.CREATE_NO_WINDOW`. Se corrige únicamente
 ejecutarlas; ahora se comprueba el flag Windows y el cero Linux. No requiere
 recompilar los binarios. La validación remota posterior queda registrada al
 terminar; no se equipara el resultado local a un CI Linux correcto.
+
+GUI-DESIGN completó la compilación y comprobación nativa de los seis launchers.
+Se verifican independientemente las 386 entradas congeladas y la huella del
+instalador local: 135.487.663 bytes, SHA-256
+`5401cb5a085c4cf8fa2b86dbb9270e72f6a45ff0cfdfbdbf1c4ce113626bde3a`.
+El resultado está en `dist/gui-current/LANCTL-0.3.4-alpha.1-gui-setup.exe`.
+Los seis binarios incluyen los recursos/módulos actuales y pasan apertura,
+icono, IPC y cierre; los datos de prueba están aislados. No se ha instalado ni
+publicado ese instalador en el equipo del usuario. La certificación remota de
+instalación y paquetes continúa mediante el workflow manual, que excluye el
+job de publicación por exigir un evento `push`.
+
+Los jobs Windows 3.10 y 3.11 del segundo CI detectaron **seis expectativas de
+rutas incorrectas** en `test_paths.py`, `test_icons.py` y
+`test_physical_core_libraries.py`. El directorio temporal del runner usa
+`RUNNER~1`, mientras que los servicios devuelven rutas canónicas con
+`runneradmin`. Se reprodujeron los mismos seis fallos localmente mediante un
+alias 8.3 real obtenido con `GetShortPathNameW`. Las expectativas ahora resuelven
+la ruta esperada, conservando los componentes/nombres y el contrato existente;
+**16/16 pruebas correctas** con el alias. Solo cambian pruebas, sin modificar
+servicios ni invalidar los binarios compilados. La matriz Windows se repite
+sobre la corrección; no se normaliza el entorno del runner para ocultar el caso.
 
 El supuesto bloqueo de cierre LANIP fue un fallo del harness: usaba proyectos
 reales y pipes sin consumir. GUI-DESIGN comprobó cierre nativo y código de salida

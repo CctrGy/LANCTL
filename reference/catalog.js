@@ -10912,7 +10912,7 @@ window.LANCTL_REFERENCE = {
       "id": "doc-known-issues",
       "kind": "document",
       "name": "KNOWN-ISSUES.md",
-      "title": "Limitaciones conocidas de la beta",
+      "title": "Limitaciones conocidas",
       "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/KNOWN-ISSUES.md"
     },
     {

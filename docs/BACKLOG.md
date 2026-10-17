@@ -58,10 +58,15 @@ durante esta validación.
   un caso POSIX omitido en Windows. Cobertura 69,4720 %, umbral 60 %.
 - [x] Reejecutar CodeQL sobre el candidato e inspeccionar el SARIF: el resultado
   de la PR 26 conserva #6 sobre `passwordRotatedAt`, una fecha, no el hash.
+  El análisis completo de la rama registra diez resultados sobre rutas,
+  fechas y metadatos; los tres de SSH/cabecera ya no aparecen.
   No se ocultan alertas; los avisos de `main` no se consideran cerrados antes
   de integrar y analizar esa rama.
 - [x] Corregir el fallo exclusivo de CI Linux en la simulación de Windows:
   la prueba de interfaces ahora suministra `CREATE_NO_WINDOW` y verifica flags.
+- [x] Corregir seis expectativas de rutas que fallaban en Windows CI con
+  alias 8.3 (`RUNNER~1`). Reproducidas localmente con una ruta corta real:
+  seis fallos antes, 16 pruebas correctas después; contrato canónico conservado.
 - [ ] Completar CI y validación remota de paquetes del candidato de la PR 26;
   el primer job Linux detectó el fixture anterior. Sin publicación automática
   durante la validación manual del workflow de distribución.

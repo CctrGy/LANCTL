@@ -62,5 +62,37 @@ especializados abren y cierran correctamente mediante el host nativo.
 La comprobación integral y el empaquetado final se registran después de que
 AUDITOR estabilice los servicios. P34 (aislamiento/revocación completa), P50
 (puente externo con contexto y autenticación), los transportes distintos de
-ICMP/ARP de P47 y las certificaciones externas no se consideran terminados por estas
-pruebas visuales.
+ICMP/ARP de P47 y las certificaciones externas no se consideran terminados por
+estas pruebas visuales.
+
+## Corte final de fuentes
+
+AUDITOR valida el corte integrado con Coverage 7.16.2: 1.212 pruebas y 645
+subpruebas aprobadas en 185,61 s; cobertura de líneas/ramas 69,4720 %, sobre
+el umbral del 60 %. La omisión corresponde al IPC POSIX en Windows. Las 21
+pruebas GUI heredadas, excluidas por el selector habitual, pasan por separado:
+1.233 pruebas aprobadas en total. Las trece regresiones de controles GUI
+incluyen la conservación de la solicitud del primer escaneo tras error.
+
+Antes de compilar se congelan 386 entradas de construcción, con hashes en
+`.tool-reports/gui-package-freeze.json`. Las evidencias de distribución se
+añaden tras comprobar recursos, versiones y cierre nativo de los binarios.
+P69–P73 son anotaciones nuevas incorporadas desde HELP durante el ciclo y se
+conservan pendientes; no se presentan como implementadas en este corte.
+
+## Artefactos locales verificados
+
+Compilados los seis ejecutables `0.3.4-alpha.1` sin cambios en las 386 entradas
+congeladas. Cada archivo contiene los 29 recursos actuales de GUI/catálogo y
+los 16 módulos compartidos comprobados, incluidos origen de red y estado de
+plugins. Las seis ventanas pasan arranque nativo, icono, registro IPC y cierre
+mediante `WM_CLOSE`; LANIP espera además a completar su inventario inicial.
+Las pruebas usan almacenes y carpeta de proyectos temporales.
+
+Inno Setup termina correctamente y genera
+`dist/gui-current/LANCTL-0.3.4-alpha.1-gui-setup.exe` (135.487.663 bytes).
+SHA-256:
+`5401cb5a085c4cf8fa2b86dbb9270e72f6a45ff0cfdfbdbf1c4ce113626bde3a`.
+Es un instalador experimental local; no se ha instalado ni publicado.
+Compilar y ejecutar los binarios no certifica instalación/actualización en una
+máquina limpia ni los entornos externos que AUDITOR sigue comprobando.
