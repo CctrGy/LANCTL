@@ -21,14 +21,25 @@ DISCOVERY_MODES = ("icmp", "arp", "hybrid")
 SCAN_ORDERS = ("ascending", "descending", "random")
 
 
-def active_arp_mac(ip: str, timeout: float = 1.0) -> str:
+def active_arp_mac(
+    ip: str,
+    timeout: float = 1.0,
+    *,
+    source_address: str | None = None,
+    interface: str | None = None,
+) -> str:
     """Pregunta activamente por una IPv4 local sin confiar en la caché ARP."""
+    if source_address is not None:
+        source_address = str(ipaddress.IPv4Address(source_address))
     if platform.system() == "Windows":
         destination = ctypes.windll.ws2_32.inet_addr(ip.encode("ascii"))
         mac = (ctypes.c_ubyte * 6)()
         length = ctypes.c_ulong(6)
         result = ctypes.windll.iphlpapi.SendARP(
-            destination, 0, ctypes.byref(mac), ctypes.byref(length)
+            destination,
+            ctypes.windll.ws2_32.inet_addr(source_address.encode("ascii")) if source_address else 0,
+            ctypes.byref(mac),
+            ctypes.byref(length),
         )
         if result != 0 or length.value < 6:
             return ""
@@ -36,7 +47,16 @@ def active_arp_mac(ip: str, timeout: float = 1.0) -> str:
 
     try:
         result = subprocess.run(
-            ["arping", "-c", "1", "-w", str(max(1, round(timeout))), ip],
+            [
+                "arping",
+                "-c",
+                "1",
+                "-w",
+                str(max(1, round(timeout))),
+                *(["-I", interface] if interface else []),
+                *(["-s", source_address] if source_address else []),
+                ip,
+            ],
             capture_output=True,
             text=True,
             errors="replace",
@@ -101,12 +121,19 @@ class LanScanner:
         max_hosts: int,
         scan_order: str = "ascending",
         gateway: str | None = None,
+        *,
+        source_address: str | None = None,
     ):
         scan_order = scan_order.casefold()
         if scan_order not in SCAN_ORDERS:
             raise ValueError(
                 f"orden de escaneo no válido: {scan_order}. Disponibles: {', '.join(SCAN_ORDERS)}"
             )
+        from lanctl.core.network_interfaces import select_interface
+
+        self.interface = (
+            select_interface(source_address, str(network)) if source_address is not None else None
+        )
         self.network = network
         self.workers = workers
         self.timeout = timeout
@@ -116,6 +143,16 @@ class LanScanner:
         self.discovery_methods: dict[str, set[str]] = {}
         self.confirmed_devices: set[str] = set()
         self.response_times_ms: dict[str, dict[str, float]] = {}
+
+    def _arp(self, ip):
+        if self.interface:
+            return active_arp_mac(
+                ip,
+                self.timeout,
+                source_address=self.interface["address"],
+                interface=self.interface["name"],
+            )
+        return active_arp_mac(ip, self.timeout)
 
     def _ordered_hosts(self) -> list[ipaddress.IPv4Address]:
         if self.max_hosts < 1:
@@ -210,7 +247,7 @@ class LanScanner:
                     if use_icmp:
                         yield ("icmp", ip), self._timed, (self._ping, ip)
                     if use_arp:
-                        yield ("arp", ip), self._timed, (active_arp_mac, ip, self.timeout)
+                        yield ("arp", ip), self._timed, (self._arp, ip)
 
             for future, (method, ip) in self._bounded_futures(executor, jobs(), futures):
                 if progress and getattr(progress, "cancelled", lambda: False)():
@@ -312,9 +349,7 @@ class LanScanner:
 
         missing = [ip for ip in ips if ip not in active_arp]
         if missing:
-            macs = self._parallel(
-                lambda ip: active_arp_mac(ip, self.timeout), missing, "ARP servicios", None
-            )
+            macs = self._parallel(self._arp, missing, "ARP servicios", None)
             active_arp.update({ip: mac for ip, mac in zip(missing, macs) if mac})
         return findings, ips
 
@@ -368,10 +403,14 @@ class LanScanner:
 
     def _include_local_device(self, records):
         # El equipo local no aparece en su propia caché ARP.
-        own_ip = str(local_ipv4(self.network))
+        own_ip = self.interface["address"] if self.interface else str(local_ipv4(self.network))
         if ipaddress.IPv4Address(own_ip) not in self.network:
             return
-        own_mac = self._local_mac(own_ip)
+        own_mac = (
+            self._local_mac(own_ip, interface=self.interface["name"])
+            if self.interface
+            else self._local_mac(own_ip)
+        )
         existing = next((record for record in records if record.ip == own_ip), None)
         if existing and own_mac:
             existing.mac = own_mac
@@ -442,6 +481,20 @@ class LanScanner:
                 f"método de descubrimiento no válido: {discovery}. "
                 f"Disponibles: {', '.join(DISCOVERY_MODES)}"
             )
+        if self.interface:
+            from lanctl.core.errors import errors
+            from lanctl.core.network_interfaces import select_interface
+
+            self.interface = select_interface(self.interface["id"], str(self.network))
+            if resolve_names or extra_methods:
+                errors.emit(
+                    level=12,
+                    origin="LANCTL.Scanner.Interface.Methods",
+                    code="SCANNER.INTERFACE.LIMITED_METHODS",
+                    message="Interfaz fijada: se usan ICMP/ARP; DNS y descubridores externos se omiten porque no garantizan el origen",
+                    print_output=False,
+                )
+            resolve_names, extra_methods = False, ()
         self.discovery_methods = {}
         self.confirmed_devices = set()
         self.response_times_ms = {}
@@ -556,7 +609,7 @@ class LanScanner:
         return parts[1].rstrip(".") if len(parts) >= 2 else ""
 
     @staticmethod
-    def _local_mac(ip: str) -> str:
+    def _local_mac(ip: str, *, interface: str | None = None) -> str:
         if platform.system() == "Windows":
             script = (
                 "$a=Get-NetIPAddress -AddressFamily IPv4 "
@@ -573,7 +626,7 @@ class LanScanner:
                 script,
             ]
         else:
-            command = ["ip", "-o", "link"]
+            command = ["ip", "-o", "link", *(["show", "dev", interface] if interface else [])]
 
         try:
             result = subprocess.run(
@@ -593,10 +646,26 @@ class LanScanner:
     def _ping(self, ip: str) -> bool:
         milliseconds = max(1, int(self.timeout * 1000))
         if platform.system() == "Windows":
+            if self.interface:
+                from lanctl.apps.ip.infrastructure.services.source_binding import windows_ping
+
+                return windows_ping(self.interface["address"], ip, self.timeout)
             command = ["ping", "-n", "1", "-w", str(milliseconds), ip]
         else:
             seconds = max(1, round(self.timeout))
-            command = ["ping", "-c", "1", "-W", str(seconds), ip]
+            command = [
+                "ping",
+                "-c",
+                "1",
+                "-W",
+                str(seconds),
+                *(
+                    ["-I", self.interface["name"], "-I", self.interface["address"], "-n"]
+                    if self.interface
+                    else []
+                ),
+                ip,
+            ]
 
         try:
             result = subprocess.run(
@@ -613,7 +682,15 @@ class LanScanner:
     def _read_arp_table(self) -> dict[str, str]:
         try:
             result = subprocess.run(
-                ["arp", "-a"],
+                (
+                    ["ip", "-4", "neigh", "show", "dev", self.interface["name"]]
+                    if self.interface and platform.system() != "Windows"
+                    else [
+                        "arp",
+                        "-a",
+                        *(["-N", self.interface["address"]] if self.interface else []),
+                    ]
+                ),
                 capture_output=True,
                 text=True,
                 errors="replace",

@@ -32,6 +32,8 @@ CATEGORIES = {
 
 
 CATEGORIES["startup"] = "Inicio de LANCTL y ventanas"
+# Append new categories so existing numbered CLI navigation keeps its meaning.
+CATEGORIES["gui"] = "Apariencia y GUI"
 
 
 def leaves(document, prefix=""):
@@ -75,6 +77,13 @@ def _assign(document, path, value):
 
 
 def validate_value(path, value, default):
+    if path.startswith("gui.") and path != "gui.schemaVersion":
+        from lanctl.core.gui_preferences import validate_preferences
+
+        values = {k: v for k, v in DOCUMENT_DEFAULTS["gui"].items() if k != "schemaVersion"}
+        key = path.split(".", 1)[1]
+        values[key] = value
+        return validate_preferences(values)[key]
     if value is None and path.startswith("tui.keyBindings."):
         return None
     if (

@@ -82,6 +82,36 @@ Un esquema desconocido o datos inválidos se rechazan sin sobrescribirlos.
 Las operaciones son atómicas bajo el lock común y requieren la revisión actual
 del inventario, para no sobrescribir cambios de otra ventana.
 
+### Frentes visuales de equipos (skins)
+
+La elevación del armario muestra frentes SVG genéricos sobre las unidades
+ocupadas, con orejas de montaje o bandeja para equipos de sobremesa. Incluye
+30 plantillas: automático, switches de 12/24/48 RJ45 y combinaciones con SFP
+(24+2, 24+4, 48+2, 50+2, 48+4, 48+6 y 48+8), switches de sobremesa de
+5/8/12/16/24 puertos, paneles de 12/24/48, servidores de 1/2/4 U, SAI de
+2/3/4 U, router/cortafuegos, bandejas y paneles ciegos. Son representaciones
+genéricas y no un catálogo de modelos comerciales.
+
+Pulsa un equipo y elige «Personalizar frente» para seleccionar una plantilla,
+verla previamente o ajustar el tipo, número de RJ45/SFP, montaje y altura.
+El modo automático deduce el frontal de los puertos y tipo del inventario.
+Los puertos del frente son decorativos: no reciben clics, foco ni acciones de
+conexión, ni muestran respuestas al pasar el ratón. La unidad completa conserva
+el acceso a sus datos.
+El número representado no añade ni renumera puertos; los conectores adicionales
+se identifican como representación sin registro. Solo se resaltan conexiones
+realmente registradas. El SAI no presenta porcentajes o estados de batería
+inventados. Las unidades se numeran de abajo hacia arriba; una altura de 2 U
+partiendo de U5 ocupa U5–U6, con validación de espacio y límite del armario.
+
+La apariencia se guarda en `data.rackAppearance` con `schemaVersion: 1` en la
+base compartida, y conserva equipos, CPD, ubicación, puertos y cables. Las
+revisiones impiden sobrescribir cambios de otra ventana. El traslado desde la
+GUI de LANWIRE y la reducción de altura del rack respetan el espacio ocupado.
+Los equipos anteriores conservan 1 U y un frente automático hasta configurarlos.
+La vista simple permanece disponible y el tamaño visual de las unidades es
+ajustable; estas preferencias locales llevan su propio esquema versionado.
+
 ### Racks y CPD en Topología LANWIRE
 
 «Interior de racks» agrupa los equipos dentro de contenedores por rack.
@@ -168,3 +198,45 @@ sus propias ventanas y procesos. La revisión local no certifica otras plataform
 Las rutas de almacén están vinculadas a la instancia abierta: después de
 cambiarlas en configuración, cierra y vuelve a abrir el launcher. Los cambios
 de parámetros del monitor se aplican al reiniciar su sesión de ejecución.
+# Controles compartidos de escritorio — 17/10/2026
+
+Las seis ventanas nativas comparten un editor de apariencia con cinco paletas
+(Grafito, Azul noche, Bosque, Violeta y Claro), densidad, tamaño de texto y
+reducción de animaciones. La vista previa se cancela sin guardar; Aplicar usa
+las preferencias validadas del Core y las demás ventanas las reciben en vivo.
+Los temas de plugins amplían únicamente sus tokens declarados, sin reemplazar
+la preferencia base. Al retirarlos se limpian sus estilos de componente.
+
+El pie incluye `Report a bug`. Los errores conservan código, origen e identidad
+y se agrupan para evitar ventanas repetidas. LANMON permite elegir sesión y
+evidencias, editar descripción/pasos/resultado esperado, anonimizar y revisar
+el borrador antes de exportarlo o abrir el formulario oficial. Abrir GitHub no
+publica una incidencia. Las credenciales se excluyen incluso si se desactiva
+la anonimización de datos identificativos.
+
+LANCTL conserva su buffer local de actividad y envía los mensajes al transporte
+compartido antes de abrir el visor de LANMON. Allí se filtra por proyecto,
+sesión, nivel y texto. Los registros operativos tienen una vista independiente,
+historial acotado y pausa. LANIP ofrece además Registros para abrir la TUI en
+otra terminal. Cerrar el visor no detiene el monitor.
+
+La barra de LANCTL ya no muestra reloj. Web, GitHub y Referencia usan el servicio
+de enlaces oficiales compartido con CLI/TUI. Configuración ofrece la búsqueda
+manual de actualizaciones; la consulta automática corre en segundo plano y el
+Core la limita a una diaria. El usuario puede recordar después o abrir la
+Release; no se descargan ni ejecutan instaladores automáticamente.
+
+LANRACK crea armarios y edita altura (4–52 U) y ancho de montaje
+(10/19/21/23 pulgadas). LANWIRE muestra esas dimensiones desde el mismo registro
+y remite su edición a LANRACK. Los datos heredados incompletos se identifican
+para revisión; una altura inválida no se convierte en una elevación inventada.
+Los puertos de las skins siguen siendo exclusivamente decorativos.
+
+La solicitud de primer escaneo del instalador abre una confirmación editable
+en LANIP. El rango sugerido /24 se identifica como estimado cuando corresponde.
+Cancelar no escanea; confirmar guarda el CIDR y usa el progreso/cancelación de
+la GUI. La selección real de interfaz requiere adaptar los transportes de
+sondeo y sigue pendiente: esta ventana no ofrece un selector ficticio.
+
+Estos adaptadores son exclusivos del escritorio local. El frontend remoto
+conserva su superficie restringida y no obtiene métodos nativos adicionales.

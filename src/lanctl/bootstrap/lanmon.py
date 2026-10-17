@@ -67,8 +67,17 @@ def _main(argv: list[str] | None = None) -> int:
         from lanctl.apps.suite.launcher_gui import run_gui
 
         return run_gui("lanmon", project=args.project)
-    if args.window and (args.words != ["logs"] or args.cli or args.tui):
+    if args.window and (args.words != ["logs"] or args.cli):
         raise ValueError("--window solo se utiliza con logs")
+    if args.words == ["logs"] and args.tui and not args.cli:
+        from lanctl.apps.monitor.log_stream import open_log_window
+        from lanctl.apps.monitor.log_tui import follow_log_tui
+
+        if args.project or args.source == "project":
+            raise ValueError("La TUI en directo muestra el log operativo, no auditorías VLF.")
+        if args.window:
+            return open_log_window(limit=args.limit, minimum=args.level, tui=True)
+        return follow_log_tui(limit=args.limit, minimum=args.level)
     if args.cli or args.tui:
         from lanctl.core.interactive_console import command_console
 

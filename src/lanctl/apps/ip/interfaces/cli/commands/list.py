@@ -24,6 +24,12 @@ from lanctl.core.progress import ScanProgress
 from lanctl.core.query import matches_query
 
 
+class _ExplicitNetwork(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        namespace.network_explicit = True
+
+
 def register_list_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
     command = commands.add_parser(
@@ -36,9 +42,16 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
     )
     command.add_argument(
         "--network",
+        action=_ExplicitNetwork,
         default=config["range"],
         help="Red CIDR. Por defecto detecta la LAN como /24.",
     )
+    command.add_argument(
+        "--interface",
+        default=None,
+        help="Origen IPv4 local o ID de interfaz; usa su máscara real. Solo ICMP/ARP, sin DNS ni descubridores externos.",
+    )
+    command.set_defaults(network_explicit=False)
     command.set_defaults(configured_gateway=config.get("gateway"))
     command.add_argument(
         "--database", default=config["database"], help="Archivo JSON de elementos."
@@ -263,9 +276,21 @@ def run_list(args: argparse.Namespace) -> int:
 
     lab_repository = LabRepository()
     lab_active = lab_repository.active()
-    network = resolve_network(lab_active["cidr"] if lab_active else args.network)
-    current_host_ip = "" if lab_active else str(local_ipv4(network))
-    if args.network and not lab_active:
+    source = getattr(args, "interface", None)
+    selected = None
+    if source is not None:
+        from lanctl.core.network_interfaces import select_interface
+
+        if lab_active:
+            raise ValueError("Una interfaz real no se puede usar con un laboratorio activo")
+        requested = args.network if getattr(args, "network_explicit", bool(args.network)) else None
+        selected = select_interface(source, requested)
+        network = ipaddress.IPv4Network(requested or selected["network"], strict=False)
+        current_host_ip = selected["address"]
+    else:
+        network = resolve_network(lab_active["cidr"] if lab_active else args.network)
+        current_host_ip = "" if lab_active else str(local_ipv4(network))
+    if args.network and not lab_active and not selected:
         local_ip = local_ipv4(network)
         if local_ip not in network:
             suggested = resolve_network(None)
@@ -304,6 +329,7 @@ def run_list(args: argparse.Namespace) -> int:
             max_hosts=args.max_hosts,
             scan_order=args.scan_order,
             gateway=args.configured_gateway,
+            **({"source_address": selected["id"]} if selected else {}),
         )
     )
     progress = getattr(args, "progress_instance", None) or ScanProgress(args.progress)

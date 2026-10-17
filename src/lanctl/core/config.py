@@ -102,6 +102,13 @@ DOCUMENT_DEFAULTS = {
         "commandChaining": True,
     },
     "startup": {"interface": "cli", "closeGuiOnLaunch": False},
+    "gui": {
+        "schemaVersion": 1,
+        "theme": "graphite",
+        "density": "comfortable",
+        "fontScale": 1.0,
+        "reducedMotion": False,
+    },
     "network": {
         "range": None,
         "dhcpRange": None,
@@ -372,6 +379,7 @@ _LEGACY_PATHS = {
     "cliCommandChaining": ("cli", "commandChaining"),
     "startupInterface": ("startup", "interface"),
     "closeGuiOnLaunch": ("startup", "closeGuiOnLaunch"),
+    "guiPreferences": ("gui",),
     "range": ("network", "range"),
     "dhcpRange": ("network", "dhcpRange"),
     "tr064Port": ("network", "tr064Port"),

@@ -81,17 +81,27 @@ class WireGuiService:
                 raise ValueError("Medio de cable desconocido")
             result["kind"] = values["kind"]
         if "units" in values:
-            if type(values["units"]) is not int or not 1 <= values["units"] <= 100:
-                raise ValueError("El rack debe tener entre 1 y 100 unidades")
-            result["units"] = values["units"]
+            from lanctl.core.rack_dimensions import validate_height
+
+            result["units"] = validate_height(values["units"])
+            for alias in ("size_units", "height"):
+                if alias in result:
+                    result[alias] = result["units"]
+        if "widthInches" in values:
+            from lanctl.core.rack_dimensions import validate_width
+
+            result["rackDimensions"] = {
+                "schemaVersion": 1,
+                "widthInches": validate_width(values["widthInches"]),
+            }
         return result
 
     def create(self, values):
         kind = values["kind"]
         if kind == "rack":
-            units = int(values.get("units", 42))
-            if not 1 <= units <= 100:
-                raise ValueError("El rack debe tener entre 1 y 100 unidades")
+            from lanctl.core.rack_dimensions import validate_height
+
+            units = validate_height(values.get("units", 42))
             data = {"type": "rack", "units": units}
         elif kind in {"panel", "outlet"}:
             data = {
@@ -150,11 +160,13 @@ class WireGuiService:
                         compatible, reason = compatible_connection(cable, port)
                         if not compatible:
                             raise ValueError(reason)
+            from lanctl.apps.rack.skins import span, validate_location
+
             if data.get("type") == "rack":
                 for other in all_records:
                     location = other["data"].get("location", {})
                     if location.get("rack") == identifier and (
-                        location.get("unit") or 0
+                        (location.get("unit") or 0) + span(other["data"]) - 1
                     ) > data.get("units", 42):
                         raise ValueError("La altura deja equipos fuera del rack")
             if data.get("location", {}).get("rack"):
@@ -165,6 +177,8 @@ class WireGuiService:
                     rack["data"].get("units", 42)
                 ):
                     raise ValueError("La unidad excede la altura del rack")
+            if "rack" in values or "unit" in values:
+                validate_location(all_records, identifier, data)
             self.database.update(identifier, data)
 
     def connect(self, identifier, expected, endpoints):

@@ -46,11 +46,25 @@ def build_parser() -> LANCTLArgumentParser:
     commands.add_parser("list", aliases=["ls"], help="Lista los racks disponibles.")
     show = commands.add_parser("show", help="Muestra un rack y sus ocupantes.")
     show.add_argument("rack", help="ID o nombre del rack.")
+    dimensions = commands.add_parser("dimensions", help="Edita altura y ancho de montaje del rack.")
+    dimensions.add_argument("rack", help="ID del rack.")
+    dimensions.add_argument("--units", type=int, required=True, help="Altura de 4 a 52 U.")
+    dimensions.add_argument(
+        "--width-inches",
+        type=int,
+        choices=(10, 19, 21, 23),
+        required=True,
+        help="Ancho de montaje en pulgadas.",
+    )
     return parser
 
 
 def _print_rack(rack: dict) -> None:
-    print(f"{rack['id']} | {rack['name']} | {rack['units']}U | {len(rack['occupants'])} elementos")
+    print(
+        f"{rack['id']} | {rack['name']} | {rack['units']}U | {rack['widthInches'] or '?'} pulgadas | {len(rack['occupants'])} elementos"
+    )
+    for warning in rack["dimensions"]["warnings"]:
+        print(f"  Revisar: {warning}")
     for item in rack["occupants"]:
         unit = f"U{item['unit']}" if item["unit"] is not None else "U?"
         print(f"  {unit:>4}  {item['id']:<10} {item['name'] or item['type']}")
@@ -79,6 +93,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "show":
         print(json.dumps(service.get(args.rack), indent=2, ensure_ascii=False))
         return 0
+    if args.command == "dimensions":
+        service.set_dimensions(
+            service.snapshot()["organizationRevision"],
+            args.rack,
+            {"units": args.units, "widthInches": args.width_inches},
+        )
+        _print_rack(service.get(args.rack))
+        return 0
     return run_cli(service)
 
 
@@ -96,6 +118,13 @@ def _console(service: RackService, *, tui=False) -> int:
                 _print_rack(rack)
         elif args.command == "show":
             _print_rack(service.get(args.rack))
+        elif args.command == "dimensions":
+            service.set_dimensions(
+                service.snapshot()["organizationRevision"],
+                args.rack,
+                {"units": args.units, "widthInches": args.width_inches},
+            )
+            _print_rack(service.get(args.rack))
         else:
             build_parser().print_help()
         return 0
@@ -103,12 +132,13 @@ def _console(service: RackService, *, tui=False) -> int:
     def overview():
         rows = service.list()
         inventory = "\n".join(
-            f"{row['id']:<12} {row['name']} · {row['units']}U · {len(row['occupants'])} elementos"
+            f"{row['id']:<12} {row['name']} · {row['units']}U · {row['widthInches'] or '?'} pulgadas · {len(row['occupants'])} elementos"
+            + (" · REVISAR DIMENSIONES" if row["dimensions"]["needsReview"] else "")
             for row in rows
         )
         return (
             (inventory or "No hay racks definidos en LANWIRE.")
-            + "\n\nlist: listar · show ID: unidades y ocupantes · R: refrescar\nLa edición física pertenece a LANWIRE."
+            + "\n\nlist: listar · show ID: unidades y ocupantes · R: refrescar\ndimensions ID --units U --width-inches ANCHO: editar dimensiones."
         )
 
     return command_console(

@@ -6,14 +6,15 @@ from pathlib import Path
 
 import pytest
 from test_launcher_gui import api
+from test_launcher_gui import workspace as workspace
 
 pytest_plugins = ["test_launcher_gui"]
 
 
-def seed():
+def seed(labels="ABCDEFG"):
     wire, rack = api("lanwire"), api("lanrack")
     racks, switches = [], []
-    for i, name in enumerate("ABCDEFG"):
+    for i, name in enumerate(labels):
         racks.append(
             wire.wire_create({"kind": "rack", "prefix": "RK", "name": "Rack " + name, "units": 48})[
                 "id"
@@ -32,7 +33,7 @@ def seed():
         assert wire.wire_update(row["id"], row["revision"], {"rack": racks[-1], "unit": 10})["ok"]
     cables = []
     # Ciclo y enlaces paralelos: no es un árbol.
-    for i in range(7):
+    for i in range(len(switches)):
         cable = wire.wire_create(
             {"kind": "wire.copper", "prefix": "WL", "name": "Interconexión de sala " + str(i)}
         )["id"]
@@ -42,7 +43,7 @@ def seed():
             row["revision"],
             [
                 {"device": switches[i], "port": "X1"},
-                {"device": switches[(i + 1) % 7], "port": "X2"},
+                {"device": switches[(i + 1) % len(switches)], "port": "X2"},
             ],
         )["ok"]
         cables.append(cable)
@@ -193,4 +194,44 @@ def test_cpd_two_windows_topology_real_connections(workspace):
             assert page.locator("footer").bounding_box()["y"] < 650
             assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
         assert not errors, errors
+        browser.close()
+
+
+@pytest.mark.skipif(
+    os.environ.get("LANCTL_GUI_BROWSER_TESTS") != "1", reason="optional browser runtime"
+)
+def test_cpd_large_mesh_layout(workspace):
+    playwright = pytest.importorskip("playwright.sync_api").sync_playwright
+    wire, rack, racks, _switches, _cables = seed([str(i) for i in range(24)])
+    rooms = [mutate(rack, "create", {"name": "Sala " + str(i)})["id"] for i in range(3)]
+    for i, r in enumerate(racks):
+        assert mutate(rack, "assign", {"id": rooms[i % 3], "rack": r})["ok"]
+    with playwright() as p:
+        browser = p.chromium.launch(channel="msedge", headless=True)
+        page = browser.new_page(viewport={"width": 1440, "height": 940})
+        failures = []
+        page.on("pageerror", lambda e: failures.append(str(e)))
+        page.expose_function("rpc", lambda method, args: getattr(wire, method)(*args))
+        page.goto((Path(__file__).resolve().parents[1] / "gui/launcher.html").as_uri())
+        page.evaluate(
+            "window.pywebview={api:new Proxy({}, {get:(_,m)=>(...args)=>rpc(m,args)})};window.dispatchEvent(new Event('pywebviewready'))"
+        )
+        page.locator("#wire-board").wait_for()
+        assert page.locator(".wire-node").count() == 24
+        assert page.locator("#wire-lines path").count() == 25
+        page.locator('[data-level="outside"]').click()
+        page.locator('[data-nav="fit"]').click()
+        assert page.locator(".physical-region").count() == 3
+        assert page.locator(".wire-node").count() == 24
+        assert page.locator("#wire-lines path").count() == 24
+        assert page.evaluate(
+            """()=>{const ns=[...document.querySelectorAll('[data-node]')].map(n=>n.getBoundingClientRect());return !ns.some((a,i)=>ns.some((b,j)=>j>i&&a.left<b.right-.01&&a.right>b.left+.01&&a.top<b.bottom-.01&&a.bottom>b.top+.01));}"""
+        )
+        previous_camera = page.evaluate("({...camera})")
+        page.locator("#physical-cpd").select_option(rooms[0])
+        # Los otros CPD permanecen como contexto de las salidas reales.
+        assert page.locator("#wire-lines path").count() >= 8
+        page.locator("#physical-cpd").select_option("")
+        assert page.evaluate("({...camera})") == previous_camera
+        assert not failures, failures
         browser.close()

@@ -1,9 +1,101 @@
 # Trabajo pendiente de LANCTL
 
+## Revisión de pendientes solicitada — 17/10/2026, segundo ciclo
+
+Se vuelve a comprobar toda la lista, incluidas las entradas implementadas que
+esperan el cierre de GUI-DESIGN. No se inicia una segunda compilación durante
+su validación. El usuario confirma que **todavía no existe un editor oficial
+configurado**: P40/P42 siguen requiriendo identidad y firma autorizadas.
+
+| Orden | Objetivo / alcance | Archivos previstos | Dependencias e impacto | Riesgo |
+| --- | --- | --- | --- | --- |
+| 1 | P34: comprobar autorización vigente en cada acceso al Core, invalidar referencias antiguas, propagar revocaciones y separar limpieza de locks. Exponer los límites del runtime trusted heredado. | `core/plugins/manager.py`, `api.py`, nuevo servicio de autorización y regresiones de plugins. | Esperar cierre del build en curso; conservar firmas públicas y autorización explícita. Hilos nativos heredados requieren una migración de runtime, nunca declarar su terminación por quitar callbacks. | Crítico |
+| 2 | REF-P47-interface/P47: enumerar redes reales y vincular las sondas a un origen seleccionado. | Servicios de descubrimiento, `core/first_scan.py`, CLI de escaneo y regresiones; adaptador visual coordinado. | Contrato de selección explícita, máscara real, rechazo de interfaz desaparecida; ninguna sonda previa a confirmar. | Alto |
+| 3 | P50: contrato de consulta de sesión viva, revisión y datos sin guardar antes del transporte externo. | `core/session.py`, servicios de consulta y adaptador MCP; pruebas de contexto y redacción. | Contexto explícito, revocación y autenticación. La disponibilidad en ChatGPT exige conexión externa real; no se confunde una prueba local con esa certificación. | Alto |
+| 4 | P67/P68: comparar Coverage 7.10.6/7.16.2 y Ruff 0.16.2/0.17.0 con Python 3.10 y umbral 60 %. | `pyproject.toml`, documentación de herramientas; entornos de evaluación locales. | Evaluación aislada durante build; suite con ambas versiones sobre las mismas fuentes cuando quede libre. No fusionar PR ni publicar ramas estables. | Medio |
+| 5 | P45/P46/P48/P32: contrastar instalación, portable, completado y plataformas con evidencia real. | Empaquetado y pruebas de distribución. | Artefactos de GUI-DESIGN, CMD/Clink y entornos disponibles. Firmas, Linux ARM64 o SSH no disponibles no se certifican. | Alto |
+
+P35/P49/P51/P52/P53/P54 y P66 «Dimensiones» tienen implementación compartida;
+su cierre se contrastará con el resultado integral y los artefactos del primer
+ciclo. Las decisiones y resultados de este segundo ciclo se añaden a la matriz
+de verificación, conservando el historial anterior.
+
+Resultado del segundo ciclo (fuentes): mitigaciones de P34 aplicadas y verificadas
+con 119 pruebas; P47 incorpora máscara real y origen ICMP/ARP, con 132 pruebas
+y 10 subpruebas. Integración visual P34/P47 en curso en GUI-DESIGN. P68 revisada:
+Ruff 0.17.0 pasa lint/formato y queda fijado en `pyproject.toml`; P67 espera la
+comparación integral con ambas versiones de Coverage. No cambian IDs públicos
+ni versión de LANCTL. Los detalles y límites figuran en la matriz de verificación.
+P69 fue incorporada desde HELP durante este ciclo por una petición de anotación;
+se conserva como tarea nueva, todavía sin implementación.
+
 Estado revisado el **16/10/2026**. Los puntos marcados tienen corrección o
 verificación local con evidencia en [la matriz de comprobación](BACKLOG-VERIFICATION.md).
 La validación de plataformas externas sigue separada; las marcas no equivalen
 a certificar instaladores ni sistemas que no se han ejecutado.
+
+## Coordinación no visual AUDITOR — 17/10/2026
+
+Esta revisión complementa el orden histórico del 16/10. El usuario ha encargado
+continuar los pendientes disponibles en coordinación con GUI-DESIGN. Se conserva
+`experimental-gui` y la versión existente; no se publican ni instalan artefactos.
+GUI-DESIGN conserva los archivos `gui/*`, SuiteApi/LauncherApi, `gui_support.py`
+y `desktop.py`; AUDITOR desarrolla servicios, datos, CLI/TUI e instalación.
+
+| Tarea | Objetivo y archivos de AUDITOR | Dependencias / impacto | Riesgo | Resultado en fuentes |
+| --- | --- | --- | --- | --- |
+| P54 | Enlaces compartidos en `core/official_links.py`, `bootstrap/lanctl.py`, Clink y referencias. | Opciones aditivas; sin shell ni destino arbitrario. Desbloquea botones GUI y catálogo de P48. | Bajo | Backend y CLI/TUI verificados; integración visual a cargo de GUI-DESIGN. |
+| P35 | Cinco presets y preferencias en `core/gui_preferences.py`, `config.py`, `settings_catalog.py`; lectura de temas activos en `plugins/manager.py`. | Base elegida + tokens/componentes explícitos de plugins; no cambia preferencias guardadas. P34 sigue pendiente para revocación completa entre procesos. | Medio | Persistencia, validación y catálogo comprobados; corregida categoría GUI ausente. |
+| P49 | TUI incremental en `apps/monitor/log_tui.py`, `log_stream.py`, `bootstrap/lanmon.py`. | Reutiliza lector, limita lotes y memoria, conserva `--follow`; cierre sin parar tareas. | Medio | Pausa, navegación, filtros y terminal independiente verificados en pruebas enfocadas. |
+| P53 | Transporte en `core/activity.py`. | SQLite por propietario, sesión/proyecto explícitos, cursor y últimos registros; conserva mensajes tras cerrar el emisor. | Alto | Verificada escritura desde proceso independiente y lectura desde otro; GUI puede retirar buffer local. |
+| P52 | Preparador `core/diagnostics.py` y adaptador `apps/monitor/bug_reports.py`. | Selección acotada, anonimización, agrupación de errores y nueva redacción al exportar; sin proyectos completos ni publicación automática. | Alto | Backend comprobado. Separa el preparador sin red del formulario GitHub; desbloquea esa parte de P50. |
+| P51 | Consulta `core/updates.py`. | REST oficial, comparación semántica y canal publicado; caché y reserva entre procesos; tolera fallos. GUI debe invocarlo en worker. | Medio | Verificadas versiones, fallos, recordatorio, concurrencia y validación de enlaces de caché. No instala ni descarga. |
+| P66 «Dimensiones» | `core/rack_dimensions.py`, servicios rack/wire, base IDF, modelo NetworkRack y CLI/TUI de LANRACK. | 4–52 U y 10/19/21/23 pulgadas; conserva datos antiguos con advertencias y bloquea reducciones que excluyan equipos. | Alto | Validación y persistencia compartidas comprobadas. La otra entrada P66 «Frentes» conserva su ID y estado. |
+| P46 | `plugins/selection.py`, `builtin.py`, `core/installation.py`, instalador. | Selección inicial all/none/individual persistente; tema base obligatorio; actualización conserva elección y permisos. P40 impide certificar uso de trusted oficiales. | Alto | Backend verificado; fuente del instalador preparada, pendiente empaquetado/certificación. |
+| P45 | Cinco temas con preview en `packaging/inno/LANCTL.iss`; `setup-defaults` consume el mismo validador. | P35/P46 implementadas en fuentes; actualización no sobrescribe configuración existente. | Medio | Implementación preparada; la compilación/prueba visual del instalador corresponde a integración final. |
+| P47 | `core/first_scan.py`, enumeración de interfaces, CLI `list --interface` y transporte ICMP/ARP con origen explícito. | Selección de NIC/rango real, usuario normal y confirmación antes de sondas; adaptador visual en integración. | Alto | 132 pruebas y 10 subpruebas pasan. REF-P47-interface conserva TCP/descubridores y certificación nativa varias NIC/Linux. |
+| P48 | `core/clink_integration.py`, Lua, instalador, `portable/prepare.ps1`, script de build. | Solo carpeta de esta distribución/usuario; no ejecutar PATH de usuario al desinstalar elevado. Falta CMD/Clink real y caso de desinstalación por otra cuenta. | Medio | Registro y retirada comprobados con ejecutor simulado; paquetes preparados en fuentes. No certificada. |
+| P34 | Concesiones por activación, comprobación de autoridad, retirada de referencias y limpieza fuera de locks implementadas; 119 pruebas pasan. | REF-P34-runtime sigue necesaria: hilos y efectos nativos del trusted heredado no son cancelables desde la API. | Crítico | `runtime_status` distingue acceso al Core, limpieza pendiente y reinicio requerido. No se declara revocación nativa completa. |
+| P40/P42 | Artefactos LCP oficiales y confianza real. | Requiere editor/clave y paquetes firmados autorizados; no crear identidad ficticia. | Alto | Bloqueo externo mantenido. |
+| P50 | Puente MCP de consulta y diagnóstico. | REF-P34-runtime, contrato de snapshots de sesión viva/revisión y transporte autenticado verificable; el coordinador actual solo comparte metadatos. | Alto | Preparador P52 disponible; puente no implementado ni certificado. No sustituir cambios sin guardar por lectura del VLF. |
+| P32 | Certificación de distribución. | GUI-DESIGN ejecutará suite integral y único build; Windows limpio, ARM64 y SSH externo siguen sin evidencia. | Alto | No se confunden regresiones de fuente con certificación de paquetes. |
+
+Refactorizaciones necesarias antes de reanudar las tareas bloqueadas:
+
+- [ ] **REF-P34-runtime.** Contrato de ejecución con revocación comprobable.
+  Separar los plugins con ejecución cancelable en procesos propiedad del host;
+  versionar el RPC, permisos por llamada y concesión/revisión de autorización.
+  Definir suspensión de nuevas llamadas, retirada de callbacks/funciones,
+  cancelación y terminación con plazo, dependencias y confirmación por proceso.
+  Nunca mantener locks de registro mientras se invoca `deactivate` de código
+  externo. Conservar runtime/API anteriores como compatibilidad explícita con
+  sus límites; no anunciar aislamiento para `trusted` en proceso. Impacto alto
+  en plugins y contratos, riesgo crítico; condición previa de cierre P34/P50.
+- [ ] **REF-P47-interface.** Enumeración de redes con máscara real y selección
+  del origen de sondas ICMP/ARP/TCP. El escáner actual usa rutas del SO y puede
+  inferir /24; una etiqueta de interfaz no altera ese comportamiento. Añadir
+  adaptadores Windows/Linux con origen explícito, verificar varias NIC y no
+  introducir escaneos fuera del rango confirmado. Impacto transversal en
+  descubrimiento, riesgo alto; requisito para completar P47.
+
+- [ ] **REF-P50-session.** Antes del puente MCP, definir un proveedor de snapshot
+  del proceso propietario con revisión, contexto de sesión/proyecto explícito,
+  caducidad al cerrar/cambiar de proyecto y datos temporales aún no guardados.
+  Seleccionar campos por capacidad y excluir credenciales. El coordinador solo
+  contiene metadatos y `_SESSION_DEVICES` es memoria de proceso: leer un VLF
+  desde el servidor no cumple ese contrato. Riesgo alto, impacto en sesión e
+  inventario; depende de REF-P34-runtime para exposición mediante plugin.
+
+Orden recomendado tras la integración de fuentes: resolver REF-P34-runtime y
+el contrato de sesión viva de P50; obtener las firmas de P40; verificar el
+instalador P45/P46/P48 y luego P32 con su matriz externa; resolver
+REF-P47-interface antes de certificar selección de red. P67/P68 (herramientas
+de desarrollo) son propuestas separadas y no se mezclan en este cambio.
+
+Las marcas históricas de las tareas con alcance GUI/instalador no se adelantan
+a la validación final. Evidencia y límites: sección AUDITOR del 17/10 en
+`docs/BACKLOG-VERIFICATION.md`; contratos de integración en el informe local
+`.tool-reports/gui-auditor-sync.json`.
 
 ## Orden de ejecución validado — 16/10/2026
 
@@ -241,7 +333,7 @@ indican por separado; las comprobaciones de backend se amplían en
   abiertos; las operaciones con una revisión antigua se rechazan y piden recarga.
   Verificación final: 43 regresiones nuevas; suite completa con 1.013 pruebas y
   643 subpruebas aprobadas, 1 omisión POSIX y cobertura del 67,83 %.
-- [ ] **P35.** Revisar el feedback del sistema de temas y paletas de colores:
+- [x] **P35.** Revisar el feedback del sistema de temas y paletas de colores:
   comprobar cómo se reflejan los cambios seleccionados en la interfaz y en los
   ajustes guardados. Definir y añadir opciones básicas de configuración de la
   GUI; las opciones concretas quedan por determinar en esa revisión.
@@ -375,11 +467,11 @@ paquete sin firma por marcar sus permisos.
 
 ## Configuración inicial del instalador — 16/10/2026
 
-- [ ] **P45.** Añadir una selección de cinco temas durante la instalación, con
+- [x] **P45.** Añadir una selección de cinco temas durante la instalación, con
   nombre y vista previa. Guardar la elección mediante la configuración compartida
   del programa y conservar el tema existente en actualizaciones, salvo cambio
   explícito del usuario.
-- [ ] **P46.** Permitir elegir si se instalan los plugins predeterminados del
+- [x] **P46.** Permitir elegir si se instalan los plugins predeterminados del
   programa, con selección individual opcional. Adaptar el empaquetado y el primer
   inicio para respetar la elección, distinguir los recursos necesarios (como el
   tema base) de los plugins opcionales y conservar permisos, firmas y confianza
@@ -400,7 +492,7 @@ paquete sin firma por marcar sus permisos.
 
 ## Monitorización simultánea con LANIP — 16/10/2026
 
-- [ ] **P49.** Añadir a LANMON una TUI de logs en tiempo real que pueda
+- [x] **P49.** Añadir a LANMON una TUI de logs en tiempo real que pueda
   permanecer abierta en una terminal mientras se controla y modifica el
   inventario desde la GUI de LANIP. Reutilizar el seguimiento incremental del
   log común, con actualización automática, colores por nivel, filtros, pausa
@@ -435,7 +527,7 @@ paquete sin firma por marcar sus permisos.
 
 ## Avisos de actualizaciones estables — 16/10/2026
 
-- [ ] **P51.** Añadir una comprobación de actualizaciones en las Releases del
+- [x] **P51.** Añadir una comprobación de actualizaciones en las Releases del
   repositorio oficial de GitHub, con aviso automático en segundo plano y botón
   «Buscar actualizaciones» en ajustes. Ofrecer únicamente versiones estables
   publicadas superiores a la instalada; excluir borradores y prereleases y
@@ -449,7 +541,7 @@ paquete sin firma por marcar sus permisos.
 
 ## Reportes de errores desde LANMON — 16/10/2026
 
-- [ ] **P52.** Centralizar en LANMON la recopilación y preparación de reportes
+- [x] **P52.** Centralizar en LANMON la recopilación y preparación de reportes
   de errores. Al detectar un error, mostrar una ventana emergente con resumen
   y acciones para ver detalles, preparar el reporte o cerrar; agrupar errores
   repetidos para evitar una sucesión de ventanas. Añadir en la barra inferior
@@ -471,7 +563,7 @@ paquete sin firma por marcar sus permisos.
 
 ## Barra inferior y actividad centralizada en LANMON — 16/10/2026
 
-- [ ] **P53.** Retirar la fecha y hora (TIME/DATE) de la barra inferior de
+- [x] **P53.** Retirar la fecha y hora (TIME/DATE) de la barra inferior de
   información de la GUI de LANCTL mostrada por el usuario. Trasladar el visor
   «Actividad» de esa barra al launcher LANMON, conservando el acceso a los
   mensajes de actividad de LANCTL. Actualmente son mensajes locales en memoria
@@ -484,7 +576,7 @@ paquete sin firma por marcar sus permisos.
   Verificar actividad entre procesos, selección de proyecto/sesión y cierre de
   ventanas, además de las regresiones relacionadas de GUI, CLI y TUI.
 
-- [ ] **P54.** Añadir accesos de texto «Web», «GitHub» y «Referencia» a la
+- [x] **P54.** Añadir accesos de texto «Web», «GitHub» y «Referencia» a la
   barra inferior de información de LANCTL, con estilo coherente con «CLI»,
   apertura en el navegador del sistema y distribución adaptable al ancho.
   Exponer también `lanctl -web`, `lanctl -github` y `lanctl -reference`,
@@ -593,8 +685,8 @@ sus límites se documentan en `docs/BACKLOG-VERIFICATION.md`.
   A–G y escenarios de mayor tamaño, conexiones cruzadas, paralelas y salidas
   externas, sin perder ni inventar enlaces al agrupar, filtrar o cambiar de nivel.
 
-Ámbito previsto: `gui/wire-gui.js`, `gui/launcher.css` y pruebas de interacción
-de LANWIRE. Mantener la estética actual y los datos y contratos del inventario.
+Ámbito implementado: `gui/wire-gui.js`, `gui/physical-gui.js`,
+`gui/launcher.css` y pruebas de interacción de LANWIRE/LANRACK. Mantener la estética actual y los datos y contratos del inventario.
 
 ## Agrupación de armarios por CPD en LANRACK — 17/10/2026
 
@@ -626,3 +718,111 @@ versionado, validación y migración compatible de los racks existentes, que
 seguirán disponibles sin CPD asignado. Comprobar CPD con uno y varios racks,
 nombres repetidos con identificadores distintos, cambios de pertenencia y
 conservación de equipos y enlaces. La migración conserva los registros existentes y no modifica conexiones.
+
+## Dimensiones de armarios rack — 17/10/2026
+
+- [x] **P66.** Corregir la altura de los armarios rack para admitir únicamente
+  valores enteros entre **4 y 52 U**, ambos incluidos; rechazar cualquier valor
+  fuera del rango en creación y edición mediante validación compartida. Añadir
+  como propiedad independiente de cada rack el **ancho de montaje en pulgadas**,
+  limitado a **10, 19, 21 o 23**. Ambas dimensiones serán editables en **LANRACK**
+  y visibles como datos en **LANWIRE**, con representación coherente en **GUI y
+  TUI**. No confundir el ancho físico con la anchura visual de paneles o columnas.
+  Persistirlas en el inventario físico compartido y el proyecto, sin duplicar
+  datos por launcher; coordinar con P60–P65. Definir esquema versionado y
+  tratamiento compatible de racks existentes sin ancho o con alturas fuera
+  del nuevo rango: señalar los casos que requieran corrección, sin truncar,
+  asignar dimensiones ni eliminar equipos silenciosamente. Impedir reducir
+  la altura si deja equipos fuera del armario y conservar ubicaciones y enlaces.
+  Verificar los límites 4/52 U, el rechazo de 3/53 U y valores no enteros, las
+  cuatro anchuras admitidas y el rechazo de otras medidas; comprobar guardado,
+  reapertura y consistencia entre launchers e interfaces.
+
+
+## Frentes de equipos en LANRACK — 17/10/2026
+
+- [x] **P66.** Superponer skins vectoriales genéricas en la elevación del rack:
+  switches rackmount y de sobremesa, combinaciones RJ45/SFP, paneles,
+  servidores, SAI, routers, bandejas y paneles ciegos. Catálogo de 30 plantillas
+  y frente personalizado con vista previa, altura, montaje y conectores.
+  Guardar apariencia versionada sin inventar puertos ni alterar conexiones;
+  validar ocupación de varias U, traslados desde LANWIRE y límites del rack.
+  Mantener vista simple, tamaño ajustable y estética grafito/lima.
+  Implementado en fuentes; comprobaciones en `docs/BACKLOG-VERIFICATION.md`.
+
+
+## Actualizaciones de herramientas propuestas por Dependabot — 17/10/2026
+
+Estas ramas son propuestas automáticas de mantenimiento de dependencias Python
+(`pip`), dirigidas a `main`. Los números corresponden a las herramientas, no a
+versiones de LANCTL. En la revisión del 17/10/2026 ambas pull requests están
+abiertas y pendientes de integración; cada una modifica únicamente su versión
+fijada en el grupo opcional `dev` de `pyproject.toml`.
+
+- [ ] **P67.** Revisar e integrar, si supera las comprobaciones, la actualización
+  de **Coverage 7.10.6 → 7.16.2**, propuesta en la rama
+  `dependabot/pip/coverage-7.16.2` mediante la
+  [PR #23](https://github.com/CctrGy/LANCTL/pull/23). Coverage mide las líneas y
+  ramas de código ejercitadas por las pruebas. Ejecutar la suite con cobertura,
+  comparar los resultados y revisar posibles diferencias en su cálculo, sin
+  rebajar el umbral exigido para aceptar la actualización.
+
+- [x] **P68.** Revisar e integrar, si supera las comprobaciones, la actualización
+  de **Ruff 0.16.2 → 0.17.0**, propuesta en la rama
+  `dependabot/pip/ruff-0.17.0` mediante la
+  [PR #25](https://github.com/CctrGy/LANCTL/pull/25). Ruff realiza análisis
+  estático y comprueba el formato de Python. Revisar sus cambios incompatibles,
+  ejecutar `ruff check` y `ruff format --check` con la versión propuesta y
+  evaluar cualquier modificación necesaria conservando la compatibilidad con
+  las versiones Python admitidas por el proyecto.
+
+P68 validada e incorporada a las fuentes de la rama de trabajo: Python 3.10,
+reglas y umbral conservados; 481 archivos con formato correcto. La PR remota
+permanece sin fusionar y la integración en `main` sigue su revisión habitual.
+
+Son herramientas de desarrollo y CI: estas propuestas no añaden funciones al
+programa, no representan versiones instalables alternativas y no cambian por sí
+solas el número de versión de LANCTL. La integración se realizará en `main`
+cuando se valide cada propuesta; las ramas estables, tags e instaladores ya
+publicados conservarán su contenido original.
+
+
+## Cierre de interfaz coordinado — 17/10/2026
+
+P35, P45, P46, P49, P51–P54 y P66 «Dimensiones» quedan implementados y
+verificados localmente junto con sus adaptadores de escritorio. La evidencia
+está en `docs/BACKLOG-VERIFICATION.md`. P47 incluye confirmación de CIDR y
+progreso, pero mantiene pendiente el enlace real a una interfaz de red. P48
+conserva la certificación con Clink real y el caso de desinstalación por otra
+cuenta. La instalación limpia y las plataformas externas siguen en P32.
+P34, P40/P42 y P50 no se consideran completados por estas mejoras visuales:
+AUDITOR continúa su trabajo interno por separado tras el paquete comprobado.
+Los puertos de las skins permanecen decorativos y los datos se comparten entre
+LANRACK y LANWIRE sin duplicar inventarios.
+
+## Configuración editable según interfaz — 17/10/2026
+
+- [ ] **P69.** Corregir los cruces de configuración entre GUI, TUI y CLI:
+  cada interfaz solo podrá consultar y modificar sus preferencias específicas
+  y los ajustes comunes del programa o proyecto. Definir en un catálogo
+  compartido una lista explícita de ajustes editables, con ámbito de interfaz,
+  launcher, programa/proyecto, validación y permisos administrativos cuando
+  correspondan. No exponer variables internas, rutas de bases y locks,
+  esquemas, identificadores, estado de ejecución ni secretos como ajustes.
+  Usar `docs/CONFIGURATION-USER-REVIEW.txt` como referencia de revisión,
+  contrastándolo con los consumidores y servicios actuales antes de implementar.
+  Filtrar tanto los catálogos y menús como las operaciones de guardado en el
+  backend: rechazar claves ajenas a la interfaz, internas o desconocidas aunque
+  se invoque directamente el adaptador, sin cambios parciales. No confiar
+  únicamente en controles ocultos ni en el nombre del launcher; el contexto
+  de interfaz debe determinarlo el adaptador de entrada, no un valor arbitrario
+  enviado por el cliente. Aplicar el criterio a los editores generales y por
+  launcher, formularios específicos y rutas compatibles de configuración.
+  Separar, por ejemplo, `startup.closeGuiOnLaunch` (GUI), las preferencias
+  `tui.*` (TUI), el comportamiento CLI y `ip.listColumns` (CLI/TUI), conservando
+  los ajustes funcionales comunes. Un CLI integrado conserva su contexto CLI.
+  Mantener las preferencias existentes al ocultarlas de interfaces ajenas y
+  conservar los servicios compartidos de validación, transacciones y permisos.
+  Verificar la matriz de lectura/escritura GUI/TUI/CLI, los ajustes comunes,
+  accesos directos al backend, permisos administrativos y ausencia de variables
+  internas; actualizar ayuda y referencias si cambia el contrato de comandos.

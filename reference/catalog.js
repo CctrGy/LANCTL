@@ -81,6 +81,42 @@ window.LANCTL_REFERENCE = {
         {
           "choices": [],
           "default": null,
+          "description": "Muestra y abre la web oficial.",
+          "flags": [
+            "-web",
+            "--web"
+          ],
+          "label": "-web, --web",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Muestra y abre GitHub oficial.",
+          "flags": [
+            "-github",
+            "--github"
+          ],
+          "label": "-github, --github",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Muestra y abre la referencia oficial.",
+          "flags": [
+            "-reference",
+            "--reference"
+          ],
+          "label": "-reference, --reference",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
           "description": "Solicita UAC explícitamente para un launcher instalado en Windows.",
           "flags": [
             "--admin"
@@ -100,13 +136,16 @@ window.LANCTL_REFERENCE = {
         "plugin",
         "settings",
         "language",
-        "backend"
+        "backend",
+        "setup-defaults",
+        "completions",
+        "post-install"
       ],
       "compatibility": {
         "verified": "0.3.4-alpha.1"
       },
       "description": "Orquestador raíz de las aplicaciones de la suite LANCTL.",
-      "details": "Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [--admin] LAUNCHER ...\n\nOrquestador raíz de las aplicaciones de la suite LANCTL.\n\nArguments:\n  LAUNCHER\n    lanip (ip)        Inventario lógico, descubrimiento, IP, MAC y servicios.\n    lanwire (wire)    Cableado, puertos, paneles y topología física.\n    lanrack (rack)    Salas técnicas, racks, unidades U y equipos.\n    lanaccess (access)\n                      Usuarios, credenciales y accesos remotos.\n    lanmon (monitor)  Monitorización, eventos, incidencias e historial.\n    plugin            Administración compartida de la suite.\n    settings          Administración compartida de la suite.\n    language          Administración compartida de la suite.\n    backend           Administración compartida de la suite.\n\nOptions:\n  -h, --help          Show this help and exit.\n  --version           Muestra la versión común de la suite y termina.\n  --cli, -cli         Abre la consola principal.\n  -tui, --tui         Abre el TUI principal.\n  --gui               Abre el centro gráfico de LANCTL.\n  --admin             Solicita UAC explícitamente para un launcher instalado en Windows.",
+      "details": "Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [-web | -github | -reference] [--admin]\n              LAUNCHER ...\n\nOrquestador raíz de las aplicaciones de la suite LANCTL.\n\nArguments:\n  LAUNCHER\n    lanip (ip)             Inventario lógico, descubrimiento, IP, MAC y servicios.\n    lanwire (wire)         Cableado, puertos, paneles y topología física.\n    lanrack (rack)         Salas técnicas, racks, unidades U y equipos.\n    lanaccess (access)     Usuarios, credenciales y accesos remotos.\n    lanmon (monitor)       Monitorización, eventos, incidencias e historial.\n    plugin                 Administración compartida de la suite.\n    settings               Administración compartida de la suite.\n    language               Administración compartida de la suite.\n    backend                Administración compartida de la suite.\n    setup-defaults         Inicializa preferencias de instalación sin sobrescribir las existentes.\n    completions            Registra o retira el completado Clink del usuario actual.\n    post-install           Abre LANIP con el usuario normal al finalizar la instalación.\n\nOptions:\n  -h, --help               Show this help and exit.\n  --version                Muestra la versión común de la suite y termina.\n  --cli, -cli              Abre la consola principal.\n  -tui, --tui              Abre el TUI principal.\n  --gui                    Abre el centro gráfico de LANCTL.\n  -web, --web              Muestra y abre la web oficial.\n  -github, --github        Muestra y abre GitHub oficial.\n  -reference, --reference  Muestra y abre la referencia oficial.\n  --admin                  Solicita UAC explícitamente para un launcher instalado en Windows.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -124,7 +163,7 @@ window.LANCTL_REFERENCE = {
         "LANCTL"
       ],
       "title": "LANCTL",
-      "usage": "LANCTL [-h] [--version] [--cli | -tui | --gui] [--admin] LAUNCHER ..."
+      "usage": "LANCTL [-h] [--version] [--cli | -tui | --gui] [-web | -github | -reference] [--admin]\n              LAUNCHER ..."
     },
     {
       "aliases": [
@@ -188,6 +227,17 @@ window.LANCTL_REFERENCE = {
             "--gui"
           ],
           "label": "--gui",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Solicita confirmación del primer escaneo al abrir la GUI; no escanea automáticamente.",
+          "flags": [
+            "--first-scan"
+          ],
+          "label": "--first-scan",
           "metavar": "",
           "required": false
         },
@@ -273,7 +323,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.4-alpha.1"
       },
       "description": "Logical control of LAN devices and infrastructure.",
-      "details": "Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]\n             [-project ARCHIVO.vlf]\n             COMANDO ...\n\nLogical control of LAN devices and infrastructure.\n\nArguments:\n  COMANDO\n    ephemeral (-e)            Escanea activos sin leer ni guardar ningún inventario.\n    list                      Escanea la LAN y muestra dispositivos activos e históricos.\n    recurrent                 Consulta los elementos recurrentes conocidos por LANCTL.\n    ping                      Comprueba puntualmente si un elemento responde por PING o ARP.\n    open (connect)            Abre un elemento con un cliente acorde al protocolo.\n    settings                  Consulta o modifica la configuración persistente de LANCTL.\n    call                      Resuelve un alias, una IP o una MAC a los datos del dispositivo.\n    search                    Busca dispositivos por alias, nombre, IP o MAC.\n    scan                      Inspecciona en profundidad un único elemento de la LAN.\n    cnf                       Asigna el estado CNF de un elemento por IP, MAC o alias.\n    credential (credentials, auth)\n                              Asocia credenciales cifradas a un elemento y protocolo.\n    GATEWAY (gateway)         Consulta y configura el gateway mediante TR-064.\n    downloadSettings (downloadsettings, download-settings)\n                              Alias heredado de «GATEWAY downloadSettings».\n    protocol                  Consulta o configura un protocolo de un elemento.\n    ssh                       Abre SSH o ejecuta una consulta show de solo lectura.\n    radmin                    Configura, comprueba o abre Radmin Viewer.\n    wol                       Enciende equipos mediante Wake-on-LAN y ejecuta secuencias seguras.\n    history                   Consulta eventos estructurados del proyecto VLF activo.\n    monitor                   Opera sesiones y checks del monitor LAN.\n    access                    Configura acceso remoto LAN seguro por SSH y HTTPS.\n    smb                       Descubre y abre recursos SMB de Windows.\n    terminal (cli)            Abre la terminal propia de un elemento según su protocolo.\n    switch                    Planifica comandos Cisco filtrados, remapeados y clasificados.\n    group                     Crea, edita y consulta grupos de elementos.\n    element                   Edita uno o varios campos de un elemento identificado por IP, MAC o\n                              alias.\n    project (projects)        Crea, actualiza e inspecciona proyectos LANCTL .vlf.\n    plugin (plugins, addon, addons)\n                              Gestiona complementos unificados LANCTL .lcp.\n    language (languages, lang)\n                              Manage LANCTL interface languages.\n    error (errors)            Consulta el catálogo por identificador 0eXXXXXXXX.\n    database (db)             Diagnostica y exporta datos.\n    demo                      Genera un recorrido reproducible sin depender de una red real.\n    lanwire (wire)            Abre LANWIRE o ejecuta uno de sus comandos sobre la base física\n                              compartida.\n    lab                       Gestiona redes LAN simuladas sin tráfico real.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión y termina.\n  --quiet                     Omite la salida correcta; conserva errores.\n  --verbose                   Añade diagnóstico de ejecución a stderr.\n  --gui                       Abre la interfaz gráfica de LANIP.\n  --cli, -cli                 Open the persistent interactive LANCTL terminal.\n  -tui [VENTANA], --tui [VENTANA]\n                              Open the advanced full-screen terminal interface. Puede abrir\n                              directamente PLUGINS, PROJECTS o SETTINGS.\n  -project ARCHIVO.vlf, --project ARCHIVO.vlf\n                              Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un\n                              comando.",
+      "details": "Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--first-scan] [--cli]\n             [-tui [VENTANA]] [-project ARCHIVO.vlf]\n             COMANDO ...\n\nLogical control of LAN devices and infrastructure.\n\nArguments:\n  COMANDO\n    ephemeral (-e)            Escanea activos sin leer ni guardar ningún inventario.\n    list                      Escanea la LAN y muestra dispositivos activos e históricos.\n    recurrent                 Consulta los elementos recurrentes conocidos por LANCTL.\n    ping                      Comprueba puntualmente si un elemento responde por PING o ARP.\n    open (connect)            Abre un elemento con un cliente acorde al protocolo.\n    settings                  Consulta o modifica la configuración persistente de LANCTL.\n    call                      Resuelve un alias, una IP o una MAC a los datos del dispositivo.\n    search                    Busca dispositivos por alias, nombre, IP o MAC.\n    scan                      Inspecciona en profundidad un único elemento de la LAN.\n    cnf                       Asigna el estado CNF de un elemento por IP, MAC o alias.\n    credential (credentials, auth)\n                              Asocia credenciales cifradas a un elemento y protocolo.\n    GATEWAY (gateway)         Consulta y configura el gateway mediante TR-064.\n    downloadSettings (downloadsettings, download-settings)\n                              Alias heredado de «GATEWAY downloadSettings».\n    protocol                  Consulta o configura un protocolo de un elemento.\n    ssh                       Abre SSH o ejecuta una consulta show de solo lectura.\n    radmin                    Configura, comprueba o abre Radmin Viewer.\n    wol                       Enciende equipos mediante Wake-on-LAN y ejecuta secuencias seguras.\n    history                   Consulta eventos estructurados del proyecto VLF activo.\n    monitor                   Opera sesiones y checks del monitor LAN.\n    access                    Configura acceso remoto LAN seguro por SSH y HTTPS.\n    smb                       Descubre y abre recursos SMB de Windows.\n    terminal (cli)            Abre la terminal propia de un elemento según su protocolo.\n    switch                    Planifica comandos Cisco filtrados, remapeados y clasificados.\n    group                     Crea, edita y consulta grupos de elementos.\n    element                   Edita uno o varios campos de un elemento identificado por IP, MAC o\n                              alias.\n    project (projects)        Crea, actualiza e inspecciona proyectos LANCTL .vlf.\n    plugin (plugins, addon, addons)\n                              Gestiona complementos unificados LANCTL .lcp.\n    language (languages, lang)\n                              Manage LANCTL interface languages.\n    error (errors)            Consulta el catálogo por identificador 0eXXXXXXXX.\n    database (db)             Diagnostica y exporta datos.\n    demo                      Genera un recorrido reproducible sin depender de una red real.\n    lanwire (wire)            Abre LANWIRE o ejecuta uno de sus comandos sobre la base física\n                              compartida.\n    lab                       Gestiona redes LAN simuladas sin tráfico real.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión y termina.\n  --quiet                     Omite la salida correcta; conserva errores.\n  --verbose                   Añade diagnóstico de ejecución a stderr.\n  --gui                       Abre la interfaz gráfica de LANIP.\n  --first-scan                Solicita confirmación del primer escaneo al abrir la GUI; no escanea\n                              automáticamente.\n  --cli, -cli                 Open the persistent interactive LANCTL terminal.\n  -tui [VENTANA], --tui [VENTANA]\n                              Open the advanced full-screen terminal interface. Puede abrir\n                              directamente PLUGINS, PROJECTS o SETTINGS.\n  -project ARCHIVO.vlf, --project ARCHIVO.vlf\n                              Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un\n                              comando.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -291,7 +341,7 @@ window.LANCTL_REFERENCE = {
         "LANIP"
       ],
       "title": "LANIP",
-      "usage": "LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]\n             [-project ARCHIVO.vlf]\n             COMANDO ..."
+      "usage": "LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--first-scan] [--cli]\n             [-tui [VENTANA]] [-project ARCHIVO.vlf]\n             COMANDO ..."
     },
     {
       "aliases": [],
@@ -459,6 +509,17 @@ window.LANCTL_REFERENCE = {
             "--network"
           ],
           "label": "--network",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Origen IPv4 local o ID de interfaz; usa su máscara real. Solo ICMP/ARP, sin DNS ni descubridores externos.",
+          "flags": [
+            "--interface"
+          ],
+          "label": "--interface",
           "metavar": "",
           "required": false
         },
@@ -817,7 +878,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.4-alpha.1"
       },
       "description": "Realiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muestra también los equipos no detectados.",
-      "details": "Usage: LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]\n                  [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]\n                  [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]\n                  [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]\n                  [--discovery {icmp,arp,hybrid}]\n                  [--profile {fast,normal,accurate} | --fast | --normal | --accurate]\n                  [--progress | --no-progress] [--show-discovery] [--include-arp-cache]\n                  [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]\n                  [-group GRUPO] [-dhcp]\n\nRealiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muestra también los equipos no detectados.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --network NETWORK           Red CIDR. Por defecto detecta la LAN como /24.\n  --database DATABASE         Archivo JSON de elementos.\n  --groups GROUPS             Archivo JSON de grupos.\n  -f {table,json,csv,html,xml,yaml}, --format {table,json,csv,html,xml,yaml}\n                              Formato de salida (por defecto: table).\n  -o OUTPUT, --output OUTPUT  Guarda la salida en un archivo.\n  -recurrent, --recurrent     Lista los elementos recurrentes sin escanear la LAN ni mostrar IP.\n  --where WHERE               Consulta combinable, por ejemplo: \"active and group=IOT and\n                              vendor~Amazon\".\n  -w WORKERS, --workers WORKERS\n                              Comprobaciones simultáneas.\n  -t TIMEOUT, --timeout TIMEOUT\n                              Timeout base en segundos por operación y host; el perfil puede\n                              ajustarlo.\n  --scan-order {ascending,descending,random}\n                              Orden de sondeo de IP: ascending, descending o random.\n  --include-unknown           Incluye hosts activos aunque todavía no tengan MAC.\n  --resolve-names             Resuelve y guarda nombres DNS de los elementos detectados.\n  --max-hosts MAX_HOSTS       Máximo de hosts permitido en un escaneo.\n  --discovery {icmp,arp,hybrid}\n                              Método: icmp, arp activo o hybrid (por defecto según settings).\n  --profile {fast,normal,accurate}\n                              Perfil completo de escaneo: fast, normal o accurate.\n  --fast                      Escaneo ARP rápido.\n  --normal                    Escaneo híbrido equilibrado.\n  --accurate                  Escaneo profundo con varios métodos.\n  --progress                  Muestra el progreso interactivo.\n  --no-progress               Oculta el progreso.\n  --show-discovery            Añade una columna con ICMP, ARP, LOCAL, BASIC o CACHE.\n  --include-arp-cache         Importa vecinos ARP en caché como CACHE no verificada; no cuentan\n                              como activos.\n  --show-detection            Añade los métodos históricos y la fecha de última detección.\n  --active, -active, -connected, --connected, -conected\n                              Muestra solo los dispositivos activos en el escaneo actual.\n  -disconnected, --disconnected, -offline\n                              Muestra solo los dispositivos no detectados actualmente.\n  -basic, --basic             Vista reducida: IP, alias y descripción.\n  -cnf {O,X,-,S,F}, --cnf-state {O,X,-,S,F}\n                              Filtra por estado CNF: O, X, -, S o F.\n  -group GRUPO, --group GRUPO\n                              Muestra solo los elementos de un grupo.\n  -dhcp, --dhcp-only          Muestra solo IP incluidas en el rango DHCP configurado.",
+      "details": "Usage: LANIP list [-h] [--network NETWORK] [--interface INTERFACE] [--database DATABASE]\n                  [--groups GROUPS] [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent]\n                  [--where WHERE] [-w WORKERS] [-t TIMEOUT]\n                  [--scan-order {ascending,descending,random}] [--include-unknown]\n                  [--resolve-names] [--max-hosts MAX_HOSTS] [--discovery {icmp,arp,hybrid}]\n                  [--profile {fast,normal,accurate} | --fast | --normal | --accurate]\n                  [--progress | --no-progress] [--show-discovery] [--include-arp-cache]\n                  [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]\n                  [-group GRUPO] [-dhcp]\n\nRealiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muestra también los equipos no detectados.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --network NETWORK           Red CIDR. Por defecto detecta la LAN como /24.\n  --interface INTERFACE       Origen IPv4 local o ID de interfaz; usa su máscara real. Solo\n                              ICMP/ARP, sin DNS ni descubridores externos.\n  --database DATABASE         Archivo JSON de elementos.\n  --groups GROUPS             Archivo JSON de grupos.\n  -f {table,json,csv,html,xml,yaml}, --format {table,json,csv,html,xml,yaml}\n                              Formato de salida (por defecto: table).\n  -o OUTPUT, --output OUTPUT  Guarda la salida en un archivo.\n  -recurrent, --recurrent     Lista los elementos recurrentes sin escanear la LAN ni mostrar IP.\n  --where WHERE               Consulta combinable, por ejemplo: \"active and group=IOT and\n                              vendor~Amazon\".\n  -w WORKERS, --workers WORKERS\n                              Comprobaciones simultáneas.\n  -t TIMEOUT, --timeout TIMEOUT\n                              Timeout base en segundos por operación y host; el perfil puede\n                              ajustarlo.\n  --scan-order {ascending,descending,random}\n                              Orden de sondeo de IP: ascending, descending o random.\n  --include-unknown           Incluye hosts activos aunque todavía no tengan MAC.\n  --resolve-names             Resuelve y guarda nombres DNS de los elementos detectados.\n  --max-hosts MAX_HOSTS       Máximo de hosts permitido en un escaneo.\n  --discovery {icmp,arp,hybrid}\n                              Método: icmp, arp activo o hybrid (por defecto según settings).\n  --profile {fast,normal,accurate}\n                              Perfil completo de escaneo: fast, normal o accurate.\n  --fast                      Escaneo ARP rápido.\n  --normal                    Escaneo híbrido equilibrado.\n  --accurate                  Escaneo profundo con varios métodos.\n  --progress                  Muestra el progreso interactivo.\n  --no-progress               Oculta el progreso.\n  --show-discovery            Añade una columna con ICMP, ARP, LOCAL, BASIC o CACHE.\n  --include-arp-cache         Importa vecinos ARP en caché como CACHE no verificada; no cuentan\n                              como activos.\n  --show-detection            Añade los métodos históricos y la fecha de última detección.\n  --active, -active, -connected, --connected, -conected\n                              Muestra solo los dispositivos activos en el escaneo actual.\n  -disconnected, --disconnected, -offline\n                              Muestra solo los dispositivos no detectados actualmente.\n  -basic, --basic             Vista reducida: IP, alias y descripción.\n  -cnf {O,X,-,S,F}, --cnf-state {O,X,-,S,F}\n                              Filtra por estado CNF: O, X, -, S o F.\n  -group GRUPO, --group GRUPO\n                              Muestra solo los elementos de un grupo.\n  -dhcp, --dhcp-only          Muestra solo IP incluidas en el rango DHCP configurado.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -836,7 +897,7 @@ window.LANCTL_REFERENCE = {
         "list"
       ],
       "title": "LANIP list",
-      "usage": "LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]\n                  [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]\n                  [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]\n                  [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]\n                  [--discovery {icmp,arp,hybrid}]\n                  [--profile {fast,normal,accurate} | --fast | --normal | --accurate]\n                  [--progress | --no-progress] [--show-discovery] [--include-arp-cache]\n                  [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]\n                  [-group GRUPO] [-dhcp]"
+      "usage": "LANIP list [-h] [--network NETWORK] [--interface INTERFACE] [--database DATABASE]\n                  [--groups GROUPS] [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent]\n                  [--where WHERE] [-w WORKERS] [-t TIMEOUT]\n                  [--scan-order {ascending,descending,random}] [--include-unknown]\n                  [--resolve-names] [--max-hosts MAX_HOSTS] [--discovery {icmp,arp,hybrid}]\n                  [--profile {fast,normal,accurate} | --fast | --normal | --accurate]\n                  [--progress | --no-progress] [--show-discovery] [--include-arp-cache]\n                  [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]\n                  [-group GRUPO] [-dhcp]"
     },
     {
       "aliases": [],
@@ -8806,13 +8867,14 @@ window.LANCTL_REFERENCE = {
       "category": "Launchers",
       "children": [
         "list",
-        "show"
+        "show",
+        "dimensions"
       ],
       "compatibility": {
         "verified": "0.3.4-alpha.1"
       },
       "description": "Visualiza racks y sus equipos.",
-      "details": "Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli] {list,ls,show} ...\n\nVisualiza racks y sus equipos.\n\nArguments:\n  {list,ls,show}\n    list (ls)            Lista los racks disponibles.\n    show                 Muestra un rack y sus ocupantes.\n\nOptions:\n  -h, --help             Show this help and exit.\n  --version              Muestra la versión común de la suite y termina.\n  --database ARCHIVO.db  Base física IDF compartida.\n  --gui                  Abre la interfaz gráfica de escritorio.\n  -tui, --tui            Abre la interfaz de pantalla completa.\n  --cli, -cli            Abre la consola interactiva.",
+      "details": "Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]\n               {list,ls,show,dimensions} ...\n\nVisualiza racks y sus equipos.\n\nArguments:\n  {list,ls,show,dimensions}\n    list (ls)                Lista los racks disponibles.\n    show                     Muestra un rack y sus ocupantes.\n    dimensions               Edita altura y ancho de montaje del rack.\n\nOptions:\n  -h, --help                 Show this help and exit.\n  --version                  Muestra la versión común de la suite y termina.\n  --database ARCHIVO.db      Base física IDF compartida.\n  --gui                      Abre la interfaz gráfica de escritorio.\n  -tui, --tui                Abre la interfaz de pantalla completa.\n  --cli, -cli                Abre la consola interactiva.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -8830,7 +8892,7 @@ window.LANCTL_REFERENCE = {
         "LANRACK"
       ],
       "title": "LANRACK",
-      "usage": "LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli] {list,ls,show} ..."
+      "usage": "LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]\n               {list,ls,show,dimensions} ..."
     },
     {
       "aliases": [],
@@ -8899,6 +8961,72 @@ window.LANCTL_REFERENCE = {
       ],
       "title": "LANRACK show",
       "usage": "LANRACK show [-h] rack"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "ID del rack.",
+          "flags": [],
+          "label": "rack",
+          "metavar": "",
+          "required": true
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Altura de 4 a 52 U.",
+          "flags": [
+            "--units"
+          ],
+          "label": "--units",
+          "metavar": "",
+          "required": true
+        },
+        {
+          "choices": [
+            "10",
+            "19",
+            "21",
+            "23"
+          ],
+          "default": null,
+          "description": "Ancho de montaje en pulgadas.",
+          "flags": [
+            "--width-inches"
+          ],
+          "label": "--width-inches",
+          "metavar": "",
+          "required": true
+        }
+      ],
+      "category": "Racks y salas técnicas",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.4-alpha.1"
+      },
+      "description": "usage: LANRACK dimensions [-h] --units UNITS --width-inches {10,19,21,23} rack",
+      "details": "Usage: LANRACK dimensions [-h] --units UNITS --width-inches {10,19,21,23} rack\n\nArguments:\n  rack                        ID del rack.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --units UNITS               Altura de 4 a 52 U.\n  --width-inches {10,19,21,23}\n                              Ancho de montaje en pulgadas.",
+      "docs": [
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanrack dimensions --help"
+      ],
+      "group": "LANRACK",
+      "id": "command-lanrack-dimensions",
+      "kind": "command",
+      "launcher": "LANRACK",
+      "name": "dimensions",
+      "path": [
+        "LANRACK",
+        "dimensions"
+      ],
+      "title": "LANRACK dimensions",
+      "usage": "LANRACK dimensions [-h] --units UNITS --width-inches {10,19,21,23} rack"
     },
     {
       "aliases": [
@@ -10486,7 +10614,7 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.4-alpha.1"
       },
-      "description": "Estado revisado el **16/10/2026**. Los puntos marcados tienen corrección o verificación local con evidencia en [la matriz de comprobación](BACKLOG-VERIFICATION.md). La validación de plataformas externas sigue separada; las marcas no equivalen a certificar instaladores ni sistemas que no se han ejecutado.",
+      "description": "Se vuelve a comprobar toda la lista, incluidas las entradas implementadas que esperan el cierre de GUI-DESIGN. No se inicia una segunda compilación durante su validación. El usuario confirma que **todavía no existe un editor oficial configurado**: P40/P42 siguen requiriendo identidad y firma autorizadas.",
       "details": "Documento mantenido en docs/BACKLOG.md.",
       "docs": [
         "BACKLOG.md"
@@ -10696,6 +10824,24 @@ window.LANCTL_REFERENCE = {
       "name": "ERRORS.md",
       "title": "Errores estructurados",
       "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/ERRORS.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.4-alpha.1"
+      },
+      "description": "El usuario solicita completar los pendientes de interfaz y encarga a AUDITOR los cambios internos. El trabajo continúa en la rama existente experimental-gui, sin publicar, instalar ni modificar la versión durante la integración.",
+      "details": "Documento mantenido en docs/GUI-AUDITOR-COORDINATION.md.",
+      "docs": [
+        "GUI-AUDITOR-COORDINATION.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-gui-auditor-coordination",
+      "kind": "document",
+      "name": "GUI-AUDITOR-COORDINATION.md",
+      "title": "Integración de pendientes GUI y AUDITOR — 17/10/2026",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/GUI-AUDITOR-COORDINATION.md"
     },
     {
       "category": "Archivos de documentación",
@@ -11275,7 +11421,7 @@ window.LANCTL_REFERENCE = {
     }
   ],
   "meta": {
-    "entryCount": 180,
+    "entryCount": 182,
     "name": "LANCTL Reference",
     "repository": "https://github.com/CctrGy/LANCTL",
     "version": "0.3.4-alpha.1"

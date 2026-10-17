@@ -16,18 +16,44 @@ class RackService:
 
     def snapshot(self):
         from lanctl.apps.rack.organization import snapshot
+        from lanctl.apps.rack.skins import profiles
 
         with locked_file(self.database.path):
             return {
                 "records": self.list(),
                 "storage": str(self.database.path),
                 **snapshot(self.database),
+                "skinProfiles": profiles(),
             }
 
     def organize(self, expected, operation, values):
         from lanctl.apps.rack.organization import mutate
 
         return mutate(self.database, expected, operation, values)
+
+    def set_appearance(self, expected, identifier, values):
+        from lanctl.apps.rack.skins import save
+
+        return save(self.database, expected, identifier, values)
+
+    def set_dimensions(self, expected, identifier, values):
+        from lanctl.apps.rack.organization import token
+        from lanctl.apps.wire.xfile import read
+        from lanctl.core.rack_dimensions import with_dimensions
+
+        if not isinstance(values, dict) or set(values) != {"units", "widthInches"}:
+            raise ValueError("Indica altura y ancho de montaje del rack")
+        with locked_file(self.database.path):
+            document = read(self.database.path)
+            self.database._validate_database(document)
+            if token(document) != expected:
+                raise ValueError("El inventario cambió; actualiza antes de editar las dimensiones")
+            record = self.database.get(identifier)
+            if record is None or not self._is_rack(record):
+                raise ValueError("Selecciona un armario rack existente")
+            data = with_dimensions(record["data"], values["units"], values["widthInches"])
+            self.database.update(identifier, data)
+        return {"id": record["id"]}
 
     def get(self, identifier: str) -> dict:
         records = self.database.all()
@@ -46,6 +72,9 @@ class RackService:
 
     @staticmethod
     def describe(rack: dict, records: list[dict]) -> dict:
+        from lanctl.apps.rack.skins import span
+        from lanctl.core.rack_dimensions import dimension_status
+
         data = rack.get("data") or {}
         occupants = []
         for record in records:
@@ -61,13 +90,24 @@ class RackService:
                     "type": item.get("type", "element"),
                     "description": item.get("description", ""),
                     "data": item,
+                    "span": span(item),
+                    "connectedPorts": [
+                        end.get("port")
+                        for wire in records
+                        if (wire.get("data") or {}).get("type") == "wire"
+                        for end in wire["data"].get("endpoints", [])
+                        if end.get("device") == record["id"]
+                    ],
                 }
             )
         occupants.sort(key=lambda item: (-(int(item["unit"] or 0)), item["id"]))
+        dimensions = dimension_status(data)
         return {
             "id": rack["id"],
             "name": data.get("name") or data.get("alias") or rack["id"],
-            "units": int(data.get("units") or data.get("size_units") or data.get("height") or 42),
+            "units": dimensions["heightU"],
+            "widthInches": dimensions["widthInches"],
+            "dimensions": dimensions,
             "description": data.get("description", ""),
             "location": data.get("location", {}),
             "layout": data.get("layout", []),

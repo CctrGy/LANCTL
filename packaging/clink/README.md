@@ -31,7 +31,21 @@ clink installscripts "C:\ruta\a\LANCTL\packaging\clink"
 Comprueba las rutas activas con `clink info`. Para recargar scripts en una
 sesión abierta usa `Ctrl-X`, `Ctrl-R`, o abre una consola nueva.
 
-El instalador de LANCTL deberá copiar `lanctl.lua` a
-`C:\Program Files\LANCTL\clink\` y ejecutar `clink installscripts` solamente
-si detecta Clink. Al desinstalar deberá usar `clink uninstallscripts` con la
-misma ruta.
+El instalador copia `lanctl.lua` y estas instrucciones a
+`C:\Program Files\LANCTL\clink\`. Ejecuta `lanctl completions install` con
+el usuario original; el adaptador detecta Clink y usa `clink installscripts`
+con argumentos separados, sin shell. Repetir la instalación no añade otra ruta.
+Una instalación iniciada ya elevada omite el registro para evitar asociarlo
+a la cuenta administrativa: ejecuta el comando desde tu sesión normal.
+
+El desinstalador usa `lanctl completions uninstall`: únicamente retira la
+carpeta registrada por esta instalación y usuario. Si otro administrador
+desinstala la aplicación, o Clink solo existe en una ubicación privada no
+disponible al desinstalador elevado, el propietario debe ejecutar antes
+`lanctl completions uninstall` o `clink uninstallscripts RUTA`. No se recorren
+ni alteran perfiles de otros usuarios. La certificación con CMD/Clink real
+sigue pendiente de un entorno con Clink instalado.
+
+El ZIP portable incluye `clink/` y `prepare.ps1`. Ejecuta `prepare.ps1` para
+registrar o `prepare.ps1 -RemoveClink` antes de mover/borrar el portable.
+Los demás launchers y Linux conservan su comportamiento previo.

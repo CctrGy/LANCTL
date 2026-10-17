@@ -1031,7 +1031,10 @@ fullDetails = function (r) {
     );
   if (d.type === "rack")
     technicalFields.push(
-      field("Altura en unidades", "units", d.units || 42, "number"),
+      Object.assign(document.createElement("p"), {
+        textContent: `Altura: ${d.units ?? "Sin especificar"} U · Ancho de montaje: ${d.rackDimensions?.widthInches ? d.rackDimensions.widthInches + "″" : "Pendiente de especificar"}. Edita las dimensiones en LANRACK.`,
+      }),
+      wireAction("Abrir LANRACK", () => call("open_gui", "lanrack")),
     );
   for (const [k, v] of Object.entries({
     ...d,
@@ -1514,20 +1517,34 @@ wireNew = function () {
       wireModes,
     ),
     field("Altura del rack (unidades)", "units", 42, "number"),
+    field("Ancho de montaje (pulgadas)", "widthInches", 19, "text", [
+      [10, "10″"],
+      [19, "19″"],
+      [21, "21″"],
+      [23, "23″"],
+    ]),
   ];
+  const height = fields.at(-2).querySelector("input");
+  height.min = 4;
+  height.max = 52;
+  height.step = 1;
   const change = () => {
     const kind = fields[0].querySelector("select").value;
     fields[1].querySelector("input").value = choices.find(
       (x) => x[0] === kind,
     )[2];
-    fields.at(-1).hidden = kind !== "rack";
+    fields.at(-1).hidden = fields.at(-2).hidden = kind !== "rack";
+    height.required = kind === "rack";
   };
   fields[0].querySelector("select").onchange = change;
   change();
   showForm("Nuevo elemento físico", fields, async (values) => {
+    const { units, widthInches, ...data } = values;
     const result = await call("wire_create", {
-      ...values,
-      units: Number(values.units),
+      ...data,
+      ...(values.kind === "rack"
+        ? { units: Number(units), widthInches: Number(widthInches) }
+        : {}),
     });
     selected = result.id;
   });

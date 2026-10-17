@@ -33,9 +33,12 @@ class NetworkRack:
     Cada U contiene un RackElement.
     """
 
-    def __init__(self, name: str, size_u: int = 18):
+    def __init__(self, name: str, size_u: int = 18, *, width_inches: int = 19):
+        from lanctl.core.rack_dimensions import validate_height, validate_width
+
         self.name = name
-        self.size_u = size_u
+        self.size_u = validate_height(size_u)
+        self.width_inches = validate_width(width_inches)
         self.elements: list[RackElement] = [RackElement("empty") for _ in range(size_u)]
 
     def set_element(self, u: int, element: RackElement):

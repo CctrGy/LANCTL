@@ -15,6 +15,7 @@ from pathlib import Path
 from threading import Event, Thread
 
 from lanctl.apps.ip.interfaces.gui.main import GuiApi
+from lanctl.apps.suite.gui_support import GuiSupportMixin
 from lanctl.core.config import load_config
 from lanctl.core.progress import ScanProgress
 from lanctl.core.projects import (
@@ -76,7 +77,7 @@ SETTINGS = (
 )
 
 
-class DesktopApi(GuiApi):
+class DesktopApi(GuiSupportMixin, GuiApi):
     def __init__(self):
         super().__init__()
         self._scan_progress = DesktopProgress()
@@ -262,7 +263,12 @@ class DesktopApi(GuiApi):
                 level=25 if isinstance(error, InterruptedError) else 43,
                 print_output=False,
             )
-            return {"ok": False, "error": event.message, "errorId": event.error_id}
+            return {
+                "ok": False,
+                "error": event.message,
+                "errorId": event.error_id,
+                "errorDetails": event.to_dict(),
+            }
         finally:
             self._lock.release()
 
@@ -281,6 +287,22 @@ class DesktopApi(GuiApi):
 
     def scan_status(self):
         return {"ok": True, "running": self._running.is_set(), **self._scan_progress.snapshot()}
+
+    def first_scan_options(self):
+        def options():
+            import ipaddress
+
+            from lanctl.core.first_scan import consume_request, scan_choices
+
+            result = scan_choices()
+            result["requested"] = consume_request()
+            result["localIp"] = self._local_ip
+            if not result["range"] and self._local_ip:
+                result["range"] = str(ipaddress.ip_network(f"{self._local_ip}/24", strict=False))
+                result["rangeEstimated"] = True
+            return result
+
+        return self._respond(options)
 
     def cancel_scan(self):
         self._scan_progress.stop.set()

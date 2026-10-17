@@ -431,3 +431,469 @@ reconstrucción y las comprobaciones externas de P32. Tampoco se cierra P40/P42:
 la distribución de LCP oficiales firmados requiere la identidad y los paquetes
 autorizados del editor. El resto de pendientes conserva su orden y responsable
 en el backlog. No se cambió la versión del programa ni se publicó una entrega.
+
+## LANWIRE P55–P63 y CPD LANRACK P64–P65 — 17/10/2026
+
+Implementadas las correcciones en fuentes manteniendo grafito y lima. LANWIRE
+separa Interior de racks y Vista general, con contenedores por rack/CPD, filtros,
+contexto de extremos externos y agrupación desplegable de enlaces paralelos.
+La distribución determinista usa fuerzas de conexiones y separación de tarjetas;
+solo los conjuntos sin enlaces se ordenan en cuadrícula. También considera los
+enlaces salientes al organizar los equipos dentro de cada rack. Los puertos se
+distribuyen por medio, ocupación y posición del destino, conservando sus nombres.
+Los cables usan coordenadas DOM de sus puertos, etiquetas con fondo y guías,
+abrevian con poco zoom y permiten consultar nombre, medio y extremos completos.
+Pulsar un puerto del lienzo selecciona el equipo; conectar sigue siendo una acción
+explícita de su ventana de datos. El doble clic desde Lista conserva el acceso
+para centrarlo en Topología.
+
+LANRACK permite crear/editar CPD con nombre, descripción y ubicación, trasladar
+racks y eliminar salas conservando los armarios sin asignación o en otra sala.
+Incluye vistas de salas, lista y detalle de rack/equipo, búsqueda y filtro CPD.
+La extensión aditiva `cpdOrganization` lleva `schemaVersion: 1` dentro del mismo
+inventario IDF; `data.location.cpd` contiene la pertenencia única del rack.
+No hay duplicación de inventarios ni cambio de identidad de equipos o cables.
+Las bases anteriores se leen sin CPD y se extienden en la primera escritura.
+Lectura coherente y escritura atómica usan el lock común del almacén; la revisión
+del documento rechaza actualizaciones obsoletas. Corrupción o versiones
+incompatibles se conservan y se notifican con su origen.
+
+### Comprobaciones de esta entrega
+
+- 22 pruebas dirigidas aprobadas con navegador Edge: servicios reales y dos
+  ventanas sobre la misma base temporal; creación de CPD desde LANRACK visible
+  en LANWIRE, traslado de racks, conservación de equipos/puertos/cables,
+  eliminación con y sin traslado, nombres duplicados con IDs distintos,
+  actualización obsoleta rechazada y documento inválido sin sobrescritura.
+- Topología real con siete racks, ciclo y enlaces paralelos; prueba adicional
+  con 24 racks, tres CPD y 25 cables. Se comprueban recuentos, agrupación de
+  enlaces, salidas de filtros, ausencia de solapamientos, contención de racks,
+  anclaje de puertos tras zoom, 48 puertos sin scroll interno y ausencia de
+  errores JavaScript. Cabecera/pie y ancho comprobados también a 960×650.
+- Arranque/cierre nativo de LANWIRE y LANRACK aprobados con puente real y datos
+  temporales, también tras el cambio de versión a 0.3.4-alpha.1.
+- Ruff y formato de los archivos Python de este cambio, sintaxis JavaScript,
+  higiene, referencias CLI/web y catálogo de 1.300 puntos comprobados.
+
+La primera suite completa se cruzó con un cambio concurrente de versión:
+1.074 pruebas aprobadas y dos fallos por comparar el 0.3.3 ya cargado con procesos
+0.3.4-alpha.1 y con su referencia nueva. No se alteró la versión para ocultarlos;
+se regeneraron las referencias y se repitió la suite con el árbol actualizado.
+La reconstrucción y sus resultados finales se consignan a continuación.
+
+Evidencia local ignorada: `tmp/cpd-browser-last.log`, `tmp/cpd-full-current.log`,
+`tmp/cpd-build-current.log`, `tmp/cpd-lanwire-general.png` y `tmp/cpd-lanrack.png`.
+Los escenarios no escanean redes ni modifican inventarios del usuario. El trazado
+busca legibilidad y no garantiza un óptimo matemático global. La agrupación física
+sigue en `physicalDatabase`, compartida por las dos interfaces; no se añade una
+copia del inventario dentro del VLF.
+
+Resultado de la repetición con versión coherente: **1.076 pruebas y 643
+subpruebas aprobadas; una prueba POSIX omitida en Windows**, en 143,84 segundos.
+El escenario adicional de 24 racks se ejecutó después junto con las regresiones
+dirigidas: **22 aprobadas**, en 43,54 segundos. No se cambió código de ejecución
+después de esa comprobación. Las referencias y la higiene permanecen correctas.
+
+La comprobación de versiones de los ejecutables detectó que el empaquetado
+incremental había retenido bytecode 0.3.3 en LANIP, aunque los recursos gráficos
+ya coincidían. Esa entrega se descartó y se reconstruyó con caché limpia y
+carpeta de trabajo nueva; se exige comprobar recursos y versión de los seis
+binarios antes de considerar válida la entrega.
+
+Verificación dirigida final: **22 aprobadas en 32,00 segundos** después del
+ajuste de conservación de contexto al cambiar el filtro CPD. La regresión
+adicional de volver de un CPD a la vista global recuperando la cámara también
+pasó (24 racks, 3,80 segundos). Registros: `tmp/cpd-browser-delivery.log` y
+`tmp/cpd-navigation-final.log`. Se reconstruyen los recursos finales desde
+`build/cpd-final-alpha`; no se usa el instalador incremental descartado.
+
+Entrega final verificada: los seis ejecutables contienen el servicio CPD, los
+recursos gráficos idénticos a las fuentes finales y la versión 0.3.4-alpha.1.
+LANWIRE, LANRACK, LANACCESS y LANMON compilados abren y cierran correctamente,
+con ventana, icono, coordinación IPC y recursos válidos. El instalador local
+`dist/gui-current/LANCTL-0.3.4-alpha.1-gui-setup.exe` se generó correctamente
+(135.025.921 bytes). Evidencia: `tmp/cpd-frozen-resources.log`,
+`tmp/cpd-frozen-windows.log`, `tmp/cpd-build-delivery.log` y
+`tmp/cpd-installer-final.log`. No se instaló ni publicó automáticamente.
+P55–P65 quedan completadas para esta entrega; las certificaciones externas de
+P32 y las tareas de plugins ajenas a este cambio mantienen su estado propio.
+
+## P66: skins de equipos en LANRACK — 17/10/2026
+
+Se añaden frentes SVG genéricos superpuestos a las unidades ocupadas: 30
+plantillas y ajustes personalizados, RJ45/SFP, montaje rack o bandeja, servidores,
+SAI, paneles, routers y tapas. El editor ofrece vista previa y guarda únicamente
+`data.rackAppearance` (`schemaVersion: 1`). Los conectores dibujados sin registro
+son representaciones; la apariencia no crea puertos ni altera cables. El modo
+automático usa tipo y puertos reales, sin inventar telemetría del SAI. Las
+preferencias de visibilidad y tamaño de U también tienen esquema local versionado.
+
+Se comprueba que una skin 48 RJ45 + 4 SFP no cambia los 24 puertos originales del
+equipo de prueba. Las alturas se validan contra los límites del rack y el espacio
+ocupado; un servidor desde U5 de 2 U ocupa U5–U6. LANWIRE respeta esa ocupación al
+trasladar equipos y reducir la altura del armario. Las filas libres y ocupadas
+mantienen la misma altura por U; los frentes de varias U abarcan el espacio real.
+
+Validación:
+
+- Suite completa: **1.080 pruebas y 643 subpruebas aprobadas**, una prueba POSIX
+  omitida en Windows, en 144,74 segundos.
+- 25 pruebas dirigidas de skins, CPD y launchers aprobadas. Regresión gráfica
+  final adicional: 3 aprobadas, incluyendo las 30 plantillas en vista previa,
+  guardar y volver a leer desde LANWIRE, vista simple/gráfica, altura por U y
+  tamaño ajustable con preferencias versionadas. Sin errores JavaScript.
+- Guardado obsoleto, cantidades inválidas, altura fuera del armario y solapamiento
+  rechazados, preservando el inventario anterior. Acceso de escritura restringido
+  a LANRACK; se mantienen los servicios de inventario compartidos.
+- Arranque y cierre nativo de LANRACK aprobados. Ruff/formato de Python, sintaxis
+  JavaScript, higiene y catálogo de **1.310 puntos** comprobados.
+
+Fuentes principales: `apps/rack/skins.py`, `rack/service.py`,
+`suite/launcher_gui.py`, validación de ubicación en `wire/gui_service.py`,
+`gui/rack-skins.js`, `gui/physical-gui.js`, HTML/CSS compartidos y
+`tests/test_rack_skins.py`. No se modifican proyectos ni inventarios del usuario.
+Evidencia local: `tmp/rack-skins-full.log`, `tmp/rack-skins-final-browser.log`,
+`tmp/rack-skins-targeted.log`, `tmp/lanrack-skins.png` y logs de empaquetado.
+
+Empaquetado final de P66: los seis ejecutables tienen versión 0.3.4-alpha.1,
+servicio de skins incluido y recursos HTML/CSS/JS idénticos a las fuentes.
+LANWIRE, LANRACK, LANACCESS y LANMON compilados abren y cierran correctamente
+con ventana, icono e IPC. El instalador actualizado
+`dist/gui-current/LANCTL-0.3.4-alpha.1-gui-setup.exe` se generó con éxito
+(135.076.670 bytes), sin instalarlo ni publicarlo automáticamente. Evidencia:
+`tmp/rack-skins-frozen-resources.log`, `tmp/rack-skins-frozen-windows.log`,
+`tmp/rack-skins-build.log`, `tmp/rack-skins-root-ip.log` y
+`tmp/rack-skins-installer.log`.
+
+### Aclaración P66: puertos decorativos — 17/10/2026
+
+Los puertos de las skins quedan explícitamente sin eventos de puntero, foco ni
+acciones propias. No abren conexiones ni muestran respuestas individuales al
+pasar el ratón. El acceso a los datos se conserva en la unidad completa del rack.
+Las tres regresiones existentes de skins pasan con el cambio; no se añaden
+pruebas que solo dupliquen las reglas CSS. No hay cambios de datos ni de contratos.
+Las futuras ampliaciones mencionadas por el usuario quedan por concretar.
+
+El ajuste decorativo queda también incluido en los seis ejecutables y en el
+instalador local actualizado. Recursos finales comprobados contra las fuentes,
+versión 0.3.4-alpha.1 y compilación del Setup correctas. Evidencia:
+`tmp/rack-skins-passive-build.log`, `tmp/rack-skins-passive-resources.log` y
+`tmp/rack-skins-passive-installer.log`. No se instaló automáticamente.
+
+## Servicios, datos e instalación — AUDITOR, 17/10/2026
+
+Se validaron dependencias antes de implementar y se comunicaron firmas y
+payloads mediante `.tool-reports/gui-auditor-sync.json`. GUI-DESIGN conserva
+los adaptadores y recursos visuales. AUDITOR no cambió rama ni versión
+(`experimental-gui`, `0.3.4-alpha.1`), no publicó, no instaló y no ejecutó builds
+ni la suite completa mientras la integración visual estaba en curso.
+
+### Cambios y archivos
+
+- **P54:** `core/official_links.py`, `bootstrap/lanctl.py`, Lua y referencias
+  generadas. Opciones `-web/-github/-reference` y alias largos; URL completa
+  legible en terminal y salida redirigida; únicamente destinos oficiales.
+- **P35:** `core/gui_preferences.py`, `config.py`, `settings_catalog.py` y
+  función aditiva `active_theme_extensions` en `plugins/manager.py`. Presets
+  graphite/midnight/forest/violet/light; density, fontScale y reducedMotion.
+  La configuración canónica v2 guarda un bloque `gui` de esquema 1. Un plugin
+  de tema explícito añade solo sus tokens/componentes declarados; se informa
+  `effectivePlugin`, `pluginTokens` y `pluginComponents`. La paleta incluida
+  `lanctl.theme.default.palette` es base sustituible por el preset, pues
+  aplicarla como overlay anulaba las cinco elecciones. No se modifican las
+  preferencias guardadas al aplicar un plugin. Se corrigió el error de catálogo
+  `'gui' is not in list` registrando la categoría y el mismo validador.
+- **P49:** `apps/monitor/log_tui.py`, `log_stream.py`, `bootstrap/lanmon.py`.
+  `lanmon logs --tui` y `open_log_window(tui=True)` usan el mismo lector
+  incremental. Pausa de vista sin perder el seguimiento, historial acotado,
+  navegación, filtro de texto y nivel. Lotes de hasta 1.000 líneas dejan los
+  bytes restantes en disco para la siguiente consulta; se conserva UTF-8
+  parcial, rotación y el seguimiento de texto existente.
+- **P53:** `core/activity.py`. Almacén SQLite versionado, máximo 10.000
+  mensajes por propietario, validación del emisor contra la sesión viva y
+  filtros explícitos. `project=None` consulta todos los proyectos del usuario;
+  `project=''` solo mensajes sin proyecto. `latest=True` entrega los últimos
+  registros en orden ascendente; `after` permite seguimiento incremental.
+  Las filas sobreviven al cierre del emisor. No se relaja el canal de
+  coordinación de metadatos ni se reutilizan sus IDs públicos.
+- **P52:** `core/diagnostics.py`, `apps/monitor/bug_reports.py`. Preparación
+  pura con evidencia seleccionada, límites, origen/código/versiones y errores
+  repetidos agrupados. Se filtran credenciales incluso al desactivar la
+  anonimización de identidad; esta última oculta rutas, IP, MAC y correos.
+  Exportación Markdown y URL de formulario, con nueva redacción tras editar
+  el borrador. Sin inventario completo ni publicación automática. La revisión
+  humana sigue siendo necesaria para datos privados no reconocibles por sus
+  claves o patrones; no se afirma una anonimización universal.
+- **P51:** `core/updates.py`. Comparación SemVer y filtro por `draft=false`,
+  `prerelease=false` y publicación efectiva, incluso con sufijos históricos.
+  Se consulta un máximo acotado de páginas del repositorio oficial; reserva
+  diaria persistente antes de red, también en fallos o consultas simultáneas.
+  Recordatorio por versión y validación de enlaces incluso al leer caché.
+  El adaptador GUI debe usar worker. Se contrastaron los campos y paginación
+  con [GitHub REST](https://docs.github.com/en/rest/releases/releases#list-releases)
+  y la comparación con [SemVer](https://semver.org/). No se descarga ni instala.
+- **P66 «Dimensiones»:** `core/rack_dimensions.py`, `apps/rack/service.py`,
+  `apps/rack/cli.py`, `apps/wire/gui_service.py`, `apps/wire/idf/database.py`
+  y `apps/wire/models/rack.py`. Enteros 4–52 U y anchos 10/19/21/23. Altura
+  canónica `data.units`, ancho en `data.rackDimensions` esquema 1. Las bases
+  antiguas conservan valores inválidos o desconocidos con advertencias; solo
+  una edición explícita los corrige, manteniendo alias heredados coherentes.
+  La transacción compartida impide reducir por debajo de los equipos y sus
+  frentes de varias U. LANRACK añade `dimensions ID --units U --width-inches W`.
+- **P45/P46:** `core/installation.py`, `plugins/selection.py`, `builtin.py` y
+  `packaging/inno/LANCTL.iss`. `setup-defaults` guarda una vez la elección de
+  tema/plugins; una actualización conserva selección, configuración y registro
+  de permisos. Los plugins omitidos no reaparecen por bootstrap; el tema base
+  sigue obligatorio. El ejemplo incluido ya no reescribe manifiestos idénticos
+  en cada inicio. El instalador ofrece selección individual y cinco previews;
+  su compilación/certificación corresponde a la fase de integración.
+- **P47, alcance seguro:** `core/first_scan.py`, entrada CLI LANIP, orquestador
+  e instalador. `post-install [--first-scan]` exige usuario normal, deja una
+  petición de confirmación antes de abrir LANIP y nunca inicia sondas. La
+  petición caduca tras 24 horas y se consume una vez. `scan_choices` no inventa
+  interfaces ni máscaras; el escáner usa las rutas del sistema. Falta enlazar
+  realmente una interfaz a todas las sondas: REF-P47-interface.
+- **P48:** `core/clink_integration.py`, `packaging/clink/*`, instalador,
+  `packaging/portable/prepare.ps1`, README y `scripts/build-windows.ps1`.
+  Distribución del Lua y registro/retirada de una carpeta mediante argumentos
+  nativos. Instalación de registro con usuario normal; desinstalación elevada
+  solo busca binarios en Program Files consultado en HKLM, sin usar PATH de
+  usuario. Se conserva marcador por usuario/directorio. Clink registra rutas
+  en el perfil del usuario según su [documentación](https://chrisant996.github.io/clink/clink.html#command-line-options).
+  Inno no recupera siempre la identidad original y no admite ExecAsOriginalUser
+  al desinstalar, según [su contrato](https://jrsoftware.org/ishelp/topic_isxfunc_execasoriginaluser.htm).
+  Por ello otra cuenta administrativa no se presenta como limpieza completa
+  del registro del propietario; se documenta retirada manual previa.
+
+### Verificación de AUDITOR
+
+Resultado consolidado de 23 módulos de pruebas relacionados: **281 pruebas y
+11 subpruebas aprobadas en 36,91 s**. Incluye regresiones de los diez archivos
+nuevos `test_official_links`, `test_gui_preferences`, `test_activity`,
+`test_log_tui`, `test_diagnostics`, `test_updates`, `test_rack_dimensions`,
+`test_installation_preferences`, `test_first_scan`, `test_clink_integration`,
+además de plugins, permisos/firmas, migración, configuración, coordinación,
+IDF/modelos, launchers, distribución, Clink y errores existentes.
+
+Después de ajustar la fixture sintética de redacción para respetar la higiene
+y cubrir la paleta base que anulaba presets: **20 pruebas adicionales pasan**
+(preferencias/diagnósticos). No se modificó el detector de secretos.
+
+Evidencia local no versionada:
+`.tool-reports/auditor-20261017/focused.log`, `focused.xml` y `contracts.json`.
+La prueba de actividad ejecuta un proceso Python separado, escribe con una
+sesión real, la cierra y comprueba recepción y conservación desde el padre.
+Las pruebas de actualizaciones no consultan la red y las de Clink no alteran
+el registro real del equipo.
+
+- Ruff global `check src tests`: correcto; formato de los 35 archivos Python
+  propios revisados: correcto.
+- Bandit `-q -r src -ll`: sin hallazgos de nivel exigido; conserva dos avisos
+  previos de `nosec B104` sin incidencia coincidente.
+- Referencias CLI/web actualizadas y comprobadas; catálogo de errores
+  regenerado y comprobado (**1.388 puntos** al cierre de AUDITOR).
+- Higiene correcta y `git diff --check` sin errores; Git solo advierte sobre
+  normalización CRLF/LF de archivos compartidos.
+- Comparación AST contra HEAD: **29 métodos existentes de PluginManager
+  idénticos**, además de preservar los archivos públicos de contratos,
+  eventos y funciones. Se añadieron interfaces/keywords compatibles; las
+  nuevas restricciones de dimensiones responden expresamente al requisito.
+
+### Dependencias abiertas y siguiente paso
+
+**Fuentes de AUDITOR listas para integración**; GUI-DESIGN ejecuta la suite
+completa con cobertura, pruebas visuales/nativas, recursos y un único build.
+No se atribuyen aquí resultados finales que aún no hayan terminado.
+
+P34 requiere REF-P34-runtime: el host no puede detener de forma segura hilos
+arbitrarios de un plugin trusted ya cargado en su propio proceso. El diseño
+previo a implementarlo debe introducir runtime cancelable propiedad del host,
+RPC versionado, concesiones por revisión, validación antes de cada operación,
+retirada de callbacks y cierre con plazo, sin mantener locks durante callbacks
+externos. Implica cambios de arquitectura y compatibilidad, no una notificación
+de GUI. P34 permanece crítica y abierta.
+
+P50 depende además de un contrato de snapshot vivo: enumeración por propietario,
+selección explícita de sesión/proyecto, revisión solicitada/observada, estado
+guardado frente a cambios en memoria y errores de sesión caducada o revisión
+desfasada. El coordinador actual no ofrece ese snapshot y el VLF no lo sustituye.
+El transporte/autenticación externos deben verificarse antes de exponerlo. El
+preparador de P52 queda reutilizable sin introducir GitHub en ese futuro puente.
+
+P40/P42 requieren firmas e identidad reales autorizadas. P47 no certifica
+selección de interfaz hasta REF-P47-interface. P48 requiere CMD/Clink real y
+resolver/probar los escenarios de usuario administrador distinto. P32 conserva
+la matriz externa Windows limpio/Linux ARM64/SSH. Estos puntos no se marcan
+completados ni se rebaja su prioridad.
+## Integración coordinada de pendientes GUI — 17/10/2026
+
+GUI-DESIGN implementa la presentación y los adaptadores de escritorio; AUDITOR
+entrega servicios, modelos, CLI/TUI e instalador. El reparto y las dependencias
+se registran en `docs/GUI-AUDITOR-COORDINATION.md`.
+
+- P35: cinco temas, vista previa/cancelación, persistencia, sincronización entre
+  ventanas, densidad, escala de texto y reducción de animaciones. Los overrides
+  de plugins conservan el tema base y se retiran sus estilos de componente.
+- P49/P53: botón Registros en LANIP para la TUI, actividad y registros en LANMON
+  con pausa, filtros y límites. Transporte con sesión/proyecto/origen reales;
+  se conserva el buffer local hasta transmitir y el historial tras cerrar la
+  sesión. Reloj retirado solo del pie de LANCTL.
+- P51/P54: consulta de actualizaciones fuera del hilo de interfaz, revisión
+  manual, versión/novedades, recordar después y navegador explícito. Web,
+  GitHub y Referencia comparten destinos con los comandos CLI/TUI.
+- P52: Report a bug en las seis ventanas nativas; errores agrupados con
+  origen/código/ID; borrador en LANMON con sesión, selección de evidencias,
+  campos editables, anonimización y vista previa antes de abrir GitHub o
+  exportar Markdown. No se publican incidencias automáticamente.
+- P66 «Dimensiones»: creación y edición en LANRACK, lectura en LANWIRE desde
+  el mismo inventario. Altura estricta 4–52 U y ancho 10/19/21/23 pulgadas;
+  advertencias sobre datos heredados sin normalizarlos a escondidas. Las skins
+  y sus puertos decorativos se conservan.
+- P47, ámbito seguro: la petición de instalación abre una confirmación de
+  CIDR/perfil, sin sondas antes de aceptar. Se indica cuando el /24 es estimado.
+  La selección real de interfaz permanece pendiente de un contrato de enlace
+  de sondas; no se ofrece un selector que el transporte no pueda respetar.
+
+Verificación de fuentes: diez regresiones nuevas con servicios reales y
+navegador Edge; 33 regresiones combinadas de interfaces, topología/CPD y skins
+aprobadas. También pasan el arranque/cierre nativo de LANIP y de los cuatro
+launchers y la coordinación nativa de los cuatro botones de LANCTL.
+
+La suite integral y el paquete final se registran al concluir esta integración.
+Estas pruebas no certifican P34, P40/P42, P50, el enlace de interfaz de P47 ni
+P32 en plataformas externas. Esos pendientes mantienen su estado explícito.
+
+### Correcciones tras la primera suite integral — AUDITOR
+
+La primera ejecución integral de GUI-DESIGN terminó con 1.166 pruebas y 644
+subpruebas aprobadas, un caso omitido y seis fallos. Tres pertenecían a la
+interfaz y los corrige GUI-DESIGN; los tres no visuales quedan resueltos:
+
+- La plantilla RK-00 ahora declara las mismas dimensiones que persiste la
+  creación (18 U, 19 pulgadas). `sample_topology.py` conserva la idempotencia
+  con muestras antiguas sin añadir dimensiones a sus datos; sigue rechazando
+  modificaciones reales. Pruebas de repetición, conservación y conflicto.
+- `settings_catalog.py` añade GUI al final de las categorías para conservar
+  la numeración previa: la opción 8 sigue siendo LANIP. La prueba original de
+  navegación pasa sin cambiar su secuencia.
+- La prueba de expansión de variables usa un directorio personalizado y ya
+  no lo confunde con el valor histórico que Windows redirige a Documentos.
+  `test_project_paths.py` cubre también la falta de Known Folder; el código de
+  producción y el contrato de redirección permanecen iguales.
+
+Además, `event_view.py` reconoce `GUI_ACTIVITY` esquema 1 emitido por la GUI
+con nivel entero 1–59, manteniendo el mensaje y su origen. Los éxitos no se
+convierten en ErrorEvent. La regresión escribe mediante el logger real y
+comprueba lectura incremental, filtrado TUI e histórico; un marcador incluido
+en el texto del mensaje no sustituye al marcador externo. Los datos malformados
+siguen visibles, sin asignarles un nivel inventado.
+
+Evaluación de impacto: medio para la comparación de muestras y navegación,
+bajo para el lector y aislamiento de pruebas. No se cambian IDs públicos,
+firmas de métodos ni rutas de producción. Verificación enfocada ampliada:
+**147 pruebas aprobadas en 14,95 s**, incluyendo TUI física, dimensiones,
+configuración, rutas y seguimiento de registros. Evidencia local:
+`.tool-reports/auditor-20261017/integration-followup.xml`.
+Ruff, referencias CLI/web e higiene correctos; catálogo regenerado y comprobado
+con **1.390 puntos**. Fuentes no visuales congeladas de nuevo para repetir la
+suite integral y el build bajo responsabilidad de GUI-DESIGN.
+
+## Segundo ciclo AUDITOR — 17/10/2026
+
+Validación y orden: primero el acceso de plugins al Core y la limpieza de runtimes
+(P34, riesgo crítico); después origen del primer escaneo (P47, alto); herramientas
+de desarrollo P67/P68 cuando las fuentes estén congeladas. GUI-DESIGN conserva
+la propiedad de las vistas y sus adaptadores. Se mantienen IDs y versión
+0.3.4-alpha.1; no se fusionan PR ni se publican ramas o instaladores.
+
+### P34: revocación de accesos y ciclo de limpieza
+
+Cambios en `core/plugins/authorization.py`, `manager.py`, `api.py` y
+`core/plugin_storage.py`. Cada activación recibe una concesión distinta. Las
+operaciones del API comprueban la autoridad persistida y el editor; referencias
+antiguas de funciones, eventos, monitor y almacenes dejan de autorizar llamadas.
+Los callbacks comprueban además la concesión al retornar. Un observador del
+gestor global reconcilia cambios cada 0,5 s; las llamadas no esperan ese sondeo.
+La corrupción de la autoridad retira accesos y conserva el archivo averiado.
+
+Se retiran también los checks del monitor, los consumidores dependientes y los
+runtimes aislados que han terminado. La limpieza externa se reserva bajo lock,
+pero se ejecuta después de liberarlo y se espera como máximo 0,5 s por plugin.
+Una limpieza pendiente impide activar la generación siguiente. `reload` espera
+esa fase antes de reactivar. El método aditivo `runtime_status(id)` devuelve
+esquema 1, `active`, `coreAccess`, `restartRequired`, `cleanupPending` y `execution`.
+
+Pruebas: las tres regresiones principales fallaban antes del cambio. Las dieciséis
+nuevas incluyen un segundo proceso, revocación de editor, referencias retenidas,
+llamada en curso, limpieza colgada, carrera antes de arrancar la limpieza,
+dependencias transitivas y terminación de un proceso aislado. El conjunto
+ampliado de plugins pasó 119 pruebas en 42,56 s sobre las fuentes aplicadas.
+Se añade un lock de inicialización global: ocho accesos simultáneos crean un
+solo gestor y un solo observador (regresión específica aprobada).
+La comparación AST conserva las firmas de 13 métodos públicos del gestor y
+30 del API. Los contratos de eventos y funciones no se modifican.
+
+Límite explícito: un plugin `trusted` ya cargado puede haber creado hilos y
+efectos nativos fuera del API; no se garantiza su terminación ni se deshacen
+efectos anteriores o de operaciones ya iniciadas. `restartRequired` persiste
+durante la vida del gestor. P34/REF-P34-runtime siguen abiertos hasta disponer
+del host de ejecución cancelable y RPC versionado, conservando el runtime
+heredado como compatibilidad explícita. No se presenta esta mitigación como
+aislamiento del SO.
+
+### P47: inventario de interfaces y sondeo con origen
+
+Cambios en `core/network_interfaces.py`, `core/first_scan.py`, servicios
+`lan_scanner.py`/`source_binding.py` y comando CLI `list.py`. La enumeración es
+local, con máscara real; Windows incluye interfaces virtuales conectadas y
+Linux consume `ip -j`. Se valida índice, dirección, prefijo y selección única.
+El origen se vuelve a comprobar antes del escaneo: una interfaz desaparecida,
+una dirección repetida o un CIDR ajeno no provocan fallback a otra ruta.
+
+`list --interface ID_O_IPV4` conserva las invocaciones anteriores. Sin un
+`--network` explícito usa la máscara de la interfaz; con rango explícito exige
+que pertenezca a ella. Rechaza su combinación con un laboratorio activo.
+Windows usa IcmpSendEcho2Ex y SendARP con dirección de origen; Linux pasa
+interfaz y dirección a ping/arping. La caché ARP se consulta por interfaz.
+Los límites de hosts siguen vigentes antes de sondear.
+
+La modalidad seleccionada es ICMP/ARP: DNS y descubridores externos se omiten
+con aviso porque todavía carecen del contrato de origen. No se afirma que
+TCP, mDNS, SSDP, WSD o plugins estén vinculados. REF-P47-interface conserva ese
+alcance restante y la certificación nativa con varias NIC/Linux. Enumeración
+Windows real comprobada sin tráfico; conjunto de 132 pruebas y 10 subpruebas
+aprobado en 3,18 s. Dieciséis regresiones nuevas cubren
+validación, comandos/llamadas nativas, ausencia de fallback y confirmación.
+
+Fuentes técnicas consultadas:
+[Get-NetIPConfiguration](https://learn.microsoft.com/en-us/powershell/module/nettcpip/get-netipconfiguration),
+[IcmpSendEcho2Ex](https://learn.microsoft.com/en-us/windows/win32/api/icmpapi/nf-icmpapi-icmpsendecho2ex),
+[SendARP](https://learn.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-sendarp),
+[implementación de ping de iputils](https://github.com/iputils/iputils/blob/master/ping/ping.c).
+
+### Bloqueos y prioridades restantes
+
+P40/P42: el usuario confirma que aún no existe editor oficial configurado.
+Faltan identidad autorizada y artefactos LCP firmados; no se crea una identidad
+oficial ficticia ni se desactiva la verificación. Las claves generadas por las
+pruebas son efímeras y solo se usan en directorios temporales.
+
+P50: el coordinador actual comparte metadatos y avisos, no un snapshot coherente
+del estado de trabajo. `_SESSION_DEVICES` vive dentro de cada proceso; leer el
+VLF desde un servidor externo perdería esos datos y cambios sin guardar.
+Se antepone REF-P50-session: proveedor de snapshot del proceso propietario,
+revisión, sesión/proyecto explícitos, caducidad/cierre y lista permitida de datos
+sin credenciales. Impacto alto sobre sesión/inventario; no añadir transporte
+externo que finja un estado vivo antes de ese contrato y REF-P34-runtime.
+
+La documentación oficial confirma transportes STDIO y Streamable HTTP para
+Codex; ChatGPT web no toma la configuración local de Codex. Para el transporte
+remoto autenticado se requiere identidad de usuario y validación de permisos
+por petición. No hay conexión externa certificada ni proveedor de identidad
+del proyecto definido. Referencias:
+[MCP y clientes](https://learn.chatgpt.com/docs/extend/mcp?surface=cli),
+[autenticación de servidores MCP](https://developers.openai.com/plugins/build/auth).
+
+P48 conserva la verificación real de Clink en CMD y el caso de desinstalación
+con otra identidad. P32 conserva Windows limpio, Linux ARM64 y SSH remoto.
+Las pruebas locales de fuentes no sustituyen esas certificaciones.

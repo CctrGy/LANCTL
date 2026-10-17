@@ -299,7 +299,7 @@ wireLayout = function (nodes) {
   }
   return result;
 };
-function physicalSwitchLevel(level, rack = "") {
+function physicalSwitchLevel(level, rack = "", cpd = physicalCpd) {
   const key = physicalLevel + ":" + physicalRack + ":" + physicalCpd;
   physicalViews.set(key, {
     positions: structuredClone(wirePositions),
@@ -309,6 +309,7 @@ function physicalSwitchLevel(level, rack = "") {
   wireSavePositions();
   physicalLevel = level;
   physicalRack = rack;
+  physicalCpd = cpd;
   wireFocus = null;
   wireHidden.clear();
   const saved = physicalViews.get(level + ":" + rack + ":" + physicalCpd);
@@ -505,8 +506,7 @@ wireRenderTopology = function (rows) {
   $("#physical-rack").onchange = (e) =>
     physicalSwitchLevel(physicalLevel, e.target.value);
   $("#physical-cpd").onchange = (e) => {
-    physicalCpd = e.target.value;
-    physicalSwitchLevel(physicalLevel, "");
+    physicalSwitchLevel(physicalLevel, "", e.target.value);
   };
   $("#physical-bundles").onchange = (e) => {
     physicalBundles = e.target.checked;
@@ -750,7 +750,13 @@ let rackMode = "rooms",
   rackCpd = "",
   rackChoice = "";
 function rackMetric(r) {
-  const used = new Set(r.occupants.map((o) => Number(o.unit)).filter(Boolean));
+  const used = new Set(
+    r.occupants.flatMap((o) =>
+      o.unit
+        ? Array.from({ length: o.span || 1 }, (_, i) => Number(o.unit) + i)
+        : [],
+    ),
+  );
   return `${used.size} / ${r.units} U ocupadas · ${r.occupants.length} equipos`;
 }
 function rackRoomForm(room) {
@@ -925,7 +931,16 @@ render = function () {
       (r) => [r.name, r.id, roomName(r.location?.cpd), rackMetric(r)],
     );
   } else if (rackMode === "rack" && chosen) {
-    const occupancy = new Map(chosen.occupants.map((o) => [Number(o.unit), o]));
+    const occupancy = new Map(
+      chosen.occupants.flatMap((o) =>
+        o.unit
+          ? Array.from({ length: o.span || 1 }, (_, i) => [
+              Number(o.unit) + i,
+              o,
+            ])
+          : [],
+      ),
+    );
     $("#canvas").innerHTML =
       `<div class="rack-detail-layout"><section class="panel"><button id="rack-back">← Volver a la sala</button><h2>${esc(chosen.name)}</h2><p>${esc(roomName(chosen.location?.cpd))}</p><p>${esc(rackMetric(chosen))}</p><p>${esc(chosen.description)}</p></section><section class="rack-elevation">${Array.from(
         { length: chosen.units },

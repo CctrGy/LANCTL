@@ -6,6 +6,7 @@ from pathlib import Path
 from threading import Event, RLock, Thread
 
 from lanctl import __version__
+from lanctl.apps.suite.gui_support import GuiSupportMixin
 from lanctl.apps.suite.processes import launcher_command, open_system_cli, process_options
 from lanctl.core.config import load_config
 from lanctl.core.resources import bundled_path
@@ -13,7 +14,7 @@ from lanctl.core.resources import bundled_path
 LAUNCHERS = {"lanwire", "lanrack", "lanaccess", "lanmon"}
 
 
-class LauncherApi:
+class LauncherApi(GuiSupportMixin):
     def __init__(self, launcher, *, database=None, store=None, cipher="auto"):
         if launcher not in LAUNCHERS:
             raise ValueError("Launcher gráfico desconocido")
@@ -58,7 +59,12 @@ class LauncherApi:
                 level=43,
                 print_output=False,
             )
-            return {"ok": False, "error": event.message, "errorId": event.error_id}
+            return {
+                "ok": False,
+                "error": event.message,
+                "errorId": event.error_id,
+                "errorDetails": event.to_dict(),
+            }
 
     def _require(self, launcher):
         if self._launcher != launcher:
@@ -79,6 +85,31 @@ class LauncherApi:
             }
 
         return self._respond(operation, "Read")
+
+    def rack_appearance(self, expected, identifier, values):
+        def apply():
+            self._require("lanrack")
+            return self._service.set_appearance(expected, identifier, values)
+
+        return self._respond(apply, "Appearance")
+
+    def rack_dimensions(self, expected, identifier, values):
+        def apply():
+            self._require("lanrack")
+            return self._service.set_dimensions(expected, identifier, values)
+
+        return self._respond(apply, "Dimensions")
+
+    def rack_create(self, values):
+        def create():
+            from lanctl.apps.wire.gui_service import WireGuiService
+
+            self._require("lanrack")
+            if not isinstance(values, dict):
+                raise ValueError("Datos de armario no válidos")
+            return WireGuiService(self._service.database.path).create({**values, "kind": "rack"})
+
+        return self._respond(create, "CreateRack")
 
     def rack_organization(self, expected, operation, values):
         def apply():
@@ -218,7 +249,7 @@ class LauncherApi:
 
     def open_gui(self, launcher="lanctl"):
         def operation():
-            if launcher not in {"lanctl", "lanwire"}:
+            if launcher not in {"lanctl", "lanwire", "lanrack", "lanmon"}:
                 raise ValueError("Destino no permitido")
             subprocess.Popen(
                 launcher_command(launcher, "--gui"),

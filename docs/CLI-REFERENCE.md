@@ -6,37 +6,43 @@ No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.
 ## `LANCTL`
 
 ```text
-Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [--admin] LAUNCHER ...
+Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [-web | -github | -reference] [--admin]
+              LAUNCHER ...
 
 Orquestador raíz de las aplicaciones de la suite LANCTL.
 
 Arguments:
   LAUNCHER
-    lanip (ip)        Inventario lógico, descubrimiento, IP, MAC y servicios.
-    lanwire (wire)    Cableado, puertos, paneles y topología física.
-    lanrack (rack)    Salas técnicas, racks, unidades U y equipos.
-    lanaccess (access)
-                      Usuarios, credenciales y accesos remotos.
-    lanmon (monitor)  Monitorización, eventos, incidencias e historial.
-    plugin            Administración compartida de la suite.
-    settings          Administración compartida de la suite.
-    language          Administración compartida de la suite.
-    backend           Administración compartida de la suite.
+    lanip (ip)             Inventario lógico, descubrimiento, IP, MAC y servicios.
+    lanwire (wire)         Cableado, puertos, paneles y topología física.
+    lanrack (rack)         Salas técnicas, racks, unidades U y equipos.
+    lanaccess (access)     Usuarios, credenciales y accesos remotos.
+    lanmon (monitor)       Monitorización, eventos, incidencias e historial.
+    plugin                 Administración compartida de la suite.
+    settings               Administración compartida de la suite.
+    language               Administración compartida de la suite.
+    backend                Administración compartida de la suite.
+    setup-defaults         Inicializa preferencias de instalación sin sobrescribir las existentes.
+    completions            Registra o retira el completado Clink del usuario actual.
+    post-install           Abre LANIP con el usuario normal al finalizar la instalación.
 
 Options:
-  -h, --help          Show this help and exit.
-  --version           Muestra la versión común de la suite y termina.
-  --cli, -cli         Abre la consola principal.
-  -tui, --tui         Abre el TUI principal.
-  --gui               Abre el centro gráfico de LANCTL.
-  --admin             Solicita UAC explícitamente para un launcher instalado en Windows.
+  -h, --help               Show this help and exit.
+  --version                Muestra la versión común de la suite y termina.
+  --cli, -cli              Abre la consola principal.
+  -tui, --tui              Abre el TUI principal.
+  --gui                    Abre el centro gráfico de LANCTL.
+  -web, --web              Muestra y abre la web oficial.
+  -github, --github        Muestra y abre GitHub oficial.
+  -reference, --reference  Muestra y abre la referencia oficial.
+  --admin                  Solicita UAC explícitamente para un launcher instalado en Windows.
 ```
 
 ## `LANIP`
 
 ```text
-Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--cli] [-tui [VENTANA]]
-             [-project ARCHIVO.vlf]
+Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--first-scan] [--cli]
+             [-tui [VENTANA]] [-project ARCHIVO.vlf]
              COMANDO ...
 
 Logical control of LAN devices and infrastructure.
@@ -89,6 +95,8 @@ Options:
   --quiet                     Omite la salida correcta; conserva errores.
   --verbose                   Añade diagnóstico de ejecución a stderr.
   --gui                       Abre la interfaz gráfica de LANIP.
+  --first-scan                Solicita confirmación del primer escaneo al abrir la GUI; no escanea
+                              automáticamente.
   --cli, -cli                 Open the persistent interactive LANCTL terminal.
   -tui [VENTANA], --tui [VENTANA]
                               Open the advanced full-screen terminal interface. Puede abrir
@@ -126,11 +134,11 @@ Options:
 ## `LANIP list`
 
 ```text
-Usage: LANIP list [-h] [--network NETWORK] [--database DATABASE] [--groups GROUPS]
-                  [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent] [--where WHERE]
-                  [-w WORKERS] [-t TIMEOUT] [--scan-order {ascending,descending,random}]
-                  [--include-unknown] [--resolve-names] [--max-hosts MAX_HOSTS]
-                  [--discovery {icmp,arp,hybrid}]
+Usage: LANIP list [-h] [--network NETWORK] [--interface INTERFACE] [--database DATABASE]
+                  [--groups GROUPS] [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent]
+                  [--where WHERE] [-w WORKERS] [-t TIMEOUT]
+                  [--scan-order {ascending,descending,random}] [--include-unknown]
+                  [--resolve-names] [--max-hosts MAX_HOSTS] [--discovery {icmp,arp,hybrid}]
                   [--profile {fast,normal,accurate} | --fast | --normal | --accurate]
                   [--progress | --no-progress] [--show-discovery] [--include-arp-cache]
                   [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]
@@ -141,6 +149,8 @@ Realiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muest
 Options:
   -h, --help                  Show this help and exit.
   --network NETWORK           Red CIDR. Por defecto detecta la LAN como /24.
+  --interface INTERFACE       Origen IPv4 local o ID de interfaz; usa su máscara real. Solo
+                              ICMP/ARP, sin DNS ni descubridores externos.
   --database DATABASE         Archivo JSON de elementos.
   --groups GROUPS             Archivo JSON de grupos.
   -f {table,json,csv,html,xml,yaml}, --format {table,json,csv,html,xml,yaml}
@@ -1965,22 +1975,24 @@ Options:
 ## `LANRACK`
 
 ```text
-Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli] {list,ls,show} ...
+Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]
+               {list,ls,show,dimensions} ...
 
 Visualiza racks y sus equipos.
 
 Arguments:
-  {list,ls,show}
-    list (ls)            Lista los racks disponibles.
-    show                 Muestra un rack y sus ocupantes.
+  {list,ls,show,dimensions}
+    list (ls)                Lista los racks disponibles.
+    show                     Muestra un rack y sus ocupantes.
+    dimensions               Edita altura y ancho de montaje del rack.
 
 Options:
-  -h, --help             Show this help and exit.
-  --version              Muestra la versión común de la suite y termina.
-  --database ARCHIVO.db  Base física IDF compartida.
-  --gui                  Abre la interfaz gráfica de escritorio.
-  -tui, --tui            Abre la interfaz de pantalla completa.
-  --cli, -cli            Abre la consola interactiva.
+  -h, --help                 Show this help and exit.
+  --version                  Muestra la versión común de la suite y termina.
+  --database ARCHIVO.db      Base física IDF compartida.
+  --gui                      Abre la interfaz gráfica de escritorio.
+  -tui, --tui                Abre la interfaz de pantalla completa.
+  --cli, -cli                Abre la consola interactiva.
 ```
 
 ## `LANRACK list`
@@ -2002,6 +2014,21 @@ Arguments:
 
 Options:
   -h, --help  Show this help and exit.
+```
+
+## `LANRACK dimensions`
+
+```text
+Usage: LANRACK dimensions [-h] --units UNITS --width-inches {10,19,21,23} rack
+
+Arguments:
+  rack                        ID del rack.
+
+Options:
+  -h, --help                  Show this help and exit.
+  --units UNITS               Altura de 4 a 52 U.
+  --width-inches {10,19,21,23}
+                              Ancho de montaje en pulgadas.
 ```
 
 ## `LANACCESS`

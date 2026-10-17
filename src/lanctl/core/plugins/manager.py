@@ -20,6 +20,7 @@ from lanctl.core.file_transaction import atomic_write_json, locked_file
 from lanctl.core.logger import write_database_log, write_log
 from lanctl.core.paths import application_path
 from lanctl.core.plugins.api import PluginApi
+from lanctl.core.plugins.authorization import RuntimeAuthorizations
 from lanctl.core.plugins.builtin import BUILTIN_PLUGIN_IDS, bootstrap_builtin_plugins
 from lanctl.core.plugins.contracts import (
     DeviceRemoteEvent,
@@ -49,8 +50,17 @@ PLUGIN_REGISTRY = application_path("data/lc/plugins.registry")
 def _synchronized(method):
     @wraps(method)
     def wrapped(self, *args, **kwargs):
-        with self._lock, locked_file(self.registry_path):
-            return method(self, *args, **kwargs)
+        depth = self._authorization.depth
+        depth.value = getattr(depth, "value", 0) + 1
+        try:
+            with self._lock, locked_file(self.registry_path):
+                return method(self, *args, **kwargs)
+        finally:
+            depth.value -= 1
+            if not depth.value:
+                # External deactivate/stop runs only after all registry locks
+                # in this thread have been released.
+                self._authorization.drain()
 
     return wrapped
 
@@ -67,6 +77,7 @@ class InstalledPlugin:
     checksum: str = ""
     module: object | None = None
     isolated_runtime: object | None = None
+    restart_required: bool = False
 
     def __post_init__(self):
         self.granted = set(self.granted or ())
@@ -86,6 +97,7 @@ class PluginManager:
         self._registry_known: dict = {}
         self._registry_baseline: dict = {}
         self._lock = RLock()
+        self._authorization = RuntimeAuthorizations(self)
         self._register_core_events()
         bootstrap_builtin_plugins(self.root)
         self.discover()
@@ -373,30 +385,8 @@ class PluginManager:
 
     def _release_runtime(self, plugin: InstalledPlugin) -> None:
         self._active.discard(plugin.manifest.plugin_id)
-        if plugin.isolated_runtime is not None:
-            plugin.isolated_runtime.stop()
-            plugin.isolated_runtime = None
-        if plugin.module and hasattr(plugin.module, "deactivate"):
-            try:
-                plugin.module.deactivate()
-            except Exception as error:  # noqa: BLE001 - código de plugin
-                from lanctl.core.errors import errors
-
-                errors.from_exception(
-                    error,
-                    origin="LANCTL.Plugin.Deactivation",
-                    code="PLUGIN.DEACTIVATION.DEGRADED",
-                    level=14,
-                    details={"pluginId": plugin.manifest.plugin_id},
-                    print_output=False,
-                )
-                self.audit(
-                    plugin.manifest.plugin_id,
-                    "UNLOAD",
-                    plugin.manifest.version,
-                    "ERROR",
-                    str(error),
-                )
+        module = plugin.module
+        self._authorization.retire(plugin)
         self.events.unsubscribe_plugin(plugin.manifest.plugin_id)
         self.event_registry.remove_owner(plugin.manifest.plugin_id)
         self.extensions.remove_owner(plugin.manifest.plugin_id)
@@ -407,9 +397,11 @@ class PluginManager:
         from lanctl.shared.assets.icons import get_icon_manager
 
         get_icon_manager().remove_provider(plugin.manifest.plugin_id)
-        if plugin.module is not None and sys.modules.get(plugin.module.__name__) is plugin.module:
-            sys.modules.pop(plugin.module.__name__, None)
-        plugin.module = None
+        checks = getattr(self, "monitor_checks", None)
+        if checks is not None:
+            checks.remove_owner(plugin.manifest.plugin_id)
+        if module is not None and sys.modules.get(module.__name__) is module:
+            sys.modules.pop(module.__name__, None)
 
     @_synchronized
     def disable(self, plugin_id: str) -> InstalledPlugin:
@@ -428,10 +420,10 @@ class PluginManager:
         self.audit(plugin.manifest.plugin_id, "DISABLE", plugin.manifest.version, "OK")
         return plugin
 
-    @_synchronized
     def reload(self, plugin_id: str) -> InstalledPlugin:
-        plugin = self.get(plugin_id)
-        granted, trusted = set(plugin.granted), plugin.trusted
+        with self._lock:
+            plugin = self.get(plugin_id)
+            granted, trusted = set(plugin.granted), plugin.trusted
         self.disable(plugin_id)
         return self.enable(plugin_id, grant=granted, trusted=trusted)
 
@@ -489,6 +481,107 @@ class PluginManager:
     def list(self) -> list[InstalledPlugin]:
         return sorted(self.plugins.values(), key=lambda item: item.manifest.name.casefold())
 
+    @_synchronized
+    def refresh_authorizations(self) -> None:
+        """Reconcile revocation without automatically granting or loading code."""
+        try:
+            current = self._read_registry()
+            publishers = self.publishers._read()
+        except (OSError, ValueError):
+            for plugin in tuple(self.plugins.values()):
+                if plugin.manifest.plugin_id in self._authorization.leases:
+                    self._release_runtime(plugin)
+                    plugin.state = PluginState.BLOCKED
+                    plugin.error = (
+                        "Autorización no verificable; se han retirado los accesos al Core"
+                    )
+            # Do not write a corrupt or unavailable authority back to disk.
+            self._registry_baseline = self._registry_entries()
+            raise
+        observed = set()
+        for plugin_id, plugin in tuple(self.plugins.items()):
+            saved = current.get(plugin_id)
+            changed = saved != self._registry_known.get(plugin_id)
+            untrusted = (
+                plugin.manifest.runtime == "trusted"
+                and plugin_id in self._authorization.leases
+                and plugin.signature.removeprefix("VALID_ED25519:").casefold() not in publishers
+            )
+            runtime = plugin.isolated_runtime
+            terminated = (
+                plugin_id in self._active
+                and runtime is not None
+                and (runtime.process is None or not runtime.process.is_alive())
+            )
+            if not changed and not untrusted and not terminated:
+                continue
+            self._release_runtime(plugin)
+            if saved is not None:
+                plugin.granted = set(saved.get("granted", ()))
+                plugin.trusted = bool(saved.get("trusted", False))
+                state = PluginState(saved.get("state", "DISABLED"))
+            else:
+                plugin.granted = set()
+                plugin.trusted = False
+                state = PluginState.DISABLED
+            plugin.state = PluginState.BLOCKED if state == PluginState.ENABLED else state
+            plugin.error = (
+                "Editor revocado; accesos al Core retirados"
+                if untrusted
+                else "Autorización modificada en otro proceso; recarga antes de activar"
+            )
+            if terminated:
+                plugin.state = PluginState.ERROR
+                plugin.error = "El proceso aislado terminó; se han retirado los accesos al Core"
+            observed.add(plugin_id)
+        # Revocation cascades through every level of active dependencies.
+        while True:
+            dependents = [
+                p
+                for p in self.plugins.values()
+                if p.manifest.plugin_id in self._active
+                and any(d.plugin_id not in self._active for d in p.manifest.dependencies)
+            ]
+            if not dependents:
+                break
+            for plugin in dependents:
+                self._release_runtime(plugin)
+                plugin.state = PluginState.BLOCKED
+                plugin.error = "Dependencia revocada o desactivada; recarga antes de activar"
+                observed.add(plugin.manifest.plugin_id)
+        if observed:
+            entries = self._registry_entries()
+            for plugin_id in observed:
+                if plugin_id in current:
+                    self._registry_known[plugin_id] = deepcopy(current[plugin_id])
+                else:
+                    self._registry_known.pop(plugin_id, None)
+                self._registry_baseline[plugin_id] = deepcopy(entries[plugin_id])
+
+    def runtime_status(self, plugin_id: str) -> dict:
+        self.refresh_authorizations()
+        with self._lock:
+            plugin = self.get(plugin_id)
+            closing = self._authorization.cleanups.get(plugin.manifest.plugin_id)
+            return {
+                "schemaVersion": 1,
+                "active": plugin.manifest.plugin_id in self._active,
+                "coreAccess": plugin.manifest.plugin_id in self._authorization.leases,
+                "restartRequired": plugin.restart_required
+                or plugin.manifest.plugin_id in self._authorization.restart_required,
+                "cleanupPending": bool(closing and (closing.ident is None or closing.is_alive())),
+                "execution": "legacy-in-process"
+                if plugin.manifest.runtime == "trusted"
+                else "isolated",
+            }
+
+    @_synchronized
+    def close(self) -> None:
+        self._authorization.stopped.set()
+        for plugin in tuple(self.plugins.values()):
+            self._release_runtime(plugin)
+        self.initialized = False
+
     def _quarantine_path(self, plugin_id: str) -> Path:
         root = self.root / ".quarantine"
         root.mkdir(parents=True, exist_ok=True)
@@ -522,6 +615,7 @@ class PluginManager:
         }
 
     def _activate(self, plugin: InstalledPlugin) -> None:
+        self._authorization.begin(plugin.manifest.plugin_id)
         self._load_declarative_events(plugin)
         self._load_declarative_extensions(plugin)
         entry = plugin.path / plugin.manifest.entry_point
@@ -593,7 +687,12 @@ class PluginManager:
                 raise ValueError(f"hook {path.name}: handler inexistente {handler_name}")
             self.events.subscribe(
                 str(document["event"]),
-                handler,
+                self._authorization.guarded(
+                    plugin.manifest.plugin_id,
+                    self._authorization.leases[plugin.manifest.plugin_id],
+                    handler,
+                    "events.listen",
+                ),
                 plugin_id=plugin.manifest.plugin_id,
                 version=int(document.get("version", 1)),
                 priority=int(document.get("priority", 100)),
@@ -960,10 +1059,21 @@ def _schema_type(value: str):
 
 
 _MANAGER: PluginManager | None = None
+_MANAGER_LOCK = RLock()
+
+
+def active_theme_extensions():
+    """Read initialized themes without bootstrapping or enabling plugin code."""
+    if _MANAGER is None:
+        return []
+    _MANAGER.refresh_authorizations()
+    return _MANAGER.extensions.list("theme")
 
 
 def get_plugin_manager() -> PluginManager:
     global _MANAGER
-    if _MANAGER is None:
-        _MANAGER = PluginManager()
-    return _MANAGER
+    with _MANAGER_LOCK:
+        if _MANAGER is None:
+            _MANAGER = PluginManager()
+            _MANAGER._authorization.start_watch()
+        return _MANAGER

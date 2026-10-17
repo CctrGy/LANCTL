@@ -193,17 +193,24 @@ Es aislado, declarativo, no accede a red y solo lee el inventario local.
 
 
 def bootstrap_builtin_plugins(root: Path) -> None:
+    from lanctl.core.plugins.selection import selected_plugins
+
+    selected = selected_plugins(root)
     root.mkdir(parents=True, exist_ok=True)
     readme = root / "readme.md"
     if not readme.exists() or readme.read_text(encoding="utf-8") != PLUGIN_README:
         with locked_file(readme):
             atomic_write_text(readme, PLUGIN_README)
-    plugin = root / EXAMPLE_PLUGIN_ID
-    info = plugin / "plugin.info"
-    api_map = plugin / "api/api.map"
-    api_map.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(info, EXAMPLE_MANIFEST)
-    atomic_write_json(api_map, EXAMPLE_API_MAP)
+    if EXAMPLE_PLUGIN_ID in selected:
+        plugin = root / EXAMPLE_PLUGIN_ID
+        info = plugin / "plugin.info"
+        api_map = plugin / "api/api.map"
+        for path, value in ((info, EXAMPLE_MANIFEST), (api_map, EXAMPLE_API_MAP)):
+            # Installed protected resources need no rewrite on every normal-user start.
+            if path.exists() and json.loads(path.read_text(encoding="utf-8")) == value:
+                continue
+            with locked_file(path):
+                atomic_write_json(path, value)
     _install_builtin_theme(root)
     for package in (
         "lanctl.analysis.mac-vendor.lcp",
@@ -212,7 +219,8 @@ def bootstrap_builtin_plugins(root: Path) -> None:
         "lanctl.network.wol.lcp",
         "lanctl.lab.network-emulator.lcp",
     ):
-        _install_builtin_package(root, f"bundled/{package}")
+        if package.removesuffix(".lcp") in selected:
+            _install_builtin_package(root, f"bundled/{package}")
 
 
 def _install_builtin_theme(root: Path) -> None:

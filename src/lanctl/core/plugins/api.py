@@ -10,8 +10,20 @@ class PluginApi:
         self.plugin_id = plugin_id
         self.permissions = permissions
         self._manager = manager
+        self._authorization = getattr(manager, "_authorization", None)
+        self._lease = self._authorization.leases.get(plugin_id) if self._authorization else None
+
+    def _check_current(self, permission=None):
+        if self._authorization is not None:
+            self._authorization.check(self.plugin_id, self._lease, permission)
+
+    def _guarded(self, handler, permission):
+        if self._authorization is None:
+            return handler
+        return self._authorization.guarded(self.plugin_id, self._lease, handler, permission)
 
     def require(self, permission: str) -> None:
+        self._check_current(permission.casefold())
         if permission.casefold() not in self.permissions:
             raise PermissionError(f"{self.plugin_id} no tiene el permiso {permission}")
 
@@ -20,6 +32,7 @@ class PluginApi:
         """Read only this plugin's validated, non-secret preferences."""
         from lanctl.core.plugins.settings import PluginSettings
 
+        self._check_current()
         return PluginSettings(self._manager.get(self.plugin_id)).load()
 
     @property
@@ -64,6 +77,7 @@ class PluginApi:
         return _PluginErrors(self)
 
     def log(self, action: str, target: str = "-", result: str = "OK", detail: str = "") -> None:
+        self._check_current()
         self._manager.audit(self.plugin_id, action, target, result, detail)
 
 
@@ -98,6 +112,7 @@ class _PluginErrors:
     ):
         from lanctl.core.errors import errors
 
+        self.api._check_current()
         return errors.emit(
             level=level,
             origin=self._origin(origin),
@@ -121,6 +136,7 @@ class _PluginErrors:
             details.setdefault("upstreamCode", exception.event.code)
             options["details"] = details
             exception = RuntimeError(exception.event.message)
+        self.api._check_current()
         return errors.from_exception(exception, origin=self._origin(origin), code=code, **options)
 
 
@@ -131,7 +147,11 @@ class _PluginEvents:
     def subscribe(self, event_id, handler, *, version=1, priority=100):
         self.api.require("events.listen")
         self.api._manager.events.subscribe(
-            event_id, handler, plugin_id=self.api.plugin_id, version=version, priority=priority
+            event_id,
+            self.api._guarded(handler, "events.listen"),
+            plugin_id=self.api.plugin_id,
+            version=version,
+            priority=priority,
         )
 
     def emit(self, event_id, values, *, version=1, correlation_id=None):
@@ -173,7 +193,10 @@ class _PluginFunctions:
         if function_id.casefold().startswith("lanctl."):
             raise PermissionError("namespace de funciones LANCTL reservado")
         self.api._manager.functions.register(
-            function_id, handler, return_contract, owner=self.api.plugin_id
+            function_id,
+            self.api._guarded(handler, "functions.register"),
+            return_contract,
+            owner=self.api.plugin_id,
         )
 
     def call(self, function_id, *args, **kwargs):
@@ -246,7 +269,11 @@ class _PluginStorage:
         from lanctl.core.config import load_config
         from lanctl.core.plugin_storage import PluginStorage
 
-        return PluginStorage(load_config()["smbStorage"], self.api.plugin_id)
+        return PluginStorage(
+            load_config()["smbStorage"],
+            self.api.plugin_id,
+            authorize=lambda: self.api.require("plugin.storage"),
+        )
 
 
 class _PluginHistory:
@@ -306,7 +333,7 @@ class _PluginMonitor:
             CheckSpec(
                 check_id,
                 self.api.plugin_id,
-                handler,
+                self.api._guarded(handler, "monitor.check.register"),
                 float(minimum_interval),
                 float(timeout),
                 bool(critical),

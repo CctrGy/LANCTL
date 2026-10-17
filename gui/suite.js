@@ -41,7 +41,7 @@ function message(text,error=false){$("#status").textContent=text;$("#status").cl
 async function call(method,...args){
   if(!window.pywebview?.api)throw new Error("Abre esta interfaz con lanctl --gui.");
   const response=await window.pywebview.api[method](...args);
-  if(!response.ok)throw new Error(response.error+(response.errorId?` (${response.errorId})`:""));
+  if(!response.ok)throw Object.assign(new Error(response.error+(response.errorId?` (${response.errorId})`:"")),{errorDetails:response.errorDetails});
   return response;
 }
 function apply(payload){
@@ -64,7 +64,7 @@ function render(){
   if(state.page==="projects")host.innerHTML='<div class="toolbar"><h1>Proyectos</h1><div class="row"><button data-action="open-project">Abrir VLF…</button><button data-action="save-project">Guardar</button><button data-action="new-project" class="primary">Nuevo proyecto</button></div></div><div class="stack">'+state.projects.map(p=>`<section class="panel"><div class="row"><h2>${esc(p.name)}</h2><button data-edit-project="${esc(p.path)}">Editar</button><button data-project="${esc(p.path)}" ${p.path===state.activeProject?"disabled":""}>${p.path===state.activeProject?"Activo":"Seleccionar"}</button></div><p>${esc(p.path)}</p></section>`).join("")+(!state.projects.length?'<p class="muted">Crea un proyecto o abre un archivo VLF existente.</p>':"")+"</div>";
   if(state.page==="plugins")host.innerHTML='<div class="toolbar"><h1>Plugins</h1><button data-action="refresh">Actualizar</button></div><div class="stack">'+state.plugins.map(p=>`<section class="panel"><div class="row"><h2>${esc(p.name)}</h2><div class="row">${p.hasSettings?`<button data-plugin-config="${esc(p.id)}">⚙ Configurar</button>`:""}<button data-plugin-toggle="${esc(p.id)}">${p.state==="ENABLED"?"Desactivar":"Activar"}</button></div></div><p>${esc(p.description)}</p><small class="muted">${esc(p.id)} · ${esc(p.version)} · ${esc(p.state)}</small>${p.error?`<p>${esc(p.error)}</p>`:""}${p.settingsError?`<p class="error">Configuración: ${esc(p.settingsError)}</p>`:""}</section>`).join("")+(!state.plugins.length?'<p class="muted">No hay plugins instalados. Usa el CLI para instalar paquetes LCP.</p>':"")+"</div>";
   if(["projects","plugins"].includes(state.page))prepareCollection(state.page);
-  if(state.page==="settings")host.innerHTML='<div class="toolbar"><h1>Configuración general</h1><div class="row"><button data-settings-scope="program" class="primary">Programa</button><button data-settings-scope="project">Proyecto activo</button></div></div><p class="muted">Todos los ajustes, agrupados por tema. Selecciona Programa o Proyecto activo.</p><div id="settings-catalog" class="collection-list"></div>';
+  if(state.page==="settings")host.innerHTML='<div class="toolbar"><h1>Configuración general</h1><div class="row"><button data-support="appearance">Apariencia</button><button data-support="updates">Buscar actualizaciones</button><button data-settings-scope="program" class="primary">Programa</button><button data-settings-scope="project">Proyecto activo</button></div></div><p class="muted">Todos los ajustes, agrupados por tema. Selecciona Programa o Proyecto activo.</p><div id="settings-catalog" class="collection-list"></div>';
   if(state.page==="terminal")host.innerHTML='<div class="terminal"><header><strong>›_ LANCTL · CLI general</strong><span class="badge">Proceso local</span></header><pre id="terminal-output" role="log" aria-live="polite"></pre><form id="terminal-form"><label for="command">LANCTL&gt;</label><input id="command" autocomplete="off" spellcheck="false" aria-label="Entrada del CLI"><button>Enviar</button></form><small>Para sesiones SSH, contraseñas o TUI utiliza «CLI» en la barra inferior.</small></div>';
   if(state.page==="settings")generalSettings(state.settingsScope||"program").catch(error=>message(error.message,true));
 }
@@ -203,7 +203,7 @@ document.addEventListener("click",async e=>{
     if(b.dataset.settingsScope)return await generalSettings(b.dataset.settingsScope);
     if(b.dataset.page){await navigate(b.dataset.page);return;}
     if(b.dataset.launcherSettings)return await launcherSettings(b.dataset.launcherSettings);
-    if(b.dataset.launch)return message((await call("launch_gui",b.dataset.launch)).message);
+    if(b.dataset.launch){if(window.guiActivityFlush)await window.guiActivityFlush();const result=await call("launch_gui",b.dataset.launch);if(!result.closed)message(result.message);return;}
     if(b.dataset.editProject)return await editProject(b.dataset.editProject);
     if(b.dataset.project){if(!await preserveProject())return;apply(await call("use_project",b.dataset.project));render();return;}
     if(b.dataset.pluginConfig)return await configurePlugin(b.dataset.pluginConfig);
@@ -221,8 +221,6 @@ document.addEventListener("click",async e=>{
   }catch(error){message(error.message,true);}
 });
 document.addEventListener("submit",async e=>{if(e.target.id!=="terminal-form")return;e.preventDefault();const input=$("#command"),line=input.value;input.value="";try{await call("terminal_send",line);await readTerminal();}catch(error){message(error.message,true);}});
-function clock(){const now=new Date();$("#clock").dateTime=now.toISOString();$("#clock").textContent=new Intl.DateTimeFormat("es-ES",{dateStyle:"short",timeStyle:"short"}).format(now);}
-clock();setInterval(clock,30000);
 window.addEventListener("pywebviewready",()=>refresh().catch(error=>message(error.message,true)));
 
 // Reconcile shared state without replacing a form or interrupting terminal input.

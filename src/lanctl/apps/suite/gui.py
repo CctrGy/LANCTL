@@ -8,6 +8,7 @@ import sys
 from threading import Event, RLock, Thread
 
 from lanctl import __version__
+from lanctl.apps.suite.gui_support import GuiSupportMixin
 from lanctl.apps.suite.processes import (
     EmbeddedCli,
     launcher_command,
@@ -20,7 +21,7 @@ from lanctl.core.plugins.settings import PluginSettings
 from lanctl.core.resources import bundled_path
 
 
-class SuiteApi:
+class SuiteApi(GuiSupportMixin):
     def __init__(self):
         # Compatibility adapter until shared desktop project/settings UI moves out of LANIP.
         # Only explicitly forwarded methods are exported through this WebView.
@@ -44,7 +45,12 @@ class SuiteApi:
                 level=43,
                 print_output=False,
             )
-            return {"ok": False, "error": event.message, "errorId": event.error_id}
+            return {
+                "ok": False,
+                "error": event.message,
+                "errorId": event.error_id,
+                "errorDetails": event.to_dict(),
+            }
 
     def bootstrap(self):
         def operation():
@@ -368,6 +374,7 @@ class SuiteApi:
             focus_gui(Coordinator(), launcher)
             close = config.get("closeGuiOnLaunch") is True
             if close and self._desktop._window is not None:
+                self.record_activity(f"GUI de {launcher.upper()} abierta.")
                 self._desktop._closing = True
                 self._desktop._window.destroy()
             return {"message": f"GUI de {launcher.upper()} abierta.", "closed": close}

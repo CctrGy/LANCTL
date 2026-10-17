@@ -39,6 +39,7 @@ local list = clink.argmatcher()
     :addflags({
         "-h", "--help", "/?",
         "--network" .. history_value("Red CIDR"),
+        "--interface" .. history_value("IPv4 local o ID de interfaz"),
         "--database" .. file_arg,
         "--groups" .. file_arg,
         "-f" .. formats, "--format" .. formats,
@@ -505,7 +506,8 @@ end
 
 local function configure_lanrack(matcher)
     return matcher:addarg({
-        "list", "ls", "show" .. history_value("ID o nombre del rack")
+        "list", "ls", "show" .. history_value("ID o nombre del rack"),
+        "dimensions" .. clink.argmatcher():addarg({fromhistory=true, hint="ID del rack"}):addflags({"-h", "--help", "/?", "--units" .. integer_range(4,52), "--width-inches" .. values({"10","19","21","23"})}):nofiles()
     }):addflags({
         "-h", "--help", "/?", "--version", "--database" .. file_arg,
         "-tui", "--tui", "--gui", "--cli", "-cli"
@@ -609,7 +611,7 @@ local function configure_lanip(matcher)
     return matcher
         :addarg(root_commands)
         :addflags({
-            "-h", "--help", "/?", "--version", "--quiet", "--verbose", "--gui", "--cli", "-cli", "-tui", "--tui",
+            "-h", "--help", "/?", "--version", "--quiet", "--verbose", "--gui", "--first-scan", "--cli", "-cli", "-tui", "--tui",
             "-project" .. file_arg, "--project" .. file_arg
         })
         :nofiles()
@@ -635,6 +637,9 @@ for _, command in ipairs(root_commands) do
     table.insert(suite_commands, command)
 end
 local suite_launchers = {
+    "post-install" .. clink.argmatcher():addflags({"-h","--help","/?","--first-scan"}):nofiles(),
+    "setup-defaults" .. clink.argmatcher():addflags({"-h","--help","/?","--theme" .. values({"graphite","midnight","forest","violet","light"}),"--plugins" .. history_value("all, none o IDs separados por comas")}):nofiles(),
+    "completions" .. values({"install","uninstall"}),
     "backend" .. backend,
     "lanip" .. configure_lanip(clink.argmatcher()),
     "ip" .. configure_lanip(clink.argmatcher()),
@@ -650,6 +655,7 @@ end
 clink.argmatcher("lanctl", "lanctl.exe", "LANCTL.exe")
     :addarg(suite_commands)
     :addflags({ "--gui",
-        "-h", "--help", "/?", "--version", "--cli", "-cli", "-tui", "--tui", "--admin"
+        "-h", "--help", "/?", "--version", "--cli", "-cli", "-tui", "--tui", "--admin",
+        "-web", "--web", "-github", "--github", "-reference", "--reference"
     })
     :nofiles()

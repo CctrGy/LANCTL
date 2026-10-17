@@ -134,6 +134,11 @@ def build_parser(
         help="Abre la interfaz gráfica de LANIP.",
     )
     parser.add_argument(
+        "--first-scan",
+        action="store_true",
+        help="Solicita confirmación del primer escaneo al abrir la GUI; no escanea automáticamente.",
+    )
+    parser.add_argument(
         "--cli",
         "-cli",
         action="store_true",
@@ -223,6 +228,8 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
         write_log(f"COMMAND LANCTL {' '.join(arguments)}".rstrip())
         parser = build_parser(include_plugin_commands=True, program_name=program_name)
         args = parser.parse_args(arguments)
+        if args.first_scan and (not args.gui or args.command or args.cli or args.tui):
+            parser.error("--first-scan requiere --gui sin otros modos ni comandos")
         project_independent = bool(getattr(args, "project_independent", False))
         if plugins_active and (args.tui or (not args.command and not args.cli and not args.gui)):
             from lanctl.core.terminal_integration import route_tui
@@ -266,6 +273,10 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
 
             autosave_scheduler = start_autosave_scheduler()
         if args.gui:
+            if args.first_scan:
+                from lanctl.core.first_scan import request_first_scan
+
+                request_first_scan()
             from lanctl.apps.ip.interfaces.gui.desktop import run_gui
 
             return run_gui()
