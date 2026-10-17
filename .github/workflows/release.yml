@@ -19,7 +19,7 @@ env:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref == 'refs/heads/experimental-gui' }}
 
 jobs:
   prepare:
@@ -40,6 +40,11 @@ jobs:
             version="$(python -c "import runpy; print(runpy.run_path('src/lanctl/__init__.py')['__version__'])")"
             if [[ ! "$version" =~ -alpha\.[0-9]+$ ]]; then
               echo 'experimental-gui requires an alpha version' >&2
+              exit 1
+            fi
+            published_tag="$(git ls-remote --tags origin "refs/tags/v${version}")"
+            if [[ -n "$published_tag" ]]; then
+              echo 'This experimental version is already published; increment the alpha version.' >&2
               exit 1
             fi
             stable_branch=false
