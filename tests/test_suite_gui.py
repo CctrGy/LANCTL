@@ -1,5 +1,5 @@
 import json
-import subprocess
+import sys
 import time
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -160,19 +160,26 @@ def test_corrupt_plugin_preferences_are_not_treated_as_defaults(tmp_path):
 
 def test_external_cli_windows_uses_default_console_and_argv():
     with (
-        patch("lanctl.apps.suite.processes.sys.platform", "win32"),
+        patch(
+            "lanctl.apps.suite.processes.sys",
+            SimpleNamespace(platform="win32", executable=sys.executable),
+        ),
+        patch("lanctl.apps.suite.processes.subprocess.CREATE_NEW_CONSOLE", 0x10, create=True),
         patch("lanctl.apps.suite.processes.subprocess.Popen") as popen,
     ):
         open_system_cli()
     args, kwargs = popen.call_args
     assert args[0][-1] == "--cli"
     assert "shell" not in kwargs
-    assert kwargs["creationflags"] == subprocess.CREATE_NEW_CONSOLE
+    assert kwargs["creationflags"] == 0x10
 
 
 def test_external_cli_linux_uses_default_terminal():
     with (
-        patch("lanctl.apps.suite.processes.sys.platform", "linux"),
+        patch(
+            "lanctl.apps.suite.processes.sys",
+            SimpleNamespace(platform="linux", executable=sys.executable),
+        ),
         patch(
             "lanctl.apps.suite.processes.shutil.which", return_value="/usr/bin/x-terminal-emulator"
         ),
