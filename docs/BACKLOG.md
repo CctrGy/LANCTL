@@ -41,7 +41,7 @@ durante esta validación.
   desactivado, activado y verificado mediante reintentos reales de las PR 23/25.
 - [x] Igualar dependencias de CI y Release (`dev,gui`), conservar JUnit/logs
   incluso al fallar y añadir regresiones Windows Python 3.10/3.11 a CI. Las nuevas
-  definiciones requieren ejecución remota tras integrar estas fuentes.
+  definiciones pasan en CI 39070877629 sobre `3a02230`.
 - [x] Endurecer cabeceras HTTPS: tipos MIME fijos para recursos publicados y
   validación de identificadores de sesión; pruebas TLS contra inyección.
 - [x] Sustituir confianza SSH automática en dos pruebas por la clave efímera
@@ -69,15 +69,17 @@ durante esta validación.
 - [x] Corregir seis expectativas de rutas que fallaban en Windows CI con
   alias 8.3 (`RUNNER~1`). Reproducidas localmente con una ruta corta real:
   seis fallos antes, 16 pruebas correctas después; contrato canónico conservado.
-- [ ] Completar CI y validación remota de paquetes del candidato de la PR 26;
-  el primer job Linux detectó el fixture anterior. Sin publicación automática
-  durante la validación manual del workflow de distribución.
-- [ ] Compilar/certificar el candidato actualizado con GUI-DESIGN. El Release
-  GitHub 39052546460 demuestra Windows/Linux amd64/arm64 para `4ca563d`, no
-  para las modificaciones posteriores. Firmas oficiales y REF-P34-runtime
-  conservan sus bloqueos explícitos.
+- [x] Completar CI de la PR 26 sobre `3a02230`: Linux y Windows Python
+  3.10/3.11 correctos en 39070877629, con navegador en Windows.
+- [ ] Completar la validación de paquetes 39070883667 sobre ese mismo código;
+  el workflow manual no publica releases ni tags.
+- [x] Compilar los seis launchers y Setup actualizado: 398 entradas,
+  recursos/módulos y parser comprobados; Inno termina con código 0.
+- [ ] Completar la revisión visual nativa final: interrumpida con Escape por
+  el usuario en GUI-DESIGN; no se reanuda ni se marca como aprobada.
+  Firmas oficiales y REF-P34-runtime conservan sus bloqueos explícitos.
 
-Estado revisado el **16/10/2026**. Los puntos marcados tienen corrección o
+Estado consolidado el **17/10/2026**; se conserva debajo el historial del 16/10. Los puntos marcados tienen corrección o
 verificación local con evidencia en [la matriz de comprobación](BACKLOG-VERIFICATION.md).
 La validación de plataformas externas sigue separada; las marcas no equivalen
 a certificar instaladores ni sistemas que no se han ejecutado.
@@ -550,6 +552,9 @@ paquete sin firma por marcar sus permisos.
   «Realizar un primer escaneo». Arrancar la GUI con el usuario normal, mostrar la
   red detectada y permitir seleccionar interfaz/rango cuando haya varias redes;
   mostrar el progreso del escaneo en la GUI y ejecutarlo solo si se ha elegido.
+  **Implementado y probado:** selector con máscara real, origen ICMP/ARP,
+  progreso y reintento conservando la petición tras fallo. Queda completar
+  REF-P47-interface y verificar varias NIC reales.
 - [ ] **P48.** Corregir la distribución del completado Clink: incluir
   `packaging/clink/lanctl.lua` y sus instrucciones en el instalador Windows y en
   el ZIP portable. Detectar Clink y registrar automáticamente la carpeta de
@@ -559,6 +564,9 @@ paquete sin firma por marcar sus permisos.
   desinstalar, sin afectar otras carpetas de Clink. Verificar el contenido de
   ambos paquetes y el completado real de los seis ejecutables en CMD con Clink;
   mantener la validación del Lua frente a los parsers de la versión distribuida.
+  **Implementado y probado:** CMD/Clink 1.9.34 real, seis launchers, registro
+  repetido, retirada y rutas con espacios/acentos; corregida decodificación UTF-8.
+  Resta la desinstalación elevada realizada desde otra cuenta.
 
 ## Monitorización simultánea con LANIP — 16/10/2026
 

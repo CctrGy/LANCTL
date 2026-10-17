@@ -1052,6 +1052,7 @@
 0eBD32CD7D | 41 | src/lanctl/apps/monitor/sessions.py | 27 | src.lanctl.apps.monitor.sessions.SessionManager.start | raise
 0eBD40AD15 | 44 | src/lanctl/core/session.py | 326 | LANCTL.Core.Coordination.Startup | diagnostic
 0eBD5AD32D | 43 | src/lanctl/core/history.py | 243 | src.lanctl.core.history.HistoryService.__init__ | raise
+0eBE2F312A | 36 | src/lanctl/apps/access/remote_setup.py | 190 | src.lanctl.apps.access.remote_setup.run_remote_setup | raise
 0eBE5320C7 | 33 | src/lanctl/apps/wire/gui_service.py | 141 | src.lanctl.apps.wire.gui_service.WireGuiService.update | raise
 0eBE55CEC7 | 42 | src/lanctl/core/coordination.py | 234 | src.lanctl.core.coordination.Coordinator.enqueue | raise
 0eBE5CA940 | 36 | src/lanctl/apps/ip/infrastructure/terminals/tr064.py | 29 | src.lanctl.apps.ip.infrastructure.terminals.tr064.parse_call | raise

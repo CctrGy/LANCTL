@@ -186,6 +186,8 @@ class RemoteSetupApi:
 
 
 def run_remote_setup():
+    if os.name != "nt":
+        raise ValueError("Este asistente requiere LANCTL instalado en Windows")
     import webview
 
     from lanctl.apps.suite.window_style import webview_icon_path

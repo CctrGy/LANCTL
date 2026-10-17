@@ -116,3 +116,18 @@ bien». La herramienta no pudo capturar la ventana elevada, por lo que se
 registra esa revisión humana, sin atribuirla a una captura automatizada.
 P45 queda comprobada. La siguiente compilación incluirá además la corrección
 posterior de registro Clink repetido (P48) entregada por AUDITOR.
+
+## Corte P45/P48/P71.4 y límite de la comprobación visual
+
+La suite final de AUDITOR pasa 1.269 pruebas, 645 subpruebas y una omisión,
+con cobertura 69,9154 %. Se reconstruyen los seis ejecutables y se comprueban
+398 entradas de construcción sin cambios, 32 recursos y 17 módulos compartidos
+por binario, además de `lanaccess remote-setup --help`.
+
+El usuario interrumpe con Escape el control de ventanas de la última prueba
+nativa. GUI-DESIGN detiene esa operación y retira únicamente sus procesos de
+prueba. **El smoke nativo final queda incompleto**, incluido el asistente; no
+se atribuye éxito a ventanas que solo llegaron a arrancar. No se crean cuentas
+reales ni se automatiza UAC. La prueba de creación de cuenta con API real y
+almacén temporal sí pasó en Edge, por separado. La certificación remota de los
+paquetes continúa en runners GitHub sin reanudar el control local de interfaz.

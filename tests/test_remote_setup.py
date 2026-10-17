@@ -215,3 +215,10 @@ def test_installed_scope_failure_is_displayed_in_wizard_instead_of_hidden_consol
     assert not response["ok"]
     assert "almacén personalizado" in response["error"]
     assert response["errorId"]
+
+
+def test_windows_only_assistant_rejects_other_platform_before_loading_webview(monkeypatch):
+    monkeypatch.setattr(setup, "os", SimpleNamespace(name="posix"))
+    monkeypatch.setitem(setup.sys.modules, "webview", None)
+    with pytest.raises(ValueError, match="Windows"):
+        setup.run_remote_setup()

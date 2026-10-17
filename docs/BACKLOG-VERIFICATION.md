@@ -1141,3 +1141,45 @@ Ruff/formato: 490 archivos; Bandit con el mismo nivel `-ll` de CI, pip check,
 pip-audit, compileall, catálogo (1.434 puntos), referencias CLI/web, higiene y
 `git diff --check` correctos. Se congela este código para reconstrucción local
 y CI/distribución de la PR 26; sus resultados remotos se añaden por commit.
+
+El candidato `3a02230` supera el job Linux de
+[CI 39070877629](https://github.com/CctrGy/LANCTL/actions/runs/39070877629):
+1.195 pruebas, 54 omisiones de plataforma/navegador y 21 heredadas excluidas
+por la configuración ordinaria; estas últimas sí están incluidas en la suite
+local completa. Cobertura Linux 68,4067 %. Ruff, referencias, catálogo, Bandit,
+higiene y dependencias pasan en el runner.
+
+El análisis CodeQL completo de la rama,
+[39070884827](https://github.com/CctrGy/LANCTL/actions/runs/39070884827), produce
+el análisis 1973896053 sobre `3a02230`, 43 reglas, sin errores ni advertencias
+del motor. Conserva exactamente los diez resultados previamente inspeccionados
+sobre rutas, fechas y metadatos; no incorpora resultados nuevos con P48/P71.4.
+No se han silenciado ni descartado alertas en GitHub. Esto no declara cerradas
+las alertas de `main` antes de integrar la corrección y analizar esa rama.
+
+La matriz completa de CI 39070877629 termina correctamente para `3a02230`:
+Linux y Windows Python 3.10/3.11. Las regresiones de navegador están habilitadas
+en ambos jobs Windows, incluidas las del asistente de cuenta remota.
+
+El Setup local se reconstruye sin ejecutar el instalador: Inno retorna 0 y
+produce `dist/gui-verified/LANCTL-0.3.4-alpha.1-gui-setup.exe`, 135.699.318 bytes,
+SHA-256 `54b71767a472d4d0da8fb7fd64ba1ce289a749f5505dede980e0280e6fd936e5`.
+Se verifican las 398 entradas del manifest congelado; los seis ejecutables
+contienen los 32 recursos y 17 módulos esperados y el parser `remote-setup`.
+La última prueba nativa de ventanas se interrumpe por Escape del usuario y
+queda pendiente; no se declara éxito por el mero arranque. Las cuentas reales
+y el control UAC no se modifican. El artefacto local es experimental y procede
+del checkout compartido; los paquetes de certificación se generan desde el
+commit limpio de la PR en los runners de GitHub.
+
+### Último caso de plataforma del asistente
+
+La revisión posterior encuentra un fallo en `remote-setup` fuera de Windows:
+intentaba importar WebView antes de rechazar la plataforma, por lo que una
+instalación Linux sin GUI terminaba con `ModuleNotFoundError`. Se reproduce
+con una prueba que impide cargar WebView; después se rechaza con `ValueError`
+antes de importar la interfaz, conservando el manejo CLI existente. Cambian
+únicamente dos líneas del adaptador, una regresión y el catálogo (1.435 puntos).
+Pasan 35 pruebas enfocadas, Ruff, formato, referencias e higiene. Se repiten
+CI y distribución sobre esta corrección; los resultados de `3a02230` anteriores
+se conservan como evidencia del corte previo, sin atribuirlos al nuevo commit.
