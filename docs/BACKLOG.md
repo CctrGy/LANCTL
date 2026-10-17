@@ -53,10 +53,18 @@ durante esta validación.
 - [x] Comparación integral Coverage 7.10.6/7.16.2 sobre fuentes idénticas:
   ambas pasan 1.208 pruebas y 645 subpruebas, con cobertura idéntica 69,3568 %
   y umbral conservado del 60 %. Se adopta 7.16.2 (P67).
-- [ ] Verificación final tras corregir el reintento del primer escaneo GUI.
-- [ ] Reejecutar CodeQL sobre el candidato e identificar los avisos restantes:
-  13 abiertos en `main`, varios sobre rutas/metadatos; no se han descartado
-  remotamente ni se considera que un job verde cierre esos avisos.
+- [x] Verificación local final tras corregir el reintento del primer escaneo:
+  1.212 pruebas activas, 21 de compatibilidad heredada y 645 subpruebas pasan;
+  un caso POSIX omitido en Windows. Cobertura 69,4720 %, umbral 60 %.
+- [x] Reejecutar CodeQL sobre el candidato e inspeccionar el SARIF: el resultado
+  de la PR 26 conserva #6 sobre `passwordRotatedAt`, una fecha, no el hash.
+  No se ocultan alertas; los avisos de `main` no se consideran cerrados antes
+  de integrar y analizar esa rama.
+- [x] Corregir el fallo exclusivo de CI Linux en la simulación de Windows:
+  la prueba de interfaces ahora suministra `CREATE_NO_WINDOW` y verifica flags.
+- [ ] Completar CI y validación remota de paquetes del candidato de la PR 26;
+  el primer job Linux detectó el fixture anterior. Sin publicación automática
+  durante la validación manual del workflow de distribución.
 - [ ] Compilar/certificar el candidato actualizado con GUI-DESIGN. El Release
   GitHub 39052546460 demuestra Windows/Linux amd64/arm64 para `4ca563d`, no
   para las modificaciones posteriores. Firmas oficiales y REF-P34-runtime

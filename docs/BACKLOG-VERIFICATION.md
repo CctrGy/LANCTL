@@ -966,13 +966,46 @@ clase del hallazgo, probado sin volcar el valor. Los listados del almacén usan
 proyecciones explícitas de metadatos, verificadas con contraseñas centinela.
 
 #9 deja de depender de MIME obtenido del sistema; 5/13 ahora usan host keys
-conocidas. No se ha ejecutado CodeQL sobre estas fuentes ni se han descartado
-alertas a distancia. La revisión de las ramas del comando `access` detectó una
+conocidas. La revisión de las ramas del comando `access` detectó una
 fuga real: `user add` serializaba el hash de contraseña. La regresión reproduce
 el fallo anterior y verifica la proyección segura. El código de emparejamiento
-solo se emite bajo su petición explícita. Sigue pendiente reconciliar los avisos
-con el análisis del candidato. No se afirma
-que los 13 avisos estén cerrados ni que todo aviso sea un falso positivo.
+solo se emite bajo su petición explícita.
+
+Se creó la [PR 26 en borrador](https://github.com/CctrGy/LANCTL/pull/26), desde
+`codex/stable-readiness-20261017`, con copia aislada y comprobada de las fuentes;
+`main`, `experimental-gui`, tags y ramas estables no se modificaron. El
+[análisis de seguridad del candidato](https://github.com/CctrGy/LANCTL/actions/runs/39068885618)
+completa dependency-review y CodeQL correctamente. Se inspeccionaron los SARIF
+de `main` (1952995019) y de la PR (1973832502): en el candidato figura #6 con
+origen `user.passwordRotatedAt`, una fecha opcional de metadatos. El hash real
+ya no sale; el JSON conserva su clave como string vacío. No se cambia el
+contrato de fechas ni se renombra código para esquivar el analizador.
+
+El SARIF histórico confirma que #10/#12/#16/#17 siguen IDs públicos y campos
+de metadatos desde el documento descifrado, no `password`; #14 sigue las
+etiquetas de patrones del detector, no los tokens encontrados; #6/#7/#8/#15/#18
+seguían rutas devueltas por `secret_root`. Las regresiones con secretos centinela
+comprueban la separación. No se han descartado alertas remotamente: los 13 de
+`main` conservan el estado correspondiente a su propio código hasta integración.
+
+### Verificación final local y primer CI del candidato
+
+Con Coverage 7.16.2 y navegador Edge: **1.212 pruebas, 645 subpruebas correctas**
+en 185,61 s, una omisión POSIX en Windows y 21 heredadas excluidas por defecto.
+Estas últimas se ejecutaron también explícitamente: **21/21 correctas** en
+1,82 s. Total: **1.233 pruebas correctas**. Cobertura 69,4720 %, umbral 60 %.
+Ruff/formato (484 archivos), catálogo (1.420 puntos), referencias e higiene
+correctos. No cambian los archivos de contratos/IDs Core ni las firmas públicas
+revisadas de acceso y HTTPS frente a `main` (`ccd728b`).
+
+El primer [CI remoto](https://github.com/CctrGy/LANCTL/actions/runs/39068885619)
+detectó un fallo de fixture exclusivo de Linux: la prueba simulaba Windows sin
+proporcionar `subprocess.CREATE_NO_WINDOW`. Se corrige únicamente
+`tests/test_network_interfaces.py`, manteniendo la implementación nativa. Sus
+16 pruebas pasan también al eliminar esa constante del módulo local antes de
+ejecutarlas; ahora se comprueba el flag Windows y el cero Linux. No requiere
+recompilar los binarios. La validación remota posterior queda registrada al
+terminar; no se equipara el resultado local a un CI Linux correcto.
 
 El supuesto bloqueo de cierre LANIP fue un fallo del harness: usaba proyectos
 reales y pipes sin consumir. GUI-DESIGN comprobó cierre nativo y código de salida
