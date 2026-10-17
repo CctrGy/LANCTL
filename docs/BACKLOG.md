@@ -23,11 +23,44 @@ de verificación, conservando el historial anterior.
 Resultado del segundo ciclo (fuentes): mitigaciones de P34 aplicadas y verificadas
 con 119 pruebas; P47 incorpora máscara real y origen ICMP/ARP, con 132 pruebas
 y 10 subpruebas. Integración visual P34/P47 en curso en GUI-DESIGN. P68 revisada:
-Ruff 0.17.0 pasa lint/formato y queda fijado en `pyproject.toml`; P67 espera la
-comparación integral con ambas versiones de Coverage. No cambian IDs públicos
+Ruff 0.17.0 pasa lint/formato y queda fijado en `pyproject.toml`; P67 supera la
+comparación integral y fija Coverage 7.16.2. No cambian IDs públicos
 ni versión de LANCTL. Los detalles y límites figuran en la matriz de verificación.
-P69 fue incorporada desde HELP durante este ciclo por una petición de anotación;
-se conserva como tarea nueva, todavía sin implementación.
+P69–P73 fueron incorporadas desde HELP durante este ciclo por peticiones de
+anotación; se conservan como tareas nuevas, todavía sin implementación.
+
+### Estabilización y comprobaciones GitHub — 17/10/2026
+
+El usuario solicita corregir fallos persistentes/intermitentes y preparar la
+próxima estable. Se anteponen los fallos reproducibles de seguridad y CI a las
+nuevas opciones del instalador. No se cambia la versión ni se publica una estable
+durante esta validación.
+
+- [x] Resolver el fallo repetido de `dependency-review`: grafo de dependencias
+  desactivado, activado y verificado mediante reintentos reales de las PR 23/25.
+- [x] Igualar dependencias de CI y Release (`dev,gui`), conservar JUnit/logs
+  incluso al fallar y añadir regresiones Windows Python 3.10/3.11 a CI. Las nuevas
+  definiciones requieren ejecución remota tras integrar estas fuentes.
+- [x] Endurecer cabeceras HTTPS: tipos MIME fijos para recursos publicados y
+  validación de identificadores de sesión; pruebas TLS contra inyección.
+- [x] Sustituir confianza SSH automática en dos pruebas por la clave efímera
+  conocida; verificar salidas de metadatos/TUI/higiene sin contraseñas.
+- [x] Corregir fuga del hash de contraseña al crear un usuario remoto desde
+  CLI: proyección explícita de metadatos, clave `passwordHash` vacía por
+  compatibilidad y nueva señal `passwordConfigured`; autenticación conservada.
+- [x] Corregir nombre y selección de última versión del workflow estable,
+  manteniendo el canal experimental. No se ha publicado ni movido ningún tag.
+- [x] Comparación integral Coverage 7.10.6/7.16.2 sobre fuentes idénticas:
+  ambas pasan 1.208 pruebas y 645 subpruebas, con cobertura idéntica 69,3568 %
+  y umbral conservado del 60 %. Se adopta 7.16.2 (P67).
+- [ ] Verificación final tras corregir el reintento del primer escaneo GUI.
+- [ ] Reejecutar CodeQL sobre el candidato e identificar los avisos restantes:
+  13 abiertos en `main`, varios sobre rutas/metadatos; no se han descartado
+  remotamente ni se considera que un job verde cierre esos avisos.
+- [ ] Compilar/certificar el candidato actualizado con GUI-DESIGN. El Release
+  GitHub 39052546460 demuestra Windows/Linux amd64/arm64 para `4ca563d`, no
+  para las modificaciones posteriores. Firmas oficiales y REF-P34-runtime
+  conservan sus bloqueos explícitos.
 
 Estado revisado el **16/10/2026**. Los puntos marcados tienen corrección o
 verificación local con evidencia en [la matriz de comprobación](BACKLOG-VERIFICATION.md).
@@ -467,10 +500,21 @@ paquete sin firma por marcar sus permisos.
 
 ## Configuración inicial del instalador — 16/10/2026
 
-- [x] **P45.** Añadir una selección de cinco temas durante la instalación, con
+- [ ] **P45.** Añadir una selección de cinco temas durante la instalación, con
   nombre y vista previa. Guardar la elección mediante la configuración compartida
   del programa y conservar el tema existente en actualizaciones, salvo cambio
   explícito del usuario.
+  **Reabierta por reporte visual — 17/10/2026.** En el instalador
+  «LANCTL GUI experimental (NO ESTABLE) version 0.3.4-alpha.1», página
+  «Apariencia inicial», no se ven las imágenes de ejemplo de los temas.
+  La captura aportada muestra las cinco opciones y «Bosque» seleccionado,
+  pero el área de vista previa aparece vacía, con el texto «LANCTL · Vista
+  previa de fondo y acento» apenas legible. Resultado esperado: mostrar una
+  imagen representativa del aspecto del programa y actualizarla al cambiar
+  de tema. Pendiente de diagnóstico: comprobar generación, inclusión y carga
+  de los recursos en el instalador compilado, así como contraste y renderizado
+  del control. Validar visualmente las cinco opciones en el Setup distribuido;
+  la implementación en fuentes no cierra este fallo observado en el instalador.
 - [x] **P46.** Permitir elegir si se instalan los plugins predeterminados del
   programa, con selección individual opcional. Adaptar el empaquetado y el primer
   inicio para respetar la elección, distinguir los recursos necesarios (como el
@@ -759,7 +803,7 @@ versiones de LANCTL. En la revisión del 17/10/2026 ambas pull requests están
 abiertas y pendientes de integración; cada una modifica únicamente su versión
 fijada en el grupo opcional `dev` de `pyproject.toml`.
 
-- [ ] **P67.** Revisar e integrar, si supera las comprobaciones, la actualización
+- [x] **P67.** Revisar e integrar, si supera las comprobaciones, la actualización
   de **Coverage 7.10.6 → 7.16.2**, propuesta en la rama
   `dependabot/pip/coverage-7.16.2` mediante la
   [PR #23](https://github.com/CctrGy/LANCTL/pull/23). Coverage mide las líneas y
@@ -776,9 +820,12 @@ fijada en el grupo opcional `dev` de `pyproject.toml`.
   evaluar cualquier modificación necesaria conservando la compatibilidad con
   las versiones Python admitidas por el proyecto.
 
-P68 validada e incorporada a las fuentes de la rama de trabajo: Python 3.10,
-reglas y umbral conservados; 481 archivos con formato correcto. La PR remota
-permanece sin fusionar y la integración en `main` sigue su revisión habitual.
+P67/P68 validadas e incorporadas a las fuentes de la rama de trabajo: Python
+3.10, reglas y umbral conservados; 483 archivos con formato correcto. Las dos
+suites de Coverage pasan 1.208 pruebas y 645 subpruebas cada una, con un caso
+POSIX omitido en Windows y 21 pruebas GUI heredadas excluidas por la política
+existente. Ambas miden 69,3568 %: mismos contadores de líneas y ramas. Las PR
+remotas permanecen sin fusionar y la integración en `main` sigue su revisión.
 
 Son herramientas de desarrollo y CI: estas propuestas no añaden funciones al
 programa, no representan versiones instalables alternativas y no cambian por sí
@@ -826,3 +873,110 @@ LANRACK y LANWIRE sin duplicar inventarios.
   Verificar la matriz de lectura/escritura GUI/TUI/CLI, los ajustes comunes,
   accesos directos al backend, permisos administrativos y ausencia de variables
   internas; actualizar ayuda y referencias si cambia el contrato de comandos.
+
+## Explicación del servicio LANMON en el instalador — 17/10/2026
+
+- [ ] **P70.** Sustituir el texto «Monitor service» por **«Servicio de
+  monitorización en segundo plano (LANMON)»** en la selección de componentes
+  del instalador. Añadir una explicación visible en esa pantalla: instala
+  LANMON como servicio de Windows para ejecutar las comprobaciones de
+  monitorización configuradas en segundo plano, sin mantener abierta la GUI
+  ni una terminal. Aclarar que es opcional y que desmarcarlo no elimina LANMON
+  ni impide utilizarlo de forma interactiva. Incluir el servicio LANMON entre
+  los componentes marcados por defecto al seleccionar el tipo de instalación
+  **Standard**, manteniendo la posibilidad de desmarcarlo en la selección
+  personalizada. Actualmente el componente `monitor` solo declara los tipos
+  `monitor custom`; corregir su pertenencia para incluir también `standard`
+  y comprobar la selección inicial y los cambios del desplegable de tipos.
+  Comprobar que el nombre completo
+  y la explicación sean legibles sin recortes en el instalador; describir
+  fielmente el comportamiento real del servicio. El cambio de selección
+  predeterminada no modifica el funcionamiento del motor de monitorización.
+
+## Asistente de instalación por pasos — 17/10/2026
+
+- [ ] **P71.** Reorganizar las opciones del instalador en cinco páginas de
+  configuración, respetando este orden y coordinando P45–P47 y P70. Son pasos
+  de opciones dentro del asistente; conservar las pantallas necesarias de
+  destino, progreso y finalización sin repetir selecciones.
+
+  1. **Integración y segundo plano:** casillas para añadir LANCTL al PATH y
+     «Servicio de monitorización en segundo plano (LANMON)». Explicación breve
+     del PATH y más detallada del servicio, su funcionamiento sin ventanas y
+     su carácter opcional. Mantener LANMON seleccionado en Standard según P70.
+  2. **Plugins incluidos:** selección individual de los complementos distribuidos
+     por el autor de LANCTL, con selección de todos o ninguno y descripción
+     breve. Instalar un plugin no debe omitir comprobaciones de firma, confianza
+     ni permisos; reutilizar P46 sin volver a marcarlo como no implementado.
+  3. **Tema general GUI:** elegir uno de los cinco temas de P45, con nombre y
+     vista previa. Aplicar la selección a la estética general de todas las
+     ventanas GUI de la suite mediante el contrato compartido, preservándola
+     al actualizar. No trasladar preferencias visuales GUI a CLI/TUI.
+  4. **Acceso remoto, solo en instalación avanzada:** permitir activar SSH y/o
+     WEB-GUI y crear el usuario inicial y sus credenciales de acceso, con
+     confirmación de contraseña y validación mediante servicios de LANACCESS.
+     Mantener estos accesos desactivados salvo elección explícita. Permitir
+     gestionar después varios usuarios con credenciales propias, no una única
+     contraseña compartida. No guardar secretos en logs, argumentos de proceso
+     ni respuestas persistentes del instalador; conservar usuarios existentes
+     durante actualizaciones. No confundir estas cuentas con credenciales de
+     dispositivos del inventario. Omitir la página en el recorrido normal.
+  5. **Accesos directos:** cuadrícula con filas LANCTL, LANIP, LANWIRE, LANRACK,
+     LANACCESS y LANMON, y columnas Escritorio y Barra de tareas de Windows.
+     Selección independiente por aplicación y destino. Verificar los mecanismos
+     oficiales de anclaje y su disponibilidad en las versiones de Windows
+     admitidas; cuando requieran intervención del usuario, solicitar el anclaje
+     o proporcionar la acción guiada, sin prometer un anclaje automático ni
+     mostrar éxito si Windows no lo ha confirmado. Mantener separadas barra
+     de tareas y menú Inicio.
+
+  Al finalizar, conservar las opciones de abrir LANIP y realizar el primer
+  escaneo de P47. Verificar avanzar/retroceder sin perder elecciones, recorrido
+  estándar y avanzado, actualización conservando preferencias y correspondencia
+  entre lo elegido y lo realmente instalado/configurado. Esta entrada define
+  el flujo pendiente; no supone que las nuevas páginas estén implementadas.
+
+## Desinstalación completa de LANCTL — 17/10/2026
+
+- [ ] **P72.** Hacer que la desinstalación elimine los componentes y datos
+  propios de LANCTL, incluida la carpeta **Documentos/LanCTL** con sus proyectos
+  y archivos, además de ejecutables, plugins, preferencias, configuración,
+  bases, credenciales, registros, cachés, temporales y copias de seguridad
+  gestionadas por la aplicación. Mostrar en el desinstalador que la eliminación
+  completa incluye proyectos y credenciales y no conserva datos para reinstalar.
+  Resolver Documentos mediante la carpeta conocida de Windows, contemplando
+  redirección a OneDrive y ubicaciones heredadas. Inventariar también los datos
+  de usuario y servicio en ProgramData, LocalAppData y otras rutas propias
+  realmente utilizadas, sin asumir que todas pertenecen a la cuenta elevada.
+  Detener y retirar servicios y procesos de LANCTL; eliminar sus accesos
+  directos, entrada propia del PATH, registro Clink, reglas de firewall y
+  registros del sistema creados por la instalación. Coordinar con P48 y P71.
+  Utilizar un inventario de instalación y validar cada ruta absoluta antes de
+  borrar recursivamente; no seguir enlaces o redirecciones fuera del destino
+  previsto ni borrar carpetas compartidas o archivos ajenos por su nombre.
+  Las ubicaciones personalizadas requieren identificar los recursos propios,
+  sin vaciar indiscriminadamente el directorio elegido por el usuario.
+  Contemplar errores de permisos y archivos bloqueados y comunicar cualquier
+  resto que no se haya podido retirar. No prometer borrar copias externas,
+  históricos de Windows/OneDrive o datos de otras cuentas sin acceso autorizado.
+  Separar desinstalación definitiva de actualización: actualizar debe conservar
+  los datos y preferencias existentes. Verificar instalación/desinstalación y
+  reinstalación limpia, carpetas heredadas, servicio, cuenta distinta y rutas
+  personalizadas, comprobando ausencia de restos propios y conservación de
+  contenido ajeno.
+
+## Inicio gráfico sin consola adicional — 17/10/2026
+
+- [ ] **P73.** Corregir el arranque de las GUI de LANCTL y sus launchers desde
+  los accesos directos para que no aparezca una terminal adicional del backend,
+  ni permanezca visible ni parpadee durante el inicio. Revisar el empaquetado
+  Windows y los destinos de los accesos del menú Inicio, escritorio y barra
+  de tareas, coordinándolo con P71. Conservar el funcionamiento de CLI/TUI,
+  entrada/salida estándar, redirecciones y códigos de salida; no desactivar
+  indiscriminadamente la consola de todos los ejecutables. Tampoco ocultar o
+  cerrar una terminal existente del usuario al invocar un modo gráfico desde
+  ella. Mantener el registro de errores y logs compartidos y su consulta en
+  LANMON, incluidos los fallos de arranque gráfico; ofrecer información útil
+  si la GUI no llega a abrirse. Verificar los seis launchers en instalación
+  y portable, apertura desde accesos y desde terminal, lanzamiento de otras
+  GUI desde LANCTL y apertura explícita de CLI/TUI y LANMON desde la GUI.

@@ -70,7 +70,10 @@ class SuiteApi(GuiSupportMixin):
     def runtime_status(self):
         from lanctl.core.coordination import Coordinator
 
-        return self._respond("RuntimeStatus", lambda: {"sessions": Coordinator().sessions()})
+        return self._respond(
+            "RuntimeStatus",
+            lambda: {"sessions": Coordinator().sessions(), **self._plugin_payload()},
+        )
 
     def _plugin_payload(self):
         manager = get_plugin_manager()
@@ -91,6 +94,7 @@ class SuiteApi(GuiSupportMixin):
                     "granted": sorted(p.granted),
                     "trusted": p.trusted,
                     "runtime": p.manifest.runtime,
+                    "runtimeStatus": manager.runtime_status(p.manifest.plugin_id),
                     "error": p.error,
                     "publisherTrusted": manager.publishers.is_trusted(p.signature),
                     **self._configuration_status(p),

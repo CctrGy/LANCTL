@@ -276,6 +276,12 @@
 .first-scan-error {
   color: var(--color-danger);
 }
+.panel .plugin-runtime-warning {
+  border-left: 3px solid var(--color-warning);
+  padding: 8px 12px;
+  color: var(--color-text);
+  background: var(--color-background);
+}
 .statusbar {
   height: auto;
   min-height: 32px;

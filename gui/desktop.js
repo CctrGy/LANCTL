@@ -145,7 +145,7 @@ window.addEventListener("pywebviewready", () => {
   desktopReady = true;
   replaceHandler("#project-save","click",async()=>{
     setBusy(true,"Guardando proyecto…");
-    try {await commitEditor(); const payload=await call("save_project"); renderProjects(payload); renderInventory(payload); message(payload.message);}
+    try {await commitEditor(); const payload=await call("save_project"); renderProjects(payload); renderInventory(payload);message(payload.message);}
     catch(error){message(error.message,true);} finally{setBusy(false);}
   });
   replaceHandler("#save-device","click",async()=>{
@@ -185,7 +185,7 @@ window.addEventListener("pywebviewready", () => {
       try {const status=await call("scan_status"); $("#scan-progress").value=100*status.current/Math.max(1,status.total);}
       catch(error) { message(error.message,true); }
     },500);
-    try {const payload=await call("scan_network",$("#scan-profile").value); renderInventory(payload); message(payload.message);}
+    try {const target=window.lanipScanTarget;const payload=await call("scan_network",$("#scan-profile").value,...(target?[target.source,target.network]:[])); renderInventory(payload);window.lanipScanCompleted?.(); message(payload.message);}
     catch(error) {message(error.message,true);}
     finally {clearInterval(poll); $("#cancel-scan").hidden=true; $("#scan-progress").hidden=true; setBusy(false);}
   });

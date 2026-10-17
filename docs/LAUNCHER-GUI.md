@@ -233,10 +233,13 @@ para revisión; una altura inválida no se convierte en una elevación inventada
 Los puertos de las skins siguen siendo exclusivamente decorativos.
 
 La solicitud de primer escaneo del instalador abre una confirmación editable
-en LANIP. El rango sugerido /24 se identifica como estimado cuando corresponde.
-Cancelar no escanea; confirmar guarda el CIDR y usa el progreso/cancelación de
-la GUI. La selección real de interfaz requiere adaptar los transportes de
-sondeo y sigue pendiente: esta ventana no ofrece un selector ficticio.
+en LANIP con las interfaces IPv4 disponibles y su máscara real. Se confirma
+adaptador, CIDR y perfil antes de sondear. El modo de origen seleccionado usa
+ICMP/ARP y omite DNS y descubridores externos con un aviso; no atribuye ese
+enlace a transportes todavía no adaptados. Sin interfaz válida no inicia ni
+descarta la solicitud. Un escaneo fallido conserva la petición para reintentar.
+El botón Red de escaneo permite cambiar la selección o recuperar las rutas
+habituales del sistema. La selección se conserva solo en la ventana abierta.
 
 Estos adaptadores son exclusivos del escritorio local. El frontend remoto
 conserva su superficie restringida y no obtiene métodos nativos adicionales.

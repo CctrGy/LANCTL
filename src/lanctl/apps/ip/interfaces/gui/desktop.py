@@ -272,15 +272,33 @@ class DesktopApi(GuiSupportMixin, GuiApi):
         finally:
             self._lock.release()
 
-    def scan_network(self, profile="normal"):
+    def scan_network(self, profile="normal", source=None, network=None):
         if not self._lock.acquire(blocking=False):
             return {"ok": False, "error": "Hay una operación en curso."}
         try:
+            if source is not None or network is not None:
+                from lanctl.core.network_interfaces import select_interface
+
+                if not isinstance(network, str) or not network.strip():
+                    raise ValueError("Confirma el rango de la interfaz seleccionada")
+                selected = select_interface(source, network)
+                source = selected["id"]
             self._scan_progress = DesktopProgress()
             self._running.set()
             self._activity.clear()
             self._response_ms.clear()
-            return super().scan_network(profile)
+            response = self._scan_with_target(profile, source, network)
+            if response.get("ok") and source is not None:
+                from lanctl.core.first_scan import consume_request
+
+                consume_request()
+            return response
+        except (ValueError, OSError) as error:
+
+            def fail(failure=error):
+                raise failure
+
+            return self._respond(fail)
         finally:
             self._running.clear()
             self._lock.release()
@@ -290,19 +308,33 @@ class DesktopApi(GuiSupportMixin, GuiApi):
 
     def first_scan_options(self):
         def options():
-            import ipaddress
-
-            from lanctl.core.first_scan import consume_request, scan_choices
+            from lanctl.core.first_scan import scan_choices
 
             result = scan_choices()
-            result["requested"] = consume_request()
             result["localIp"] = self._local_ip
-            if not result["range"] and self._local_ip:
-                result["range"] = str(ipaddress.ip_network(f"{self._local_ip}/24", strict=False))
-                result["rangeEstimated"] = True
             return result
 
         return self._respond(options)
+
+    def scan_targets(self):
+        def options():
+            from lanctl.core.first_scan import scan_choices
+            from lanctl.core.network_interfaces import ipv4_interfaces
+
+            result = scan_choices()
+            if not result["requested"]:
+                result["networks"] = ipv4_interfaces()
+                result["interfaceSelectionAvailable"] = bool(result["networks"])
+            result["routing"] = "selected-source" if result["networks"] else "unavailable"
+            result["localIp"] = self._local_ip
+            return result
+
+        return self._respond(options)
+
+    def dismiss_first_scan(self):
+        from lanctl.core.first_scan import consume_request
+
+        return self._respond(lambda: {"dismissed": consume_request()})
 
     def cancel_scan(self):
         self._scan_progress.stop.set()

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-import mimetypes
+import re
 import ssl
 import threading
 import time
@@ -29,6 +29,14 @@ SECURITY_HEADERS = {
 }
 COOKIE_ATTRIBUTES = "Secure; HttpOnly; SameSite=Strict; Path=/"
 MAX_BODY = 64 * 1024
+STATIC_CONTENT_TYPES = {".html": "text/html", ".js": "application/javascript", ".css": "text/css"}
+
+
+def _session_cookie(identifier):
+    """Keep opaque session identifiers inside one cookie/header value."""
+    if not isinstance(identifier, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", identifier):
+        raise ValueError("identificador de sesión HTTP no válido")
+    return f"lanctl_session={identifier}; {COOKIE_ATTRIBUTES}"
 
 
 class HttpsCapability:
@@ -161,7 +169,9 @@ class HttpsAccessServer:
                     body = path.read_bytes()
                 except OSError:
                     return self._send(404, {"error": "not found"})
-                content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+                # This server exposes a fixed set of bundled assets. Do not let
+                # OS MIME registrations supply unvalidated HTTP header values.
+                content_type = STATIC_CONTENT_TYPES.get(path.suffix, "application/octet-stream")
                 self.send_response(200)
                 self._headers(content_type, len(body))
                 self.end_headers()
@@ -256,7 +266,7 @@ class HttpsAccessServer:
                         return self._send(
                             200,
                             {"csrfToken": csrf, "username": user.username, "roles": user.roles},
-                            f"lanctl_session={session.sessionId}; {COOKIE_ATTRIBUTES}",
+                            _session_cookie(session.sessionId),
                         )
                     user = self._session(csrf=True)
                     body = self._body()

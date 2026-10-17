@@ -50,15 +50,17 @@ Se incorporan los adaptadores `apps/suite/gui_support.py` y las extensiones
 `first-scan`. Usan los contratos internos entregados por AUDITOR, sin duplicar
 la validación de preferencias, dimensiones o diagnósticos.
 
-Las diez regresiones de `tests/test_gui_support.py` comprueban persistencia y
+Las trece regresiones de `tests/test_gui_support.py` comprueban persistencia y
 sincronización, origen de errores, redacción y revisión de reportes, consulta
 asíncrona de versiones, enlaces con navegador explícito, edición compartida de
-racks y confirmación previa al primer escaneo. Las 33 regresiones de GUI,
+racks y confirmación previa al primer escaneo. Incluyen el reintento tras error,
+el envío real de interfaz/CIDR al parser y el estado de reinicio/limpieza de
+plugins, que impide ofrecer acciones no disponibles. Las regresiones de GUI,
 topología/CPD y skins pasan con navegador Edge real. Los cuatro launchers
 especializados abren y cierran correctamente mediante el host nativo.
 
 La comprobación integral y el empaquetado final se registran después de que
 AUDITOR estabilice los servicios. P34 (aislamiento/revocación completa), P50
-(puente externo con contexto y autenticación), el enlace a interfaz de sondeo
-de P47 y las certificaciones externas no se consideran terminados por estas
+(puente externo con contexto y autenticación), los transportes distintos de
+ICMP/ARP de P47 y las certificaciones externas no se consideran terminados por estas
 pruebas visuales.

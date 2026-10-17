@@ -456,11 +456,13 @@ class AccessTests(unittest.TestCase):
                     break
                 time.sleep(0.01)
             client = paramiko.SSHClient()
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            port = server.socket.getsockname()[1]
+            expected_key = paramiko.Ed25519Key.from_private_key_file(str(host_key))
+            client.get_host_keys().add(f"[127.0.0.1]:{port}", expected_key.get_name(), expected_key)
             try:
                 client.connect(
                     "127.0.0.1",
-                    port=server.socket.getsockname()[1],
+                    port=port,
                     username="operator",
                     password="another-strong-password",
                     allow_agent=False,
@@ -517,7 +519,10 @@ class AccessTests(unittest.TestCase):
 
             def request(index):
                 client = paramiko.SSHClient()
-                client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                expected_key = paramiko.Ed25519Key.from_private_key_file(str(host_key))
+                client.get_host_keys().add(
+                    f"[127.0.0.1]:{port}", expected_key.get_name(), expected_key
+                )
                 try:
                     client.connect(
                         "127.0.0.1",

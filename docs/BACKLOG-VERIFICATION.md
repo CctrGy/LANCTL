@@ -749,18 +749,20 @@ se registran en `docs/GUI-AUDITOR-COORDINATION.md`.
   el mismo inventario. Altura estricta 4–52 U y ancho 10/19/21/23 pulgadas;
   advertencias sobre datos heredados sin normalizarlos a escondidas. Las skins
   y sus puertos decorativos se conservan.
-- P47, ámbito seguro: la petición de instalación abre una confirmación de
-  CIDR/perfil, sin sondas antes de aceptar. Se indica cuando el /24 es estimado.
-  La selección real de interfaz permanece pendiente de un contrato de enlace
-  de sondas; no se ofrece un selector que el transporte no pueda respetar.
+- P47: confirmación de interfaz IPv4, CIDR con máscara real y perfil antes de
+  sondear. Se valida el origen con el Core y se comunica el alcance ICMP/ARP;
+  DNS y descubridores externos se omiten con aviso. Sin interfaces o tras un
+  error de escaneo, la solicitud sigue pendiente y permite reintentar. El
+  selector habitual también permite recuperar las rutas del sistema.
 
-Verificación de fuentes: diez regresiones nuevas con servicios reales y
-navegador Edge; 33 regresiones combinadas de interfaces, topología/CPD y skins
+Verificación de fuentes: trece regresiones nuevas con servicios reales y
+navegador Edge aprobadas en 18,25 s tras las últimas correcciones; además pasan
+las regresiones combinadas de interfaces, topología/CPD y skins
 aprobadas. También pasan el arranque/cierre nativo de LANIP y de los cuatro
 launchers y la coordinación nativa de los cuatro botones de LANCTL.
 
 La suite integral y el paquete final se registran al concluir esta integración.
-Estas pruebas no certifican P34, P40/P42, P50, el enlace de interfaz de P47 ni
+Estas pruebas no certifican P34, P40/P42, P50, los transportes restantes de P47 ni
 P32 en plataformas externas. Esos pendientes mantienen su estado explícito.
 
 ### Correcciones tras la primera suite integral — AUDITOR
@@ -897,3 +899,82 @@ del proyecto definido. Referencias:
 P48 conserva la verificación real de Clink en CMD y el caso de desinstalación
 con otra identidad. P32 conserva Windows limpio, Linux ARM64 y SSH remoto.
 Las pruebas locales de fuentes no sustituyen esas certificaciones.
+
+## Estabilización con evidencia de GitHub — 17/10/2026
+
+Validación previa: se revisaron los workflows y los jobs/logs reales de las
+últimas ejecuciones fallidas y correctas. Objetivo: corregir causas vigentes,
+separar fallos de fixtures de fallos del producto y conservar los contratos.
+
+| Trabajo | Archivos / dependencias | Riesgo e impacto | Resultado |
+| --- | --- | --- | --- |
+| Dependencias GUI ausentes en CI | `.github/workflows/ci.yml`, `tests/test_distribution.py`; extra `gui` ya usado por Release | Medio; evita que pruebas de confianza fallen por `webview` ausente | CI instala `dev,gui`; regresión de distribución pasa |
+| Diagnóstico y plataforma | CI/Release; JUnit/logs y job Windows 3.10/3.11 | Medio; evidencia descargable tras un fallo, sin bajar cobertura Linux del 60 % | Definiciones preparadas; ejecución nueva remota pendiente de integración |
+| Cabeceras HTTP | `apps/access/https_server.py`, `tests/test_http_session_headers.py` | Alto; impide valores de cookie/cabecera inyectados por adaptadores o MIME del sistema | Seis IDs malformados rechazados por HTTPS real; tres recursos conservan MIME seguro |
+| Pruebas SSH | `tests/test_access.py`; claves Ed25519 efímeras del servidor de prueba | Medio; cliente rechaza servidores con una clave distinta | Dos `AutoAddPolicy` retiradas; pruebas de acceso pasan |
+| Salidas de metadatos | `tests/test_lanaccess_manager.py`, `tests/test_hygiene_output.py` | Alto por sensibilidad del almacén; no cambia el contrato de salida | List/show/doctor/settings/protocol y diagnóstico TUI no imprimen contraseña; higiene no imprime el token detectado |
+| Fuga real en alta de usuario remoto | `apps/ip/interfaces/cli/commands/access.py`, `tests/test_access_cli_output.py` | Alto; el `asdict` anterior imprimía `passwordHash` en stdout | Proyección explícita conserva metadatos y clave/tipo `passwordHash`, ahora vacía; `passwordConfigured` es aditivo. Pruebas con contraseña y SSH, autenticación persistida y campo privado futuro |
+| Canal estable | `.github/workflows/release.yml`, regresión de distribución | Medio; el nombre «experimental» y `make_latest:false` eran incondicionales | Solo el canal experimental conserva esa etiqueta; estable tiene nombre propio y puede ser última versión |
+| Herramientas P67/P68 | `pyproject.toml`; Python 3.10.11, Coverage 7.10.6/7.16.2, Ruff 0.17.0 | Medio; comparación sobre fuentes idénticas, sin relajar reglas | Ambas suites: 1.208 pruebas y 645 subpruebas correctas; cobertura idéntica 69,3568 %, umbral 60 % |
+
+La comparación completa termina en 182,07 s con Coverage 7.10.6 y 189,55 s con
+7.16.2. Ambas registran 19.740 líneas cubiertas de 27.055 y 5.243 ramas cubiertas
+de 8.966, sin diferencias de cómputo. Un caso de framing IPC POSIX se omite en
+Windows y 21 pruebas `legacy_gui` se excluyen según la configuración existente.
+Se adopta Coverage 7.16.2; Ruff 0.17.0 comprueba 483 archivos. El entorno no
+presenta dependencias rotas. Los XML JUnit, JSON de cobertura y huellas de fuentes
+se conservan localmente en `.tool-reports/tool-upgrades/`.
+
+El nuevo job Windows activa también `LANCTL_GUI_BROWSER_TESTS=1`, instala
+Playwright 1.63.0 (la misma versión verificada localmente, compatible con Python
+3.10) y usa Microsoft Edge incluido en la
+[imagen oficial Windows 2022](https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md).
+Así esas regresiones no quedan omitidas en todas las plataformas de CI.
+
+Se reprodujo el comportamiento anterior de cookies en el nuevo caso de prueba:
+respondía 200 ante un identificador con CRLF; con el validador responde 400 y no
+emite la cabecera inyectada ni la cookie. El contrato normal usa UUID y sigue
+funcionando. La API pública de HTTPS y los IDs de eventos no se modifican.
+Regresiones enfocadas: 59 pruebas de acceso/distribución/credenciales y otras
+9 de salidas/higiene pasan. `pip-audit . --strict`: ninguna vulnerabilidad conocida.
+
+### Resultados remotos comprobados
+
+- [Release 39052546460](https://github.com/CctrGy/LANCTL/actions/runs/39052546460):
+  éxito de validación, Windows y Linux amd64/arm64 sobre `4ca563d`.
+  Los fallos anteriores de dependencia GUI, fixture de plataforma, arranque
+  frío y comprobación de permisos del sentinel ya tienen una ejecución posterior
+  correcta. No equivale a validar el candidato local posterior.
+- [Seguridad PR 25](https://github.com/CctrGy/LANCTL/actions/runs/38596122454) y
+  [seguridad PR 23](https://github.com/CctrGy/LANCTL/actions/runs/37421942821):
+  fallaban repetidamente porque **Dependency graph estaba Off**. Se activó en
+  el repositorio público y se relanzaron los jobs fallidos desde la sesión del
+  propietario. Ambos intentos 2 finalizan correctamente. No se cambió el umbral
+  `moderate`, no se deshabilitó el control ni se fusionaron las PR.
+- Documentación contrastada:
+  [revisión de dependencias de GitHub](https://docs.github.com/en/code-security/getting-started/quickstart-for-securing-your-repository)
+  y [acción oficial](https://github.com/actions/dependency-review-action).
+
+### Avisos CodeQL y límites de la comprobación
+
+Se inventariaron los 13 avisos abiertos de `main`: 6/7/8/10/12/14/15/16/17/18
+de salida de datos, 5/13 sobre `AutoAddPolicy` en pruebas y 9 sobre
+`Content-Type`. El flujo completo de #18 identifica `secret_root()` como
+origen sensible y termina mostrando **la ruta**, sin leer el secreto: falso
+positivo comprobado. #7/#8/#15 muestran rutas; #14 muestra nombre de archivo y
+clase del hallazgo, probado sin volcar el valor. Los listados del almacén usan
+proyecciones explícitas de metadatos, verificadas con contraseñas centinela.
+
+#9 deja de depender de MIME obtenido del sistema; 5/13 ahora usan host keys
+conocidas. No se ha ejecutado CodeQL sobre estas fuentes ni se han descartado
+alertas a distancia. La revisión de las ramas del comando `access` detectó una
+fuga real: `user add` serializaba el hash de contraseña. La regresión reproduce
+el fallo anterior y verifica la proyección segura. El código de emparejamiento
+solo se emite bajo su petición explícita. Sigue pendiente reconciliar los avisos
+con el análisis del candidato. No se afirma
+que los 13 avisos estén cerrados ni que todo aviso sea un falso positivo.
+
+El supuesto bloqueo de cierre LANIP fue un fallo del harness: usaba proyectos
+reales y pipes sin consumir. GUI-DESIGN comprobó cierre nativo y código de salida
+0 con directorio temporal y salida a archivo; no necesitó cambiar la aplicación
+por esa observación. P34/P47 están integrándose con sus avisos y selector real.
