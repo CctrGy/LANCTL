@@ -22,7 +22,7 @@ def allow_foreground(pid):
         ctypes.windll.user32.AllowSetForegroundWindow(int(pid))
 
 
-def focus_gui(coordinator, launcher, *, timeout=10):
+def focus_gui(coordinator, launcher, *, timeout=30):
     """Wait for a ready GUI and an acknowledged focus request, never spawn one."""
     deadline = time.monotonic() + timeout
     command = None
@@ -52,7 +52,7 @@ def focus_gui(coordinator, launcher, *, timeout=10):
 
 
 class GuiInstance:
-    def __init__(self, launcher, *, coordinator=None, timeout=10):
+    def __init__(self, launcher, *, coordinator=None, timeout=30):
         if not re.fullmatch(r"lan[a-z]+", launcher):
             raise ValueError("launcher GUI no válido")
         self.launcher = launcher

@@ -115,6 +115,11 @@ def main(directory):
         print(
             "PASS: six portable launchers, CLI/TUI/GUI preference, explicit CLI override, concurrent GUI lock, restore, independent close"
         )
+    except Exception:
+        for path in sorted(root.glob("smoke-*.log")):
+            print(f"\n--- {path.name} ---", flush=True)
+            print(path.read_text(encoding="utf-8", errors="replace")[-12000:], flush=True)
+        raise
     finally:
         close("lanctl")
         close("lanip")
