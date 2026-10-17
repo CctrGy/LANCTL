@@ -257,6 +257,26 @@ def coordinated_launcher(launcher):
         def wrapped(argv=None, *args, **kwargs):
             global _current
             arguments = list(sys.argv[1:] if argv is None else argv)
+            # A routed application owns its session/window. The orchestrator
+            # must not claim LANCTL's GUI singleton for `lanctl lanwire --gui`.
+            if (
+                launcher == "lanctl"
+                and arguments
+                and arguments[0].casefold()
+                in {
+                    "lanip",
+                    "lanwire",
+                    "lanrack",
+                    "lanaccess",
+                    "lanmon",
+                    "ip",
+                    "wire",
+                    "rack",
+                    "access",
+                    "monitor",
+                }
+            ):
+                return function(argv, *args, **kwargs)
             if any(
                 word in {"--help", "-h", "/?", "--version", "ephemeral", "-e"} for word in arguments
             ):
@@ -269,7 +289,9 @@ def coordinated_launcher(launcher):
 
             stack = ExitStack()
             try:
-                config = load_config()
+                from lanctl.core.session_context import consume_context
+
+                config = consume_context(launcher, load_config())
                 if launcher == "lanctl" and not arguments:
                     preferred = config.get("startupInterface", "cli")
                     if preferred not in {"cli", "tui", "gui"}:

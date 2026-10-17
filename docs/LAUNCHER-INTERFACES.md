@@ -4,7 +4,8 @@ Todos los launchers admiten `--cli` (también `-cli`) y `--tui` (también `-tui`
 Los comandos directos y `/?` siguen disponibles. No cambia el formato de los
 proyectos, credenciales ni contratos de plugins.
 
-LANIP incorpora además `--gui`: véase [interfaz de escritorio](LANIP-GUI.md).
+Todos los launchers incorporan `--gui`. LANIP: [interfaz de escritorio](LANIP-GUI.md).
+LANWIRE, LANRACK, LANACCESS y LANMON: [interfaces gráficas](LAUNCHER-GUI.md).
 LANCTL incorpora `--gui` para proyectos, plugins, preferencias y terminales:
 véase [centro gráfico de LANCTL](LANCTL-GUI.md).
 
@@ -86,6 +87,7 @@ ni convertir pantallas interactivas en logs. Enter devuelve al panel.
 El tamaño se recalcula al dibujar; no hay repintado autónomo durante `input()`.
 Los TUI especializados de LANIP/LANWIRE conservan sus controles actuales.
 
-LANRACK continúa siendo visor; LANBACK no se añade como aplicación ficticia.
+LANRACK conserva sus consultas CLI/TUI y añade gestión de agrupaciones CPD
+en la GUI sobre el inventario compartido. LANBACK no se añade como aplicación ficticia.
 Las configuraciones compartidas todavía usan el adaptador compatible de LANIP.
 ProjectDock es una herramienta de desarrollo, no una dependencia de ejecución.

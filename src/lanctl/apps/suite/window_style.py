@@ -2,6 +2,14 @@
 
 import sys
 
+from lanctl.core.resources import bundled_path
+
+
+def webview_icon_path(launcher: str) -> str:
+    """WinForms constructs System.Drawing.Icon directly, so Windows requires ICO."""
+    suffix = "ico" if sys.platform == "win32" else "png"
+    return str(bundled_path(f"assets/launcher-icons/{launcher}.{suffix}"))
+
 
 def apply_dark_caption(window, launcher="lanctl"):
     if sys.platform != "win32":

@@ -8,11 +8,10 @@ from contextlib import suppress
 from pathlib import Path
 
 from lanctl import __version__
+from lanctl.apps.access.credential_service import CredentialService
 from lanctl.apps.ip.domain.models import normalize_protocol
 from lanctl.core.config import load_config
 from lanctl.core.credentials import CredentialStore
-from lanctl.core.database import DeviceDatabase
-from lanctl.core.file_transaction import locked_files
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.core.secret_input import read_secret
 from lanctl.core.session import coordinated_launcher
@@ -57,6 +56,7 @@ def build_parser() -> LANCTLArgumentParser:
         "--project-dir", help="Directorio del proyecto para su almacén independiente."
     )
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--gui", action="store_true", help="Abre la interfaz gráfica de escritorio.")
     mode.add_argument(
         "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
     )
@@ -120,53 +120,17 @@ def build_parser() -> LANCTLArgumentParser:
     return parser
 
 
-class AccessManager:
-    def __init__(self, database_path: str, store_path: str) -> None:
-        self.database = DeviceDatabase(database_path)
-        self.store = CredentialStore(store_path)
-
-    def list(self) -> list[dict[str, str]]:
-        devices = {device.device_id: device for device in self.database.load()}
-        rows = self.store.metadata()
-        for row in rows:
-            device = devices.get(row["deviceId"])
-            row["element"] = (
-                device.alias or device.name or device.ip or device.mac
-                if device
-                else row["deviceId"]
-            )
-        return rows
+class AccessManager(CredentialService):
+    """Compatible CLI adapter: obtain secrets interactively, then call the service."""
 
     def set(self, selector: str, protocol: str, username: str) -> str:
-        device = self.database.resolve(selector)
-        normalized = normalize_protocol(protocol)
         password = read_secret("Contraseña (no se mostrará): ")
         confirmation = read_secret("Repite la contraseña: ")
         if not password:
             raise ValueError("la contraseña no puede estar vacía")
         if password != confirmation:
             raise ValueError("las contraseñas no coinciden")
-        with locked_files([self.store.path, self.database.path]):
-            previous = self.store._load()
-            identifier = self.store.set(device.device_id, normalized, username, password)
-            try:
-                self.database.bind_credential(selector, normalized, identifier)
-            except (OSError, ValueError):
-                self.store._save(previous)
-                raise
-        return identifier
-
-    def delete(self, identifier: str) -> bool:
-        metadata = next(
-            (row for row in self.store.metadata() if row["credentialId"] == identifier), None
-        )
-        if metadata is None:
-            return False
-        for device in self.database.load():
-            for protocol, reference in tuple(device.credentials.items()):
-                if reference == identifier:
-                    self.database.unbind_credential(device.device_id, protocol)
-        return self.store.delete(identifier)
+        return self.set_secret(selector, protocol, username, password)
 
 
 def _print_rows(rows: list[dict[str, str]]) -> None:
@@ -324,6 +288,10 @@ def _main(argv: list[str] | None = None) -> int:
         args.store = str(Path(args.project_dir).resolve() / "access" / "credentials.vault")
         if args.cipher == "auto" and not Path(args.store).exists():
             args.cipher = "portable"
+    if getattr(args, "gui", False):
+        from lanctl.apps.suite.launcher_gui import run_gui
+
+        return run_gui("lanaccess", database=args.database, store=args.store, cipher=args.cipher)
     manager = AccessManager(args.database, args.store)
     manager.store.cipher = args.cipher
     if args.command == "credential":

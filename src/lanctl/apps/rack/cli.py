@@ -9,6 +9,7 @@ from contextlib import suppress
 from lanctl import __version__
 from lanctl.apps.rack.service import RackService
 from lanctl.apps.wire.idf.database import DEFAULT_DATABASE_PATH
+from lanctl.core.config import load_config
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.core.session import coordinated_launcher
 
@@ -31,11 +32,12 @@ def build_parser() -> LANCTLArgumentParser:
     )
     parser.add_argument(
         "--database",
-        default=DEFAULT_DATABASE_PATH,
+        default=load_config().get("physicalDatabase", DEFAULT_DATABASE_PATH),
         metavar="ARCHIVO.db",
         help="Base física IDF compartida.",
     )
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--gui", action="store_true", help="Abre la interfaz gráfica de escritorio.")
     mode.add_argument(
         "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
     )
@@ -63,6 +65,10 @@ def main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
     args = build_parser().parse_args(arguments)
+    if getattr(args, "gui", False):
+        from lanctl.apps.suite.launcher_gui import run_gui
+
+        return run_gui("lanrack", database=args.database)
     service = RackService(args.database)
     if args.tui or (not args.cli and args.command is None):
         return run_tui(service)

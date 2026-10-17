@@ -1,6 +1,6 @@
-#define MyAppName "LANCTL"
+#define MyAppName "LANCTL GUI experimental (NO ESTABLE)"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.3.3"
+  #define MyAppVersion "0.3.4-alpha.1"
 #endif
 #ifndef BuildRoot
   #define BuildRoot "..\..\dist"
@@ -66,6 +66,11 @@ Type: files; Name: "{app}\LANCTL-GUI.exe"
 Type: files; Name: "{app}\landemo.exe"
 
 [Icons]
+Name: "{group}\LANCTL GUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--gui"; WorkingDir: "{app}"
+Name: "{group}\LANWIRE GUI"; Filename: "{app}\lanwire.exe"; Parameters: "--gui"; WorkingDir: "{app}"
+Name: "{group}\LANRACK GUI"; Filename: "{app}\lanrack.exe"; Parameters: "--gui"; WorkingDir: "{app}"
+Name: "{group}\LANACCESS GUI"; Filename: "{app}\lanaccess.exe"; Parameters: "--gui"; WorkingDir: "{app}"
+Name: "{group}\LANMON GUI"; Filename: "{app}\lanmon.exe"; Parameters: "--gui"; WorkingDir: "{app}"
 Name: "{group}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
 Name: "{group}\LANCTL CLI"; Filename: "{app}\LANCTL.exe"; Parameters: "--cli"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
 Name: "{group}\LANIP"; Filename: "{app}\lanip.exe"; Parameters: "--tui"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"

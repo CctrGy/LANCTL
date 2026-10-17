@@ -148,7 +148,9 @@ class DistributionTests(unittest.TestCase):
         self.assertNotIn('["packaging/entrypoints/landemo_entry.py"]', spec)
         self.assertIn('["packaging/entrypoints/lanrack_entry.py"]', spec)
         self.assertIn('["packaging/entrypoints/lanaccess_entry.py"]', spec)
-        self.assertIn('collect_submodules("lanctl.apps.wire")', spec)
+        self.assertIn(
+            'hiddenimports=["paramiko", "cryptography"] + collect_runtime_modules()', spec
+        )
         self.assertIn('("assets/lanctl-icon-v3.png", "assets")', spec)
         self.assertNotIn("lanctl-v2.ico", spec)
         self.assertIn("SetupIconFile=..\\..\\assets\\launcher-icons\\lanctl.ico", inno)
@@ -221,7 +223,10 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("dependency-review-action", security)
         self.assertIn("generate_cli_reference.py --check", ci)
         self.assertIn("generate_cli_reference.py --check", release)
-        self.assertIn("branches: ['stable/**']", release)
+        self.assertIn("branches: ['stable/**', 'experimental-gui']", release)
+        self.assertIn("experimental-gui requires an alpha version", release)
+        self.assertIn("make_latest: false", release)
+        self.assertIn("python tests/portable_smoke.py $portable", release)
         self.assertIn('version="${GITHUB_REF_NAME#stable/}"', release)
         self.assertIn('python scripts/verify-version.py "$version"', release)
         self.assertIn("tag_name: v${{ needs.prepare.outputs.version }}", release)

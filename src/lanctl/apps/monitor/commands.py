@@ -117,15 +117,7 @@ def _database(args):
 
 
 def run_monitor(args):
-    words = [x.casefold() for x in args.words]
-    action = words[0] if words else "status"
-    config = load_config()
-    # Una sola conexión por comando evita descriptores huérfanos y garantiza
-    # la reversión y el cierre incluso si una acción termina con una excepción.
-    with _database(args) as database:
-        sessions = SessionManager(SqlSessionRepository(database))
-        payload = _run_monitor_action(args, sessions, config, words, action)
-
+    payload = execute_monitor(args)
     print(
         json.dumps(payload, indent=2, ensure_ascii=False)
         if args.json or isinstance(payload, (dict, list))
@@ -137,6 +129,20 @@ def run_monitor(args):
         and payload.get("status") in {"unsupported", "error", "blocked"}
         else 0
     )
+
+
+def execute_monitor(args):
+    """Return the shared monitor operation result without printing CLI output."""
+    words = [x.casefold() for x in args.words]
+    action = words[0] if words else "status"
+    config = load_config()
+    # Una sola conexión por comando evita descriptores huérfanos y garantiza
+    # la reversión y el cierre incluso si una acción termina con una excepción.
+    with _database(args) as database:
+        sessions = SessionManager(SqlSessionRepository(database))
+        payload = _run_monitor_action(args, sessions, config, words, action)
+
+    return payload
 
 
 def _start_monitor(args, sessions, config, action):
@@ -850,6 +856,8 @@ def _lanctl_command(*arguments):
 
 
 def _spawn_foreground(args):
+    from lanctl.core.session_context import child_environment
+
     command = _lanctl_command(
         "monitor",
         "foreground",
@@ -864,5 +872,9 @@ def _spawn_foreground(args):
     )
     flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if platform.system() == "Windows" else 0
     return subprocess.Popen(
-        command, creationflags=flags, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        command,
+        creationflags=flags,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=child_environment("lanmon", load_config()),
     )

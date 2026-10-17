@@ -1631,7 +1631,7 @@ Options:
 ## `LANWIRE`
 
 ```text
-Usage: LANWIRE [-h] [--version] [--database ARCHIVO.db] [-tui | --cli] COMANDO ...
+Usage: LANWIRE [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli] COMANDO ...
 
 Gestión física, IDF, cableado y topología de la suite LANCTL.
 
@@ -1655,6 +1655,7 @@ Options:
   -h, --help             Show this help and exit.
   --version              Muestra la versión común de la suite y termina.
   --database ARCHIVO.db  Base física IDF; por defecto usa physical/idf.db en la raíz compartida.
+  --gui                  Abre la interfaz gráfica de escritorio.
   -tui, --tui            Abre la interfaz de pantalla completa.
   --cli, -cli            Abre la consola interactiva de LANWIRE.
 ```
@@ -1964,7 +1965,7 @@ Options:
 ## `LANRACK`
 
 ```text
-Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [-tui | --cli] {list,ls,show} ...
+Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli] {list,ls,show} ...
 
 Visualiza racks y sus equipos.
 
@@ -1977,6 +1978,7 @@ Options:
   -h, --help             Show this help and exit.
   --version              Muestra la versión común de la suite y termina.
   --database ARCHIVO.db  Base física IDF compartida.
+  --gui                  Abre la interfaz gráfica de escritorio.
   -tui, --tui            Abre la interfaz de pantalla completa.
   --cli, -cli            Abre la consola interactiva.
 ```
@@ -2007,7 +2009,7 @@ Options:
 ```text
 Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]
                  [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]
-                 [--project-dir PROJECT_DIR] [-tui | --cli]
+                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]
                  {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ...
 
 Gestiona credenciales cifradas del entorno LANCTL.
@@ -2034,6 +2036,7 @@ Options:
   --scope {program,windows,project}
                               Ubicación; no cambia permisos ni copia secretos automáticamente.
   --project-dir PROJECT_DIR   Directorio del proyecto para su almacén independiente.
+  --gui                       Abre la interfaz gráfica de escritorio.
   -tui, --tui                 Abre la interfaz de pantalla completa.
   --cli, -cli                 Abre la consola interactiva.
 ```
@@ -2268,8 +2271,8 @@ Usage: LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DUR
               [--profiles PROFILES] [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]
               [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]
               [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]
-              [--timeout TIMEOUT] [--cli | --tui] [--source {all,program,project}] [--limit LIMIT]
-              [--window] [--level LEVEL]
+              [--timeout TIMEOUT] [--gui | --cli | --tui] [--source {all,program,project}]
+              [--limit LIMIT] [--window] [--level LEVEL]
               [words ...]
 
 Monitorización, eventos e incidencias de la suite LANCTL.
@@ -2316,6 +2319,7 @@ Options:
   --deep DEEP                 Intervalo profundo.
   --workers WORKERS           Workers del perfil.
   --timeout TIMEOUT           Timeout del perfil.
+  --gui                       Abre la interfaz gráfica de escritorio.
   --cli, -cli                 Abre la consola de comandos.
   --tui, -tui                 Abre el visor tabular de eventos.
   --source {all,program,project}

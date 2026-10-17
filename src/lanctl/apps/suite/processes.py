@@ -14,26 +14,34 @@ from lanctl.core.paths import application_directory
 
 
 def launcher_command(launcher="lanctl", *arguments):
-    if launcher not in {"lanctl", "lanip"}:
+    if launcher not in {"lanctl", "lanip", "lanwire", "lanrack", "lanaccess", "lanmon"}:
         raise ValueError("launcher gráfico no disponible")
     if getattr(sys, "frozen", False):
         suffix = ".exe" if sys.platform == "win32" else ""
         return [str(Path(sys.executable).with_name(launcher + suffix)), *arguments]
-    module = "lanctl" if launcher == "lanctl" else "lanctl.apps.ip"
-    return [sys.executable, "-m", module, *arguments]
+    if launcher == "lanctl":
+        return [sys.executable, "-m", "lanctl", *arguments]
+    if launcher == "lanip":
+        return [sys.executable, "-m", "lanctl.apps.ip", *arguments]
+    return [sys.executable, "-m", "lanctl", launcher, *arguments]
 
 
-def process_options():
+def process_options(context_launcher=None):
     env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8")
     if not getattr(sys, "frozen", False):
         source = str(application_directory() / "src")
         env["PYTHONPATH"] = source + os.pathsep + env.get("PYTHONPATH", "")
+    if context_launcher:
+        from lanctl.core.config import load_config
+        from lanctl.core.session_context import child_environment
+
+        env = child_environment(context_launcher, load_config(), env)
     return {"cwd": str(application_directory()), "env": env}
 
 
 def open_system_cli(launcher="lanctl"):
     command = launcher_command(launcher, "--cli")
-    options = process_options()
+    options = process_options(context_launcher=launcher)
     if sys.platform == "win32":
         # CREATE_NEW_CONSOLE respects the user's Windows default terminal host.
         subprocess.Popen(command, creationflags=subprocess.CREATE_NEW_CONSOLE, **options)

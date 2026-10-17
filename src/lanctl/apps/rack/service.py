@@ -1,8 +1,9 @@
-"""Consultas de solo lectura sobre los racks administrados por LANWIRE."""
+"""Consultas de racks y organización CPD del inventario compartido."""
 
 from __future__ import annotations
 
 from lanctl.apps.wire.idf.database import IDFDatabaseManager
+from lanctl.apps.wire.xfile import locked_file
 
 
 class RackService:
@@ -12,6 +13,21 @@ class RackService:
     def list(self) -> list[dict]:
         records = self.database.all()
         return [self.describe(record, records) for record in records if self._is_rack(record)]
+
+    def snapshot(self):
+        from lanctl.apps.rack.organization import snapshot
+
+        with locked_file(self.database.path):
+            return {
+                "records": self.list(),
+                "storage": str(self.database.path),
+                **snapshot(self.database),
+            }
+
+    def organize(self, expected, operation, values):
+        from lanctl.apps.rack.organization import mutate
+
+        return mutate(self.database, expected, operation, values)
 
     def get(self, identifier: str) -> dict:
         records = self.database.all()
@@ -44,6 +60,7 @@ class RackService:
                     "name": item.get("name") or item.get("alias") or "",
                     "type": item.get("type", "element"),
                     "description": item.get("description", ""),
+                    "data": item,
                 }
             )
         occupants.sort(key=lambda item: (-(int(item["unit"] or 0)), item["id"]))

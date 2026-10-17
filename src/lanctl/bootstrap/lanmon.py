@@ -35,6 +35,7 @@ def build_parser() -> LANCTLArgumentParser:
         if action.dest == "words":
             action.help = "logs, events, status, attach, detach, once, session, incidents, service o foreground."
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--gui", action="store_true", help="Abre la interfaz gráfica de escritorio.")
     mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola de comandos.")
     mode.add_argument(
         "--tui", "-tui", action="store_true", help="Abre el visor tabular de eventos."
@@ -62,6 +63,10 @@ def _main(argv: list[str] | None = None) -> int:
 
         return run(arguments[1:])
     args = build_parser().parse_args(arguments or ["status"])
+    if getattr(args, "gui", False):
+        from lanctl.apps.suite.launcher_gui import run_gui
+
+        return run_gui("lanmon", project=args.project)
     if args.window and (args.words != ["logs"] or args.cli or args.tui):
         raise ValueError("--window solo se utiliza con logs")
     if args.cli or args.tui:

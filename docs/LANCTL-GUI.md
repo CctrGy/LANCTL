@@ -6,8 +6,8 @@ el extra `gui`: `pip install -e ".[gui]"`.
 
 El centro utiliza la distribución compacta Grafito y lima: LANIP/LANWIRE,
 LANRACK/LANACCESS y LANMON a todo el ancho. Los accesos abren exclusivamente
-interfaces gráficas. Actualmente LANIP dispone de GUI; los otros cuatro
-launchers muestran que su GUI está pendiente, sin abrir una CLI/TUI en su lugar.
+interfaces gráficas reales de LANIP, LANWIRE, LANRACK, LANACCESS y LANMON,
+sin abrir una CLI/TUI como sustituto. Véase [GUI de launchers](LAUNCHER-GUI.md).
 
 ## Proyectos
 
@@ -118,7 +118,7 @@ reemplaza una edición en curso. Cada sesión conserva su proyecto.
 LANRACK, LANACCESS, LANMON y terminal. Los ICO incluyen ocho tamaños de 16 a
 256 píxeles y el spec de Windows asigna el correspondiente a cada ejecutable.
 Las ventanas nativas LANCTL/LANIP aplican su icono al mostrarse. Los demás
-launchers conservan sus iconos propios de ejecutable; sus GUI siguen pendientes.
+launchers conservan sus iconos propios de ejecutable y de ventana.
 CLI/TUI usan el icono común de terminal y un título con el launcher en consolas
 clásicas Windows. Windows Terminal administra el icono de pestaña mediante su
 perfil; no se modifica la configuración personal del anfitrión. Reinicia las

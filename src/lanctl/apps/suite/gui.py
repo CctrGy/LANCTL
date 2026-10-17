@@ -349,16 +349,18 @@ class SuiteApi:
 
     def launch_gui(self, launcher):
         def operation():
-            # No CLI/TUI fallbacks: only LANIP currently implements a GUI.
-            if launcher != "lanip":
+            # Launch only registered graphical applications.
+            if launcher not in {"lanip", "lanwire", "lanrack", "lanaccess", "lanmon"}:
                 raise ValueError("Este launcher todavía no dispone de interfaz GUI.")
             config = load_config()
             arguments = ["--gui"]
-            if config.get("activeProject"):
+            if launcher == "lanip" and config.get("activeProject"):
                 arguments.extend(["-project", config["activeProject"]])
             flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             subprocess.Popen(
-                launcher_command(launcher, *arguments), creationflags=flags, **process_options()
+                launcher_command(launcher, *arguments),
+                creationflags=flags,
+                **process_options(context_launcher=launcher),
             )
             from lanctl.core.coordination import Coordinator
             from lanctl.core.gui_instance import focus_gui
@@ -368,7 +370,7 @@ class SuiteApi:
             if close and self._desktop._window is not None:
                 self._desktop._closing = True
                 self._desktop._window.destroy()
-            return {"message": "GUI de LANIP abierta.", "closed": close}
+            return {"message": f"GUI de {launcher.upper()} abierta.", "closed": close}
 
         return self._respond("Launcher", operation)
 
@@ -399,7 +401,7 @@ def run_gui():
         return False
 
     window.events.closing += closing
-    from lanctl.apps.suite.window_style import apply_dark_caption
+    from lanctl.apps.suite.window_style import apply_dark_caption, webview_icon_path
 
     window.events.shown += lambda: apply_dark_caption(window)
     from lanctl.apps.access.root_control import RootInterfaceAgent
@@ -424,7 +426,7 @@ def run_gui():
     if session:
         session.subscribers.append(observe)
     try:
-        webview.start(icon=str(bundled_path("assets/launcher-icons/lanctl.png")))
+        webview.start(icon=webview_icon_path("lanctl"))
     finally:
         agent.stop()
         if session:

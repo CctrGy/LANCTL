@@ -1,9 +1,68 @@
 # Trabajo pendiente de LANCTL
 
-Estado revisado el **15/10/2026**. Los puntos marcados tienen corrección o
+Estado revisado el **16/10/2026**. Los puntos marcados tienen corrección o
 verificación local con evidencia en [la matriz de comprobación](BACKLOG-VERIFICATION.md).
 La validación de plataformas externas sigue separada; las marcas no equivalen
 a certificar instaladores ni sistemas que no se han ejecutado.
+
+## Orden de ejecución validado — 16/10/2026
+
+Este orden gobierna las tareas abiertas; los IDs y el historial de las secciones
+posteriores se conservan. En cada ciclo se valida y planifica antes de escribir
+código, se implementa una sola tarea disponible y se actualiza su evidencia.
+Los riesgos de la tabla describen el riesgo de introducir el cambio. Una tarea
+bloqueada no impide avanzar otra independiente. GUI-DESIGN estaba inactivo al
+comprobar esta planificación; sus archivos conservan cambios sin integrar.
+
+Hallazgos de validación: P40/P42 son una sola incidencia; P44 impedía comprobar
+el arranque con datos antiguos; la inicialización completa del layout solo se
+invoca en la entrada LANIP, mientras otras GUI usan el gestor directamente.
+Por ello la compatibilidad del registro debe resolverse en su límite de lectura
+compartido, sin añadir inicializadores a cada interfaz. P34 conserva autorización
+y runtimes en memoria por proceso: notificar cambios visuales no basta para
+revocar ejecución. Su siguiente revisión debe definir el alcance del cierre de
+un plugin `trusted` dentro del proceso y el orden de locks antes de implementar.
+
+| Orden / tarea | Objetivo | Módulos y archivos afectados | Dependencias y conflictos detectados | Riesgo | Impacto / estado actual |
+| --- | --- | --- | --- | --- | --- |
+| Completada · P44 | Recuperar exclusivamente el registro vacío histórico y conservar rechazos de corrupción. | Plugins/persistencia: `src/lanctl/core/plugins/manager.py`, `src/lanctl/core/data_migration.py` (plantilla ya corregida), `src/lanctl/core/file_transaction.py` (reutilizar); nueva prueba `tests/test_plugin_registry_migration.py`; `errorList.txt`. | Sin bloqueo externo. No duplicar la migración en GUI ni relajar el validador. Compartir el lock de los escritores. | Alto | Arranque antiguo recuperado y verificado. Dependencia satisfecha para P34/P46/P47/P32. |
+| 1 · P34 | Aplicar cambios de autorización a gestores/runtimes activos y reflejar estado real. | `core/plugins/manager.py`, `publishers.py`, `api.py`, `events.py`, `functions.py`, `isolated_runtime.py`; `core/session.py`, `coordination.py`; adaptadores GUI y pruebas de plugins/coordinación bajo `src/lanctl/` y `tests/`. | P44 completada permite reproducir actualizaciones desde datos previos. Concretar cancelación de `trusted`, propagación entre procesos, dependencia de consumidores y revocación durante llamadas; las vistas se coordinan con GUI-DESIGN. | Crítico | Seguridad transversal; no basta invalidar una caché ni emitir un evento. Pendiente de validación específica del ciclo de vida. |
+| 2 · P40 | Distribuir y verificar los LCP oficiales firmados. | `core/plugins/package.py`, `publishers.py`, `builtin.py`, `bundled/*.lcp`, `bundled/plugin-catalog.json`, herramientas de empaquetado y pruebas de instalación. | Requiere identidad/clave del editor y artefactos autorizados. P34 para certificar revocación en caliente; la firma del paquete puede prepararse en paralelo. No generar una identidad oficial ficticia. | Alto | Desbloquea uso de los cuatro plugins `trusted` y la entrega de P46. Bloqueada externamente para publicar firmas reales. |
+| 2 · P42 | Conservar evidencia y seguimiento del bloqueo de mDNS/SSDP. | `docs/BACKLOG.md`, `docs/BACKLOG-VERIFICATION.md`; mismos módulos de P40. | Alias de seguimiento de P40, no una segunda implementación. | Bajo | Se cerrará junto a P40 cuando exista evidencia de instalación real. |
+| 3 · P35 | Definir opciones básicas y verificar persistencia/feedback de temas. | `core/plugins/theme.py`, `settings.py`, `core/config.py`; `apps/ip/interfaces/gui/theme.py`; `gui/suite.js`, `suite.css`, `launcher.js`; pruebas de configuración/navegador. | P34 para estado de plugins consistente entre procesos. Acordar catálogo de opciones antes de añadir campos; propiedad visual de GUI-DESIGN. | Medio | Establece el contrato de temas que consumirá P45; evita un estado visual distinto del guardado. Pendiente de diseño acotado. |
+| 4 · P46 | Respetar selección de plugins opcionales durante instalación y actualización. | `core/plugins/builtin.py`, `core/data_migration.py`, `LANCTL.spec`, `packaging/inno/LANCTL.iss`, `scripts/build-windows.ps1`, pruebas de distribución. | P44 completada; P40 para entregar plugins `trusted` utilizables. Definir exclusión persistente para que el bootstrap no reinstale lo omitido y preservar el tema base. | Alto | Cambia instalación/primer arranque sin conceder permisos. Antes de P45 y de certificar P47. |
+| 5 · P45 | Elegir cinco temas con vista previa sin sobrescribir preferencias al actualizar. | `core/plugins/theme.py`, `core/config.py`, recursos de temas, `packaging/inno/LANCTL.iss`, pruebas de instalación/configuración. | P35 define preferencias y los cinco temas; P46 define qué recursos son obligatorios. Comparte instalador con P46/P47/P48: cambios secuenciales. | Medio | Afecta primer inicio y actualización; no escribir configuraciones con un formato paralelo. |
+| 6 · P47 | Abrir LANIP y ofrecer el primer escaneo elegido por el usuario. | `packaging/inno/LANCTL.iss`, `bootstrap/lanip.py`, `apps/ip/interfaces/gui/desktop.py`, `core/config.py`; pruebas nativas/distribución. | P44 completada; contrato de selección de P46; revisar sesión normal frente a instalador elevado y selección de red antes del escaneo. | Alto | Puede iniciar tráfico de red: consentimiento explícito y límites/progreso compartidos. Pendiente. |
+| 7 · P54 | Compartir enlaces oficiales entre GUI y comandos CLI/TUI. | `bootstrap/lanctl.py`, `apps/suite/interfaces.py`, `apps/suite/gui.py`, `gui/suite.html`, `suite.js`; servicio de enlaces propuesto; generadores de referencias, `packaging/clink/lanctl.lua` y tests. | No depende de la migración. URLs proporcionadas; no usar shell. Coordinar barra inferior con P53/P52. Antes de la comprobación final de Clink de P48. | Bajo | Añade opciones públicas; conservar las anteriores y salida legible sin soporte de hipervínculos. Pendiente. |
+| 8 · P48 | Empaquetar y registrar Clink para el usuario correcto, con desinstalación acotada. | `packaging/clink/lanctl.lua`, `README.md`, `packaging/inno/LANCTL.iss`, `scripts/build-windows.ps1`, `packaging/portable/`, `tests/test_clink.py`, `test_distribution.py`. | P54 para certificar el catálogo final de opciones; instalación puede prepararse antes. Requiere CMD con Clink real y pruebas de actualización, sin registrar en la cuenta administrativa equivocada. | Medio | Afecta PATH/completado y paquetes; no retirar scripts ajenos ni duplicar registros. Pendiente. |
+| 9 · P49 | Visor TUI de logs operativo, incremental y acotado, independiente de LANIP. | `apps/monitor/log_stream.py`, `event_view.py`, `interfaces.py`, `bootstrap/lanmon.py`; `core/logger.py`; `apps/ip/interfaces/gui/desktop.py`; pruebas de logs, launcher y terminal. | Reutilizar `LogFollower`, no crear un segundo lector. Definir contrato de origen/sesión que P53 amplía con actividad GUI. Coordinar botón con GUI-DESIGN. | Medio | Debe soportar rotación, pausa, filtros y cierre sin detener tareas; no confundir auditoría VLF con log operativo. Pendiente. |
+| 10 · P53 | Trasladar actividad a LANMON preservando origen y retirar el reloj visual. | `gui/suite.js`, `suite.html`; `core/session.py`, `coordination.py`, `logger.py`; `apps/monitor/event_view.py`, `gui_service.py`; pruebas entre procesos. | P49 ofrece visor común. El buffer local de hasta 100 mensajes necesita transporte explícito; no eliminarlo antes de que LANMON reciba esos mensajes. | Alto | Riesgo de perder mensajes o mezclar proyectos. No elimina timestamps ni comandos CLI/TUI. Pendiente, ámbito visual de GUI-DESIGN. |
+| 11 · P52 | Preparar reportes revisables y anonimizados desde LANMON. | `core/errors.py`, `logger.py`, `history.py`; servicio de diagnóstico propuesto; `apps/monitor/reports.py`, `gui_service.py`; barra GUI y pruebas de redacción/exportación. | P49/P53 para fuentes/origen compartidos. Servicio de preparación independiente de abrir GitHub; no usarlo como dependencia de red de P50. Agrupar errores sin recursión de notificaciones. | Alto | Maneja datos potencialmente privados; excluir secretos y publicar solo mediante revisión humana. Pendiente. |
+| 12 · P51 | Avisar de versiones estables superiores con consultas limitadas y tolerantes a fallos. | `infrastructure/distribution/release.py`, `core/config.py`, `core/session.py`, GUI de ajustes; servicio de consulta propuesto y pruebas de versiones/red/caché. | Reglas de canal existentes; un sufijo histórico no determina por sí solo estabilidad. Separar comparación semántica del nombre del artefacto y del orden de publicación. No requiere P50. | Medio | Arranque, red y preferencias; ningún instalador se descarga ni ejecuta. Sincronizar la versión de la futura entrega antes de publicarla. Pendiente. |
+| 13 · P50 | Puente MCP externo de consulta y diagnóstico con contexto explícito. | `core/plugins/api.py`, `contracts.py`, `core/session.py`, `coordination.py`, `session_context.py`, proyectos; plugin/adaptador MCP nuevos; diagnóstico de P52 y pruebas de permisos. | P34 y contrato de sesión/revisión; reutilizar el preparador de P52 sin su navegación GitHub. Definir transporte/autenticación con documentación vigente de los clientes antes de implementar. Control con escrituras queda para una fase posterior. | Alto | Frontera externa: no exponer secretos, confundir datos guardados con cambios en memoria ni elegir arbitrariamente una sesión. Pendiente de diseño de conexión. |
+| Cierre de candidato · P32 | Certificar instalación, actualización, portable, Linux ARM64 y acceso remoto. | `.github/workflows/release.yml`, `scripts/build-windows.ps1`, `build-linux.sh`, `tests/portable_smoke.py`, smokes nativos y documentación de validación. | P44 completada; P34 y todos los cambios incluidos en el candidato; identidad de versión/artefactos congelada. Requiere Windows limpio, Linux ARM64 y otro equipo SSH. No exige implementar todas las funciones futuras del backlog. | Alto | Evidencia reproducible por plataforma. Las pruebas locales pueden adelantarse; la certificación externa sigue bloqueada por entornos pendientes. |
+
+Plan acotado de P44, previo a implementación: reconocer únicamente el objeto
+JSON vacío histórico en el lector compartido del registro; migrarlo a esquema 1
+bajo el mismo lock que usan los escritores, mediante sustitución atómica.
+Mantener intactos los registros versionados, permisos, firmas y editores. JSON
+roto, esquemas desconocidos y documentos no vacíos inválidos seguirán fallando
+con su origen. Probar datos nuevos/antiguos, idempotencia, errores de escritura,
+concurrencia y arranque LANIP; ejecutar después la suite completa. Si aparece
+un bloqueo estructural que exija ampliar el alcance, detener este cambio y
+registrar una refactorización con dependencia y estimación antes de continuar.
+
+Resultado del ciclo: **P44 completada y verificada en fuentes**, sin ampliar el
+alcance ni modificar interfaces de GUI-DESIGN. Su dependencia de arranque queda
+satisfecha para P34, P46, P47 y P32; estas tareas conservan sus otros requisitos.
+No apareció un problema estructural nuevo que obligara a detener P44 y crear
+una refactorización. **Siguiente tarea recomendada: P34**, comenzando por validar
+revocación, ciclo de vida de runtimes y orden de locks antes de implementar.
+
+La suite completa pasa con 1.073 pruebas, 643 subpruebas, una omisión POSIX y
+cobertura del 68,0842 %. Sigue pendiente el formato de seis archivos de cambios
+anteriores, enumerados en la matriz de verificación; debe resolverse antes de
+integrar. Los instaladores existentes todavía no incluyen esta migración.
 
 ## Prioridad alta: persistencia y fiabilidad
 
@@ -240,3 +299,330 @@ validación local de catálogo compartido, persistencia y distribución a tamañ
 instalar una versión firmada verificada sin recurrir a comandos; la auditoría
 de la distribución/firma de los paquetes sigue separada. No se autoriza un
 paquete sin firma por marcar sus permisos.
+
+## Errores reportados en el chat — 16/10/2026
+
+- [x] **P43.** Corregir la excepción no controlada al inicializar un icono
+  mediante `System.Drawing.Icon.Initialize(Int32 width, Int32 height)`.
+  **Corregido y verificado localmente — AUDITOR, 16/10/2026. Gravedad alta:**
+  LANCTL y LANIP pasaban un PNG a `webview.start(icon=...)`; el backend WinForms
+  lo entregaba directamente a `System.Drawing.Icon`, que exige un ICO. Los dos
+  PNG reproducen exactamente la excepción reportada. Se selecciona ahora el
+  ICO incluido en Windows y se conserva el PNG en las otras plataformas.
+
+  Evidencia aportada por el usuario (traza íntegra):
+
+  ```text
+  Excepción no controlada: System.ArgumentException: El argumento 'picture' debe ser una imagen que puede utilizarse como Icon.
+     en System.Drawing.Icon.Initialize(Int32 width, Int32 height)
+  --- Fin del seguimiento de la pila de la ubicación anterior donde se produjo la excepción ---
+     en System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+     en Python.Runtime.PythonException.ThrowLastAsClrException()
+     en Python.Runtime.Dispatcher.TrueDispatch(Object[] args)
+     en Python.Runtime.Dispatcher.Dispatch(Object[] args)
+     en __System_Threading_ThreadStartDispatcher.Invoke()
+     en System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
+     en System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
+     en System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state)
+     en System.Threading.ThreadHelper.ThreadStart()
+  ```
+
+  Verificación inicial: 16 regresiones (ocho fallaban antes de la corrección), constructor
+  real de .NET, rutas de fuentes y extracción PyInstaller, ventanas nativas y
+  ejecutables nuevos de LANCTL/LANIP con HICON. Suite completa sobre una copia
+  de `a6fadc8` más la corrección: 1.029 pruebas y 643 subpruebas aprobadas;
+  una prueba POSIX omitida en Windows. Se conservan las firmas existentes y
+  los contratos del Core. Catálogo de errores regenerado y comprobado.
+
+  Durante la revisión, el adaptador nuevo `suite/launcher_gui.py` de GUI-DESIGN
+  introdujo la misma llamada con PNG. Corregidos únicamente su importación y
+  selección de icono. Ocho regresiones adicionales reproducen la excepción y
+  pasan después para LANWIRE/LANRACK/LANACCESS/LANMON: **24 regresiones de P43
+  aprobadas** en el árbol compartido. Sus nuevas interfaces siguen bajo
+  GUI-DESIGN y no forman parte de los ejecutables aislados de esta revisión.
+
+  Los artefactos de prueba están en `dist/p43-verified/`, incluido
+  `LANCTL-0.3.3-p43-setup.exe`. Se han separado del desarrollo concurrente de
+  GUI-DESIGN; no se ha actualizado la instalación del usuario. La prueba de
+  arranque empaquetado de LANIP requiere un registro de plugins válido por P44.
+  Detalle y límites en `docs/BACKLOG-VERIFICATION.md`.
+
+- [x] **P44.** Corregir la inicialización del registro de plugins y migrar el vacío histórico.
+  **Completada y verificada en fuentes — 16/10/2026. Gravedad alta.** Detectado al verificar P43:
+  `ensure_data_layout()` creaba `plugins/registry.json` con `{}`, pero
+  `PluginManager._read_registry()` exige `schemaVersion: 1` y un objeto `plugins`.
+  La GUI de LANIP muestra «registro de plugins no válido»; el ejecutable puede
+  terminar con código 2 antes de abrirla. Es independiente del formato del icono.
+  GUI-DESIGN corrigió la plantilla de creación a `{"schemaVersion": 1, "plugins": {}}`.
+  AUDITOR comprobó con datos temporales nuevos que ese documento se crea y
+  `PluginManager` inicia correctamente. La validación de permisos y firmas no
+  se ha relajado. El instalador aislado de P43 es anterior a este ajuste.
+
+  El lector compartido migra ahora exclusivamente el objeto JSON vacío `{}`
+  al esquema 1 mediante escritura atómica y bajo el lock del registro. No
+  reescribe documentos versionados ni concede permisos, confianza o ejecución.
+  Los documentos corruptos, no vacíos sin esquema o de versión desconocida
+  siguen fallando con su origen; un fallo de escritura conserva el original.
+
+  Verificación: 18 regresiones nuevas (seis fallaban antes), 87 pruebas
+  relacionadas y 17 subpruebas aprobadas; arranque y recorrido nativo completo
+  de LANIP con `{}` en datos temporales. Suite completa: 1.073 pruebas y 643
+  subpruebas aprobadas, una omisión POSIX, cobertura del 68,0842 %. Conservadas
+  las 37 firmas de funciones/métodos del gestor, sus eventos y 51 IDs/orígenes
+  de error. Desbloqueadas las comprobaciones con datos antiguos de P34/P32 y
+  satisfecha la dependencia de arranque de P46/P47. La reconstrucción y
+  certificación de instaladores sigue dentro de la entrega/P32.
+
+## Configuración inicial del instalador — 16/10/2026
+
+- [ ] **P45.** Añadir una selección de cinco temas durante la instalación, con
+  nombre y vista previa. Guardar la elección mediante la configuración compartida
+  del programa y conservar el tema existente en actualizaciones, salvo cambio
+  explícito del usuario.
+- [ ] **P46.** Permitir elegir si se instalan los plugins predeterminados del
+  programa, con selección individual opcional. Adaptar el empaquetado y el primer
+  inicio para respetar la elección, distinguir los recursos necesarios (como el
+  tema base) de los plugins opcionales y conservar permisos, firmas y confianza
+  del editor. Mantener las elecciones existentes al actualizar.
+- [ ] **P47.** Ofrecer al finalizar la instalación las opciones «Abrir LANIP» y
+  «Realizar un primer escaneo». Arrancar la GUI con el usuario normal, mostrar la
+  red detectada y permitir seleccionar interfaz/rango cuando haya varias redes;
+  mostrar el progreso del escaneo en la GUI y ejecutarlo solo si se ha elegido.
+- [ ] **P48.** Corregir la distribución del completado Clink: incluir
+  `packaging/clink/lanctl.lua` y sus instrucciones en el instalador Windows y en
+  el ZIP portable. Detectar Clink y registrar automáticamente la carpeta de
+  scripts con `clink installscripts` para el usuario correspondiente, tanto en
+  la instalación como en el flujo de preparación del portable. Evitar registros
+  duplicados al actualizar y retirar el registro de la instalación al
+  desinstalar, sin afectar otras carpetas de Clink. Verificar el contenido de
+  ambos paquetes y el completado real de los seis ejecutables en CMD con Clink;
+  mantener la validación del Lua frente a los parsers de la versión distribuida.
+
+## Monitorización simultánea con LANIP — 16/10/2026
+
+- [ ] **P49.** Añadir a LANMON una TUI de logs en tiempo real que pueda
+  permanecer abierta en una terminal mientras se controla y modifica el
+  inventario desde la GUI de LANIP. Reutilizar el seguimiento incremental del
+  log común, con actualización automática, colores por nivel, filtros, pausa
+  y navegación del historial; conservar el origen de los eventos y limitar el
+  uso de memoria. Añadir un botón en la GUI de LANIP para abrir este visor en
+  otra terminal, tanto desde fuentes como desde los ejecutables instalados y
+  portables. Cerrar el visor no debe cerrar LANIP ni interrumpir sus tareas.
+  Distinguir el log operativo de las auditorías VLF y explicitar su cobertura;
+  verificar que las operaciones registradas desde la GUI aparecen en directo.
+
+## Puente externo MCP con ChatGPT y Codex — 16/10/2026
+
+- [ ] **P50.** Diseñar e implementar un plugin puente externo MCP usable desde
+  ChatGPT y Codex, sin incorporar un chat dentro de LANCTL. Exponer herramientas
+  estructuradas para consultar proyectos, inventario, tareas y errores mediante
+  lenguaje natural. Detectar las sesiones y el proyecto abierto; si hay varias
+  sesiones o proyectos, permitir seleccionar explícitamente el contexto.
+  Consultar el estado de trabajo de la sesión, incluidos los cambios sin guardar,
+  distinguiéndolos de los datos persistidos en el VLF sin forzar su guardado.
+  Contemplar cambios de proyecto, cierre de sesión y revisiones del estado para
+  evitar presentar datos obsoletos como actuales. Definir y verificar la conexión
+  externa y autenticación correspondientes para ChatGPT y Codex.
+  La primera fase será de consulta
+  y diagnóstico, incluyendo la preparación de borradores de incidencias con
+  versión, origen, contexto y evidencia seleccionada, revisables y exportables
+  por el usuario. No incluir conexión, sincronización ni publicación en GitHub.
+  Definir contratos versionados y permisos por capacidad. Excluir
+  credenciales de las respuestas y permitir seleccionar o anonimizar los datos
+  incluidos en informes. Ampliar después el control por lenguaje natural con
+  operaciones validadas por los servicios compartidos del Core, respetando
+  transacciones, bloqueos, auditoría y coordinación con las interfaces abiertas.
+
+## Avisos de actualizaciones estables — 16/10/2026
+
+- [ ] **P51.** Añadir una comprobación de actualizaciones en las Releases del
+  repositorio oficial de GitHub, con aviso automático en segundo plano y botón
+  «Buscar actualizaciones» en ajustes. Ofrecer únicamente versiones estables
+  publicadas superiores a la instalada; excluir borradores y prereleases y
+  determinar la estabilidad por el canal de publicación, respetando las reglas
+  de `stable/VERSION` incluso cuando exista un sufijo histórico. Comparar
+  versiones semánticamente, sin confundir orden de publicación con versión
+  superior. Mostrar versión instalada/disponible, novedades y enlace de descarga,
+  con opción de recordar más tarde. Limitar las comprobaciones automáticas
+  (como máximo una al día), sin bloquear el arranque ni el uso si falla la red.
+  No descargar, ejecutar instaladores ni instalar actualizaciones automáticamente.
+
+## Reportes de errores desde LANMON — 16/10/2026
+
+- [ ] **P52.** Centralizar en LANMON la recopilación y preparación de reportes
+  de errores. Al detectar un error, mostrar una ventana emergente con resumen
+  y acciones para ver detalles, preparar el reporte o cerrar; agrupar errores
+  repetidos para evitar una sucesión de ventanas. Añadir en la barra inferior
+  de información de las GUI un botón de texto «Report a bug», con el mismo
+  estilo y comportamiento visual que el botón «CLI», que permita informar
+  también de problemas sin error registrado. Ambas entradas abrirán el mismo
+  flujo de reporte gestionado por LANMON.
+  Preparar un borrador editable con descripción, pasos de reproducción,
+  resultado esperado, versión de LANCTL y del sistema, aplicación/interfaz,
+  código y origen del error, fecha, sesión/tarea relacionada, versiones de
+  plugins y fragmentos de logs pertinentes. Mostrar una vista previa de los
+  datos y logs antes de abrir el formulario de incidencias del repositorio
+  oficial en GitHub, con selección/exclusión de datos y anonimización de
+  información privada; excluir credenciales y no adjuntar proyectos completos
+  por defecto. Abrir el formulario con el resumen rellenado y permitir exportar
+  un diagnóstico adjuntable para logs extensos; el usuario revisará y publicará
+  la incidencia en GitHub. Mantener esta función independiente del puente MCP
+  de P50, que continúa sin conexión con GitHub.
+
+## Barra inferior y actividad centralizada en LANMON — 16/10/2026
+
+- [ ] **P53.** Retirar la fecha y hora (TIME/DATE) de la barra inferior de
+  información de la GUI de LANCTL mostrada por el usuario. Trasladar el visor
+  «Actividad» de esa barra al launcher LANMON, conservando el acceso a los
+  mensajes de actividad de LANCTL. Actualmente son mensajes locales en memoria
+  de la GUI (hasta 100), distintos del historial compartido y de los eventos de
+  monitorización que ya muestra LANMON: definir su transporte y conservación
+  para que el traslado no pierda información ni mezcle sus orígenes.
+  Coordinar el visor con P49. Revisar el impacto en las interfaces CLI/TUI y
+  conservar sus comandos, consultas de logs e historial y contratos públicos;
+  retirar el reloj visual no elimina las marcas de tiempo de los registros.
+  Verificar actividad entre procesos, selección de proyecto/sesión y cierre de
+  ventanas, además de las regresiones relacionadas de GUI, CLI y TUI.
+
+- [ ] **P54.** Añadir accesos de texto «Web», «GitHub» y «Referencia» a la
+  barra inferior de información de LANCTL, con estilo coherente con «CLI»,
+  apertura en el navegador del sistema y distribución adaptable al ancho.
+  Exponer también `lanctl -web`, `lanctl -github` y `lanctl -reference`,
+  utilizables desde terminal y las consolas CLI/TUI, para abrir respectivamente
+  `https://cctrgy.github.io/lanctl/`, `https://github.com/CctrGy/LANCTL` y
+  `https://cctrgy.github.io/lanctl/reference/`. Mostrar asimismo la URL completa
+  en la salida, clicable con el ratón en terminales compatibles mediante
+  hipervínculos de terminal y/o su detección nativa de URLs; mantener texto
+  legible en terminales sin soporte y en salida redirigida. Compartir las rutas
+  entre GUI y CLI/TUI, verificar el comportamiento desde los ejecutables
+  instalados y portables y actualizar ayuda, referencias CLI/web y completado
+  Clink al incorporar estas opciones.
+
+## Correcciones visuales de Topología LANWIRE — 17/10/2026
+
+Implementadas en fuentes el 17/10/2026. La evidencia de comprobación y
+sus límites se documentan en `docs/BACKLOG-VERIFICATION.md`.
+
+- [x] **P55.** Sustituir la distribución en cuadrícula de los elementos
+  conectados por una organización automática basada en sus conexiones reales.
+  Evaluar un trazado jerárquico o de grafos por componentes que reduzca cruces,
+  solapamientos y recorridos innecesarios, respete tamaños y puertos de cada
+  equipo y maneje ramificaciones y ciclos. Reservar la cuadrícula para los
+  elementos sin conexiones establecidas, separados del conjunto conectado.
+  Conservar el movimiento manual y permitir reorganizar explícitamente.
+  Validar con router, switches, paneles, tomas y suministro externo, además de
+  componentes independientes: ningún equipo debe quedar tapado y las
+  conexiones deben poder seguirse visualmente. No prometer un óptimo global:
+  priorizar una distribución legible y reproducible.
+
+- [x] **P56.** Corregir el anclaje visual de los cables a los elementos y sus
+  puertos. En la captura del «Switch Rack» la línea termina fuera de la tarjeta,
+  dejando un hueco en lugar de llegar a la conexión correspondiente. Revisar
+  coordenadas, dimensiones y capas al desplazar nodos, aplicar zoom, redimensionar
+  la ventana o desplazar la lista interna de puertos. Cuando el puerto quede
+  oculto, mostrar un anclaje de borde identificable sin dejar extremos flotantes.
+  Verificar también varios cables por equipo y enlaces seleccionados.
+
+- [x] **P57.** Mejorar las etiquetas de los cables en Topología: el trazado
+  no debe atravesar el nombre ni los extremos mostrados. Separar texto y línea,
+  usar fondo/contraste acorde con grafito y lima y evitar colisiones con nodos
+  y otras etiquetas. Mantener legibilidad según el zoom; si se abrevia el texto,
+  permitir consultar el nombre y los extremos completos al señalar o seleccionar
+  el cable. Comprobar nombres largos, cables próximos y distintos niveles de zoom.
+
+- [x] **P58.** Optimizar automáticamente la distribución visual de los puertos
+  de los switches. Adaptar filas, columnas, separación y tamaño de la tarjeta
+  al número de puertos y a sus conexiones, coordinándolo con P55/P56 para
+  facilitar el seguimiento de los cables y reducir cruces. Mantener etiquetas
+  legibles y distinguir puertos libres y ocupados, sin cambiar sus nombres,
+  numeración, identidad ni conexiones almacenadas por reorganizar su dibujo.
+  Comprobar switches de 5, 12, 24 y 48 puertos, con distintas ocupaciones,
+  tamaños de ventana y niveles de zoom; evitar recortes y scroll interno que
+  oculte los puntos de conexión cuando sea posible.
+
+- [x] **P59.** Trasladar la acción de conectar cables a la ventana de datos del
+  propio elemento, en la pestaña de puertos/conexiones. Pulsar un puerto en el
+  lienzo de Topología no debe sugerir ni iniciar una conexión: debe conservar
+  la interacción de selección del elemento, y el doble clic abrir sus datos.
+  Desde esa ventana se elegirá explícitamente el puerto y el cable compatible,
+  mostrando ocupación y extremos existentes. Mantener las validaciones reales
+  de compatibilidad y disponibilidad. Verificar que seleccionar, arrastrar y
+  abrir un elemento desde el área de sus puertos no abra formularios de conexión
+  inesperados ni cambie enlaces; comprobar el flujo de conexión desde sus datos.
+
+- [x] **P60.** Representar los racks como contenedores de ubicación y filtros
+  de Topología, sin dibujarlos como equipos de red independientes. Agrupar
+  visualmente dentro de cada rack los elementos que ya tengan esa ubicación;
+  distinguir los equipos sin rack asignado. Ofrecer «Todos los racks», selección
+  de un rack y «Sin rack», manteniendo su registro editable en el inventario.
+  Coordinar la distribución automática de P55 con las fronteras visuales de
+  los contenedores para que no coloque fuera de ellos los equipos que contienen.
+
+- [x] **P61.** Conservar y representar las conexiones entre equipos de distintos
+  racks: la pertenencia física no limita la conectividad ni convierte el rack
+  en extremo del cable. En la vista global, dibujar los enlaces cruzando los
+  límites de sus contenedores y anclados a los puertos reales. Al filtrar un rack,
+  señalar las conexiones salientes y su destino externo, con acceso para
+  centrar/ver el equipo o rack de destino; no ocultarlas silenciosamente ni
+  presentar un enlace existente como desconectado. Comprobar dos o más racks,
+  equipos sin rack, enlaces internos y entre racks, filtros y zoom, sin alterar
+  ubicaciones o conexiones almacenadas. Coordinar con P55, P56 y P60.
+
+- [x] **P62.** Añadir dos niveles de visualización de Topología: «Interior del
+  rack» y «Vista general de racks». La vista interior muestra los equipos,
+  puertos y cables del rack elegido, conservando sus conexiones salientes (P61).
+  La exterior representa cada rack como un contenedor contraído con su nombre
+  o identificador (A, B, C…), y muestra sus enlaces hacia otros racks, equipos
+  externos o suministros, siguiendo el esquema aportado por el usuario.
+  Los puntos de entrada/salida del contenedor resumen extremos reales de sus
+  equipos: no crean puertos físicos ni conexiones propias del rack. Los enlaces
+  internos quedan disponibles al entrar en él. Permitir entrar mediante doble
+  clic o acción explícita y volver a la vista general conservando posición,
+  zoom y filtros; mostrar claramente el nivel y rack actuales. Ambas vistas
+  deben representar el mismo inventario cargado, sin duplicar registros.
+
+- [x] **P63.** Hacer legible la vista general con numerosos racks y conexiones
+  en malla. El trazado debe admitir ciclos, enlaces paralelos y múltiples
+  destinos, sin imponer una estructura de árbol ni reducirla a cinco líneas.
+  Ofrecer agrupación visual desplegable de cables entre los mismos contenedores,
+  indicando su cantidad y permitiendo consultar cada cable y sus extremos.
+  Distinguir medios como fibra y cobre mediante etiquetas/leyenda además del
+  color, y permitir filtrar, buscar, enfocar un rack y resaltar sus conexiones.
+  Coordinar distribución, rutas y etiquetas con P55/P57/P60/P61/P62; mantener
+  zoom, desplazamiento y minimapa para instalaciones grandes. Verificar racks
+  A–G y escenarios de mayor tamaño, conexiones cruzadas, paralelas y salidas
+  externas, sin perder ni inventar enlaces al agrupar, filtrar o cambiar de nivel.
+
+Ámbito previsto: `gui/wire-gui.js`, `gui/launcher.css` y pruebas de interacción
+de LANWIRE. Mantener la estética actual y los datos y contratos del inventario.
+
+## Agrupación de armarios por CPD en LANRACK — 17/10/2026
+
+Implementado en fuentes el 17/10/2026; comparte el inventario físico con LANWIRE.
+
+- [x] **P64.** Incorporar en LANRACK la entidad CPD, como sala o conjunto con
+  nombre propio que contiene uno o varios armarios rack. Permitir crear,
+  consultar y editar el nombre, descripción y ubicación del CPD, asignar o
+  retirar racks y trasladarlos entre CPD. Distinguir los racks sin CPD asignado.
+  Cada rack tendrá como máximo un CPD físico; conservar su identidad, equipos,
+  unidades y conexiones al cambiar la agrupación. Retirar un rack del grupo o
+  eliminar el CPD no debe borrar armarios ni su contenido; ofrecer conservarlos
+  sin asignación o trasladarlos. La creación puede prepararse sin racks, pero
+  debe mostrar expresamente que el CPD está vacío.
+
+- [x] **P65.** Utilizar la agrupación por CPD en las visualizaciones de LANRACK:
+  lista de armarios agrupable y filtrable por CPD, vista general de la sala con
+  sus armarios y vista detallada de cada rack con sus unidades y equipos.
+  Permitir navegar CPD → rack → equipo y volver conservando el contexto, con
+  búsqueda por nombre de CPD o rack y resumen de armarios, capacidad y ocupación
+  calculado desde los datos reales. Mantener nombres naturales y la estética
+  actual. Acordar los formatos visuales adicionales antes de implementarlos.
+
+LANRACK será responsable de gestionar esta organización física; reutilizar el
+inventario y los servicios compartidos para que LANWIRE pueda reflejarla sin
+mantener grupos duplicados. Coordinar con P60–P63, conservando las conexiones
+entre racks y entre CPD. Antes de persistir el nuevo modelo, definir esquema
+versionado, validación y migración compatible de los racks existentes, que
+seguirán disponibles sin CPD asignado. Comprobar CPD con uno y varios racks,
+nombres repetidos con identificadores distintos, cambios de pertenencia y
+conservación de equipos y enlaces. La migración conserva los registros existentes y no modifica conexiones.

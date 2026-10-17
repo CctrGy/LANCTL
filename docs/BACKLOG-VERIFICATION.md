@@ -222,3 +222,212 @@ deberán incorporar las correcciones finales del backend y validarse después.
 
 Estas verificaciones no certifican Linux ni una instalación limpia de Windows.
 La auditoría de distribución de firmas de plugins se mantiene en AUDITOR.
+
+## P43: carga de iconos en Windows — 16/10/2026
+
+Causa reproducida: `run_gui()` de LANCTL y LANIP entregaba respectivamente
+`lanctl.png` y `lanip.png` a `webview.start`. El backend WinForms de pywebview
+invoca `System.Drawing.Icon` sin convertir la imagen. Ambos PNG generan la
+misma `ArgumentException` de la traza original; los ICO incluidos cargan como
+iconos nativos de 32×32. La selección del recurso queda centralizada en
+`apps/suite/window_style.py`: ICO en Windows, PNG en las otras plataformas.
+No se modifica la dependencia instalada ni se oculta la excepción con un
+manejador genérico. No cambian imágenes, estilos, parsers ni contratos del Core.
+
+`tests/test_gui_window_icons.py` ejecuta los dos puntos de entrada con WebView
+simulado, comprueba plataforma y contenido del recurso, y repite con una ruta
+de extracción PyInstaller con espacios. Cuatro casos adicionales usan el
+constructor real de .NET en Windows y liberan sus recursos. Resultado antes
+de corregir: ocho fallos y ocho aprobados; después: **16 aprobados**. Con las
+pruebas relacionadas de GUI y distribución: **69 aprobados**.
+
+GUI-DESIGN comenzó otros cambios durante esta revisión. Para verificar P43 sin
+incorporar trabajo incompleto, se exportó `a6fadc8e88cd0ac3fcd41e882cec57ff74c489b2`
+y se aplicaron únicamente los tres módulos de la corrección y su nueva prueba.
+Sobre esa copia se ejecutó la suite completa, incluidas GUI legacy y navegador:
+**1.029 pruebas y 643 subpruebas aprobadas, una omisión POSIX, 90,94 segundos**.
+Comparación AST: conservadas las **101 firmas de funciones y métodos existentes**
+de esos tres módulos. Ruff, catálogo de errores (1.237 puntos) y referencias
+CLI/web de esa copia pasan. El árbol compartido no se considera certificado
+por este resultado: una ejecución anterior coincidió con cambios de GUI-DESIGN
+y falló en tres pruebas de sus parsers, distribución y apertura de launchers.
+
+Se compilaron los seis ejecutables desde la copia aislada en `dist/p43-verified`.
+Los seis responden correctamente a `--version`. LANCTL y LANIP abren ventanas
+nativas con HICON desde fuentes y desde esos ejecutables, sin la excepción de
+P43. Se generó `dist/p43-verified/LANCTL-0.3.3-p43-setup.exe`; no se ejecutó el
+instalador ni se modificó la instalación del usuario. Los resultados y scripts
+de diagnóstico locales están en `.tool-reports/p43/`, incluido
+`full-suite-verified.xml`, `snapshot.json` y `contracts.json`.
+
+Límite descubierto en la comprobación nativa: con datos nuevos el registro de
+plugins contiene `{}` y el validador lo rechaza. Esto impide el bootstrap de
+LANIP, incluso después de corregir el icono; queda registrado como **P44**.
+La prueba empaquetada de P43 se repite con un registro de prueba explícitamente
+válido (`schemaVersion: 1`, `plugins: {}`). No constituye una validación de
+instalación limpia ni resuelve P44. No se alteraron datos reales del usuario.
+
+Comprobación final del adaptador especializado añadido durante el trabajo de
+GUI-DESIGN: `suite/launcher_gui.py` repetía el PNG incompatible. Se modificaron
+solo la importación del selector y el argumento `icon` de `webview.start`.
+Ocho casos nuevos invocan ese punto de entrada con LANWIRE, LANRACK, LANACCESS
+y LANMON y cargan el recurso resultante con .NET, desde fuentes y rutas de
+extracción. Los ocho reproducen la excepción antes del ajuste y pasan después:
+**24 regresiones P43 aprobadas** en el árbol compartido. Esta comprobación no
+certifica las nuevas interfaces completas de GUI-DESIGN ni las incorpora al
+instalador aislado descrito arriba. La última prueba de los ejecutables aislados
+también verifica el cierre normal de LANCTL y LANIP una vez termina su bootstrap.
+
+## Integración de la plantilla de plugins — P44, 16/10/2026
+
+GUI-DESIGN cambió únicamente el documento inicial de `data_migration.py` a
+`{"schemaVersion": 1, "plugins": {}}`. AUDITOR verificó el cambio en una carpeta
+temporal independiente: `ensure_data_layout()` genera exactamente ese esquema
+y el constructor real de `PluginManager` completa el descubrimiento sin el
+error del registro. No se cambian el gestor ni sus comprobaciones de permisos,
+firmas o confianza de editores durante esta integración.
+
+También se comprobó el caso previo: con `registry.json` igual a `{}`, repetir
+`ensure_data_layout()` conserva el archivo y el gestor sigue rechazándolo.
+P44 permanece parcial hasta resolver explícitamente esa compatibilidad y
+verificar el recorrido de arranque correspondiente. La compilación aislada
+`dist/p43-verified` se generó antes del ajuste de la plantilla y no lo contiene.
+
+Validación relacionada: **50 pruebas y 17 subpruebas aprobadas** al ejecutar
+`tests/test_data_migration.py` y `tests/test_plugin_security_review.py`.
+
+## Launchers con GUI real: verificación del 16/10/2026
+
+- Suite completa: **1022 pruebas superadas**, 643 subtests; seis omitidas y 21
+  excluidas. Navegador: seis pruebas adicionales con la opción habilitada.
+- `tests/test_launcher_gui.py`: persistencia IDF, conexiones incompatibles y
+  ocupadas, revisión frente a ediciones antiguas, renombrado de puertos y
+  actualización de referencias; visor LANRACK; cifrado portable y enlace de
+  credenciales; métricas reales guardadas; contexto de proceso; modos directos
+  y enrutados; registro inicial de plugins con esquema válido.
+- `tests/launcher_gui_native_smoke.py`: cuatro ventanas nativas, API real,
+  operaciones con datos temporales, contexto y cierre.
+- `tests/launcher_suite_native_smoke.py`: los cuatro botones de LANCTL abren
+  simultáneamente sus aplicaciones, reciben IPC y cierran sin dejar sesiones.
+- Los cuatro ejecutables compilados se han abierto con `--gui` en este Windows;
+  se han comprobado sus recursos frente a las fuentes, iconos HICON, IPC,
+  reconocimiento de `--gui` y cierre con código cero.
+- Instalador local reconstruido en `dist/gui-current`, incluyendo accesos de
+  menú a las seis GUI. No se ha publicado una versión ni ejecutado la matriz de
+  instalación limpia/Linux/acceso remoto de P32.
+
+## LANWIRE GUI: lista y topología interactivas (16/10/2026)
+
+- Vistas independientes a pantalla completa; detalle por pestañas con JSON
+  copiable, edición validada, grupos del TUI y clasificación cable/Wi-Fi/mixta.
+- Lienzo con zoom, desplazamiento, posiciones manuales, distribución por
+  componentes, enfoque por niveles, minimapa, navegación y enlaces por puerto.
+- Filtros combinables, columnas configurables y redimensionables, selector de
+  proyecto VLF y configuración agrupada con etiquetas legibles.
+- Almacén físico compartido explícito; fallo de apertura de proyecto conserva
+  el contexto. Las revisiones evitan sobrescribir ediciones concurrentes.
+- Validación: suite general 1.027 passed, 8 skipped, 21 deselected; prueba de
+  navegador contra WireGuiService real (edición, filtros, puertos, desconexión,
+  JSON, doble clic y navegación); regresiones visuales de los otros launchers;
+  arranque/puente/cierre nativo de LANWIRE en Windows. Los datos usados son
+  temporales, sin modificar proyectos ni inventario del usuario.
+
+## P44: migración del registro vacío histórico — 16/10/2026
+
+### Validación y planificación previas
+
+Se revisaron las reglas del proyecto, el estado del árbol compartido y todas
+las tareas abiertas. El plan de objetivos, módulos/archivos, dependencias,
+conflictos, riesgos e impacto está en «Orden de ejecución validado» del backlog.
+P44 se adelantó por bloquear el arranque con datos antiguos; P40/P42 conservan
+un seguimiento único. Los cambios visuales siguen asignados a GUI-DESIGN.
+
+La plantilla de datos nuevos ya estaba corregida por GUI-DESIGN. El problema
+restante era `{}` persistido por versiones anteriores. `ensure_data_layout()`
+se invoca desde LANIP, mientras otras entradas acceden directamente al gestor:
+corregir solo ese inicializador no cubría todos los consumidores. Se eligió el
+lector compartido y se reutilizó el lock reentrante y la escritura atómica
+existentes. Riesgo estimado de la intervención: **Alto**, por afectar al registro
+de autorizaciones. No se requirieron dependencias nuevas ni una refactorización
+estructural adicional durante la implementación.
+
+### Cambio y efectos comprobados
+
+`PluginManager._read_registry()` reconoce únicamente el objeto JSON vacío
+histórico y lo sustituye por `{"schemaVersion": 1, "plugins": {}}`. La lectura y
+migración comparten el lock de los escritores. Un documento ya versionado se
+conserva sin reescritura; datos corruptos, tipos incorrectos y esquemas
+desconocidos mantienen su rechazo. La migración no recupera permisos, confianza
+de editor ni estado activo. Un fallo de escritura conserva el documento original
+y el origen `LANCTL.Plugin.Registry.Load` con la excepción causante.
+
+Archivos modificados en este ciclo:
+
+- `src/lanctl/core/plugins/manager.py`: migración acotada en el lector privado.
+- `tests/test_plugin_registry_migration.py`: 18 casos de regresión nuevos.
+- `errorList.txt`: regenerado sobre el árbol actual, con 1.285 puntos.
+- `docs/BACKLOG.md`: planificación, prioridades, dependencias y cierre de P44.
+- `docs/BACKLOG-VERIFICATION.md`: este informe y sus límites.
+
+`data_migration.py` se verificó sin volver a modificarlo. Los cambios previos de
+GUI-DESIGN y los de P43 se conservaron; no se añadieron funcionalidades de GUI.
+
+### Verificación
+
+- Antes del cambio: **6 fallos y 12 aprobados** en las regresiones de P44.
+- Después: **87 pruebas y 17 subpruebas aprobadas** entre migración del registro,
+  revisión de seguridad de plugins, migración de datos y pruebas de plugins.
+  Incluyen idempotencia, documentos inválidos intactos, error de disco con causa,
+  espera del escritor concurrente, conservación de su autorización y ausencia
+  de ejecución de un plugin `trusted` instalado sin permisos.
+- Arranque LANIP con datos nuevos y antiguos en procesos aislados: API real de
+  bootstrap, sustituyendo únicamente la creación de la ventana en esas pruebas.
+- Smoke nativo Windows adicional con registro `{}` y datos/secretos temporales:
+  puente real, crear proyecto, editar dispositivo, grupos, guardar, cambiar,
+  restaurar y cerrar correctamente. No se modifican datos del usuario.
+- Suite completa con navegador y GUI legacy: **1.073 pruebas y 643 subpruebas
+  aprobadas; una prueba POSIX omitida en Windows**, en 130,95 segundos. Cobertura
+  de ramas combinada: **68,0842 %**, superior al umbral del 60 %.
+- Los hashes de **418 archivos** de fuentes, pruebas, herramientas, recursos y
+  empaquetado coinciden antes/después de la suite: no hubo cambios concurrentes.
+- Comparación AST con HEAD: se conservan las **37 firmas de funciones/métodos**
+  del gestor; el resto del módulo es idéntico salvo el cuerpo de `_read_registry`.
+  Por tanto se conservan registro de eventos y contratos públicos existentes.
+  También coinciden los **51 IDs y orígenes de error** del gestor, salvo líneas.
+- Ruff lint global, Bandit con el perfil de release, referencias CLI/web,
+  catálogo, higiene y `git diff --check`: aprobados. Formato de los dos archivos
+  Python de P44: aprobado.
+
+Reproducción de la suite en PowerShell:
+
+```powershell
+$env:LANCTL_GUI_BROWSER_TESTS='1'
+$env:COVERAGE_FILE='.tool-reports/p44/.coverage'
+python -m coverage run --branch --source=src -m pytest -m 'legacy_gui or not legacy_gui' -q --tb=short --junitxml .tool-reports/p44/full-suite.xml
+python -m coverage report --precision=4 --fail-under=60
+```
+
+Evidencia local: `.tool-reports/p44/full-suite.xml`, `full-suite.log`,
+`coverage.xml`, `native-legacy.log`, `contracts.json`, `source-snapshot.json`,
+`snapshot-check.json` y `format-check.json`. Son artefactos ignorados por Git.
+
+### Dependencias y trabajo pendiente
+
+**P44 queda completada en fuentes**, sustituyendo el estado parcial de la
+sección anterior. Se pueden verificar P34/P32 con registros antiguos y queda
+satisfecha la dependencia de arranque de P46/P47; sus otros requisitos siguen
+vigentes. **La siguiente tarea es P34**, empezando por validar revocación entre
+procesos, limpieza de consumidores, límites del runtime `trusted` y orden de
+locks. No se implementó esa segunda tarea en este ciclo.
+
+El formato global sigue pendiente en seis archivos de cambios anteriores:
+`src/lanctl/apps/access/manager_cli.py`, `src/lanctl/bootstrap/lanmon.py`,
+`src/lanctl/core/data_migration.py`, `tests/launcher_gui_native_smoke.py`,
+`tests/test_suite_browser.py` y `tests/test_suite_gui.py`. Debe corregirse antes
+de integrar; no se alteraron esos archivos al resolver P44.
+
+Los instaladores ya existentes no incorporan esta migración; quedan su
+reconstrucción y las comprobaciones externas de P32. Tampoco se cierra P40/P42:
+la distribución de LCP oficiales firmados requiere la identidad y los paquetes
+autorizados del editor. El resto de pendientes conserva su orden y responsable
+en el backlog. No se cambió la versión del programa ni se publicó una entrega.

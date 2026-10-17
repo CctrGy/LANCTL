@@ -3,13 +3,13 @@ name: Build release artifacts
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+*']
-    branches: ['stable/**']
+    branches: ['stable/**', 'experimental-gui']
   workflow_dispatch:
     inputs:
       version:
         description: Version without v prefix
         required: true
-        default: 0.3.3
+        default: 0.3.4-alpha.1
 
 permissions:
   contents: read
@@ -35,6 +35,13 @@ jobs:
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             version='${{ inputs.version }}'
+            stable_branch=false
+          elif [[ "${GITHUB_REF}" == refs/heads/experimental-gui ]]; then
+            version="$(python -c "import runpy; print(runpy.run_path('src/lanctl/__init__.py')['__version__'])")"
+            if [[ ! "$version" =~ -alpha\.[0-9]+$ ]]; then
+              echo 'experimental-gui requires an alpha version' >&2
+              exit 1
+            fi
             stable_branch=false
           elif [[ "${GITHUB_REF}" == refs/heads/stable/* ]]; then
             version="${GITHUB_REF_NAME#stable/}"
@@ -168,6 +175,15 @@ jobs:
           if ($uninstalled.ExitCode -ne 0) { throw "Clean uninstall failed ($($uninstalled.ExitCode))" }
           if (-not (Test-Path -LiteralPath $sentinel)) { throw 'User data was not preserved' }
           if (Test-Path -LiteralPath "$install/LANCTL.exe") { throw 'Application files remain' }
+      - name: Frozen portable GUI smoke
+        timeout-minutes: 10
+        shell: pwsh
+        run: |
+          $version = '${{ needs.prepare.outputs.version }}'
+          $portable = Join-Path $env:RUNNER_TEMP 'LANCTL-experimental-gui-smoke'
+          Expand-Archive -LiteralPath "dist/release/LANCTL-$version-windows-x64-portable.zip" -DestinationPath $portable
+          python tests/portable_smoke.py $portable
+          if ($LASTEXITCODE -ne 0) { throw 'Frozen experimental GUI smoke failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64
@@ -259,7 +275,8 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.prepare.outputs.version }}
-          name: LANCTL ${{ needs.prepare.outputs.version }}
+          name: LANCTL ${{ needs.prepare.outputs.version }} - GUI experimental (NO ESTABLE)
+          make_latest: false
           target_commitish: ${{ github.sha }}
           prerelease: ${{ needs.prepare.outputs.stable_branch != 'true' && contains(needs.prepare.outputs.version, '-') }}
           generate_release_notes: true

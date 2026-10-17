@@ -798,7 +798,13 @@ class PluginManager:
         if not self.registry_path.exists():
             return {}
         try:
-            data = json.loads(self.registry_path.read_text(encoding="utf-8"))
+            with locked_file(self.registry_path):
+                data = json.loads(self.registry_path.read_text(encoding="utf-8"))
+                # Legacy initialization wrote exactly an empty object, without a schema.
+                # Migrate only that format; never recover authorization from invalid data.
+                if data == {}:
+                    data = {"schemaVersion": 1, "plugins": {}}
+                    atomic_write_json(self.registry_path, data)
             if not isinstance(data, dict) or data.get("schemaVersion") != 1:
                 raise ValueError("schema de registro no compatible")
             values = data.get("plugins")

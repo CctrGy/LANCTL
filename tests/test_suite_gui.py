@@ -186,7 +186,7 @@ def test_external_cli_linux_uses_default_terminal():
 def test_gui_does_not_launch_cli_as_a_fallback():
     api = suite()
     with patch("lanctl.apps.suite.gui.subprocess.Popen") as popen:
-        assert not api.launch_gui("lanwire")["ok"]
+        assert not api.launch_gui("unknown")["ok"]
     popen.assert_not_called()
 
 

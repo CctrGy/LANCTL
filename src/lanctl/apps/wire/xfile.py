@@ -108,7 +108,11 @@ def lock_path(path: str | Path) -> Path:
 
 @contextmanager
 def locked_file(path: str | Path, *, timeout: float = 15.0) -> Iterator[None]:
-    with FileLock(lock_path(path), timeout=timeout):
+    # Preserve this adapter while sharing reentrant transaction ownership with
+    # core. GUI edits check a revision and write under the same outer lock.
+    from lanctl.core.file_transaction import locked_file as shared_lock
+
+    with shared_lock(path, timeout=timeout):
         yield
 
 

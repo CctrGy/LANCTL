@@ -8,6 +8,7 @@ from contextlib import suppress
 from lanctl import __version__
 from lanctl.apps.wire.cli.commands import CommandProcessor
 from lanctl.apps.wire.idf.database import DEFAULT_DATABASE_PATH, IDFDatabaseManager
+from lanctl.core.config import load_config
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.core.session import coordinated_launcher
 
@@ -34,11 +35,12 @@ def build_parser() -> LANCTLArgumentParser:
     )
     parser.add_argument(
         "--database",
-        default=DEFAULT_DATABASE_PATH,
+        default=load_config().get("physicalDatabase", DEFAULT_DATABASE_PATH),
         metavar="ARCHIVO.db",
         help="Base física IDF; por defecto usa physical/idf.db en la raíz compartida.",
     )
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--gui", action="store_true", help="Abre la interfaz gráfica de escritorio.")
     mode.add_argument(
         "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
     )
@@ -203,6 +205,10 @@ def main(argv: list[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     arguments = normalize_help_arguments(arguments)
     args = build_parser().parse_args(arguments)
+    if getattr(args, "gui", False):
+        from lanctl.apps.suite.launcher_gui import run_gui
+
+        return run_gui("lanwire", database=args.database)
     if args.tui or args.command == "tui" or (not args.cli and args.command is None):
         from lanctl.apps.wire.tui import run_tui
 

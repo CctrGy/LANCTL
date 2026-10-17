@@ -47,7 +47,7 @@ INITIAL_JSON_FILES = {
         "documentType": "lanctl.recurrent-elements",
         "elements": [],
     },
-    "data/lc/plugins.registry": {},
+    "data/lc/plugins.registry": {"schemaVersion": 1, "plugins": {}},
     "data/lc/wol-sequences.json": {
         "schemaVersion": 1,
         "documentType": "lanctl.wol-sequences",
