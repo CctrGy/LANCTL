@@ -39,6 +39,26 @@ un canal confiable. `access status` distingue configuración habilitada de
 proceso realmente activo. La recuperación se ejecuta localmente y no existen
 cuentas o contraseñas predeterminadas.
 
+## Cuenta inicial desde el instalador de Windows
+
+Setup ofrece **Crear la primera cuenta de acceso remoto del servicio**. Después
+de copiar los ejecutables y proteger el directorio de acceso, abre el asistente
+`lanaccess remote-setup` con los privilegios de la instalación. Solicita usuario,
+contraseña (al menos 12 caracteres) y confirmación directamente en su ventana.
+No recibe contraseñas por línea de comandos ni las guarda en archivos temporales.
+
+La cuenta tiene el rol `administrator` de LANACCESS y pertenece al ámbito
+`service`, en `ProgramData\LANCTL\access\users.dc`; no crea usuarios de Windows
+ni credenciales para dispositivos del inventario. El almacén conserva únicamente
+el hash Scrypt. Si ya existen cuentas, las conserva y bloquea una nueva creación
+inicial; para administrarlas usa los comandos `access user` con `--scope service`.
+Las rutas personalizadas requieren esa administración existente, sin sobrescribir
+su configuración desde este asistente.
+
+Crear la cuenta no habilita SSH/HTTPS ni modifica el firewall. Configura después
+los endpoints y autenticadores necesarios siguiendo los pasos anteriores. Es
+posible omitir o cerrar el asistente; una instalación silenciosa no lo abre.
+
 ## Remote Access desde SETTINGS
 
 La pestaña `REMOTE ACCESS` de F12 reúne la IP de escucha, CIDR autorizado,

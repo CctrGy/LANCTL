@@ -30,6 +30,13 @@ Inno instala en Program Files y puede añadir LANCTL al PATH. Sin un certificado
 de firma configurado en GitHub Secrets, Windows mostrará editor desconocido o
 SmartScreen; la verificación SHA-256 sigue siendo obligatoria.
 
+El Setup interactivo ofrece crear la primera cuenta administrativa de acceso
+remoto del servicio mediante `lanaccess remote-setup`. El asistente pide usuario,
+contraseña y confirmación en su propia ventana, conserva cuentas existentes y
+permite omitir el paso. No activa SSH/HTTPS ni abre puertos; consulta
+[la configuración de acceso](ACCESS.md#cuenta-inicial-desde-el-instalador-de-windows).
+La instalación silenciosa omite este asistente.
+
 ## Linux y Raspberry Pi OS 64-bit
 
 Uso rápido:

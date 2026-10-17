@@ -22,12 +22,13 @@ de verificación, conservando el historial anterior.
 
 Resultado del segundo ciclo (fuentes): mitigaciones de P34 aplicadas y verificadas
 con 119 pruebas; P47 incorpora máscara real y origen ICMP/ARP, con 132 pruebas
-y 10 subpruebas. Integración visual P34/P47 en curso en GUI-DESIGN. P68 revisada:
+y 10 subpruebas. Integración visual P34/P47 aplicada por GUI-DESIGN. P68 revisada:
 Ruff 0.17.0 pasa lint/formato y queda fijado en `pyproject.toml`; P67 supera la
 comparación integral y fija Coverage 7.16.2. No cambian IDs públicos
 ni versión de LANCTL. Los detalles y límites figuran en la matriz de verificación.
 P69–P73 fueron incorporadas desde HELP durante este ciclo por peticiones de
-anotación; se conservan como tareas nuevas, todavía sin implementación.
+anotación. La creación inicial de cuentas de P71.4 se adelanta por nueva petición
+humana; el resto sigue pendiente y no se presenta como implementado.
 
 ### Estabilización y comprobaciones GitHub — 17/10/2026
 
@@ -54,8 +55,9 @@ durante esta validación.
   ambas pasan 1.208 pruebas y 645 subpruebas, con cobertura idéntica 69,3568 %
   y umbral conservado del 60 %. Se adopta 7.16.2 (P67).
 - [x] Verificación local final tras corregir el reintento del primer escaneo:
-  1.212 pruebas activas, 21 de compatibilidad heredada y 645 subpruebas pasan;
-  un caso POSIX omitido en Windows. Cobertura 69,4720 %, umbral 60 %.
+  1.269 pruebas (incluidas heredadas y navegador) y 645 subpruebas pasan;
+  un caso POSIX omitido en Windows. Cobertura 69,9154 %, umbral 60 %.
+  Este corte incluye P45/P48/P71.4.
 - [x] Reejecutar CodeQL sobre el candidato e inspeccionar el SARIF: el resultado
   de la PR 26 conserva #6 sobre `passwordRotatedAt`, una fecha, no el hash.
   El análisis completo de la rama registra diez resultados sobre rutas,
@@ -100,11 +102,11 @@ y `desktop.py`; AUDITOR desarrolla servicios, datos, CLI/TUI e instalación.
 | P46 | `plugins/selection.py`, `builtin.py`, `core/installation.py`, instalador. | Selección inicial all/none/individual persistente; tema base obligatorio; actualización conserva elección y permisos. P40 impide certificar uso de trusted oficiales. | Alto | Backend verificado; fuente del instalador preparada, pendiente empaquetado/certificación. |
 | P45 | Cinco temas con preview en `packaging/inno/LANCTL.iss`; `setup-defaults` consume el mismo validador. | P35/P46 implementadas en fuentes; actualización no sobrescribe configuración existente. | Medio | Implementación preparada; la compilación/prueba visual del instalador corresponde a integración final. |
 | P47 | `core/first_scan.py`, enumeración de interfaces, CLI `list --interface` y transporte ICMP/ARP con origen explícito. | Selección de NIC/rango real, usuario normal y confirmación antes de sondas; adaptador visual en integración. | Alto | 132 pruebas y 10 subpruebas pasan. REF-P47-interface conserva TCP/descubridores y certificación nativa varias NIC/Linux. |
-| P48 | `core/clink_integration.py`, Lua, instalador, `portable/prepare.ps1`, script de build. | Solo carpeta de esta distribución/usuario; no ejecutar PATH de usuario al desinstalar elevado. Falta CMD/Clink real y caso de desinstalación por otra cuenta. | Medio | Registro y retirada comprobados con ejecutor simulado; paquetes preparados en fuentes. No certificada. |
+| P48 | `core/clink_integration.py`, Lua, instalador, `portable/prepare.ps1`, script de build. | Solo carpeta de esta distribución/usuario; no ejecutar PATH de usuario al desinstalar elevado. Falta desinstalación desde otra cuenta. | Medio | CMD/Clink 1.9.34 real: completado de los seis launchers, registro repetido y retirada verificados. Corregido código 1 de operación ya aplicada; registro original restaurado. |
 | P34 | Concesiones por activación, comprobación de autoridad, retirada de referencias y limpieza fuera de locks implementadas; 119 pruebas pasan. | REF-P34-runtime sigue necesaria: hilos y efectos nativos del trusted heredado no son cancelables desde la API. | Crítico | `runtime_status` distingue acceso al Core, limpieza pendiente y reinicio requerido. No se declara revocación nativa completa. |
 | P40/P42 | Artefactos LCP oficiales y confianza real. | Requiere editor/clave y paquetes firmados autorizados; no crear identidad ficticia. | Alto | Bloqueo externo mantenido. |
 | P50 | Puente MCP de consulta y diagnóstico. | REF-P34-runtime, contrato de snapshots de sesión viva/revisión y transporte autenticado verificable; el coordinador actual solo comparte metadatos. | Alto | Preparador P52 disponible; puente no implementado ni certificado. No sustituir cambios sin guardar por lectura del VLF. |
-| P32 | Certificación de distribución. | GUI-DESIGN ejecutará suite integral y único build; Windows limpio, ARM64 y SSH externo siguen sin evidencia. | Alto | No se confunden regresiones de fuente con certificación de paquetes. |
+| P32 | Certificación de distribución. | Windows instalado/portable y Linux amd64/arm64 pasan en GitHub sobre `2b8494a`; se repite tras P45/P48. SSH externo y varias NIC siguen pendientes. | Alto | Evidencia por commit y plataforma; no se confunde compilación o SSH de loopback con certificación de red externa. |
 
 Refactorizaciones necesarias antes de reanudar las tareas bloqueadas:
 
@@ -117,12 +119,12 @@ Refactorizaciones necesarias antes de reanudar las tareas bloqueadas:
   externo. Conservar runtime/API anteriores como compatibilidad explícita con
   sus límites; no anunciar aislamiento para `trusted` en proceso. Impacto alto
   en plugins y contratos, riesgo crítico; condición previa de cierre P34/P50.
-- [ ] **REF-P47-interface.** Enumeración de redes con máscara real y selección
-  del origen de sondas ICMP/ARP/TCP. El escáner actual usa rutas del SO y puede
-  inferir /24; una etiqueta de interfaz no altera ese comportamiento. Añadir
-  adaptadores Windows/Linux con origen explícito, verificar varias NIC y no
-  introducir escaneos fuera del rango confirmado. Impacto transversal en
-  descubrimiento, riesgo alto; requisito para completar P47.
+- [ ] **REF-P47-interface.** Completar el origen explícito de TCP y de los
+  descubridores mDNS/SSDP/WSD, y certificar varias NIC en Windows/Linux.
+  La enumeración con máscara real y la vinculación ICMP/ARP ya están
+  implementadas; el modo explícito omite los mecanismos que aún no garantizan
+  ese origen. No introducir escaneos fuera del rango confirmado. Impacto
+  transversal en descubrimiento, riesgo alto; requisito para completar P47.
 
 - [ ] **REF-P50-session.** Antes del puente MCP, definir un proveedor de snapshot
   del proceso propietario con revisión, contexto de sesión/proyecto explícito,
@@ -132,11 +134,12 @@ Refactorizaciones necesarias antes de reanudar las tareas bloqueadas:
   desde el servidor no cumple ese contrato. Riesgo alto, impacto en sesión e
   inventario; depende de REF-P34-runtime para exposición mediante plugin.
 
-Orden recomendado tras la integración de fuentes: resolver REF-P34-runtime y
-el contrato de sesión viva de P50; obtener las firmas de P40; verificar el
-instalador P45/P46/P48 y luego P32 con su matriz externa; resolver
-REF-P47-interface antes de certificar selección de red. P67/P68 (herramientas
-de desarrollo) son propuestas separadas y no se mezclan en este cambio.
+Orden recomendado tras validar el candidato: resolver REF-P34-runtime,
+completar REF-P47-interface y la certificación externa P32/P48; configurar el
+editor autorizado antes de cerrar P40/P42. P50 requiere además el contrato de
+sesión viva REF-P50-session. P45 está comprobada por el usuario; P67/P68 están
+aplicadas y verificadas. Las nuevas páginas y opciones P69–P73 conservan su
+planificación separada, salvo la creación inicial de cuentas de P71.4.
 
 Las marcas históricas de las tareas con alcance GUI/instalador no se adelantan
 a la validación final. Evidencia y límites: sección AUDITOR del 17/10 en
@@ -353,6 +356,9 @@ queda visible dentro de la ventana. La primera captura muestra la versión 0.3.3
   emitan de forma coherente en todos los flujos anteriores.
 - [ ] **P32.** Ejecutar pruebas de regresión en Windows instalado, Windows portable,
   Linux ARM64 y acceso remoto.
+  Windows instalado/portable y Linux amd64/arm64 verificados por el workflow
+  manual 39069158807 (`2b8494a`); pendiente repetir para P45/P48 y certificar
+  acceso desde otro equipo, sin confundirlo con las pruebas TLS/SSH locales.
 - [x] **P33.** Registrar durante la revisión cualquier hallazgo técnico adicional con
   pasos de reproducción, impacto y prueba de aceptación.
 
@@ -513,7 +519,7 @@ paquete sin firma por marcar sus permisos.
 
 ## Configuración inicial del instalador — 16/10/2026
 
-- [ ] **P45.** Añadir una selección de cinco temas durante la instalación, con
+- [x] **P45.** Añadir una selección de cinco temas durante la instalación, con
   nombre y vista previa. Guardar la elección mediante la configuración compartida
   del programa y conservar el tema existente en actualizaciones, salvo cambio
   explícito del usuario.
@@ -528,6 +534,13 @@ paquete sin firma por marcar sus permisos.
   de los recursos en el instalador compilado, así como contraste y renderizado
   del control. Validar visualmente las cinco opciones en el Setup distribuido;
   la implementación en fuentes no cierra este fallo observado en el instalador.
+  **Corregida y comprobada — 17/10/2026.** El instalador usa cinco capturas
+  reales del GUI con las paletas del Core, incluidas y extraídas como BMP,
+  en lugar de paneles de color. Pasan 16 pruebas de recursos/distribución.
+  El usuario abrió el Setup actualizado y confirmó que las cinco imágenes
+  son distintas y se ven completas: «Sí, las cinco se ven bien». La captura
+  automatizada de la ventana elevada no estuvo disponible; la evidencia visual
+  corresponde a esa comprobación humana. Se conserva el contrato de preferencias.
 - [x] **P46.** Permitir elegir si se instalan los plugins predeterminados del
   programa, con selección individual opcional. Adaptar el empaquetado y el primer
   inicio para respetar la elección, distinguir los recursos necesarios (como el
@@ -849,12 +862,15 @@ publicados conservarán su contenido original.
 
 ## Cierre de interfaz coordinado — 17/10/2026
 
-P35, P45, P46, P49, P51–P54 y P66 «Dimensiones» quedan implementados y
+P35, P46, P49, P51–P54 y P66 «Dimensiones» quedan implementados y
 verificados localmente junto con sus adaptadores de escritorio. La evidencia
-está en `docs/BACKLOG-VERIFICATION.md`. P47 incluye confirmación de CIDR y
-progreso, pero mantiene pendiente el enlace real a una interfaz de red. P48
-conserva la certificación con Clink real y el caso de desinstalación por otra
-cuenta. La instalación limpia y las plataformas externas siguen en P32.
+está en `docs/BACKLOG-VERIFICATION.md`. P45 tiene imágenes reales incorporadas;
+el usuario comprobó las cinco opciones en Setup y confirmó que se ven completas
+y distintas. La revisión visual es humana, sin captura automatizada. P47 enlaza
+ICMP/ARP a interfaz/CIDR real y conserva el reintento; faltan otros transportes
+y certificación con varias NIC. P48 ya pasa con CMD/Clink real y conserva la
+certificación de desinstalación por otra cuenta. P32 registra la instalación
+limpia de Windows y Linux amd64/arm64 por commit; el acceso externo sigue abierto.
 P34, P40/P42 y P50 no se consideran completados por estas mejoras visuales:
 AUDITOR continúa su trabajo interno por separado tras el paquete comprobado.
 Los puertos de las skins permanecen decorativos y los datos se comparten entre
@@ -948,6 +964,15 @@ LANRACK y LANWIRE sin duplicar inventarios.
   estándar y avanzado, actualización conservando preferencias y correspondencia
   entre lo elegido y lo realmente instalado/configurado. Esta entrada define
   el flujo pendiente; no supone que las nuevas páginas estén implementadas.
+
+  **Avance P71.4:** implementada la creación opcional de la primera cuenta
+  administrativa del servicio mediante `lanaccess remote-setup`, ofrecida por
+  Setup después de aplicar ACL. Formulario con confirmación, autenticación
+  Scrypt existente, bloqueo entre procesos, rechazo de rutas incompatibles y
+  conservación de cuentas al actualizar. Probada la integración navegador/API
+  real en un almacén temporal. No activa listeners ni firewall y no completa
+  las cinco páginas de P71. Falta la comprobación humana del recorrido elevado
+  del instalador definitivo; la instalación silenciosa lo omite.
 
 ## Desinstalación completa de LANCTL — 17/10/2026
 

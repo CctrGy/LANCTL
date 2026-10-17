@@ -2037,12 +2037,15 @@ Options:
 Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]
                  [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]
                  [--project-dir PROJECT_DIR] [--gui | -tui | --cli]
-                 {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ...
+                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
+                 ...
 
 Gestiona credenciales cifradas del entorno LANCTL.
 
 Arguments:
-  {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
+  {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
+    remote-setup              Crea la primera cuenta remota del servicio en Windows (requiere
+                              administrador).
     list (ls)                 Lista metadatos; nunca secretos.
     show                      Muestra metadatos de una credencial.
     set                       Crea o actualiza una credencial.
@@ -2066,6 +2069,15 @@ Options:
   --gui                       Abre la interfaz gráfica de escritorio.
   -tui, --tui                 Abre la interfaz de pantalla completa.
   --cli, -cli                 Abre la consola interactiva.
+```
+
+## `LANACCESS remote-setup`
+
+```text
+Usage: LANACCESS remote-setup [-h]
+
+Options:
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANACCESS list`

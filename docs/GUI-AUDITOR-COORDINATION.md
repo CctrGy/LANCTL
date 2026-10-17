@@ -96,3 +96,23 @@ SHA-256:
 Es un instalador experimental local; no se ha instalado ni publicado.
 Compilar y ejecutar los binarios no certifica instalación/actualización en una
 máquina limpia ni los entornos externos que AUDITOR sigue comprobando.
+
+## Reapertura P45: imágenes de los temas
+
+El reporte visual identifica que el Setup anterior solo mostraba `TPanel`
+con fondo/acento y una leyenda de poco contraste: no contenía imágenes.
+Se reemplaza por `TBitmapImage`, cinco BMP versionados con capturas de Inicio
+y las paletas reales del Core, extracción temporal y cambio de archivo al
+seleccionar tema. Se amplía la página y se distribuyen opciones e imagen en
+dos columnas, manteniendo la proporción 8:5. El generador usa datos sintéticos.
+
+Pasan 16 pruebas de distribución/recursos y Ruff; Inno compila correctamente.
+El instalador actualizado ocupa 135.659.290 bytes y su SHA-256 es
+`dcb5bd5a50fdb7167af7550cfc76eec4982194e726d044627270919f18d96ce5`.
+Los seis ejecutables de aplicación conservan la compilación verificada previa.
+El usuario abrió el Setup actualizado, aceptó manualmente UAC y confirmó que
+las cinco vistas previas cambian y se ven completas: «Sí, las cinco se ven
+bien». La herramienta no pudo capturar la ventana elevada, por lo que se
+registra esa revisión humana, sin atribuirla a una captura automatizada.
+P45 queda comprobada. La siguiente compilación incluirá además la corrección
+posterior de registro Clink repetido (P48) entregada por AUDITOR.

@@ -1041,7 +1041,103 @@ la ruta esperada, conservando los componentes/nombres y el contrato existente;
 servicios ni invalidar los binarios compilados. La matriz Windows se repite
 sobre la corrección; no se normaliza el entorno del runner para ocultar el caso.
 
+La siguiente [ejecución CI](https://github.com/CctrGy/LANCTL/actions/runs/39069631762)
+de `4193664` completa correctamente Linux y Windows Python 3.10/3.11 con las
+regresiones de navegador activadas en Windows. El
+[workflow manual de distribución](https://github.com/CctrGy/LANCTL/actions/runs/39069158807)
+de `2b8494a` también finaliza correctamente: Windows instalado/actualizado/
+desinstalado conservando datos, portable con los seis launchers y exclusión de
+GUI duplicada, paquetes nativos Linux amd64 y arm64 con instalación/actualización/
+desinstalación. El job `release` se omite; no crea tags ni publicaciones.
+Estos resultados preceden a la corrección nativa Clink y a los previews P45,
+por lo que se repiten las comprobaciones pertinentes sobre el siguiente corte.
+
+### P48: comprobación nativa y corrección de registro repetido
+
+Se usa el ZIP oficial de [Clink 1.9.34](https://github.com/chrisant996/clink/releases/tag/v1.9.34),
+contrastado con su SHA-256 publicado, en `.tool-reports/clink-native/`, sin
+instalar autorun ni modificar PATH/perfil de forma permanente. CMD con Clink
+completa `--version` para los seis launchers y el contexto `lanctl ip history`.
+
+La prueba real detectó que `installscripts` devuelve 1 para una carpeta ya
+registrada; `uninstallscripts` hace lo mismo si ya fue retirada. El adaptador
+trataba esos casos como fallos. Se corrige `core/clink_integration.py`: ante
+código 1 comprueba el listado real y exige coincidencia exacta normalizada de
+la carpeta y el estado solicitado. No acepta prefijos ni un listado fallido.
+Conserva bloqueo, propietario, protección ante elevación, plazo y origen de
+errores; no cambia la API pública. Riesgo medio, sin impacto en Linux.
+
+Las regresiones reproducen tres fallos anteriores; después pasan 22 pruebas
+y seis subpruebas enfocadas. Con Clink real pasan registro, repetición, retirada,
+repetición de retirada y retirada previa por otra herramienta. El registro
+original del usuario se comprueba y restaura exactamente; los marcadores de
+prueba permanecen en un directorio aislado. P48 solo conserva la comprobación
+de desinstalación elevada por otra cuenta. No se atribuye esa certificación a
+la prueba del usuario normal.
+
 El supuesto bloqueo de cierre LANIP fue un fallo del harness: usaba proyectos
 reales y pipes sin consumir. GUI-DESIGN comprobó cierre nativo y código de salida
 0 con directorio temporal y salida a archivo; no necesitó cambiar la aplicación
 por esa observación. P34/P47 están integrándose con sus avisos y selector real.
+
+La regresión adicional de codificación reproduce el fallo con salida UTF-8 y
+CP1252 como codificación predeterminada de Windows. Se declara UTF-8 en las
+dos llamadas Clink. La prueba pasa tras fallar antes; Clink 1.9.34 real confirma
+registro repetido y retirada de una ruta con espacios y «é», restaurando el
+registro original. La suite completa anterior a este último ajuste pasó
+1.241 pruebas, 645 subpruebas y una omisión, con cobertura 69,8801 %.
+
+### P71.4: validación y plan de cuenta inicial en Setup
+
+Solicitud humana nueva recibida mediante GUI-DESIGN: el instalador no pide
+crear las credenciales de acceso remoto. Se adelanta exclusivamente ese punto
+de P71, sin incorporar el resto de la reorganización del instalador.
+
+- Objetivo: ofrecer un asistente local para la primera cuenta administrativa
+  LANACCESS del servicio; preservar todas las cuentas de una actualización.
+- Archivos: `apps/access/remote_setup.py`, parser `manager_cli.py`, regresiones,
+  Clink y referencias. GUI-DESIGN posee `gui/remote-setup.{html,css,js}` e Inno.
+- Dependencias: `AuthenticationService`, `AccessStore`, bloqueo entre procesos,
+  privilegios del SO, WebView2 y ACL de la carpeta del servicio aplicadas antes
+  del asistente. Ventana independiente después de copiar los ejecutables.
+- Riesgo alto: confundir el perfil de quien acepta UAC con el almacén del
+  servicio o filtrar secretos por argv/logs. La ruta procede de Windows y se
+  rechazan redirecciones/configuraciones personalizadas incompatibles.
+- Contrato: comando aditivo `lanaccess remote-setup`; puente local limitado a
+  estado, creación inicial y cierre. Contraseña/confirmación solo en memoria;
+  hash Scrypt mediante el servicio existente; ninguna contraseña predeterminada.
+- Impacto: no modifica autenticación ni cuentas existentes, no abre listeners,
+  no habilita SSH/HTTPS ni toca firewall. La creación concurrente se serializa.
+  Cancelación/silencioso permiten instalar sin configurar acceso remoto.
+- Verificación prevista: no administrador, validación, duplicado, concurrencia,
+  actualización, rutas, ausencia de secretos, contrato parser, navegador y
+  suite completa; repetir CI y distribución después de integrar GUI-DESIGN.
+
+La implementación de P71.4 pasa las regresiones de permisos del SO, longitud y
+confirmación de contraseña, creación concurrente, actualización sin reemplazar
+cuentas, migración heredada, corrupción, rutas redirigidas/personalizadas,
+cancelación y redacción de errores. La integración Edge llama al servicio real
+con un almacén temporal: crea la cuenta y verifica después su autenticación
+Scrypt y rol administrativo, sin modificar cuentas reales ni abrir listeners.
+Los errores de inicio se muestran dentro del asistente, también con consola
+oculta. El recorrido humano completo bajo UAC se comprobará con el instalador
+reconstruido; no se da por verificado por la prueba de navegador.
+
+La inspección final contrasta 89 firmas públicas con `main` (`ccd728b`) y, para
+el adaptador Clink añadido después, con el checkpoint `581c5a3`: no se elimina
+ni cambia ninguna. `AccessManager.__init__/list/delete` siguen disponibles con
+las mismas firmas por herencia de `CredentialService`. Los tres archivos de
+contratos/IDs Core permanecen idénticos. `remote-setup` es un comando aditivo;
+se regeneran CLI, Clink y referencia web. La redacción de `passwordHash` en la
+salida CLI es el cambio de seguridad intencionado ya descrito, manteniendo la
+clave JSON y añadiendo `passwordConfigured`.
+
+### Corte final local con P45, P48 y P71.4
+
+Suite completa, incluidas las pruebas heredadas y navegador Edge:
+**1.269 pruebas y 645 subpruebas correctas**, una omisión POSIX en Windows,
+196,59 s. Cobertura de ramas/líneas combinada **69,9154 %**, umbral 60 %.
+Ruff/formato: 490 archivos; Bandit con el mismo nivel `-ll` de CI, pip check,
+pip-audit, compileall, catálogo (1.434 puntos), referencias CLI/web, higiene y
+`git diff --check` correctos. Se congela este código para reconstrucción local
+y CI/distribución de la PR 26; sus resultados remotos se añaden por commit.

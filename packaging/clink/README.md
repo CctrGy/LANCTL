@@ -43,8 +43,12 @@ carpeta registrada por esta instalación y usuario. Si otro administrador
 desinstala la aplicación, o Clink solo existe en una ubicación privada no
 disponible al desinstalador elevado, el propietario debe ejecutar antes
 `lanctl completions uninstall` o `clink uninstallscripts RUTA`. No se recorren
-ni alteran perfiles de otros usuarios. La certificación con CMD/Clink real
-sigue pendiente de un entorno con Clink instalado.
+ni alteran perfiles de otros usuarios. El completado de los seis launchers y
+del contexto `lanctl ip history` se comprobó en CMD con Clink 1.9.34. También
+se verificaron registro repetido, retirada y registro original conservado para
+el usuario normal. Clink devuelve 1 si la ruta ya está en el estado solicitado;
+LANCTL consulta `installscripts --list` para comprobarlo antes de dar éxito.
+La desinstalación elevada desde otra cuenta sigue pendiente de certificación.
 
 El ZIP portable incluye `clink/` y `prepare.ps1`. Ejecuta `prepare.ps1` para
 registrar o `prepare.ps1 -RemoveClink` antes de mover/borrar el portable.

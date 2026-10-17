@@ -13,7 +13,7 @@
   local y explícita.
 - Los instaladores conservan los datos al desinstalar. Su eliminación requiere
   una acción administrativa independiente.
-- La beta no debe ser la única copia de proyectos o inventarios importantes.
+- La versión experimental no debe ser la única copia de proyectos o inventarios importantes.
 - Los plugins Python aislados aplican límites y auditoría, pero no constituyen
   una frontera de seguridad contra código deliberadamente hostil. Instala solo
   paquetes firmados y de confianza.

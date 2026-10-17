@@ -23,6 +23,7 @@ PrivilegesRequired=admin
 UninstallDisplayIcon={app}\LANCTL.exe
 ChangesEnvironment=yes
 SetupLogging=yes
+WizardSizePercent=130,140
 
 [Types]
 Name: standard; Description: "Standard"
@@ -56,6 +57,7 @@ Name: "{commonappdata}\LANCTL\projects"; Permissions: users-modify
 Name: "{commonappdata}\LANCTL\automation"; Permissions: users-modify
 
 [Files]
+Source: "theme-previews\*.bmp"; Flags: dontcopy
 Source: "..\..\assets\launcher-icons\terminal.ico"; DestDir: "{app}\assets\launcher-icons"; Flags: ignoreversion; Components: core
 Source: "{#BuildRoot}\LANCTL.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 Source: "{#BuildRoot}\lanip.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: core
@@ -97,6 +99,7 @@ Name: ipgui; Description: "Crear acceso directo a la interfaz gráfica de LANIP 
 Name: desktopicon; Description: "Crear acceso directo de LANCTL TUI en el escritorio"; Flags: unchecked
 Name: eventviewer; Description: "Crear acceso directo al visor de eventos LANMON"; Flags: unchecked
 Name: accessadmin; Description: "Crear acceso LANACCESS administrativo (solicita UAC al abrir; no eleva el resto de programas)"; Flags: unchecked
+Name: remoteaccount; Description: "Crear la primera cuenta de acceso remoto del servicio LANACCESS (no activa SSH ni HTTPS)"; Flags: checkedonce
 Name: firstscan; Description: "Al abrir LANIP al finalizar, preparar el primer escaneo con confirmación del rango (rutas del sistema)"; Flags: unchecked
 
 [Registry]
@@ -106,10 +109,11 @@ Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environmen
 ; Corta la herencia users-modify de la raíz para credenciales y código de plugins.
 Filename: "{sys}\icacls.exe"; Parameters: """{commonappdata}\LANCTL\access"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"""; Flags: runhidden waituntilterminated
 Filename: "{sys}\icacls.exe"; Parameters: """{commonappdata}\LANCTL\plugins"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"""; Flags: runhidden waituntilterminated
+Filename: "{app}\lanaccess.exe"; Parameters: "remote-setup"; Tasks: remoteaccount; Flags: runhidden waituntilterminated skipifsilent; StatusMsg: "Preparando la cuenta inicial de acceso remoto del servicio LANACCESS..."
 Filename: "{app}\LANCTL.exe"; Parameters: "setup-defaults --theme {code:GetInitialTheme} --plugins {code:GetPluginSelection}"; Flags: runhidden waituntilterminated; StatusMsg: "Preparando preferencias y plugins sin activarlos; conservando elecciones existentes..."
 Filename: "{app}\LANCTL.exe"; Parameters: "completions install"; Flags: runhidden waituntilterminated runasoriginaluser; StatusMsg: "Registrando el completado Clink del usuario, si está disponible..."
 Filename: "{app}\LANCTL.exe"; Parameters: "monitor service install --yes"; Components: monitor; Flags: runhidden waituntilterminated; StatusMsg: "Instalando el servicio permanente LANCTL Monitor..."
-Filename: "{app}\lanaccess.exe"; Parameters: "--tui"; Description: "Abrir LANACCESS para configurar credenciales del usuario (sin guardarlas en el instalador)"; Flags: postinstall unchecked skipifsilent runasoriginaluser
+Filename: "{app}\lanaccess.exe"; Parameters: "--tui"; Description: "Abrir LANACCESS para gestionar credenciales de dispositivos del inventario"; Flags: postinstall unchecked skipifsilent runasoriginaluser
 Filename: "{app}\LANCTL.exe"; Parameters: "{code:GetLanipArguments}"; Description: "Abrir LANIP (y preparar la confirmación del primer escaneo si se seleccionó)"; Flags: postinstall unchecked skipifsilent runasoriginaluser runhidden
 
 [UninstallRun]
@@ -119,8 +123,7 @@ Filename: "{app}\LANCTL.exe"; Parameters: "monitor service uninstall --yes"; Fla
 [Code]
 var
   ThemePage: TInputOptionWizardPage;
-  ThemePreview: TPanel;
-  ThemeAccent: TPanel;
+  ThemePreview: TBitmapImage;
 
 function GetInitialTheme(Param: String): String;
 begin
@@ -135,14 +138,7 @@ end;
 
 procedure UpdateThemePreview(Sender: TObject);
 begin
-  ThemePreview.Font.Color := $f4efe9;
-  case ThemePage.SelectedValueIndex of
-    1: begin ThemePreview.Color := $221507; ThemeAccent.Color := $e8a925; end;
-    2: begin ThemePreview.Color := $181b10; ThemeAccent.Color := $81db8c; end;
-    3: begin ThemePreview.Color := $221619; ThemeAccent.Color := $ff9cbc; end;
-    4: begin ThemePreview.Color := $f8f5f2; ThemeAccent.Color := $007347; ThemePreview.Font.Color := $2b2118; end;
-  else begin ThemePreview.Color := $1c1815; ThemeAccent.Color := $26efb2; end;
-  end;
+  ThemePreview.Bitmap.LoadFromFile(ExpandConstant('{tmp}\') + GetInitialTheme('') + '.bmp');
 end;
 
 procedure InitializeWizard;
@@ -156,15 +152,18 @@ begin
   ThemePage.Add('Violeta');
   ThemePage.Add('Claro');
   ThemePage.SelectedValueIndex := 0;
-  ThemePage.CheckListBox.Height := ScaleY(120);
+  ThemePage.CheckListBox.SetBounds(0, ScaleY(50), ScaleX(110), ScaleY(170));
   ThemePage.CheckListBox.OnClickCheck := @UpdateThemePreview;
-  ThemePreview := TPanel.Create(WizardForm);
+  ExtractTemporaryFile('graphite.bmp');
+  ExtractTemporaryFile('midnight.bmp');
+  ExtractTemporaryFile('forest.bmp');
+  ExtractTemporaryFile('violet.bmp');
+  ExtractTemporaryFile('light.bmp');
+  ThemePreview := TBitmapImage.Create(WizardForm);
   ThemePreview.Parent := ThemePage.Surface;
-  ThemePreview.SetBounds(0, ScaleY(165), ThemePage.SurfaceWidth, ScaleY(55));
-  ThemePreview.Caption := 'LANCTL · Vista previa de fondo y acento';
-  ThemeAccent := TPanel.Create(WizardForm);
-  ThemeAccent.Parent := ThemePage.Surface;
-  ThemeAccent.SetBounds(0, ScaleY(220), ThemePage.SurfaceWidth, ScaleY(8));
+  ThemePreview.SetBounds(ScaleX(120), ScaleY(50), ThemePage.SurfaceWidth - ScaleX(120),
+    (ThemePage.SurfaceWidth - ScaleX(120)) * 5 div 8);
+  ThemePreview.Stretch := True;
   UpdateThemePreview(nil);
 end;
 

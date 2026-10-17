@@ -535,7 +535,7 @@ local function configure_lanaccess(matcher)
             "-user" .. history_value("Usuario")
         }):nofiles(),
         "delete" .. history_value("ID de credencial"), "del" .. history_value("ID de credencial"),
-        "credential" .. access_credential, "doctor",
+        "credential" .. access_credential, "doctor", "remote-setup",
         "settings" .. clink.argmatcher():addarg({ "show", "use-store" }):addarg(clink.filematches):addflags({ "-h", "--help", "/?", "--yes" }):nofiles(),
         "protocol" .. clink.argmatcher():addarg({ "list", "configure" }):addarg(selector):addarg(protocols):addflags({
             "-h", "--help", "/?", "--port" .. history_value("Puerto"),

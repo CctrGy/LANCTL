@@ -9146,6 +9146,7 @@ window.LANCTL_REFERENCE = {
       ],
       "category": "Launchers",
       "children": [
+        "remote-setup",
         "list",
         "show",
         "set",
@@ -9160,7 +9161,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.4-alpha.1"
       },
       "description": "Gestiona credenciales cifradas del entorno LANCTL.",
-      "details": "Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]\n                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]\n                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]\n                 {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ...\n\nGestiona credenciales cifradas del entorno LANCTL.\n\nArguments:\n  {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}\n    list (ls)                 Lista metadatos; nunca secretos.\n    show                      Muestra metadatos de una credencial.\n    set                       Crea o actualiza una credencial.\n    delete (del)              Elimina una credencial.\n    credential                Gestión, transporte y recuperación de credenciales.\n    doctor                    Comprueba vínculos y permisos sin cambiar datos.\n    settings                  Muestra o selecciona el almacén compartido.\n    protocol                  Resumen por protocolos del almacén.\n    user                      Usuarios del acceso remoto; no cuentas de Windows.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión común de la suite y termina.\n  --database DATABASE         Base de elementos LANCTL.\n  --store STORE               Almacén cifrado de credenciales.\n  --cipher {auto,dpapi,portable}\n                              Proveedor de cifrado; portable pide contraseña.\n  --scope {program,windows,project}\n                              Ubicación; no cambia permisos ni copia secretos automáticamente.\n  --project-dir PROJECT_DIR   Directorio del proyecto para su almacén independiente.\n  --gui                       Abre la interfaz gráfica de escritorio.\n  -tui, --tui                 Abre la interfaz de pantalla completa.\n  --cli, -cli                 Abre la consola interactiva.",
+      "details": "Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]\n                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]\n                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]\n                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}\n                 ...\n\nGestiona credenciales cifradas del entorno LANCTL.\n\nArguments:\n  {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}\n    remote-setup              Crea la primera cuenta remota del servicio en Windows (requiere\n                              administrador).\n    list (ls)                 Lista metadatos; nunca secretos.\n    show                      Muestra metadatos de una credencial.\n    set                       Crea o actualiza una credencial.\n    delete (del)              Elimina una credencial.\n    credential                Gestión, transporte y recuperación de credenciales.\n    doctor                    Comprueba vínculos y permisos sin cambiar datos.\n    settings                  Muestra o selecciona el almacén compartido.\n    protocol                  Resumen por protocolos del almacén.\n    user                      Usuarios del acceso remoto; no cuentas de Windows.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión común de la suite y termina.\n  --database DATABASE         Base de elementos LANCTL.\n  --store STORE               Almacén cifrado de credenciales.\n  --cipher {auto,dpapi,portable}\n                              Proveedor de cifrado; portable pide contraseña.\n  --scope {program,windows,project}\n                              Ubicación; no cambia permisos ni copia secretos automáticamente.\n  --project-dir PROJECT_DIR   Directorio del proyecto para su almacén independiente.\n  --gui                       Abre la interfaz gráfica de escritorio.\n  -tui, --tui                 Abre la interfaz de pantalla completa.\n  --cli, -cli                 Abre la consola interactiva.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -9178,7 +9179,36 @@ window.LANCTL_REFERENCE = {
         "LANACCESS"
       ],
       "title": "LANACCESS",
-      "usage": "LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]\n                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]\n                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]\n                 {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ..."
+      "usage": "LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]\n                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]\n                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]\n                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}\n                 ..."
+    },
+    {
+      "aliases": [],
+      "arguments": [],
+      "category": "Credenciales y acceso",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.4-alpha.1"
+      },
+      "description": "usage: LANACCESS remote-setup [-h]",
+      "details": "Usage: LANACCESS remote-setup [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanaccess remote-setup --help"
+      ],
+      "group": "LANACCESS",
+      "id": "command-lanaccess-remote-setup",
+      "kind": "command",
+      "launcher": "LANACCESS",
+      "name": "remote-setup",
+      "path": [
+        "LANACCESS",
+        "remote-setup"
+      ],
+      "title": "LANACCESS remote-setup",
+      "usage": "LANACCESS remote-setup [-h]"
     },
     {
       "aliases": [],
@@ -11421,7 +11451,7 @@ window.LANCTL_REFERENCE = {
     }
   ],
   "meta": {
-    "entryCount": 182,
+    "entryCount": 183,
     "name": "LANCTL Reference",
     "repository": "https://github.com/CctrGy/LANCTL",
     "version": "0.3.4-alpha.1"
