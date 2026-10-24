@@ -25,7 +25,9 @@ CONSOLE_HELP = """Comandos de consola:
 """
 
 
-def command_console(name, dispatch, *, tui=False, overview="", shortcuts=None):
+def command_console(
+    name, dispatch, *, tui=False, overview="", shortcuts=None, on_close=None, notifications=None
+):
     """Run commands with native streams: passwords and child TUIs are never captured."""
     shortcuts = shortcuts or {}
     status = "Preparado. help muestra los comandos; exit vuelve o sale."
@@ -33,6 +35,11 @@ def command_console(name, dispatch, *, tui=False, overview="", shortcuts=None):
         if not screen:
             print(f"{name} CLI {__version__} | help | exit")
         while True:
+            pending = notifications() if notifications else []
+            if pending:
+                with screen.suspended() if screen else nullcontext():
+                    for message in pending:
+                        print(message)
             # A failed inventory read must not tear down the whole console.
             try:
                 content = overview() if screen and callable(overview) else overview
@@ -56,7 +63,13 @@ def command_console(name, dispatch, *, tui=False, overview="", shortcuts=None):
             try:
                 line = input(f"{name}> ").strip()
                 if line.casefold() in {"exit", "quit", "q"}:
-                    return 0
+                    if on_close is None:
+                        return 0
+                    with screen.suspended() if screen else nullcontext():
+                        if on_close():
+                            return 0
+                    status = "Cierre cancelado; la consola sigue abierta."
+                    continue
                 if not line:
                     continue
                 words = split_command_line(line)
@@ -114,7 +127,10 @@ def command_console(name, dispatch, *, tui=False, overview="", shortcuts=None):
                     if screen:
                         input("Pulsa Enter para volver al panel…")
             except (EOFError, KeyboardInterrupt):
-                return 0
+                if on_close is None:
+                    return 0
+                with screen.suspended() if screen else nullcontext():
+                    return 0 if on_close(interactive=False) else 1
             except (OSError, RuntimeError, ValueError) as exc:
                 errors.from_exception(
                     exc,

@@ -10,8 +10,6 @@ from copy import deepcopy
 from lanctl.core.config import (
     DOCUMENT_DEFAULTS,
     canonical_config,
-    config_from_document,
-    update_config,
 )
 
 CATEGORIES = {
@@ -76,6 +74,23 @@ def _assign(document, path, value):
     target[parts[-1]] = value
 
 
+VALUE_CHOICES = {
+    "startup.interface": ("cli", "tui", "gui"),
+    "ip.discovery": ("icmp", "arp", "hybrid"),
+    "ip.scanProfile": ("fast", "normal", "accurate"),
+    "ip.scanOrder": ("ascending", "descending", "random"),
+    "monitor.execution.scanOrder": ("ascending", "descending", "random"),
+    "ip.disconnectedRetention": ("permanent", "session", "forget"),
+    "ip.disconnectedRetentionTarget": ("unconfirmed", "all"),
+    "ip.disconnectedRetentionScope": ("all", "dhcp"),
+    "monitor.authority": ("observe", "operate", "administer"),
+    "monitor.mode": ("permanent", "temporary", "diagnostic", "once"),
+    "access.remote.backend": ("service", "user"),
+    "access.remote.forcedView": ("off", "gui", "tui", "plugins", "projects", "settings"),
+    "wol.method": ("auto", "arp", "ping", "port"),
+}
+
+
 def validate_value(path, value, default):
     if path.startswith("gui.") and path != "gui.schemaVersion":
         from lanctl.core.gui_preferences import validate_preferences
@@ -138,23 +153,8 @@ def validate_value(path, value, default):
             raise ValueError(f"{path}: puerto entre 1 y 65535")
         if path == "logging.errorLevel" and not 1 <= value <= 59:
             raise ValueError("logging.errorLevel: entre 1 y 59")
-    enums = {
-        "startup.interface": ("cli", "tui", "gui"),
-        "ip.discovery": ("icmp", "arp", "hybrid"),
-        "ip.scanProfile": ("fast", "normal", "accurate"),
-        "ip.scanOrder": ("ascending", "descending", "random"),
-        "monitor.execution.scanOrder": ("ascending", "descending", "random"),
-        "ip.disconnectedRetention": ("permanent", "session", "forget"),
-        "ip.disconnectedRetentionTarget": ("unconfirmed", "all"),
-        "ip.disconnectedRetentionScope": ("all", "dhcp"),
-        "monitor.authority": ("observe", "operate", "administer"),
-        "monitor.mode": ("permanent", "temporary", "diagnostic", "once"),
-        "access.remote.backend": ("service", "user"),
-        "access.remote.forcedView": ("off", "gui", "tui", "plugins", "projects", "settings"),
-        "wol.method": ("auto", "arp", "ping", "port"),
-    }
-    if path in enums and value not in enums[path]:
-        raise ValueError(f"{path}: opciones {', '.join(enums[path])}")
+    if path in VALUE_CHOICES and value not in VALUE_CHOICES[path]:
+        raise ValueError(f"{path}: opciones {', '.join(VALUE_CHOICES[path])}")
     if path == "projects.saveMode":
         from lanctl.core.projects.save_policy import normalize_save_mode
 
@@ -171,6 +171,8 @@ def validate_value(path, value, default):
         ipaddress.IPv4Network(f"0.0.0.0/{value}")
     if path in {"network.dnsServers", "network.reservedAddresses"}:
         for address in value:
+            if not isinstance(address, str):
+                raise ValueError(f"{path}: requiere direcciones IP en texto")
             ipaddress.ip_address(address)
     if path.startswith("monitor.retention.") and not re.fullmatch(
         r"(?:[1-9][0-9]*[smhdw]|permanent)", value
@@ -206,26 +208,8 @@ def validate_value(path, value, default):
 
 
 def set_program_value(path, value):
-    defaults = dict(leaves(DOCUMENT_DEFAULTS))
-    if path not in defaults:
-        raise ValueError(f"Ajuste desconocido: {path}")
-    if reason := read_only(path):
-        raise ValueError(f"{path}: solo lectura. {reason}")
-    value = validate_value(path, value, defaults[path])
+    """Compatible single-value adapter using the shared preference policy."""
+    from lanctl.apps.suite.settings import save_program_changes
+    from lanctl.core.settings_policy import SettingsContext
 
-    def apply(config):
-        document = canonical_config(config)
-        _assign(document, path, value)
-        if path.startswith("tui.keyBindings."):
-            from lanctl.apps.ip.interfaces.tui.keyboard import validate_key_bindings
-
-            validate_key_bindings(document["tui"]["keyBindings"])
-        replacement = config_from_document(document)
-        if path.startswith("monitor."):
-            from lanctl.apps.monitor.configuration import ConfigProvider, validate_monitor_settings
-
-            validate_monitor_settings(replacement["monitor"])
-            ConfigProvider(replacement).monitor()
-        return replacement
-
-    return update_config(apply)
+    return save_program_changes({path: value}, SettingsContext("direct"))

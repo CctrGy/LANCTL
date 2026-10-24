@@ -211,6 +211,18 @@ class LanctlTui:
         # `project use` puede cambiar el JSON que respalda el inventario.
         # Reconstruir el acceso evita conservar en memoria el proyecto anterior.
         config = load_config()
+        from lanctl.core.project_context import project_identity
+
+        previous = getattr(self, "_project_config", None)
+        if previous is not None and project_identity(previous) != project_identity(config):
+            # UUIDs/MACs can legitimately occur in both projects. Old scan
+            # activity and latency must not be attributed to the new inventory.
+            self.response_ms = {}
+            self.active_devices = set()
+            self.scan_summary = {}
+            identity = ""
+            self.index = self.scroll = 0
+        self._project_config = config
         self.database = DeviceDatabase(config["database"])
         self.project_info = active_project_info(config)
         self.dhcp_range = config.get("dhcpRange")
@@ -1422,6 +1434,15 @@ class LanctlTui:
                     original_visible=visible,
                 )
             )
+        from lanctl.apps.suite.settings import form_preference_visible
+        from lanctl.core.settings_policy import SettingsContext
+
+        fields = [
+            field
+            for field in fields
+            if field.key == "remoteAccessUsers"  # Dedicated authorized user manager.
+            or form_preference_visible(SettingsContext("tui"), field.key)
+        ]
         from lanctl.core.projects.save_policy import available_save_modes
 
         choices = {
@@ -1819,6 +1840,12 @@ class LanctlTui:
             self.messages = ["Cancelando el escaneo de red…"]
 
     def _run_refresh(self) -> None:
+        from lanctl.core.project_context import project_operation
+
+        with project_operation(self._project_config):
+            self._run_refresh_bound()
+
+    def _run_refresh_bound(self) -> None:
         """Ejecuta el comando list en segundo plano y publica un resultado atómico."""
 
         from lanctl.apps.ip.interfaces.cli.main import build_parser
@@ -2465,6 +2492,29 @@ class LanctlTui:
         self.messages = ["Consola preparada."]
 
     def handle_key(self, key: str) -> None:
+        from lanctl.core.project_context import project_identity, project_operation
+
+        previous = getattr(self, "_project_config", None)
+        if previous is None:
+            return self._handle_key(key)
+        with project_operation():
+            if project_identity(previous) != project_identity(load_config()):
+                if getattr(self, "scanning", False):
+                    if key == "ESC":
+                        self.cancel_refresh()
+                    return
+                if self.modal and key != "ESC":
+                    self.modal.footer = (
+                        "El proyecto cambió. Esc cierra esta vista sin aplicar cambios."
+                    )
+                    return
+                self.modal = None
+                self.reload()
+                self.messages = ["Proyecto actualizado desde otra ventana; revisa la selección."]
+                return
+            return self._handle_key(key)
+
+    def _handle_key(self, key: str) -> None:
         save_requested = self._action_for_key(key) == "save"
         if getattr(self, "scanning", False) and key == "ESC" and not self.modal:
             self.cancel_refresh()
@@ -3401,43 +3451,44 @@ class LanctlTui:
             self.modal = None
             self.messages = ["SETTINGS: no había cambios pendientes."]
             return
-        argv = ["settings"]
+        from lanctl.apps.suite.settings import save_form_values
+        from lanctl.core.project_context import project_identity, project_operation, require_project
+        from lanctl.core.settings_policy import SettingsContext
+
+        values, visibility = {}, {}
         for field in changed:
             value = field.value.strip()
-            if field.key == "dhcpRange" and not value:
-                value = "off"
-            elif field.key == "projectsDirectory" and not value:
-                value = "auto"
-            elif not value:
-                modal.footer = f"ERROR: {field.label} no puede quedar vacío · Esc cancelar"
-                return
-            if field.key.startswith("tuiKey."):
-                action = field.key.removeprefix("tuiKey.")
-                if field.value != field.original:
-                    argv.extend((field.option, f"{action}={value}"))
+            if field.key.startswith(("tuiKey.", "tuiFixed.")):
+                action = field.key.split(".", 1)[1]
                 if field.visible != field.original_visible:
-                    argv.extend(("--tui-footer-button", f"{action}={field.visible.casefold()}"))
-                continue
-            if field.key.startswith("tuiColumn."):
-                name = field.key.removeprefix("tuiColumn.")
-                argv.extend((field.option, f"{name}={value}"))
-                continue
-            if field.key.startswith("tuiFixed."):
-                action = field.key.removeprefix("tuiFixed.")
-                argv.extend(("--tui-footer-button", f"{action}={field.visible.casefold()}"))
-                continue
+                    visibility[action] = field.visible.casefold()
+                if field.key.startswith("tuiKey.") and field.value != field.original:
+                    values[field.key] = value
             elif field.key.startswith("tuiFooter."):
-                value = f"{field.key.removeprefix('tuiFooter.')}={value}"
-            argv.extend((field.option, value))
-        result, output = self._capture(argv)
-        if result == 0:
-            self.modal = None
-            self.reload()
-            self._set_command_output(output, result)
-        else:
-            cleaned = _clean_tui_output(output)
-            detail = cleaned[-1] if cleaned else "no se pudo guardar"
-            modal.footer = f"ERROR: {detail} · Enter reintentar · Esc volver"
+                visibility[field.key.split(".", 1)[1]] = value.casefold()
+            else:
+                values[field.key] = value
+        try:
+            with project_operation():
+                previous = getattr(self, "_project_config", None)
+                if previous is not None:
+                    require_project(project_identity(previous))
+                save_form_values(values, SettingsContext("tui"), visibility=visibility)
+        except (ValueError, TypeError, OSError, RuntimeError) as error:
+            from lanctl.core.errors import errors
+
+            event = errors.from_exception(
+                error,
+                origin="LANCTL.TUI.Settings.Save",
+                code="TUI.SETTINGS.SAVE",
+                level=30,
+                print_output=False,
+            )
+            modal.footer = f"ERROR: {error} [{event.error_id}] · Enter reintentar · Esc volver"
+            return
+        self.modal = None
+        self.reload()
+        self._set_command_output("Configuración guardada correctamente", 0)
 
     def _update_manager_detail(self, modal: ModalState) -> None:
         if not modal.items:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import contextmanager, nullcontext
+
 from lanctl.core.plugins.extensions import ExtensionRegistry
 
 
@@ -21,6 +23,14 @@ class PluginApi:
         if self._authorization is None:
             return handler
         return self._authorization.guarded(self.plugin_id, self._lease, handler, permission)
+
+    @contextmanager
+    def _registration(self, permission):
+        # Permission and insertion must be one manager transaction; otherwise
+        # a revocation could remove callbacks just before a stale insert.
+        with self._authorization.transaction() if self._authorization else nullcontext():
+            self.require(permission)
+            yield
 
     def require(self, permission: str) -> None:
         self._check_current(permission.casefold())
@@ -145,14 +155,14 @@ class _PluginEvents:
         self.api = api
 
     def subscribe(self, event_id, handler, *, version=1, priority=100):
-        self.api.require("events.listen")
-        self.api._manager.events.subscribe(
-            event_id,
-            self.api._guarded(handler, "events.listen"),
-            plugin_id=self.api.plugin_id,
-            version=version,
-            priority=priority,
-        )
+        with self.api._registration("events.listen"):
+            self.api._manager.events.subscribe(
+                event_id,
+                self.api._guarded(handler, "events.listen"),
+                plugin_id=self.api.plugin_id,
+                version=version,
+                priority=priority,
+            )
 
     def emit(self, event_id, values, *, version=1, correlation_id=None):
         self.api.require("events.emit")
@@ -167,10 +177,10 @@ class _PluginEvents:
         )
 
     def register(self, event_id, contract, *, version=1, cancelable=False):
-        self.api.require("events.register")
-        return self.api._manager.event_registry.register(
-            event_id, contract, owner=self.api.plugin_id, version=version, cancelable=cancelable
-        )
+        with self.api._registration("events.register"):
+            return self.api._manager.event_registry.register(
+                event_id, contract, owner=self.api.plugin_id, version=version, cancelable=cancelable
+            )
 
 
 class _PluginExtensions:
@@ -178,10 +188,10 @@ class _PluginExtensions:
         self.api, self.registry = api, registry
 
     def register(self, extension_id: str, extension_type: str, specification=None):
-        self.api.require(f"{extension_type}.register")
-        return self.registry.register(
-            extension_id, extension_type, self.api.plugin_id, specification
-        )
+        with self.api._registration(f"{extension_type}.register"):
+            return self.registry.register(
+                extension_id, extension_type, self.api.plugin_id, specification
+            )
 
 
 class _PluginFunctions:
@@ -189,15 +199,15 @@ class _PluginFunctions:
         self.api = api
 
     def register(self, function_id, handler, return_contract):
-        self.api.require("functions.register")
-        if function_id.casefold().startswith("lanctl."):
-            raise PermissionError("namespace de funciones LANCTL reservado")
-        self.api._manager.functions.register(
-            function_id,
-            self.api._guarded(handler, "functions.register"),
-            return_contract,
-            owner=self.api.plugin_id,
-        )
+        with self.api._registration("functions.register"):
+            if function_id.casefold().startswith("lanctl."):
+                raise PermissionError("namespace de funciones LANCTL reservado")
+            self.api._manager.functions.register(
+                function_id,
+                self.api._guarded(handler, "functions.register"),
+                return_contract,
+                owner=self.api.plugin_id,
+            )
 
     def call(self, function_id, *args, **kwargs):
         self.api.require("functions.call")
@@ -321,24 +331,24 @@ class _PluginMonitor:
         self.api = api
 
     def register_check(self, check_id, handler, *, minimum_interval=10, timeout=1, critical=False):
-        self.api.require("monitor.check.register")
         from lanctl.apps.monitor.checks import CheckRegistry
         from lanctl.apps.monitor.models import CheckSpec
 
-        registry = getattr(self.api._manager, "monitor_checks", None)
-        if registry is None:
-            registry = CheckRegistry()
-            self.api._manager.monitor_checks = registry
-        return registry.register(
-            CheckSpec(
-                check_id,
-                self.api.plugin_id,
-                self.api._guarded(handler, "monitor.check.register"),
-                float(minimum_interval),
-                float(timeout),
-                bool(critical),
+        with self.api._registration("monitor.check.register"):
+            registry = getattr(self.api._manager, "monitor_checks", None)
+            if registry is None:
+                registry = CheckRegistry()
+                self.api._manager.monitor_checks = registry
+            return registry.register(
+                CheckSpec(
+                    check_id,
+                    self.api.plugin_id,
+                    self.api._guarded(handler, "monitor.check.register"),
+                    float(minimum_interval),
+                    float(timeout),
+                    bool(critical),
+                )
             )
-        )
 
     def state(self, device_id):
         self.api.require("monitor.state.read")

@@ -96,6 +96,11 @@ class PluginManifest:
         runtime = str(value.get("runtime", "isolated")).casefold()
         if runtime not in ("isolated", "trusted"):
             raise ValueError("runtime debe ser isolated o trusted")
+        api_version = value.get("runtimeApiVersion", 1)
+        if type(api_version) is not int or api_version not in (1, 2):
+            raise ValueError("runtimeApiVersion no compatible; se admite 1 o 2")
+        if api_version == 2 and runtime != "isolated":
+            raise ValueError("runtimeApiVersion 2 requiere runtime isolated")
         return cls(
             schema_version=schema_version,
             plugin_id=plugin_id,

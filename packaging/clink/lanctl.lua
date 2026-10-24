@@ -389,6 +389,7 @@ local project = clink.argmatcher():addarg({
     "update" .. project_action(), "info" .. project_action({ "-h", "--help", "/?", "--json" }),
     "verify" .. project_action({ "-h", "--help", "/?", "--json" }),
     "use" .. project_action(), "list" .. project_action(),
+    "import-physical" .. project_action(),
     "save" .. clink.argmatcher():addflags(help_flags):nofiles()
 }):addflags(help_flags):nofiles()
 
@@ -506,7 +507,9 @@ end
 
 local function configure_lanrack(matcher)
     return matcher:addarg({
-        "list", "ls", "show" .. history_value("ID o nombre del rack"),
+        "list", "ls", "elements", "show" .. history_value("ID o nombre del rack"),
+        "add-element" .. clink.argmatcher():addflags({"-h", "--help", "/?", "--kind" .. values({"tray", "panel", "outlet", "switch.24ports", "router.gateway", "router.otg", "server.2ports", "pc.1port"}), "--prefix" .. history_value("Prefijo IDF"), "--name" .. history_value("Nombre")}),
+        "element" .. clink.argmatcher():addarg({fromhistory=true, hint="ID del elemento"}):addflags({"-h", "--help", "/?", "--name" .. history_value("Nombre"), "--description" .. history_value("Descripción"), "--placement" .. values({"inside", "environment", "independent", "hosted"}), "--rack" .. history_value("ID del rack"), "--unit" .. integer_range(1,52), "--height-u" .. integer_range(1,52), "--tray" .. history_value("ID de la bandeja")}):nofiles(),
         "dimensions" .. clink.argmatcher():addarg({fromhistory=true, hint="ID del rack"}):addflags({"-h", "--help", "/?", "--units" .. integer_range(4,52), "--width-inches" .. values({"10","19","21","23"})}):nofiles()
     }):addflags({
         "-h", "--help", "/?", "--version", "--database" .. file_arg,
@@ -535,7 +538,7 @@ local function configure_lanaccess(matcher)
             "-user" .. history_value("Usuario")
         }):nofiles(),
         "delete" .. history_value("ID de credencial"), "del" .. history_value("ID de credencial"),
-        "credential" .. access_credential, "doctor",
+        "credential" .. access_credential, "doctor", "remote-setup",
         "settings" .. clink.argmatcher():addarg({ "show", "use-store" }):addarg(clink.filematches):addflags({ "-h", "--help", "/?", "--yes" }):nofiles(),
         "protocol" .. clink.argmatcher():addarg({ "list", "configure" }):addarg(selector):addarg(protocols):addflags({
             "-h", "--help", "/?", "--port" .. history_value("Puerto"),

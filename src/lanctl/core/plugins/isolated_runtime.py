@@ -4,6 +4,7 @@ import atexit
 import importlib.machinery
 import importlib.util
 import json
+import math
 import multiprocessing
 import os
 import queue
@@ -58,8 +59,9 @@ def _receive_message(connection):
 class _MessageReader:
     """Un frame incompleto no bloquea los plazos del padre ni el watchdog."""
 
-    def __init__(self, connection):
+    def __init__(self, connection, receive=None):
         self.connection = connection
+        self._receive = receive or _receive_message
         self.messages = queue.Queue(maxsize=1)
         self.closed = threading.Event()
         self.pending = None
@@ -69,7 +71,7 @@ class _MessageReader:
     def _read(self):
         while not self.closed.is_set():
             try:
-                item = (True, _receive_message(self.connection))
+                item = (True, self._receive(self.connection))
             except (EOFError, OSError, ValueError) as error:
                 item = (False, error)
             while not self.closed.is_set():
@@ -115,6 +117,26 @@ def _stop_all() -> None:
 atexit.register(_stop_all)
 
 
+def _windows_kernel():
+    import ctypes
+
+    kernel = ctypes.windll.kernel32
+    for name, arguments, result in (
+        ("CreateJobObjectW", [ctypes.c_void_p, wintypes.LPCWSTR], wintypes.HANDLE),
+        ("OpenProcess", [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD], wintypes.HANDLE),
+        (
+            "SetInformationJobObject",
+            [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD],
+            wintypes.BOOL,
+        ),
+        ("AssignProcessToJobObject", [wintypes.HANDLE, wintypes.HANDLE], wintypes.BOOL),
+        ("CloseHandle", [wintypes.HANDLE], wintypes.BOOL),
+    ):
+        function = getattr(kernel, name)
+        function.argtypes, function.restype = arguments, result
+    return kernel
+
+
 def _windows_memory_job(pid: int, megabytes: int):
     if sys.platform != "win32":
         return None
@@ -153,7 +175,7 @@ def _windows_memory_job(pid: int, megabytes: int):
             ("PeakJobMemoryUsed", c_size_t),
         ]
 
-    kernel = ctypes.windll.kernel32
+    kernel = _windows_kernel()
     job = kernel.CreateJobObjectW(None, None)
     process = kernel.OpenProcess(0x0100 | 0x0400, False, pid)
     if not job or not process:
@@ -213,7 +235,7 @@ def _apply_memory_limit(megabytes: int) -> None:
         return
 
 
-def _install_security_policy(connection, plugin_root: Path) -> None:
+def _install_security_policy(connection, plugin_root: Path, report=None) -> None:
     """Bloquea filesystem, red, procesos y registro fuera de la API aislada."""
 
     readable_roots = tuple(
@@ -223,13 +245,24 @@ def _install_security_policy(connection, plugin_root: Path) -> None:
     )
     denied_events = {
         "ctypes.dlopen",
+        "os.exec",
+        "os.fork",
+        "os.forkpty",
+        "os.kill",
+        "os.killpg",
+        "os.posix_spawn",
+        "os.spawn",
+        "os.startfile",
+        "os.startfile/2",
         "os.system",
         "pty.spawn",
+        "signal.pthread_kill",
         "socket.__new__",
         "socket.bind",
         "socket.connect",
         "socket.getaddrinfo",
         "subprocess.Popen",
+        "_winapi.CreateProcess",
         "winreg.CreateKey",
         "winreg.DeleteKey",
         "winreg.DeleteValue",
@@ -250,7 +283,10 @@ def _install_security_policy(connection, plugin_root: Path) -> None:
 
     def violation(event: str, detail: object) -> None:
         with suppress(BrokenPipeError, EOFError, OSError):
-            _send_message(connection, ("VIOLATION", event, str(detail)[:512]))
+            if report is None:
+                _send_message(connection, ("VIOLATION", event, str(detail)[:512]))
+            else:
+                report(event, str(detail)[:512])
         raise IsolatedPolicyViolation(f"política de plugin aislado: {event}: {detail}")
 
     def allowed_read(value: object) -> bool:
@@ -282,10 +318,25 @@ def _install_security_policy(connection, plugin_root: Path) -> None:
     sys.addaudithook(audit)
 
 
+def _watch_parent():
+    """Do not leave native threads orphaned when the host disappears."""
+    parent = multiprocessing.parent_process()
+    if parent is not None:
+
+        def watch():
+            while True:
+                time.sleep(0.2)
+                if not parent.is_alive():
+                    os._exit(1)
+
+        threading.Thread(target=watch, name="plugin parent watcher", daemon=True).start()
+
+
 def _worker(
     connection, plugin_id: str, entry: str, memory_mb: int, max_calls: int, settings=None
 ) -> None:
     _apply_memory_limit(memory_mb)
+    _watch_parent()
     module: ModuleType | None = None
     try:
         _install_security_policy(connection, Path(entry).resolve().parent)
@@ -343,7 +394,10 @@ class IsolatedPluginRuntime:
     ) -> None:
         self.plugin_id = plugin_id
         self.entry = entry
-        self.timeout = max(0.1, float(timeout))
+        timeout = float(timeout)
+        if not math.isfinite(timeout):
+            raise ValueError("el timeout del plugin debe ser finito")
+        self.timeout = max(0.1, timeout)
         self.memory_mb = max(16, int(memory_mb))
         self.max_calls = max(1, int(max_calls))
         self.audit = audit or (lambda *_args: None)
@@ -355,6 +409,7 @@ class IsolatedPluginRuntime:
         self._watchdog_stop = threading.Event()
         self._watchdog_thread = None
         self._calls = 0
+        self._stop_lock = threading.Lock()
 
     def _log_call(self, message) -> None:
         self._calls += 1
@@ -382,16 +437,17 @@ class IsolatedPluginRuntime:
                     ("PeakPagefileUsage", c_size_t),
                 ]
 
-            kernel = ctypes.windll.kernel32
+            kernel = _windows_kernel()
             handle = kernel.OpenProcess(0x0400, False, self.process.pid)
             if not handle:
                 return 0
             try:
                 counters = Counters()
                 counters.cb = sizeof(counters)
-                if ctypes.windll.psapi.GetProcessMemoryInfo(
-                    handle, byref(counters), sizeof(counters)
-                ):
+                memory_info = ctypes.windll.psapi.GetProcessMemoryInfo
+                memory_info.argtypes = [wintypes.HANDLE, ctypes.c_void_p, wintypes.DWORD]
+                memory_info.restype = wintypes.BOOL
+                if memory_info(handle, byref(counters), sizeof(counters)):
                     return int(counters.WorkingSetSize)
             finally:
                 kernel.CloseHandle(handle)
@@ -462,9 +518,16 @@ class IsolatedPluginRuntime:
             name=f"LANCTL plugin {self.plugin_id}",
             daemon=True,
         )
-        process.start()
+        try:
+            process.start()
+        except Exception:
+            child.close()
+            parent.close()
+            raise
         child.close()
         reader = _MessageReader(parent)
+        self.process, self._connection, self._reader = process, parent, reader
+        _RUNTIMES.add(self)
         # El presupuesto del manifiesto limita exclusivamente la carga y la
         # activación del plugin. El bootstrap de multiprocessing es trabajo del
         # host y dispone de un margen independiente y acotado.
@@ -521,49 +584,45 @@ class IsolatedPluginRuntime:
                 if not process.is_alive():
                     raise RuntimeError("el proceso aislado terminó durante la activación")
         except Exception:
-            process.terminate()
-            process.join(2)
-            if process.is_alive():
-                process.kill()
-                process.join(2)
-            reader.close()
-            parent.close()
-            self._close_job()
+            self.stop()
             raise
 
     def _close_job(self):
         if self._job_handle:
-            import ctypes
-
-            ctypes.windll.kernel32.CloseHandle(self._job_handle)
+            _windows_kernel().CloseHandle(self._job_handle)
             self._job_handle = None
 
     def stop(self) -> None:
+        with self._stop_lock:
+            self._stop_process()
+
+    def _stop_process(self) -> None:
         if self.process is None or self._connection is None:
             return
         process, connection = self.process, self._connection
         self._watchdog_stop.set()
-        if self._watchdog_thread:
+        if self._watchdog_thread and self._watchdog_thread is not threading.current_thread():
             self._watchdog_thread.join(1)
             self._watchdog_thread = None
-        try:
-            if process.is_alive():
-                try:
-                    _send_message(connection, ["STOP"])
-                    if self._reader.poll(self.timeout):
-                        self._reader.receive()
-                    else:
-                        process.terminate()
-                except (EOFError, OSError, ValueError):
-                    process.terminate()
-            process.join(self.timeout)
-            if process.is_alive():
-                process.kill()
-                process.join(2)
-        finally:
-            self._reader.close()
-            self._reader = None
-            connection.close()
-            self.process = self._connection = None
-            self._close_job()
-            _RUNTIMES.discard(self)
+        if process.is_alive():
+            with suppress(EOFError, OSError, ValueError):
+                _send_message(connection, ["STOP"])
+                if self._reader.poll(min(self.timeout, 0.2)):
+                    self._reader.receive()
+        process.join(min(self.timeout, 0.2))
+        if process.is_alive():
+            process.terminate()
+            process.join(0.5)
+        if process.is_alive():
+            process.kill()
+            process.join(0.5)
+        if process.is_alive():
+            # Keep ownership and allow an explicit retry; a finished cleanup
+            # thread alone is never evidence that executable code has stopped.
+            raise RuntimeError("no se ha confirmado la terminación del plugin aislado")
+        self._reader.close()
+        self._reader = None
+        connection.close()
+        self.process = self._connection = None
+        self._close_job()
+        _RUNTIMES.discard(self)

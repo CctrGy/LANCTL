@@ -50,15 +50,96 @@ Se incorporan los adaptadores `apps/suite/gui_support.py` y las extensiones
 `first-scan`. Usan los contratos internos entregados por AUDITOR, sin duplicar
 la validación de preferencias, dimensiones o diagnósticos.
 
-Las diez regresiones de `tests/test_gui_support.py` comprueban persistencia y
+Las trece regresiones de `tests/test_gui_support.py` comprueban persistencia y
 sincronización, origen de errores, redacción y revisión de reportes, consulta
 asíncrona de versiones, enlaces con navegador explícito, edición compartida de
-racks y confirmación previa al primer escaneo. Las 33 regresiones de GUI,
+racks y confirmación previa al primer escaneo. Incluyen el reintento tras error,
+el envío real de interfaz/CIDR al parser y el estado de reinicio/limpieza de
+plugins, que impide ofrecer acciones no disponibles. Las regresiones de GUI,
 topología/CPD y skins pasan con navegador Edge real. Los cuatro launchers
 especializados abren y cierran correctamente mediante el host nativo.
 
 La comprobación integral y el empaquetado final se registran después de que
 AUDITOR estabilice los servicios. P34 (aislamiento/revocación completa), P50
-(puente externo con contexto y autenticación), el enlace a interfaz de sondeo
-de P47 y las certificaciones externas no se consideran terminados por estas
-pruebas visuales.
+(puente externo con contexto y autenticación), los transportes distintos de
+ICMP/ARP de P47 y las certificaciones externas no se consideran terminados por
+estas pruebas visuales.
+
+## Corte final de fuentes
+
+AUDITOR valida el corte integrado con Coverage 7.16.2: 1.212 pruebas y 645
+subpruebas aprobadas en 185,61 s; cobertura de líneas/ramas 69,4720 %, sobre
+el umbral del 60 %. La omisión corresponde al IPC POSIX en Windows. Las 21
+pruebas GUI heredadas, excluidas por el selector habitual, pasan por separado:
+1.233 pruebas aprobadas en total. Las trece regresiones de controles GUI
+incluyen la conservación de la solicitud del primer escaneo tras error.
+
+Antes de compilar se congelan 386 entradas de construcción, con hashes en
+`.tool-reports/gui-package-freeze.json`. Las evidencias de distribución se
+añaden tras comprobar recursos, versiones y cierre nativo de los binarios.
+P69–P73 son anotaciones nuevas incorporadas desde HELP durante el ciclo y se
+conservan pendientes; no se presentan como implementadas en este corte.
+
+## Artefactos locales verificados
+
+Compilados los seis ejecutables `0.3.4-alpha.1` sin cambios en las 386 entradas
+congeladas. Cada archivo contiene los 29 recursos actuales de GUI/catálogo y
+los 16 módulos compartidos comprobados, incluidos origen de red y estado de
+plugins. Las seis ventanas pasan arranque nativo, icono, registro IPC y cierre
+mediante `WM_CLOSE`; LANIP espera además a completar su inventario inicial.
+Las pruebas usan almacenes y carpeta de proyectos temporales.
+
+Inno Setup termina correctamente y genera
+`dist/gui-current/LANCTL-0.3.4-alpha.1-gui-setup.exe` (135.487.663 bytes).
+SHA-256:
+`5401cb5a085c4cf8fa2b86dbb9270e72f6a45ff0cfdfbdbf1c4ce113626bde3a`.
+Es un instalador experimental local; no se ha instalado ni publicado.
+Compilar y ejecutar los binarios no certifica instalación/actualización en una
+máquina limpia ni los entornos externos que AUDITOR sigue comprobando.
+
+## Reapertura P45: imágenes de los temas
+
+El reporte visual identifica que el Setup anterior solo mostraba `TPanel`
+con fondo/acento y una leyenda de poco contraste: no contenía imágenes.
+Se reemplaza por `TBitmapImage`, cinco BMP versionados con capturas de Inicio
+y las paletas reales del Core, extracción temporal y cambio de archivo al
+seleccionar tema. Se amplía la página y se distribuyen opciones e imagen en
+dos columnas, manteniendo la proporción 8:5. El generador usa datos sintéticos.
+
+Pasan 16 pruebas de distribución/recursos y Ruff; Inno compila correctamente.
+El instalador actualizado ocupa 135.659.290 bytes y su SHA-256 es
+`dcb5bd5a50fdb7167af7550cfc76eec4982194e726d044627270919f18d96ce5`.
+Los seis ejecutables de aplicación conservan la compilación verificada previa.
+El usuario abrió el Setup actualizado, aceptó manualmente UAC y confirmó que
+las cinco vistas previas cambian y se ven completas: «Sí, las cinco se ven
+bien». La herramienta no pudo capturar la ventana elevada, por lo que se
+registra esa revisión humana, sin atribuirla a una captura automatizada.
+P45 queda comprobada. La siguiente compilación incluirá además la corrección
+posterior de registro Clink repetido (P48) entregada por AUDITOR.
+
+## Corte P45/P48/P71.4 y límite de la comprobación visual
+
+La suite final de AUDITOR pasa 1.269 pruebas, 645 subpruebas y una omisión,
+con cobertura 69,9154 %. Se reconstruyen los seis ejecutables y se comprueban
+398 entradas de construcción sin cambios, 32 recursos y 17 módulos compartidos
+por binario, además de `lanaccess remote-setup --help`.
+
+El usuario interrumpe con Escape el control de ventanas de la última prueba
+nativa. GUI-DESIGN detiene esa operación y retira únicamente sus procesos de
+prueba. **El smoke nativo final queda incompleto**, incluido el asistente; no
+se atribuye éxito a ventanas que solo llegaron a arrancar. No se crean cuentas
+reales ni se automatiza UAC. La prueba de creación de cuenta con API real y
+almacén temporal sí pasó en Edge, por separado. La certificación remota de los
+paquetes continúa en runners GitHub sin reanudar el control local de interfaz.
+
+## P69 — límite de integración, 22/10/2026
+
+AUDITOR modifica la política compartida y los filtros de los adaptadores de
+preferencias. En `apps/ip/interfaces/gui/desktop.py` se filtran los campos
+de lectura y escritura mediante el contexto GUI fijado en servidor; el adaptador
+privado usado por SuiteApi conserva el contexto general LANCTL. No cambian las
+firmas públicas, los envoltorios RPC, `gui/*`, temas, estilos ni localStorage.
+Las preferencias de otra interfaz se conservan en disco. Los formularios no
+deben enviar campos ocultos ajenos: el backend los rechaza de forma atómica.
+La revisión visual y distribución continúan bajo GUI-DESIGN; este cambio no
+certifica sus recorridos nativos ni sustituye los instalables anteriores.

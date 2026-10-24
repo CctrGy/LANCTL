@@ -34,6 +34,22 @@ datas = collect_data_files("manuf") + [
     ("errorList.txt", "."),
 ]
 
+# A separate GUI-subsystem host prevents console flashes from shortcuts while
+# retaining the six console executables and their stdout/stderr contracts.
+window_a = Analysis(
+    ["packaging/entrypoints/gui_entry.py"],
+    pathex=[str(SOURCE_ROOT)], binaries=[], datas=datas,
+    hiddenimports=["paramiko", "cryptography"] + collect_runtime_modules(),
+    hookspath=[], hooksconfig={}, runtime_hooks=[], excludes=LEGACY_GUI_EXCLUDES,
+    noarchive=False, optimize=0,
+)
+window_exe = EXE(
+    PYZ(window_a.pure), window_a.scripts, window_a.binaries, window_a.datas, [],
+    name="lanctl-window", debug=False, bootloader_ignore_signals=False,
+    strip=False, upx=True, console=False,
+    icon="assets/launcher-icons/lanctl.ico", version=VERSION_INFO,
+)
+
 a = Analysis(
     ["packaging/entrypoints/lanctl_entry.py"],
     pathex=[str(SOURCE_ROOT)],

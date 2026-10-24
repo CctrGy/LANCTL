@@ -227,7 +227,7 @@ def test_no_arbitrary_launcher_or_multiline_cli_input():
         EmbeddedCli().send("version\nexit")
 
 
-def test_complete_settings_catalog_and_edit_use_shared_validation(tmp_path, monkeypatch):
+def test_gui_settings_catalog_and_edit_use_shared_validation(tmp_path, monkeypatch):
     from lanctl.core import config
     from lanctl.core.settings_catalog import catalog
 
@@ -235,12 +235,25 @@ def test_complete_settings_catalog_and_edit_use_shared_validation(tmp_path, monk
     api = suite()
     payload = api.settings_catalog()
     assert payload["ok"]
-    assert {e["path"] for e in catalog(config.load_config())} <= {
-        e["path"] for e in payload["entries"]
+    paths = {entry["path"] for entry in payload["entries"]}
+    assert {"gui.theme", "startup.closeGuiOnLaunch", "ip.workers", "projects.saveMode"} <= paths
+    assert paths - {"access.remote"} < {e["path"] for e in catalog(config.load_config())}
+    assert not paths & {
+        "tui.panelLayout",
+        "cli.commandChaining",
+        "ip.listColumns",
+        "access.users",
+        "schemaVersion",
     }
     assert api.save_catalog_setting("program", "ip.workers", 12)["ok"]
     assert config.load_config()["workers"] == 12
     before = config.CONFIG_PATH.read_bytes()
+    for path, value in [
+        ("cli.commandChaining", False),
+        ("tui.panelLayout", "cli.top"),
+        ("access.users", "other.json"),
+    ]:
+        assert not api.save_catalog_setting("program", path, value)["ok"]
     assert not api.save_catalog_setting("program", "ip.workers", 0)["ok"]
     assert config.CONFIG_PATH.read_bytes() == before
     assert not api.save_catalog_setting("unknown", "ip.workers", 10)["ok"]

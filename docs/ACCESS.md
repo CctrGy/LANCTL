@@ -39,6 +39,26 @@ un canal confiable. `access status` distingue configuración habilitada de
 proceso realmente activo. La recuperación se ejecuta localmente y no existen
 cuentas o contraseñas predeterminadas.
 
+## Cuenta inicial desde el instalador de Windows
+
+Setup ofrece **Crear la primera cuenta de acceso remoto del servicio**. Después
+de copiar los ejecutables y proteger el directorio de acceso, abre el asistente
+`lanaccess remote-setup` con los privilegios de la instalación. Solicita usuario,
+contraseña (al menos 12 caracteres) y confirmación directamente en su ventana.
+No recibe contraseñas por línea de comandos ni las guarda en archivos temporales.
+
+La cuenta tiene el rol `administrator` de LANACCESS y pertenece al ámbito
+`service`, en `ProgramData\LANCTL\access\users.dc`; no crea usuarios de Windows
+ni credenciales para dispositivos del inventario. El almacén conserva únicamente
+el hash Scrypt. Si ya existen cuentas, las conserva y bloquea una nueva creación
+inicial; para administrarlas usa los comandos `access user` con `--scope service`.
+Las rutas personalizadas requieren esa administración existente, sin sobrescribir
+su configuración desde este asistente.
+
+Crear la cuenta no habilita SSH/HTTPS ni modifica el firewall. Configura después
+los endpoints y autenticadores necesarios siguiendo los pasos anteriores. Es
+posible omitir o cerrar el asistente; una instalación silenciosa no lo abre.
+
 ## Remote Access desde SETTINGS
 
 La pestaña `REMOTE ACCESS` de F12 reúne la IP de escucha, CIDR autorizado,
@@ -51,6 +71,31 @@ puede abrir ventanas visibles. Para hacer persistente el primero:
 lanctl monitor service install --yes
 lanctl monitor service start
 ```
+
+Al guardar ajustes remotos, LANCTL confirma la parada del listener anterior y
+el arranque de la revisión nueva antes de guardar las preferencias. Cambiar
+backend, IP, puerto, CIDR o autenticación reinicia el listener correspondiente;
+las conexiones SSH abiertas se cierran. El servicio MONITOR debe estar activo
+y actualizado para confirmar los cambios del backend `service`. Un timeout,
+una denegación o un fallo de disco no se presentan como guardado correcto.
+
+La operación mantiene un registro local `config.json.remote-transaction.json`
+junto a la configuración del programa. Contiene revisiones, rutas e identidad
+del proceso, sin contraseñas, hashes de usuarios ni claves privadas. Si falla
+antes del guardado del programa, se intenta restaurar el endpoint anterior;
+si el programa ya se guardó, se conserva el backend confirmado. Los cambios
+concurrentes de HTTPS, usuarios y sesiones se preservan. Los archivos de usuario
+y las claves preexistentes no se regeneran ni se copian para compensar.
+
+Si la recuperación falla, el registro se conserva y bloquea otra modificación
+remota. Se reintenta al abrir LANCTL de forma interactiva y antes del siguiente
+cambio remoto. Las operaciones del ámbito `service` vuelven a exigir elevación;
+no se solicita ni concede automáticamente. Un conflicto de revisión se informa
+sin sobrescribir la modificación ajena. La parada independiente verifica la
+identidad mediante un handle nativo en Windows y requiere `pidfd` en Linux.
+No se termina un PID cuya identidad no pueda comprobarse. Las instalaciones
+anteriores sin confirmación de propietario requieren actualizar/reiniciar su
+backend antes de administrarlo mediante este ciclo.
 
 Antes de entrar hay que crear al menos una identidad. Se recomiendan claves
 públicas y el ámbito debe coincidir con el backend:

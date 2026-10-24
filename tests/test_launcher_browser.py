@@ -63,6 +63,7 @@ def test_real_launcher_views_and_action_arguments(tmp_path):
                     "element": "Router",
                     "protocol": "ssh",
                     "username": "operador",
+                    "revision": "credential-revision",
                 }
             ],
         },
@@ -90,7 +91,28 @@ def test_real_launcher_views_and_action_arguments(tmp_path):
         for app, payload in payloads.items():
             page.goto((root / "gui/launcher.html").as_uri())
             page.evaluate(
-                """payload=>{window.calls=[];window.pywebview={api:{bootstrap:async()=>payload,monitor_samples:async()=>({ok:true,samples:[]}),settings:async()=>({ok:true,entries:[],categories:{}}),wire_create:async(...args)=>{calls.push(['wire_create',...args]);return {ok:true,id:'WL002'}}}};window.dispatchEvent(new Event('pywebviewready'));}""",
+                """payload => {
+                  window.calls = [];
+                  window.pywebview = {api: {
+                    bootstrap: async () => payload,
+                    monitor_samples: async () => ({ok:true, samples:[]}),
+                    monitor_device: async identifier => {
+                      calls.push(['monitor_device', identifier]);
+                      const row = payload.records.find(record => record.id === identifier);
+                      return {ok:true, device: {
+                        id:row.id, revision:'device-revision',
+                        editable:{name:row.name, alias:'', description:'', ip:row.ip},
+                        groups:[], groupCatalog:[{name:'BASIC', editable:false}]
+                      }};
+                    },
+                    settings: async () => ({ok:true, entries:[], categories:{}}),
+                    wire_create: async (...args) => {
+                      calls.push(['wire_create', ...args]);
+                      return {ok:true, id:'WL002'};
+                    }
+                  }};
+                  window.dispatchEvent(new Event('pywebviewready'));
+                }""",
                 {
                     "ok": True,
                     "launcher": app,
@@ -107,6 +129,12 @@ def test_real_launcher_views_and_action_arguments(tmp_path):
             if app != "lanrack":
                 page.locator('[data-action="details"]').click()
                 assert page.locator("#detail").is_visible()
+                if app == "lanmon":
+                    page.locator('[name="name"]').wait_for()
+                    assert page.locator('[name="name"]').input_value() == "Router"
+                    assert page.locator('[name="ip"]').input_value() == "192.0.2.1"
+                    assert page.evaluate("calls") == [["monitor_device", "dev1"]]
+                    assert page.locator(".support-dialog[open]").count() == 0
                 page.locator("#cancel").click()
                 page.locator("#search").fill("no-existe")
                 assert "No hay coincidencias" in page.locator("#canvas").inner_text()

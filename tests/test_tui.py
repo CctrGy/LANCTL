@@ -285,7 +285,7 @@ class TuiTests(unittest.TestCase):
         tui._manual_save.assert_not_called()
         tui._save_settings.assert_called_once_with(tui.modal)
 
-    def test_settings_exit_menu_saves_through_the_settings_command(self):
+    def test_settings_exit_menu_saves_through_the_shared_service(self):
         tui = LanctlTui.__new__(LanctlTui)
         fields = [
             SettingField("workers", "Workers", "--workers", "64", "64", "entero"),
@@ -294,8 +294,7 @@ class TuiTests(unittest.TestCase):
         tui.modal = ModalState(
             "settings", "SETTINGS", ["Configuración", "EXIT"], [[], []], items=fields
         )
-        captured = []
-        tui._capture = lambda argv: captured.append(argv) or (0, "guardado")
+        tui._capture = lambda argv: self.fail("Settings must not execute the CLI parser")
         tui.reload = lambda: None
         tui._set_command_output = lambda output, result: None
 
@@ -306,9 +305,10 @@ class TuiTests(unittest.TestCase):
         tui.handle_key("TAB")
         tui.handle_key("ESC")
         self.assertEqual(tui.modal.tabs[tui.modal.tab_index], "EXIT")
-        tui.handle_key("ENTER")
+        with patch("lanctl.apps.suite.settings.save_form_values") as save:
+            tui.handle_key("ENTER")
 
-        self.assertEqual(captured, [["settings", "--workers", "128"]])
+        self.assertEqual(save.call_args.args[0], {"workers": "128"})
         self.assertIsNone(tui.modal)
 
     def test_settings_tab_separates_navigation_from_choice_editing(self):
@@ -655,6 +655,10 @@ class TuiTests(unittest.TestCase):
 
         with (
             patch("lanctl.apps.ip.interfaces.tui.main.os.name", "nt"),
+            # Simulated Backspace must not depend on the user's real Ctrl key.
+            patch(
+                "lanctl.apps.ip.interfaces.tui.keyboard.windows_control_pressed", return_value=False
+            ),
             patch.dict(
                 "sys.modules",
                 {

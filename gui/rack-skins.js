@@ -1,18 +1,11 @@
 /* Frentes vectoriales genéricos de equipos en la elevación del rack. */
 const rackSkinBase = { render, details: rackOccupantDetails };
-let rackSkinUnitHeight = 52,
-  rackSkinsVisible = true;
+let rackSkinsVisible = true;
 try {
   const saved = JSON.parse(
     localStorage.getItem("lanrack.skins.preferences") || "{}",
   );
   if (saved.schemaVersion === 1) {
-    if (
-      Number.isInteger(saved.unitHeight) &&
-      saved.unitHeight >= 36 &&
-      saved.unitHeight <= 84
-    )
-      rackSkinUnitHeight = saved.unitHeight;
     if (typeof saved.visible === "boolean") rackSkinsVisible = saved.visible;
   }
 } catch {}
@@ -22,10 +15,33 @@ function rackSkinStore() {
     JSON.stringify({
       schemaVersion: 1,
       visible: rackSkinsVisible,
-      unitHeight: rackSkinUnitHeight,
     }),
   );
 }
+// Resize the existing rows, without rebuilding forms, focus or inventory.
+// Tall racks scroll at the minimum readable size instead of hiding units.
+function rackFitElevation() {
+  if (state.launcher !== "lanrack" || rackMode !== "rack") return;
+  const canvas = $("#canvas"),
+    elevation = canvas.querySelector(".rack-elevation"),
+    header = canvas.querySelector(".rack-detail-header"),
+    rack = state.records.find((r) => r.id === selected);
+  if (!elevation || !header || !rack?.units) return;
+  const style = getComputedStyle(elevation),
+    horizontal = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight),
+    vertical =
+      parseFloat(style.paddingTop) +
+      parseFloat(style.paddingBottom) +
+      parseFloat(style.borderTopWidth) +
+      parseFloat(style.borderBottomWidth),
+    gap = parseFloat(style.rowGap),
+    available = canvas.clientHeight - header.offsetHeight - 8 - vertical,
+    byHeight = (available - (rack.units - 1) * gap) / rack.units,
+    byWidth = ((elevation.clientWidth - horizontal - 65) * 88) / 1200 + 6,
+    height = Math.floor(Math.max(30, Math.min(84, byHeight, byWidth)));
+  elevation.style.setProperty("--rack-unit-height", height + "px");
+}
+const rackSizeObserver = new ResizeObserver(rackFitElevation);
 const rackSkinKinds = [
   ["auto", "Automático según inventario"],
   ["switch", "Switch"],
@@ -159,9 +175,10 @@ function rackSkinElevation(rack) {
     if (r) {
       rendered.add(r.id);
       const span = r.span || 1;
-      html += `<button class="rack-skin-unit occupied" data-rack-occupant="${esc(r.id)}" style="height:${span * rackSkinUnitHeight + (span - 1) * 3}px;min-height:${span * rackSkinUnitHeight + (span - 1) * 3}px"><span class="rack-u-label">${span > 1 ? `${Number(r.unit) + span - 1}–${r.unit}` : r.unit} U</span><span class="rack-skin-face">${rackFace(r)}</span></button>`;
+      const label = `${r.name || r.id} · ${r.id} · ${span} U`;
+      html += `<button class="rack-skin-unit occupied" data-rack-occupant="${esc(r.id)}" style="--rack-span:${span}" title="${esc(label)}" aria-label="${esc(label)}"><span class="rack-u-label">${span > 1 ? `${Number(r.unit) + span - 1}–${r.unit}` : r.unit} U</span><span class="rack-skin-face">${rackFace(r)}<span class="rack-skin-caption">${esc(r.name || r.id)}</span></span></button>`;
     } else
-      html += `<button class="rack-skin-unit rack-skin-empty" style="min-height:${rackSkinUnitHeight}px" disabled><span class="rack-u-label">${u} U</span><span>Libre</span></button>`;
+      html += `<button class="rack-skin-unit rack-skin-empty" disabled><span class="rack-u-label">${u} U</span><span>Libre</span></button>`;
   }
   if (conflicts.size)
     html =
@@ -228,7 +245,7 @@ function rackSkinEditor(r) {
       ...v,
       rj45: Math.max(0, Math.min(96, v.rj45 || 0)),
       sfp: Math.max(0, Math.min(32, v.sfp || 0)),
-      units: Math.max(1, Math.min(8, v.units || 1)),
+      units: Math.max(1, Math.min(52, v.units || 1)),
     });
     for (const k of ["rj45", "sfp"])
       controls.querySelector(`[name=${k}]`).disabled = v.kind === "auto";
@@ -243,7 +260,7 @@ function rackSkinEditor(r) {
   for (const key of ["rj45", "sfp", "units"]) {
     const input = controls.querySelector(`[name=${key}]`);
     input.min = key === "units" ? 1 : 0;
-    input.max = key === "rj45" ? 96 : key === "sfp" ? 32 : 8;
+    input.max = key === "rj45" ? 96 : key === "sfp" ? 32 : 52;
     input.step = 1;
   }
   controls.addEventListener("input", paint);
@@ -266,6 +283,7 @@ rackOccupantDetails = function (r) {
   );
 };
 render = function () {
+  rackSizeObserver.disconnect();
   rackSkinBase.render();
   if (state.launcher !== "lanrack" || rackMode !== "rack") return;
   const chosen = state.records.find((r) => r.id === selected),
@@ -282,23 +300,9 @@ render = function () {
     render();
   };
   $("#rack-back").after(toggle);
-  const size = document.createElement("label");
-  size.className = "rack-skin-size";
-  size.textContent = "Tamaño de las unidades";
-  const slider = document.createElement("input");
-  slider.type = "range";
-  slider.min = 36;
-  slider.max = 84;
-  slider.step = 1;
-  slider.value = rackSkinUnitHeight;
-  slider.setAttribute("aria-label", "Tamaño de las unidades");
-  slider.onchange = () => {
-    rackSkinUnitHeight = Number(slider.value);
-    rackSkinStore();
-    render();
-  };
-  size.append(slider);
-  toggle.after(size);
+  rackSizeObserver.observe($("#canvas"));
+  rackSizeObserver.observe(document.querySelector(".rack-detail-header"));
+  rackFitElevation();
   if (!rackSkinsVisible) return;
   elevation.classList.add("rack-skinned");
   elevation.innerHTML = rackSkinElevation(chosen);

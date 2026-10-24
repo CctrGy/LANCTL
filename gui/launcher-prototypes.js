@@ -26,5 +26,5 @@ $("#settings").onclick=()=>form("settings");$("#close").onclick=$("#cancel").onc
 $("#detail-form").onsubmit=e=>{e.preventDefault();let mode=e.target.dataset.mode,values=Object.fromEntries(new FormData(e.target));if(mode==="new"){let item={...data[app][0],...values,id:Math.max(...data[app].map(x=>x.id))+1};data[app].push(item);selected=item.id;}else if(mode!=="settings")Object.assign(data[app].find(x=>x.id===selected),values);$("#detail").close();render();feedback("Aplicado solo al prototipo · no se ha guardado ningún archivo");};
 $("#home").onclick=()=>feedback("En la versión integrada, este botón abrirá LANCTL GUI");$("#cli").onclick=()=>feedback(`En la versión integrada, abrirá el CLI de ${definitions[app][0]}`);
 document.querySelector(".controls select").onchange=()=>feedback("Selector visual · se mantienen los datos de demostración");
-$("#clock").textContent=new Intl.DateTimeFormat("es",{hour:"2-digit",minute:"2-digit"}).format(new Date());
+
 start(Object.hasOwn(definitions,location.hash.slice(1))?location.hash.slice(1):"wire");

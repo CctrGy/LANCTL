@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from test_launcher_gui import api
 from test_launcher_gui import workspace as workspace
+from test_physical_placement_gui import open_page
 
 from lanctl.apps.rack.skins import profiles
 
@@ -138,13 +139,7 @@ def test_rack_skins_visual_editor_and_real_save(workspace):
         assert page.locator(".rack-face").count() == 0
         page.locator("#rack-skins-toggle").click()
         assert page.locator(".rack-face").count() == 4
-        page.locator(".rack-skin-size input").evaluate(
-            "e=>{e.value='36';e.dispatchEvent(new Event('change'))}"
-        )
-        assert (
-            abs(page.locator(f'[data-rack-occupant="{devices[0]}"]').bounding_box()["height"] - 36)
-            < 1
-        )
+        assert page.locator(".rack-skin-size input").count() == 0
         assert (
             page.evaluate(
                 "JSON.parse(localStorage.getItem('lanrack.skins.preferences')).schemaVersion"
@@ -154,5 +149,81 @@ def test_rack_skins_visual_editor_and_real_save(workspace):
         page.set_viewport_size({"width": 850, "height": 700})
         assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
         assert page.locator("footer").bounding_box()["y"] < 700
+        assert not errors, errors
+        browser.close()
+
+
+@pytest.mark.skipif(
+    os.environ.get("LANCTL_GUI_BROWSER_TESTS") != "1", reason="optional browser runtime"
+)
+@pytest.mark.parametrize("units", [9, 12, 52])
+def test_large_equipment_front_preserves_height_and_connections(workspace, units):
+    wire, rack = api("lanwire"), api("lanrack")
+    cabinet = wire.wire_create({"kind": "rack", "prefix": "RK", "units": max(18, units)})["id"]
+    device = wire.wire_create(
+        {"kind": "server.2ports", "prefix": "SV", "rack": cabinet, "unit": 1, "heightU": units}
+    )["id"]
+    peer = wire.wire_create({"kind": "pc.1port", "prefix": "PC"})["id"]
+    cable = wire.wire_create({"kind": "wire.copper", "prefix": "WL"})["id"]
+    records = {r["id"]: r for r in wire.bootstrap()["records"]}
+    assert wire.wire_connect(
+        cable,
+        records[cable]["revision"],
+        [
+            {"device": device, "port": next(iter(records[device]["data"]["ports"]))},
+            {"device": peer, "port": next(iter(records[peer]["data"]["ports"]))},
+        ],
+    )["ok"]
+    before = deepcopy(wire.bootstrap()["records"])
+    playwright = pytest.importorskip("playwright.sync_api").sync_playwright
+    with playwright() as p:
+        browser = p.chromium.launch(channel="msedge", headless=True)
+        page = open_page(browser, rack)
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.locator(f'[data-rack-open="{cabinet}"]').click()
+
+        def edit_front():
+            page.locator(f'[data-rack-occupant="{device}"]').click()
+            page.get_by_role("button", name="Personalizar frente", exact=True).click()
+
+        edit_front()
+        height = page.locator("[name=units]")
+        assert height.input_value() == str(units)
+        assert height.evaluate("e => e.checkValidity()")
+        assert page.locator(".rack-skin-preview svg").get_attribute("viewBox") == (
+            f"0 0 1200 {88 * units}"
+        )
+        for invalid in ("0", "53", "1.5"):
+            height.fill(invalid)
+            page.locator("#submit").click()
+            assert not height.evaluate("e => e.checkValidity()")
+            assert page.locator("#detail").is_visible()
+            assert wire.bootstrap()["records"] == before
+        if units < 18:
+            # Within the editor's range, but outside this rack: Core still rejects it.
+            height.fill("19")
+            page.locator("#submit").click()
+            page.wait_for_function("!!document.querySelector('#detail-error').textContent")
+            assert page.locator("#detail").is_visible()
+            assert wire.bootstrap()["records"] == before
+            page.locator('[data-error="close"]').click()
+        height.fill(str(units))
+        page.locator("[name=kind]").select_option("server")
+        page.locator("#submit").click()
+        page.wait_for_function("!document.querySelector('#detail').open")
+        for old, new in zip(before, wire.bootstrap()["records"], strict=True):
+            assert old["id"] == new["id"]
+            old_data, new_data = deepcopy(old["data"]), deepcopy(new["data"])
+            if new["id"] == device:
+                assert new_data["rackAppearance"]["units"] == units
+                assert new_data["rackAppearance"]["kind"] == "server"
+                old_data.pop("rackAppearance")
+                new_data.pop("rackAppearance")
+            assert old_data == new_data
+        edit_front()
+        assert height.input_value() == str(units)
+        assert height.evaluate("e => e.checkValidity()")
+        page.locator("#cancel").click()
         assert not errors, errors
         browser.close()

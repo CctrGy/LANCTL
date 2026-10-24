@@ -225,7 +225,12 @@ def test_wire_project_switch_and_failure_preserve_storage(workspace, tmp_path):
     create_project(path, name="Office", config=cfg, initialize_reserved=False)
     wire = api("lanwire")
     wire.wire_create({"kind": "switch.5ports", "prefix": "SW"})
+    legacy_path = wire._service.database.path
+    legacy_bytes = legacy_path.read_bytes()
     assert wire.use_project(str(path))["ok"]
+    assert wire.bootstrap()["records"] == []
+    assert legacy_path.read_bytes() == legacy_bytes
+    assert wire.wire_create({"kind": "switch.5ports", "prefix": "SW"})["ok"]
     before = wire.bootstrap()
     assert before["project"] == str(path)
     assert len(before["records"]) == 1
@@ -250,6 +255,7 @@ def test_wire_browser_real_service_interactions(workspace, tmp_path):
     project_path = tmp_path / "Visual.vlf"
     create_project(project_path, name="Visual", config=cfg, initialize_reserved=False)
     wire = api("lanwire")
+    assert wire.use_project(str(project_path))["ok"]
     ids = [
         wire.wire_create({"kind": kind, "prefix": prefix, "name": name})["id"]
         for kind, prefix, name in [
@@ -362,10 +368,16 @@ def test_wire_browser_real_service_interactions(workspace, tmp_path):
         page.locator('[data-nav="all"]').click()
         page.locator('[data-nav="fit"]').click()
         page.screenshot(path=str(Path("tmp/lanwire-topology-full.png").resolve()))
-        page.locator("#wire-project").click()
-        page.locator('[name="project"]').select_option(str(project_path))
-        page.locator("#submit").click()
-        page.wait_for_function("!document.querySelector('#detail').open")
+        from lanctl.apps.suite.gui import SuiteApi
+
+        assert page.locator("#wire-project").count() == 0
+        assert not SuiteApi().use_project(str(project_path))["ok"]
+        assert wire.save_project()["ok"]
+        assert SuiteApi().use_project(str(project_path))["ok"]
+        page.evaluate("window.launcherDataChanged=true")
+        page.wait_for_function(
+            "document.querySelector('footer #project-name').textContent==='Visual'"
+        )
         assert wire.bootstrap()["project"] == str(project_path)
         assert row(ids[0])["data"]["name"] == "Switch editado"
         page.set_viewport_size({"width": 780, "height": 560})

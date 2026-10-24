@@ -76,10 +76,11 @@ def test_all_parsers_offer_both_modes(module):
     assert {"--cli", "-cli", "--tui", "-tui"} <= options
 
 
-def test_rack_cli_and_tui_use_same_service():
+def test_rack_cli_and_tui_use_same_service(tmp_path):
     from lanctl.apps.rack.cli import run_cli, run_tui
 
     service = Mock()
+    service.database.path = tmp_path / "physical.db"
     service.list.return_value = []
     with patch("builtins.input", side_effect=["list", "exit"]):
         assert run_cli(service) == 0

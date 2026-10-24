@@ -4,6 +4,7 @@ import base64
 import os
 
 from lanctl.apps.access.credential_service import CredentialService
+from lanctl.core.file_transaction import locked_files
 from lanctl.core.vault_crypto import MAGIC
 
 
@@ -21,22 +22,28 @@ class AccessGuiService:
         return store.cipher == "portable" or (store.cipher == "auto" and os.name != "nt")
 
     def snapshot(self):
-        locked = self._portable() and not self._unlocked
-        return {
-            "locked": locked,
-            "portable": self._portable(),
-            "newVault": not self.manager.store.path.exists(),
-            "records": [] if locked else self.manager.list(),
-            "devices": [
-                {
-                    "id": d.device_id,
-                    "name": d.alias or d.name or d.ip,
-                    "protocols": list(d.protocols),
-                }
-                for d in self.manager.database.load()
-            ],
-            "storage": str(self.manager.store.path),
-        }
+        with locked_files((self.manager.store.path, self.manager.database.path)):
+            portable = self._portable()
+            locked = portable and not self._unlocked
+            rows = [] if locked else self.manager.list()
+            if rows:
+                revision = self.manager.revision()
+                rows = [{**row, "revision": revision} for row in rows]
+            return {
+                "locked": locked,
+                "portable": portable,
+                "newVault": not self.manager.store.path.exists(),
+                "records": rows,
+                "devices": [
+                    {
+                        "id": d.device_id,
+                        "name": d.alias or d.name or d.ip,
+                        "protocols": list(d.protocols),
+                    }
+                    for d in self.manager.database.load()
+                ],
+                "storage": str(self.manager.store.path),
+            }
 
     def unlock(self, password, confirmation=""):
         if not self.manager.store.path.exists() and (
@@ -62,6 +69,29 @@ class AccessGuiService:
         if password != confirmation:
             raise ValueError("Las contraseñas no coinciden")
         return {"id": self.manager.set_secret(selector, protocol, username, password)}
+
+    def update(self, identifier, expected, values):
+        with locked_files((self.manager.store.path,)):
+            return self._update(identifier, expected, values)
+
+    def _update(self, identifier, expected, values):
+        if self._portable() and not self._unlocked:
+            raise ValueError("Desbloquea el almacén antes de editar")
+        if not isinstance(values, dict) or set(values) - {"username", "password", "confirmation"}:
+            raise ValueError("Campos de credencial no editables.")
+        if "password" in values or "confirmation" in values:
+            password = values.get("password")
+            if (
+                not isinstance(password, str)
+                or not password
+                or password != values.get("confirmation")
+            ):
+                raise ValueError("Indica y repite la nueva contraseña.")
+        else:
+            password = None
+        return {
+            "id": self.manager.update_secret(identifier, expected, values.get("username"), password)
+        }
 
     def delete(self, identifier):
         if self._portable() and not self._unlocked:

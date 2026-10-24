@@ -18,6 +18,7 @@ from lanctl.apps.suite.processes import (
 from lanctl.core.config import load_config
 from lanctl.core.plugins.manager import get_plugin_manager
 from lanctl.core.plugins.settings import PluginSettings
+from lanctl.core.project_context import project_operation
 from lanctl.core.resources import bundled_path
 
 
@@ -28,12 +29,13 @@ class SuiteApi(GuiSupportMixin):
         from lanctl.apps.ip.interfaces.gui.desktop import DesktopApi
 
         self._desktop = DesktopApi()
+        self._desktop._settings_launcher = "lanctl"
         self._cli = EmbeddedCli()
         self._lock = RLock()
 
     def _respond(self, action, operation):
         try:
-            with self._lock:
+            with self._lock, project_operation():
                 return {"ok": True, **operation()}
         except Exception as exc:  # noqa: BLE001 - local desktop RPC boundary
             from lanctl.core.errors import errors
@@ -70,7 +72,10 @@ class SuiteApi(GuiSupportMixin):
     def runtime_status(self):
         from lanctl.core.coordination import Coordinator
 
-        return self._respond("RuntimeStatus", lambda: {"sessions": Coordinator().sessions()})
+        return self._respond(
+            "RuntimeStatus",
+            lambda: {"sessions": Coordinator().sessions(), **self._plugin_payload()},
+        )
 
     def _plugin_payload(self):
         manager = get_plugin_manager()
@@ -91,6 +96,7 @@ class SuiteApi(GuiSupportMixin):
                     "granted": sorted(p.granted),
                     "trusted": p.trusted,
                     "runtime": p.manifest.runtime,
+                    "runtimeStatus": manager.runtime_status(p.manifest.plugin_id),
                     "error": p.error,
                     "publisherTrusted": manager.publishers.is_trusted(p.signature),
                     **self._configuration_status(p),
@@ -230,15 +236,14 @@ class SuiteApi(GuiSupportMixin):
 
     def settings_catalog(self, scope="program"):
         def operation():
-            # Compatibility adapter: preserves the CLI service validation and
-            # remote backend side effects until this adapter moves to core.
-            from lanctl.apps.ip.interfaces.cli.commands.settings_menu import _entries
+            from lanctl.apps.suite.settings import settings_entries
             from lanctl.core.settings_catalog import CATEGORIES
+            from lanctl.core.settings_policy import SettingsContext
 
             if scope not in {"program", "project"}:
                 raise ValueError("Ámbito de configuración desconocido")
             return {
-                "entries": _entries(scope),
+                "entries": settings_entries(SettingsContext("gui", scope=scope)),
                 "categories": {
                     **CATEGORIES,
                     "identity": "Identidad del proyecto",
@@ -251,47 +256,44 @@ class SuiteApi(GuiSupportMixin):
 
     def save_catalog_setting(self, scope, path, value):
         def operation():
-            import json
-
-            from lanctl.apps.ip.interfaces.cli.commands.settings_menu import _set
+            from lanctl.apps.suite.settings import save_setting
+            from lanctl.core.settings_policy import SettingsContext
 
             if scope not in {"program", "project"}:
                 raise ValueError("Ámbito de configuración desconocido")
-            _set(scope, path, json.dumps(value, ensure_ascii=False))
+            save_setting(SettingsContext("gui", scope=scope), path, value)
             return {"message": "Configuración guardada"}
 
         return self._respond("SettingsCatalogSave", operation)
 
     @staticmethod
     def _launcher_categories(launcher):
-        return {
-            "lanip": ("ip", "network", "wol"),
-            "lanwire": ("projects", "storage"),
-            "lanrack": ("projects", "storage"),
-            "lanaccess": ("access", "storage"),
-            "lanmon": ("monitor", "logging"),
-        }[launcher]
+        from lanctl.core.settings_policy import LAUNCHER_CATEGORIES
+
+        return LAUNCHER_CATEGORIES[launcher]
 
     def launcher_settings(self, launcher):
         def operation():
-            from lanctl.apps.ip.interfaces.cli.commands.settings_menu import _entries
+            from lanctl.apps.suite.settings import settings_entries
             from lanctl.core.settings_catalog import CATEGORIES
 
-            categories = self._launcher_categories(launcher)
-            entries = [e for e in _entries("program") if e["category"] in categories]
+            if launcher == "lanctl":
+                raise ValueError("Selecciona un launcher específico")
+            from lanctl.core.settings_policy import SettingsContext
+
+            entries = settings_entries(SettingsContext("gui", launcher=launcher))
             return {"entries": entries, "categories": CATEGORIES}
 
         return self._respond("LauncherSettings", operation)
 
     def save_launcher_setting(self, launcher, path, value):
         def operation():
-            import json
+            from lanctl.apps.suite.settings import save_setting
+            from lanctl.core.settings_policy import SettingsContext
 
-            from lanctl.apps.ip.interfaces.cli.commands.settings_menu import _set
-
-            if path.split(".")[0] not in self._launcher_categories(launcher):
-                raise ValueError("El ajuste no pertenece a este launcher")
-            _set("program", path, json.dumps(value, ensure_ascii=False))
+            if launcher == "lanctl":
+                raise ValueError("Selecciona un launcher específico")
+            save_setting(SettingsContext("gui", launcher=launcher), path, value)
             return {"message": "Configuración guardada"}
 
         return self._respond("LauncherSettingSave", operation)

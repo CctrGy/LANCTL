@@ -9,6 +9,7 @@ from lanctl import __version__
 from lanctl.apps.suite.gui_support import GuiSupportMixin
 from lanctl.apps.suite.processes import launcher_command, open_system_cli, process_options
 from lanctl.core.config import load_config
+from lanctl.core.project_context import project_identity, project_operation
 from lanctl.core.resources import bundled_path
 
 LAUNCHERS = {"lanwire", "lanrack", "lanaccess", "lanmon"}
@@ -25,7 +26,22 @@ class LauncherApi(GuiSupportMixin):
         self._window = None
         self._closing = False
         self._lock = RLock()
-        config = load_config()
+        self._options = (database, store, cipher)
+        self._service = None
+        self._binding = None
+        self._bind_service(load_config())
+
+    def _bind_service(self, config):
+        database, store, cipher = self._options
+        launcher = self._launcher
+        binding = (
+            *project_identity(config),
+            config.get("physicalDatabase"),
+            config.get("credentials"),
+        )
+        if binding == self._binding:
+            return
+        previous = self._service
         if launcher == "lanwire":
             from lanctl.apps.wire.gui_service import WireGuiService
 
@@ -44,11 +60,16 @@ class LauncherApi(GuiSupportMixin):
             from lanctl.apps.monitor.gui_service import MonitorGuiService
 
             self._service = MonitorGuiService()
+        if previous is not None and launcher == "lanaccess":
+            previous.lock()
+        self._binding = binding
 
     def _respond(self, operation, action):
         try:
-            with self._lock:
-                return {"ok": True, **(operation() or {})}
+            with self._lock, project_operation():
+                self._bind_service(load_config())
+                result = operation() or {}
+                return {"ok": True, **result}
         except Exception as exc:  # noqa: BLE001 - native RPC boundary, preserve real origin
             from lanctl.core.errors import errors
 
@@ -79,6 +100,8 @@ class LauncherApi(GuiSupportMixin):
                 "launcher": self._launcher,
                 "version": __version__,
                 "project": config.get("activeProject") or "",
+                "projectContext": project_identity(config),
+                "projectActions": self._project_actions(),
                 "projectName": Path(config["activeProject"]).stem
                 if config.get("activeProject")
                 else "Sin proyecto",
@@ -92,6 +115,20 @@ class LauncherApi(GuiSupportMixin):
             return self._service.set_appearance(expected, identifier, values)
 
         return self._respond(apply, "Appearance")
+
+    def rack_element(self, expected, operation, identifier, values):
+        def apply():
+            self._require("lanrack")
+            return self._service.edit_element(expected, operation, identifier, values)
+
+        return self._respond(apply, "Element")
+
+    def rack_destinations(self, identifier, height):
+        def query():
+            self._require("lanrack")
+            return self._service.destinations(identifier, height)
+
+        return self._respond(query, "Destinations")
 
     def rack_dimensions(self, expected, identifier, values):
         def apply():
@@ -124,6 +161,17 @@ class LauncherApi(GuiSupportMixin):
             return self._service.create(values)
 
         return self._respond(operation, "Create")
+
+    def wire_organization(self, expected, operation, values):
+        def apply():
+            from lanctl.apps.rack.organization import mutate
+            from lanctl.core.projects.physical_mutations import physical_mutation
+
+            self._require("lanwire")
+            with physical_mutation(self._service.database.path):
+                return mutate(self._service.database, expected, operation, values)
+
+        return self._respond(apply, "Organization")
 
     def wire_update(self, identifier, revision, values):
         def operation():
@@ -181,6 +229,13 @@ class LauncherApi(GuiSupportMixin):
 
         return self._respond(operation, "CredentialDelete")
 
+    def access_update(self, identifier, expected, values):
+        def operation():
+            self._require("lanaccess")
+            return self._service.update(identifier, expected, values)
+
+        return self._respond(operation, "CredentialEdit")
+
     def access_open(self, identifier):
         def operation():
             self._require("lanaccess")
@@ -209,6 +264,27 @@ class LauncherApi(GuiSupportMixin):
 
         return self._respond(operation, "Incident")
 
+    def monitor_device(self, identifier):
+        def operation():
+            self._require("lanmon")
+            return {"device": self._service.device_record(identifier)}
+
+        return self._respond(operation, "DeviceRead")
+
+    def monitor_update(self, identifier, expected, values):
+        def operation():
+            self._require("lanmon")
+            return {"device": self._service.update_device(identifier, expected, values)}
+
+        return self._respond(operation, "DeviceEdit")
+
+    def monitor_group(self, identifier, expected, action, name):
+        def operation():
+            self._require("lanmon")
+            return {"device": self._service.edit_group(identifier, expected, action, name)}
+
+        return self._respond(operation, "DeviceGroup")
+
     def settings(self):
         return self._suite.launcher_settings(self._launcher)
 
@@ -226,9 +302,7 @@ class LauncherApi(GuiSupportMixin):
             self._require("lanwire")
             result = self._suite.use_project(path)
             if result.get("ok"):
-                from lanctl.apps.wire.gui_service import WireGuiService
-
-                self._service = WireGuiService(load_config()["physicalDatabase"])
+                self._bind_service(load_config())
             return result
 
         return self._respond(operation, "ProjectSwitch")
@@ -279,27 +353,9 @@ def run_gui(launcher, **options):
 
     project = options.pop("project", None)
     if project:
-        from lanctl.core.projects.workspace import prepare_project_workspace
-        from lanctl.core.session import current_session
+        from lanctl.core.projects.workspace import activate_project_workspace
 
-        workspace = prepare_project_workspace(project, config=load_config())
-        session = current_session()
-        if session is None:
-            raise RuntimeError("Abre el proyecto desde el launcher coordinado")
-        with session.lock:
-            session.config.update(
-                activeProject=str(workspace.project),
-                database=str(workspace.database),
-                groups=str(workspace.groups),
-                projectWorkspace={
-                    "project": str(workspace.project),
-                    "projectId": workspace.project_id,
-                    "database": str(workspace.database),
-                    "groups": str(workspace.groups),
-                    "metadata": str(workspace.metadata),
-                    "contentHash": workspace.content_hash,
-                },
-            )
+        activate_project_workspace(project)
     api = LauncherApi(launcher, **options)
     window = webview.create_window(
         launcher.upper() + " · LANCTL",

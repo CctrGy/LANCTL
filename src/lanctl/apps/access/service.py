@@ -165,7 +165,11 @@ class AccessService:
         access_data = self.store.load()
         current = self.auth.clock()
         result = {
-            "ssh": {k: v for k, v in config["ssh"].items() if k != "hostKey"},
+            "ssh": {
+                k: v
+                for k, v in config["ssh"].items()
+                if k not in {"hostKey", "processToken", "lifecycleRevision", "lifecycleBackend"}
+            },
             "https": {k: v for k, v in config["https"].items() if k != "privateKey"},
             "users": len(access_data["users"]),
             "sessions": sum(
@@ -174,7 +178,11 @@ class AccessService:
             ),
         }
         for protocol in ("ssh", "https"):
-            result[protocol]["running"] = access_process_running(config[protocol])
+            from .runtime_state import _ready
+
+            result[protocol]["running"] = access_process_running(config[protocol]) or _ready(
+                self, protocol, config[protocol], "service"
+            )
         return result
 
     def _audit(self, event_type, user, result, source_ip=""):

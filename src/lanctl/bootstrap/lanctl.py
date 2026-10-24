@@ -208,6 +208,9 @@ def main(argv: list[str] | None = None) -> int:
         args = build_parser().parse_args(arguments)
         if args.launcher:
             build_parser().error("usa lanctl LAUNCHER --cli o --tui")
+        from lanctl.apps.access.settings_lifecycle import _recover_on_startup
+
+        _recover_on_startup()
         if args.gui:
             from lanctl.apps.suite.gui import run_gui
 

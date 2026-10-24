@@ -41,6 +41,11 @@ NIC = {
 )
 def test_enumeration_uses_real_mask_and_does_not_probe(monkeypatch, system, document):
     monkeypatch.setattr(network_interfaces.platform, "system", lambda: system)
+    # Simulate the complete Windows subprocess API when this test runs on Linux.
+    if system == "Windows":
+        monkeypatch.setattr(
+            network_interfaces.subprocess, "CREATE_NO_WINDOW", 0x08000000, raising=False
+        )
     run = Mock(return_value=SimpleNamespace(stdout=json.dumps(document)))
     monkeypatch.setattr(network_interfaces.subprocess, "run", run)
     assert network_interfaces.ipv4_interfaces() == [NIC]
@@ -48,6 +53,7 @@ def test_enumeration_uses_real_mask_and_does_not_probe(monkeypatch, system, docu
     assert command[0] in ("ip", "powershell.exe")
     assert not run.call_args.kwargs.get("shell")
     assert run.call_args.kwargs["timeout"] == 10
+    assert run.call_args.kwargs["creationflags"] == (0x08000000 if system == "Windows" else 0)
 
 
 @pytest.mark.parametrize(

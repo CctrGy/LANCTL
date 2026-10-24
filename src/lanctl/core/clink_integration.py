@@ -60,6 +60,29 @@ def _marker(directory):
     )
 
 
+def _registration_matches(executable, scripts, action):
+    """Clink returns 1 for an already installed/absent path; verify its actual state."""
+    listing = subprocess.run(
+        [executable, "installscripts", "--list"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=10,
+        check=False,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    if listing.returncode:
+        return False
+    expected = os.path.normcase(os.path.normpath(str(scripts)))
+    registered = any(
+        os.path.normcase(os.path.normpath(line.strip())) == expected
+        for line in listing.stdout.splitlines()
+        if line.strip()
+    )
+    return registered == (action == "install")
+
+
 def configure_clink(action, directory=None):
     if action not in {"install", "uninstall"}:
         raise ValueError("acción Clink no válida")
@@ -99,14 +122,18 @@ def configure_clink(action, directory=None):
                 [executable, command, str(scripts)],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
                 errors="replace",
                 timeout=10,
                 check=False,
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
+            already_applied = completed.returncode == 1 and _registration_matches(
+                executable, scripts, action
+            )
         except subprocess.TimeoutExpired as exc:
             raise TimeoutError("Clink no respondió dentro de 10 segundos") from exc
-        if completed.returncode:
+        if completed.returncode and not already_applied:
             raise OSError(f"Clink no pudo {command}: código {completed.returncode}")
         if action == "install":
             atomic_write_json(

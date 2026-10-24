@@ -372,9 +372,10 @@ Options:
                               Muestra u oculta una acción concreta de la barra inferior. Puede
                               repetirse.
   --menu                      Editor interactivo por categorías de programa y proyecto.
-  --catalog                   Lista todos los ajustes por categorías, con valor y estado editable.
+  --catalog                   Lista preferencias comunes y CLI por categorías, con valor y estado
+                              editable.
   --get RUTA                  Consulta un ajuste por su ruta, por ejemplo ip.workers.
-  --set RUTA VALOR            Modifica un ajuste; listas y booleanos usan JSON.
+  --set RUTA VALOR            Modifica una preferencia común o CLI; listas y booleanos usan JSON.
   --scope {program,project}   Ámbito de configuración (predeterminado: program).
   --category CATEGORY         Filtra el catálogo por categoría, por ejemplo network o monitor.
 ```
@@ -932,17 +933,19 @@ Usage: LANIP project [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
-    status    Muestra el proyecto activo.
-    create    Crea un proyecto VLF vacío por defecto.
-    update    Actualiza datos activos conservando información complementaria.
-    save      Guarda manualmente el proyecto VLF activo.
-    info      Muestra los metadatos del proyecto.
-    verify    Comprueba hashes, estructura y SQLite.
-    use       Selecciona el proyecto VLF que recibirá la auditoría.
-    list      Lista el contenido interno sin extraerlo.
+    status         Muestra el proyecto activo.
+    create         Crea un proyecto VLF vacío por defecto.
+    update         Actualiza datos activos conservando información complementaria.
+    save           Guarda manualmente el proyecto VLF activo.
+    import-physical
+                   Copia una base IDF histórica al proyecto físico vacío activo.
+    info           Muestra los metadatos del proyecto.
+    verify         Comprueba hashes, estructura y SQLite.
+    use            Selecciona el proyecto VLF que recibirá la auditoría.
+    list           Lista el contenido interno sin extraerlo.
 
 Options:
-  -h, --help  Show this help and exit.
+  -h, --help       Show this help and exit.
 ```
 
 ## `LANIP project status`
@@ -996,6 +999,18 @@ Options:
 
 ```text
 Usage: LANIP project save [-h]
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANIP project import-physical`
+
+```text
+Usage: LANIP project import-physical [-h] file
+
+Arguments:
+  file        Base IDF .db de origen; se conserva intacta.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1976,23 +1991,26 @@ Options:
 
 ```text
 Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]
-               {list,ls,show,dimensions} ...
+               {list,ls,show,dimensions,elements,add-element,element} ...
 
 Visualiza racks y sus equipos.
 
 Arguments:
-  {list,ls,show,dimensions}
-    list (ls)                Lista los racks disponibles.
-    show                     Muestra un rack y sus ocupantes.
-    dimensions               Edita altura y ancho de montaje del rack.
+  {list,ls,show,dimensions,elements,add-element,element}
+    list (ls)                 Lista los racks disponibles.
+    show                      Muestra un rack y sus ocupantes.
+    dimensions                Edita altura y ancho de montaje del rack.
+    elements                  Lista todos los elementos, ubicaciones y bandejas.
+    add-element               Crea un elemento físico compartido.
+    element                   Edita o reubica un elemento sin cambiar sus enlaces.
 
 Options:
-  -h, --help                 Show this help and exit.
-  --version                  Muestra la versión común de la suite y termina.
-  --database ARCHIVO.db      Base física IDF compartida.
-  --gui                      Abre la interfaz gráfica de escritorio.
-  -tui, --tui                Abre la interfaz de pantalla completa.
-  --cli, -cli                Abre la consola interactiva.
+  -h, --help                  Show this help and exit.
+  --version                   Muestra la versión común de la suite y termina.
+  --database ARCHIVO.db       Base física IDF compartida.
+  --gui                       Abre la interfaz gráfica de escritorio.
+  -tui, --tui                 Abre la interfaz de pantalla completa.
+  --cli, -cli                 Abre la consola interactiva.
 ```
 
 ## `LANRACK list`
@@ -2031,18 +2049,65 @@ Options:
                               Ancho de montaje en pulgadas.
 ```
 
+## `LANRACK elements`
+
+```text
+Usage: LANRACK elements [-h]
+
+Options:
+  -h, --help  Show this help and exit.
+```
+
+## `LANRACK add-element`
+
+```text
+Usage: LANRACK add-element [-h] --kind KIND --prefix PREFIX [--name NAME]
+
+Options:
+  -h, --help       Show this help and exit.
+  --kind KIND      Perfil de equipo, panel, outlet o tray.
+  --prefix PREFIX  Prefijo IDF.
+  --name NAME      Nombre del elemento.
+```
+
+## `LANRACK element`
+
+```text
+Usage: LANRACK element [-h] [--name NAME] [--description DESCRIPTION]
+                       [--placement {inside,environment,independent,hosted}] [--rack RACK]
+                       [--unit UNIT] [--height-u HEIGHT_U] [--tray TRAY]
+                       element
+
+Arguments:
+  element                     ID del elemento.
+
+Options:
+  -h, --help                  Show this help and exit.
+  --name NAME                 Nombre del elemento.
+  --description DESCRIPTION   Descripción del elemento.
+  --placement {inside,environment,independent,hosted}
+                              Clasificación física.
+  --rack RACK                 ID del rack de destino.
+  --unit UNIT                 Unidad inicial del montaje.
+  --height-u HEIGHT_U         Altura ocupada del elemento.
+  --tray TRAY                 Bandeja que aloja al dispositivo.
+```
+
 ## `LANACCESS`
 
 ```text
 Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]
                  [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]
                  [--project-dir PROJECT_DIR] [--gui | -tui | --cli]
-                 {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ...
+                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
+                 ...
 
 Gestiona credenciales cifradas del entorno LANCTL.
 
 Arguments:
-  {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
+  {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
+    remote-setup              Crea la primera cuenta remota del servicio en Windows (requiere
+                              administrador).
     list (ls)                 Lista metadatos; nunca secretos.
     show                      Muestra metadatos de una credencial.
     set                       Crea o actualiza una credencial.
@@ -2066,6 +2131,15 @@ Options:
   --gui                       Abre la interfaz gráfica de escritorio.
   -tui, --tui                 Abre la interfaz de pantalla completa.
   --cli, -cli                 Abre la consola interactiva.
+```
+
+## `LANACCESS remote-setup`
+
+```text
+Usage: LANACCESS remote-setup [-h]
+
+Options:
+  -h, --help  Show this help and exit.
 ```
 
 ## `LANACCESS list`

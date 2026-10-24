@@ -26,7 +26,7 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(args.handler(args), 0)
         self.assertEqual(save.call_args.args[0]["physicalDatabase"], "data/lc/physical/custom.db")
 
-    def test_remote_values_are_saved_when_service_application_needs_elevation(self):
+    def test_remote_values_are_not_saved_when_service_application_needs_elevation(self):
         args = build_parser().parse_args(
             [
                 "settings",
@@ -48,18 +48,16 @@ class SettingsTests(unittest.TestCase):
                 return_value=Path("C:/ProgramData/LANCTL/config/config.json"),
             ) as save,
             patch(
-                "lanctl.apps.ip.interfaces.cli.commands.settings._configure_remote_access",
+                "lanctl.apps.access.settings_lifecycle.remote_settings_transaction",
                 side_effect=PermissionError("elevación requerida"),
             ),
             patch("lanctl.apps.ip.interfaces.cli.commands.settings.ok") as report,
+            self.assertRaises(PermissionError),
         ):
-            result = args.handler(args)
+            args.handler(args)
 
-        self.assertEqual(result, 0)
-        saved = save.call_args.args[0]
-        self.assertEqual(saved["remoteAccessBind"], "192.168.1.31")
-        self.assertEqual(saved["remoteAccessPort"], 22)
-        self.assertIn("valores guardados", report.call_args.args[1])
+        save.assert_not_called()
+        report.assert_not_called()
 
     def test_tui_keys_and_footer_buttons_are_validated_and_saved(self):
         args = build_parser().parse_args(

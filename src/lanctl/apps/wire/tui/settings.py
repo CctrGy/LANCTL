@@ -12,6 +12,7 @@ from typing import Any
 
 from lanctl.apps.wire.path import application_path
 from lanctl.apps.wire.xfile import read, write_json
+from lanctl.core.file_transaction import locked_file
 
 DEFAULT_SETTINGS = {
     "panelLayout": "cli.bottom",
@@ -77,6 +78,33 @@ def _bounded_int(value: Any, minimum: int, maximum: int, default: int) -> int:
 
 
 def save_settings(settings: dict[str, Any]) -> Path:
-    normalized = load_settings()
-    normalized.update(settings)
-    return write_json(settings_path(), normalized)
+    if not isinstance(settings, dict) or set(settings) - DEFAULT_SETTINGS.keys():
+        raise ValueError("Preferencias TUI de LANWIRE desconocidas")
+    for key, value in settings.items():
+        if key in {"confirmExit", "showDescriptions", "showGroups"}:
+            valid = type(value) is bool
+        elif key == "cliHeight":
+            valid = type(value) is int and 8 <= value <= 18
+        elif key == "panelLayout":
+            valid = isinstance(value, str) and value in {"cli.top", "cli.bottom"}
+        elif key == "tableDensity":
+            valid = isinstance(value, str) and value in {"compact", "comfortable"}
+        else:
+            valid = (
+                isinstance(value, dict) and not set(value) - DEFAULT_SETTINGS["columnWidths"].keys()
+            )
+            if valid:
+                valid = all(
+                    type(width) is int and (0 if name == "description" else 6) <= width <= 60
+                    for name, width in value.items()
+                )
+        if not valid:
+            raise ValueError(f"Preferencia TUI de LANWIRE no válida: {key}")
+    with locked_file(settings_path()):
+        normalized = load_settings()
+        for key, value in settings.items():
+            if key == "columnWidths":
+                normalized[key].update(value)
+            else:
+                normalized[key] = value
+        return write_json(settings_path(), normalized)

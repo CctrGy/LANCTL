@@ -1,5 +1,5 @@
 // LANCTL - preferencias editables del usuario por interfaz (17/10/2026).
-// DOCUMENTO DE REVISION: agrupaciones y editar_desde son politica propuesta, no claves del programa.
+// Referencia de alcance, contrastada en P69 el 22/10/2026; no son claves para importar.
 // No importar este texto como configuracion. Valores: predeterminados o contexto indicado.
 // REGLA: toda interfaz ofrece los ajustes COMUNES y solo sus preferencias especificas.
 // GUI excluye preferencias CLI/TUI; TUI excluye GUI/CLI; CLI excluye GUI/TUI.
@@ -15,13 +15,17 @@
 // Los tokens de temas pertenecen al autor del plugin; no hay aqui un editor libre de contratos theme.
 // Plugins: publicar solo preferencias declaradas y validadas, filtradas por interfaz; no exponer su manifiesto.
 // CFG = RAIZ_DATOS/config/config.json. localStorage = perfil/origen del WebView.
-// Hallazgos en el codigo actual, pendientes de corregir en una implementacion posterior:
-// - suite/gui.py settings_catalog entrega _entries(scope) completo y save_catalog_setting delega en _set sin filtro de interfaz.
-// - _launcher_categories filtra categorias por launcher, pero no distingue GUI/TUI/CLI dentro de una categoria.
-// - GUI desktop.SETTINGS incluye cliCommandChaining; TUI show_settings incluye closeGuiOnLaunch y otras preferencias CLI.
-// - settings_catalog.read_only bloquea pocos campos automaticos y admite rutas tecnicas; no basta como lista de ajustes del usuario.
-// Aplicar la misma lista permitida en lectura y escritura del backend; ocultar controles por si solo no impide modificarlos.
-// Este cambio revisa el documento: no implementa esos filtros en el programa.
+// Implementacion P69: core/settings_policy.py contiene la lista explicita de preferencias por interfaz/launcher.
+// apps/suite/settings.py aplica esa politica al leer y guardar; GUI/TUI filtran tambien sus formularios.
+// Los catalogos generales de LANCTL administran todos los dominios, respetando siempre la interfaz.
+// Las opciones CLI locales explicitas --tui-* y --close-gui-on-launch conservan su contrato administrativo;
+// no son preferencias CLI del menu/--catalog/--get/--set ni conceden excepciones a llamadas remotas.
+// LANWIRE TUI conserva su archivo propio y rechaza claves ajenas o valores no validos antes de escribir.
+// Matices respecto a las propuestas inferiores: ip.radminViewer sigue reservado a la ruta administrativa;
+// gateway, DNS y demas parametros de red editables conservan sus validadores existentes. Los campos
+// automaticos, inventario VLAN y metadatos de proyecto se excluyen del catalogo de preferencias.
+// No se modifican los controles visuales/localStorage de GUI-DESIGN ni los esquemas de plugins existentes;
+// settingsSchema v1 no declara ambitos de interfaz y mantiene preferencias comunes de cada plugin.
 {
   "TUI / LANWIRE": {
     "panelLayout": "cli.bottom",  // editar_desde=TUI | acceso=usuario; validacion del servicio | launcher=LANWIRE TUI | archivo=data/lw/tui.config | origen=src/lanctl/apps/wire/tui/settings.py:16 | prioridad=P1

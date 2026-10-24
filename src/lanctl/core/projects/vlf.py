@@ -112,6 +112,22 @@ def create_project(
         if template:
             _copy_template_entries(_existing_vlf(template), root)
 
+        from lanctl.core.projects import physical
+
+        workspace = active.get("projectWorkspace")
+        if (
+            isinstance(workspace, Mapping)
+            and workspace.get("physicalDatabase")
+            and workspace.get("database") == active.get("database")
+        ):
+            # Only a project's owned working copy is saved automatically.
+            # Historical global databases require an explicit import.
+            physical_document = physical.load_inventory(Path(str(workspace["physicalDatabase"])))
+            _write_json(
+                root / physical.ARCHIVE_ENTRY,
+                {"schemaVersion": 1, "inventory": physical_document},
+            )
+
         database = DeviceDatabase(str(active["database"]))
         devices = database.load()
         groups = GroupDatabase(str(active["groups"]), database).load()
@@ -433,6 +449,10 @@ def verify_project(path: str | Path) -> dict:
         database_bytes = archive.read("devices/elements.db")
         _verify_sqlite(database_bytes)
         _verify_sqlite(archive.read("devices/backup.db"))
+        from lanctl.core.projects import physical
+
+        if physical.ARCHIVE_ENTRY in names:
+            physical.decode_archive(archive.read(physical.ARCHIVE_ENTRY))
         return {
             "valid": True,
             "formatVersion": VLF_FORMAT_VERSION,
@@ -571,6 +591,7 @@ def _copy_logs(destination: Path, config: Mapping) -> None:
 
 def _copy_template_entries(source: Path, destination: Path) -> None:
     preserved = {
+        "devices/physical.json",
         "lan/lanIdentifier.info",
         "lan/settings.override.json",
         "lan/vlan.config",

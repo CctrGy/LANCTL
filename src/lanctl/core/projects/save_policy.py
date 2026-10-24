@@ -253,8 +253,9 @@ def workspace_fingerprint(settings: Mapping[str, Any]) -> str | None:
         device_rows = json.loads(files[0].read_text(encoding="utf-8"))
         group_rows = json.loads(files[1].read_text(encoding="utf-8")) if files[1].is_file() else []
     from lanctl.core.projects.fingerprint import inventory_fingerprint
+    from lanctl.core.projects.physical import fingerprint
 
-    return inventory_fingerprint(device_rows, group_rows)
+    return fingerprint(inventory_fingerprint(device_rows, group_rows), files[0])
 
 
 def workspace_is_dirty(settings: Mapping[str, Any]) -> bool:
@@ -358,7 +359,9 @@ def save_active_project(
         # locks que las bases. Otro proceso solo podrá escribir después; ese
         # cambio seguirá apareciendo pendiente en vez de quedar falsamente
         # confirmado por un hash calculado demasiado tarde.
-        with locked_files((database, groups, Path(active))):
+        from lanctl.core.projects.physical import workspace_path
+
+        with locked_files((database, groups, workspace_path(database), Path(active))):
             expected = workspace_fingerprint(settings)
             result = update_project(active, config=settings)
             verification = _verify_saved_workspace(result, settings, expected=expected)
@@ -386,14 +389,22 @@ def close_active_project(*, input_fn=input, output_fn=print) -> SaveResult:
 
     settings = load_config()
     mode = normalize_save_mode(str(settings.get("projectSaveMode", SaveMode.MANUAL.value)))
-    if mode != SaveMode.MANUAL_CLOSE_CONSULT.value:
+    remembered = _consume_close_answer()
+    if remembered == "discard":
+        return SaveResult(
+            False,
+            mode,
+            SaveTrigger.CLOSE.value,
+            str(settings.get("activeProject") or ""),
+            "user-declined",
+        )
+    if mode != SaveMode.MANUAL_CLOSE_CONSULT.value and remembered != "save":
         return save_active_project(SaveTrigger.CLOSE, config=settings)
     active = str(settings.get("activeProject") or "").strip()
     if not active:
         return SaveResult(False, mode, SaveTrigger.CLOSE.value, reason="no-active-project")
     if not workspace_is_dirty(settings):
         return SaveResult(False, mode, SaveTrigger.CLOSE.value, active, "workspace-unchanged")
-    remembered = _consume_close_answer()
     if remembered is not None:
         answer = "s" if remembered == "save" else "n"
     else:

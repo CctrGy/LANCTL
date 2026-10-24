@@ -154,6 +154,134 @@ def test_auto_close_records_launch_before_destroying_window(workspace, monkeypat
         session.close()
 
 
+def test_scan_selection_rejects_missing_origin_without_consuming_request(workspace, monkeypatch):
+    from lanctl.apps.ip.interfaces.gui.desktop import DesktopApi
+    from lanctl.core.first_scan import request_first_scan, scan_choices
+
+    monkeypatch.setattr("lanctl.core.network_interfaces.ipv4_interfaces", list)
+    with patch("lanctl.apps.ip.interfaces.gui.main.local_ipv4", return_value="127.0.0.1"):
+        desktop = DesktopApi()
+    request_first_scan()
+    with patch("lanctl.apps.ip.interfaces.cli.commands.list.run_list") as execute:
+        result = desktop.scan_network("normal", "7:192.0.2.10", "192.0.2.0/24")
+    assert not result["ok"]
+    execute.assert_not_called()
+    assert scan_choices()["requested"] is True
+
+
+def test_first_scan_failure_can_retry_before_request_is_consumed(workspace, monkeypatch):
+    from lanctl.apps.ip.interfaces.gui.desktop import DesktopApi
+    from lanctl.core.first_scan import request_first_scan
+
+    nic = {
+        "id": "7:192.0.2.10",
+        "name": "Ethernet de prueba",
+        "index": 7,
+        "address": "192.0.2.10",
+        "prefixLength": 24,
+        "network": "192.0.2.0/24",
+    }
+    monkeypatch.setattr("lanctl.core.network_interfaces.ipv4_interfaces", lambda: [nic])
+    with patch("lanctl.apps.ip.interfaces.gui.main.local_ipv4", return_value="127.0.0.1"):
+        desktop = DesktopApi()
+    request_first_scan()
+    with patch("lanctl.apps.ip.interfaces.cli.commands.list.run_list", side_effect=[1, 0]) as scan:
+        assert not desktop.scan_network("normal", nic["id"], nic["network"])["ok"]
+        choices = desktop.first_scan_options()
+        assert choices["requested"] is True
+        assert choices["networks"] == [nic]
+        assert desktop.scan_network("normal", nic["id"], nic["network"])["ok"]
+        assert scan.call_count == 2
+    assert desktop.first_scan_options()["requested"] is False
+
+
+@pytest.mark.skipif(
+    os.environ.get("LANCTL_GUI_BROWSER_TESTS") != "1", reason="optional browser runtime"
+)
+def test_plugin_runtime_limits_are_visible_and_unavailable_actions_disabled(workspace, monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    playwright = pytest.importorskip("playwright.sync_api").sync_playwright
+    session = Session("lanctl", "gui", workspace)
+    monkeypatch.setattr("lanctl.core.session._current", session)
+    suite = SuiteApi()
+    manifest = SimpleNamespace(
+        plugin_id="test.runtime",
+        name="Plugin de prueba",
+        description="Prueba de estado",
+        version="1.0.0",
+        author="Pruebas",
+        minimum_lanctl="0.3.0",
+        maximum_lanctl=None,
+        capabilities=[],
+        permissions=[],
+        runtime="trusted",
+    )
+    plugin = SimpleNamespace(
+        manifest=manifest,
+        signature="",
+        state=SimpleNamespace(value="DISABLED"),
+        granted=set(),
+        trusted=False,
+        error="",
+    )
+    manager = Mock()
+    manager.list.return_value = [plugin]
+    manager.publishers.is_trusted.return_value = False
+    status = {
+        "schemaVersion": 1,
+        "active": False,
+        "coreAccess": False,
+        "restartRequired": True,
+        "cleanupPending": False,
+        "execution": "legacy-in-process",
+    }
+    manager.runtime_status.return_value = status
+    root = Path(__file__).resolve().parents[1]
+    try:
+        with (
+            playwright() as p,
+            patch("lanctl.apps.suite.gui.get_plugin_manager", return_value=manager),
+            patch.object(
+                suite,
+                "_configuration_status",
+                return_value={"hasSettings": False, "settingsError": ""},
+            ),
+            patch(
+                "lanctl.core.updates.UpdateService.check",
+                return_value={"status": "current", "installed": "0.3.4-alpha.1"},
+            ),
+        ):
+            browser = p.chromium.launch(channel="msedge", headless=True)
+            page = browser.new_page(viewport={"width": 1100, "height": 780})
+            page.expose_function("rpc", lambda method, args: getattr(suite, method)(*args))
+
+            def open_plugins():
+                page.goto((root / "gui/suite.html").as_uri())
+                page.evaluate(
+                    "window.pywebview={api:new Proxy({}, {get:(_,m)=>(...args)=>rpc(m,args)})};window.dispatchEvent(new Event('pywebviewready'))"
+                )
+                page.locator('nav [data-page="plugins"]').click()
+
+            open_plugins()
+            assert page.locator('[data-plugin-toggle="test.runtime"]').is_disabled()
+            assert (
+                "hilos nativos no se consideran detenidos"
+                in page.locator(".plugin-runtime-warning").inner_text()
+            )
+            status.update(restartRequired=False, cleanupPending=True, execution="isolated")
+            manifest.runtime = "stdio"
+            open_plugins()
+            assert page.locator('[data-plugin-toggle="test.runtime"]').is_disabled()
+            assert "limpieza" in page.locator(".plugin-runtime-warning").inner_text()
+            status["cleanupPending"] = False
+            page.wait_for_function("!document.querySelector('[data-plugin-toggle]').disabled")
+            browser.close()
+    finally:
+        session.close()
+
+
 @pytest.mark.skipif(
     os.environ.get("LANCTL_GUI_BROWSER_TESTS") != "1", reason="optional browser runtime"
 )
@@ -380,7 +508,7 @@ def test_suite_footer_responsive_links_and_explicit_update(workspace, monkeypatc
 @pytest.mark.skipif(
     os.environ.get("LANCTL_GUI_BROWSER_TESTS") != "1", reason="optional browser runtime"
 )
-def test_first_scan_waits_for_confirmation_and_saves_explicit_range(workspace, monkeypatch):
+def test_first_scan_retries_and_preserves_selected_origin_and_range(workspace, monkeypatch):
     from lanctl.apps.ip.interfaces.gui.desktop import DesktopApi
     from lanctl.core.first_scan import request_first_scan
 
@@ -389,6 +517,8 @@ def test_first_scan_waits_for_confirmation_and_saves_explicit_range(workspace, m
     monkeypatch.setattr("lanctl.core.session._current", session)
     with patch("lanctl.apps.ip.interfaces.gui.main.local_ipv4", return_value="127.0.0.1"):
         desktop = DesktopApi()
+    networks = []
+    monkeypatch.setattr("lanctl.core.network_interfaces.ipv4_interfaces", lambda: list(networks))
     request_first_scan()
     root = Path(__file__).resolve().parents[1]
     payload = desktop.bootstrap()
@@ -396,9 +526,7 @@ def test_first_scan_waits_for_confirmation_and_saves_explicit_range(workspace, m
     try:
         with (
             playwright() as p,
-            patch.object(
-                desktop, "scan_network", return_value={**payload, "message": "Escaneo solicitado"}
-            ) as scan,
+            patch("lanctl.apps.ip.interfaces.cli.commands.list.run_list", return_value=0) as scan,
         ):
             browser = p.chromium.launch(channel="msedge", headless=True)
             page = browser.new_page(viewport={"width": 1100, "height": 780})
@@ -409,14 +537,37 @@ def test_first_scan_waits_for_confirmation_and_saves_explicit_range(workspace, m
             )
             page.locator(".first-scan-dialog").wait_for(state="visible")
             assert not scan.called
-            page.locator('.first-scan-dialog [name="range"]').fill("192.0.2.0/24")
+            assert page.locator('.first-scan-dialog [type="submit"]').is_disabled()
+            assert desktop.first_scan_options()["requested"] is True
+            networks.append(
+                {
+                    "id": "7:192.0.2.10",
+                    "name": "Ethernet de prueba",
+                    "index": 7,
+                    "address": "192.0.2.10",
+                    "prefixLength": 24,
+                    "network": "192.0.2.0/24",
+                }
+            )
+            page.locator('[data-first-scan="retry"]').click()
+            page.locator('.first-scan-dialog option[value="7:192.0.2.10"]').wait_for(
+                state="attached"
+            )
+            page.locator('.first-scan-dialog [name="range"]').fill("192.0.2.0/25")
             page.locator('.first-scan-dialog [type="submit"]').click()
             page.wait_for_function("!document.querySelector('.first-scan-dialog').open")
+            page.wait_for_function("!document.body.classList.contains('busy')")
             assert scan.call_count == 1
-            from lanctl.core.config import load_config
-
-            assert load_config()["range"] == "192.0.2.0/24"
+            assert scan.call_args.args[0].interface == "7:192.0.2.10"
+            assert scan.call_args.args[0].network == "192.0.2.0/25"
             assert desktop.first_scan_options()["requested"] is False
+            page.locator("#scan-target").click()
+            page.locator('.first-scan-dialog [name="source"]').select_option("")
+            page.locator('.first-scan-dialog [type="submit"]').click()
+            page.locator("#scan-network").click()
+            page.wait_for_function("!document.body.classList.contains('busy')")
+            assert scan.call_count == 2
+            assert scan.call_args.args[0].interface is None
             browser.close()
     finally:
         session.close()

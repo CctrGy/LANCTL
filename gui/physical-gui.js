@@ -56,7 +56,14 @@ function wireOrderedPorts(n) {
 function physicalRackOf(r) {
   return ["rack", "rack.summary"].includes(r.data?.type)
     ? r.id
-    : r.data?.location?.rack || "";
+    : r.placement?.rack || r.data?.location?.rack || "";
+}
+function physicalRegionOf(r) {
+  const rack = physicalRackOf(r);
+  if (r.placement?.kind === "environment") return rack + "::environment";
+  if (r.placement?.kind === "hosted") return rack + "::tray:" + r.placement.tray;
+  if (r.placement?.needsReview) return "::review";
+  return rack;
 }
 function physicalCpdOf(rack) {
   return state.records.find((r) => r.id === rack)?.data?.location?.cpd || "";
@@ -67,6 +74,8 @@ function physicalRoomName(id) {
 function physicalSize(n) {
   if (n.physicalSize) return n.physicalSize;
   const count = Object.keys(n.data.ports || {}).length;
+  if (["device.outlet", "outlet"].includes(n.data.type) && count <= 2)
+    return { w: 120, h: 64 };
   const cols = count > 24 ? 12 : count > 8 ? 8 : Math.max(1, count);
   return {
     w: count ? Math.max(240, cols * 43 + 28) : 240,
@@ -223,7 +232,7 @@ wireLayout = function (nodes) {
   const groupOfNode = (n) =>
     physicalLevel === "outside"
       ? n.data.location?.cpd || ""
-      : physicalRackOf(n);
+      : physicalRegionOf(n);
   const groups = new Map();
   for (const n of nodes) {
     const id = groupOfNode(n);
@@ -269,7 +278,7 @@ wireLayout = function (nodes) {
         physicalLevel === "outside"
           ? state.cpds?.find((c) => c.id === id)?.name || "Sin CPD"
           : id
-            ? labelOf(state.records.find((r) => r.id === id) || { id })
+            ? (id.includes("::environment") ? "Entorno de " + id.split("::")[0] : id.includes("::tray:") ? "Bandeja " + id.split("::tray:")[1] : id === "::review" ? "Ubicaciones pendientes de revisión" : labelOf(state.records.find((r) => r.id === id) || { id }))
             : "Equipos sin rack",
     });
   }
@@ -369,13 +378,13 @@ wireRenderTopology = function (rows) {
         (!contextFiltered || eligible.has(r.id)),
     );
     const represented = new Set(racks.map((r) => r.id));
-    const context = new Map();
+    const context = new Map(rows.filter(r => r.data.type !== "wire" && r.data.type !== "rack" && !["inside", "hosted"].includes(r.placement?.kind) && (!effectiveRack || (effectiveRack === "none" ? !physicalRackOf(r) : physicalRackOf(r) === effectiveRack))).map(r => [r.id, r]));
     const visibleEdges = [];
     for (const e of physicalOriginalEdges) {
       const mapEnd = (end) => {
         if (!end) return null;
         const record = original.find((r) => r.id === end.device);
-        const rack = record?.data.location?.rack;
+        const rack = record && !["environment", "independent", "review"].includes(record.placement?.kind) && physicalRackOf(record);
         return {
           device: rack || end.device,
           port: record ? labelOf(record) + " · " + end.port : end.port,
@@ -393,7 +402,7 @@ wireRenderTopology = function (rows) {
             end &&
             allowedIds.has(end.device) &&
             (physicalRack !== "none" ||
-              !original.find((r) => r.id === end.device)?.data.location?.rack),
+              !physicalRackOf(original.find((r) => r.id === end.device) || {})),
         );
       if (!touches && !unassigned) continue;
       if (a?.device === b?.device) continue;
@@ -495,6 +504,20 @@ wireRenderTopology = function (rows) {
       "",
     )}</select></label><label><input id="physical-bundles" type="checkbox" ${physicalBundles ? "checked" : ""}> Agrupar enlaces</label>`;
   toolbar.before(controls);
+  const labels = wireAction("", () => {
+    wirePrefs.cableLabels = !(wirePrefs.cableLabels ?? wirePrefs.labels);
+    wireStore();
+    updateLabels();
+    wirePaint();
+  });
+  function updateLabels() {
+    const visible = wirePrefs.cableLabels ?? wirePrefs.labels;
+    labels.textContent = visible ? "Ocultar nombres de cables" : "Mostrar nombres de cables";
+    labels.setAttribute("aria-pressed", String(Boolean(visible)));
+  }
+  labels.id = "wire-cable-labels";
+  updateLabels();
+  toolbar.append(labels);
   $("#physical-cpd").value = physicalCpd;
   $("#physical-rack").value = effectiveRack;
   controls
@@ -518,17 +541,18 @@ wireRenderTopology = function (rows) {
     clearTimeout(clickTimer);
     selected = el.dataset.node;
     const r = state.records.find((r) => r.id === selected);
-    if (physicalLevel === "outside" && r?.data.type === "rack")
-      physicalSwitchLevel("inside", r.id);
-    else if (r) fullDetails(r);
+    if (r) fullDetails(r);
   };
   for (const n of wireGraph.nodes) {
     const el = document.querySelector(`[data-node="${CSS.escape(n.id)}"]`);
     el.style.width = physicalSize(n).w + "px";
     el.style.minHeight = physicalSize(n).h + "px";
+    const compact = ["device.outlet", "outlet"].includes(n.data.type) && Object.keys(n.data.ports || {}).length <= 2;
+    el.classList.toggle("physical-outlet", compact);
+    if (compact) el.title = `${labelOf(n)} · ${n.id}`;
     const ports = el.querySelector(".wire-ports");
     if (ports)
-      ports.style.gridTemplateColumns = `repeat(${Object.keys(n.data.ports || {}).length > 24 ? 12 : 8},minmax(0,1fr))`;
+      ports.style.gridTemplateColumns = `repeat(${compact ? 2 : Object.keys(n.data.ports || {}).length > 24 ? 12 : 8},minmax(0,1fr))`;
   }
   wirePaint();
 };
@@ -601,7 +625,7 @@ wirePaint = function () {
         r.id ===
         (physicalLevel === "outside"
           ? n.data.location?.cpd || ""
-          : physicalRackOf(n)),
+          : physicalRegionOf(n)),
     );
     if (region && wirePositions[n.id]) {
       const p = wirePositions[n.id],
@@ -630,7 +654,7 @@ wirePaint = function () {
     el.textContent =
       region.label +
       (physicalLevel === "inside"
-        ? " · " + physicalRoomName(physicalCpdOf(region.id))
+        ? " · " + physicalRoomName(physicalCpdOf(region.id.split("::")[0]))
         : "");
     $("#wire-world").prepend(el);
   }
@@ -704,7 +728,7 @@ wirePaint = function () {
         y = midY - height / 2 + Math.sin(angle) * ring * 40;
       }
       labels.push({ x, y, w: width, h: height });
-      return `<g data-cable="${esc(e.wire.id)}" class="${selected === e.wire.id ? "highlight" : ""}"><title>${esc(full)}</title><path d="${path}"/><circle cx="${a.x}" cy="${a.y}" r="3"/><circle cx="${b.x}" cy="${b.y}" r="3"/>${wirePrefs.labels ? `<g class="physical-cable-label">${Math.hypot(x + width / 2 - midX, y + height / 2 - midY) > 40 ? `<line class="physical-label-leader" x1="${midX}" y1="${midY}" x2="${x + width / 2}" y2="${y + height / 2}"/>` : ""}<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5"/><text style="font-size:${11 * labelScale}px" x="${x + 9 * labelScale}" y="${y + 16 * labelScale}">${esc(short)}</text></g>` : ""}</g>`;
+      return `<g data-cable="${esc(e.wire.id)}" class="${selected === e.wire.id ? "highlight" : ""}"><title>${esc(full)}</title><path d="${path}"/><circle cx="${a.x}" cy="${a.y}" r="3"/><circle cx="${b.x}" cy="${b.y}" r="3"/>${(wirePrefs.cableLabels ?? wirePrefs.labels) ? `<g class="physical-cable-label">${Math.hypot(x + width / 2 - midX, y + height / 2 - midY) > 40 ? `<line class="physical-label-leader" x1="${midX}" y1="${midY}" x2="${x + width / 2}" y2="${y + height / 2}"/>` : ""}<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5"/><text style="font-size:${11 * labelScale}px" x="${x + 9 * labelScale}" y="${y + 16 * labelScale}">${esc(short)}</text></g>` : ""}</g>`;
     })
     .join("");
   physicalLabelBounds = labels;
@@ -769,7 +793,7 @@ function rackRoomForm(room) {
     ],
     async (values) => {
       await call(
-        "rack_organization",
+        state.launcher === "lanwire" ? "wire_organization" : "rack_organization",
         state.organizationRevision,
         room ? "edit" : "create",
         { ...values, id: room?.id },
@@ -787,7 +811,7 @@ function rackAssign(r) {
       ]),
     ],
     (v) =>
-      call("rack_organization", state.organizationRevision, "assign", {
+      call(state.launcher === "lanwire" ? "wire_organization" : "rack_organization", state.organizationRevision, "assign", {
         rack: r.id,
         id: v.id,
       }),
@@ -914,8 +938,7 @@ render = function () {
     .join("");
   $("#tools").innerHTML =
     button("Actualizar", "refresh") +
-    '<button id="rack-new-room" class="primary">Nuevo CPD</button>' +
-    button("Abrir LANWIRE", "wire");
+    '<button id="rack-new-room" class="primary">Nuevo CPD</button>';
   $("#rack-new-room").onclick = () => rackRoomForm();
   $("#commands").innerHTML = chosen
     ? '<button id="rack-data">Ver datos</button><button id="rack-assign">Cambiar CPD</button>'
@@ -942,7 +965,7 @@ render = function () {
       ),
     );
     $("#canvas").innerHTML =
-      `<div class="rack-detail-layout"><section class="panel"><button id="rack-back">← Volver a la sala</button><h2>${esc(chosen.name)}</h2><p>${esc(roomName(chosen.location?.cpd))}</p><p>${esc(rackMetric(chosen))}</p><p>${esc(chosen.description)}</p></section><section class="rack-elevation">${Array.from(
+      `<div class="rack-detail-layout"><section class="rack-detail-header"><nav class="row" aria-label="Vista del rack"><button id="rack-back">Volver a la sala</button></nav><div class="rack-summary"><h2>${esc(chosen.name)}</h2><p>${esc(roomName(chosen.location?.cpd))} · ${esc(rackMetric(chosen))}</p></div></section><section class="rack-elevation" aria-label="Unidades del rack">${Array.from(
         { length: chosen.units },
         (_, i) => chosen.units - i,
       )

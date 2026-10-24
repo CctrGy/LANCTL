@@ -13,10 +13,18 @@ lanctl lanwire --gui
 Se requiere el extra `gui` en desarrollo y WebView2 en Windows, igual que LANIP.
 Se conserva el arranque CLI/TUI predeterminado de cada launcher. Cada aplicación
 tiene icono, sesión coordinada y ventana propios; la instancia existente recibe
-el foco en una segunda apertura. El lanzamiento transporta una instantánea
-versionada de las rutas del proyecto, sin credenciales, para conservar el
-contexto aunque otra ventana seleccione un proyecto distinto. No persiste esta
-selección sobre la de otra sesión.
+el foco en una segunda apertura. La selección de proyecto es compartida por
+LANCTL y sus launchers: las ventanas abiertas reconcilian la configuración y
+renuevan sus datos, rutas y nombre de proyecto. El contexto versionado del
+lanzamiento sigue siendo compatible, pero no fija una selección independiente
+durante toda la vida de la ventana.
+
+Cada operación trabaja con una instantánea consistente. Un escaneo ya iniciado
+termina sobre su inventario original; un servicio de monitorización conserva el
+proyecto de su trabajo hasta que se detenga. Los formularios antiguos no se
+aplican al proyecto nuevo: se conserva su contenido y se pide cerrar y actualizar.
+El sobre RPC aditivo `project_call` valida `projectContext` para las acciones
+publicadas en `projectActions`; los métodos RPC anteriores conservan sus firmas.
 
 ## LANWIRE
 
@@ -52,13 +60,26 @@ solo lectura. Las preferencias visuales se guardan localmente con versión de
 formato; los ajustes compartidos pasan por el catálogo y validación del programa.
 Restaurar preferencias visuales no altera rutas ni opciones del proyecto.
 
-«Cambiar proyecto» lista los VLF disponibles y permite abrir otro archivo. Los
-cambios pendientes se guardan antes de cambiar; una apertura fallida conserva
-el contexto anterior. **El inventario físico sigue siendo compartido**, mediante
-`physicalDatabase` (o `--database` al arrancar); no está contenido en el VLF. El
-selector cambia el contexto del proyecto y vuelve a enlazar el servicio físico
-a la ruta configurada. No se simula una exportación VLF del inventario físico.
-Las rutas modificadas en Configuración requieren volver a abrir la interfaz.
+La selección de proyecto se realiza desde LANCTL, según P88; LANWIRE conserva
+el acceso a esa ventana y muestra el contexto activo. Una apertura fallida
+conserva el contexto anterior. Cada proyecto contiene su inventario físico,
+con cambios pendientes y guardado/verificación en la entrada opcional y
+versionada `devices/physical.json` del VLF. Guardar y reabrir en otra instalación
+recupera racks, equipos, cables, puertos y CPD. Un VLF anterior sin esa entrada
+abre un inventario físico vacío. La base histórica se conserva aparte y puede
+importarse explícitamente en un proyecto vacío mediante
+`project import-physical ARCHIVO`; después se guarda con `project save`.
+Las rutas configuradas se vuelven a enlazar al atender la siguiente operación.
+Los overrides explícitos de arranque como `--database` siguen siendo respetados.
+
+LANWIRE ofrece Nuevo elemento, Nuevo cable, Nuevo rack y Nuevo CPD. Los cables
+pueden crearse con extremos compatibles en una sola operación; un puerto
+inexistente, incompatible u ocupado rechaza el alta sin dejar un cable parcial.
+También permite editar CPD y cambiar la pertenencia de un rack.
+El doble clic abre los datos del elemento; el menú contextual de un rack
+conserva «Ver interior del rack». El botón de nombres de cables solo oculta sus
+etiquetas, manteniendo trazado, posiciones y nombres de equipos. Las tomas
+genéricas de hasta dos puertos ocupan aproximadamente el 27 % del área anterior.
 
 
 ## LANRACK
@@ -94,6 +115,8 @@ genéricas y no un catálogo de modelos comerciales.
 
 Pulsa un equipo y elige «Personalizar frente» para seleccionar una plantilla,
 verla previamente o ajustar el tipo, número de RJ45/SFP, montaje y altura.
+La altura admite de 1 a 52 U, siempre que el equipo quepa en el rack sin
+solaparse; un equipo de más de 8 U conserva su altura al editar el frente.
 El modo automático deduce el frontal de los puertos y tipo del inventario.
 Los puertos del frente son decorativos: no reciben clics, foco ni acciones de
 conexión, ni muestran respuestas al pasar el ratón. La unidad completa conserva
@@ -109,8 +132,17 @@ base compartida, y conserva equipos, CPD, ubicación, puertos y cables. Las
 revisiones impiden sobrescribir cambios de otra ventana. El traslado desde la
 GUI de LANWIRE y la reducción de altura del rack respetan el espacio ocupado.
 Los equipos anteriores conservan 1 U y un frente automático hasta configurarlos.
-La vista simple permanece disponible y el tamaño visual de las unidades es
-ajustable; estas preferencias locales llevan su propio esquema versionado.
+La cabecera del rack reúne «Volver a la sala» y «Ver unidades simples» junto
+al nombre y la ocupación. La descripción completa sigue disponible en la ficha.
+Se conservan «Actualizar», «Nuevo CPD», «Nuevo rack» y «Nuevo elemento».
+La navegación entre aplicaciones parte del acceso LANCTL del pie.
+
+El tamaño visual se ajusta automáticamente al ancho y alto disponibles, sin
+deslizador y sin modificar la altura U ni las dimensiones físicas. En racks
+altos o ventanas pequeñas se conserva un mínimo legible y se usa desplazamiento
+vertical para acceder a todas las unidades. Redimensionar no cierra la ficha ni
+pierde cambios pendientes. La preferencia local de vista simple o frentes
+mantiene su esquema 1; el antiguo tamaño manual deja de aplicarse.
 
 ### Racks y CPD en Topología LANWIRE
 
@@ -152,8 +184,12 @@ servicio transaccional que CLI/TUI; `AccessManager` conserva su ruta compatible
 como adaptador de entrada de secretos de consola.
 
 Los secretos no se devuelven a JavaScript en listas o detalles, ni se colocan en
-argumentos de procesos. La edición solicita una contraseña nueva y su
-confirmación. DPAPI mantiene su protección de usuario de Windows. Un almacén
+argumentos de procesos. La ficha permite editar el usuario sin reintroducir la
+contraseña guardada. «Cambiar contraseña» habilita una contraseña nueva y su
+confirmación; los campos empiezan vacíos. El equipo, protocolo e identificador
+de una credencial existente son de lectura. Una revisión opaca del archivo
+cifrado impide sobrescribir cambios de otra sesión. DPAPI mantiene su protección
+de usuario de Windows. Un almacén
 portable se desbloquea explícitamente; uno nuevo requiere al menos 12 caracteres
 y confirmación. Bloquear o cerrar elimina la contraseña de desbloqueo de la
 instancia. Se respetan `--database`, `--store`, `--cipher` y las opciones de scope.
@@ -170,6 +206,14 @@ No permite detener desde la GUI la sesión de otro proyecto ni iniciar una
 segunda sesión si ya existe una activa. Las incidencias del inventario mostrado
 se pueden reconocer y cerrar mediante su servicio.
 
+La ficha de un equipo permite editar nombre, alias, descripción e IP mediante
+el mismo servicio de inventario que LANIP. La pestaña «Grupos» añade o retira
+pertenencias a grupos existentes; respeta los grupos protegidos. Estas acciones
+se aplican al pulsar «Añadir» o «Retirar» y requieren guardar o descartar antes
+los cambios pendientes en «Datos». Los identificadores, las observaciones,
+muestras, métricas y eventos son de lectura. La revisión incluye datos y
+pertenencias y rechaza formularios obsoletos antes de escribir.
+
 El proceso de monitorización continúa al cerrar la ventana. Sus reglas y
 perfiles avanzados permanecen disponibles en configuración y CLI. Las acciones
 remotas con mayor autoridad mantienen sus comprobaciones existentes.
@@ -180,11 +224,24 @@ Cabecera, filtros, barra de acciones y pie permanecen visibles; el contenido
 central se desplaza. Cada GUI incluye configuración por categorías, CLI propio,
 acceso a LANCTL, errores con su origen y confirmaciones con la temática de la
 aplicación. La actualización de datos no reemplaza formularios abiertos.
+Las barras inferiores de LANCTL, LANIP, LANWIRE, LANRACK, LANACCESS y LANMON
+no muestran un reloj de hora actual. Se conservan proyecto, versión y navegación,
+el refresco de datos y las fechas/horas de actividad, incidencias, eventos y
+registros. Los prototipos siguen el mismo criterio para sus pies.
+LANMON y LANACCESS conservan la selección y los filtros después de editar;
+si el registro deja de coincidir con el filtro, permanece visible con un aviso
+hasta cambiar filtro, selección o proyecto. Cancelar los datos de una ficha no
+los guarda. Las respuestas tardías de fichas cerradas no sustituyen otros
+diálogos. Las nuevas operaciones nativas `monitor_device`, `monitor_update`,
+`monitor_group` y `access_update` respetan la guarda de proyecto y el launcher
+correspondiente; no amplían la lista de operaciones ni los permisos remotos.
 
 Pruebas reproducibles:
 
 ```text
 python -m pytest tests/test_launcher_gui.py -q
+python -m pytest tests/test_view_editing.py tests/test_view_editing_gui.py -q
+python -m pytest tests/test_launcher_footers.py -q
 python tests/launcher_gui_native_smoke.py lanwire
 python tests/launcher_gui_native_smoke.py lanrack
 python tests/launcher_gui_native_smoke.py lanaccess
@@ -194,6 +251,8 @@ python tests/launcher_suite_native_smoke.py
 
 Los smokes nativos Windows utilizan directorios temporales y cierran solamente
 sus propias ventanas y procesos. La revisión local no certifica otras plataformas.
+Las regresiones de navegador requieren `LANCTL_GUI_BROWSER_TESTS=1` y el
+runtime de Playwright con Edge, igual que las demás pruebas GUI del proyecto.
 
 Las rutas de almacén están vinculadas a la instancia abierta: después de
 cambiarlas en configuración, cierra y vuelve a abrir el launcher. Los cambios
@@ -233,10 +292,60 @@ para revisión; una altura inválida no se convierte en una elevación inventada
 Los puertos de las skins siguen siendo exclusivamente decorativos.
 
 La solicitud de primer escaneo del instalador abre una confirmación editable
-en LANIP. El rango sugerido /24 se identifica como estimado cuando corresponde.
-Cancelar no escanea; confirmar guarda el CIDR y usa el progreso/cancelación de
-la GUI. La selección real de interfaz requiere adaptar los transportes de
-sondeo y sigue pendiente: esta ventana no ofrece un selector ficticio.
+en LANIP con las interfaces IPv4 disponibles y su máscara real. Se confirma
+adaptador, CIDR y perfil antes de sondear. El modo de origen seleccionado usa
+ICMP/ARP y omite DNS y descubridores externos con un aviso; no atribuye ese
+enlace a transportes todavía no adaptados. Sin interfaz válida no inicia ni
+descarta la solicitud. Un escaneo fallido conserva la petición para reintentar.
+El botón Red de escaneo permite cambiar la selección o recuperar las rutas
+habituales del sistema. La selección se conserva solo en la ventana abierta.
 
 Estos adaptadores son exclusivos del escritorio local. El frontend remoto
 conserva su superficie restringida y no obtiene métodos nativos adicionales.
+
+
+## Edición física desde LANRACK y LANWIRE
+
+LANRACK permite crear elementos (incluidas bandejas), editar sus datos, puertos
+y conexiones y abrir la acción **Mover elemento** desde el equipo seleccionado.
+La acción muestra su posición actual y destinos disponibles para la altura
+indicada. La transacción vuelve a comprobar ocupación y revisión al guardar.
+La pestaña **Ubicación** permite escoger interior, entorno, independiente o
+alojado en bandeja. En una bandeja montada también aparece **Alojar dispositivo**;
+para retirarlo se edita su ubicación y se elige un destino explícito.
+
+El rack conserva su altura de 4–52 U y ancho de 10/19/21/23 pulgadas. Un equipo
+puede ocupar de 1 a 52 U, limitado por el armario y sus vecinos. Su única altura
+persistida sigue siendo `rackAppearance.units`; cambiar el frente usa la misma
+validación. LANWIRE puede editar las dimensiones en la ficha del rack.
+
+El inventario distingue montaje directo, entorno y elementos independientes.
+La relación de pertenencia no modifica el cableado: las tomas mantienen el
+puerto concreto de su panel y un equipo independiente puede enlazar con un rack.
+Los dispositivos alojados conservan registros, puertos e IDs propios, y solo la
+bandeja reserva U. Su rack y unidad efectivos se calculan a partir de ella.
+
+Las ubicaciones nuevas llevan `location.schemaVersion: 1`. Una ubicación antigua
+con rack y posición válida se interpreta como interior sin reescribir el archivo;
+las asociaciones ambiguas se muestran para revisión. La edición explícita migra
+la ubicación. Las bandejas antiguas dibujadas en `layout` pueden convertirse desde
+**Convertir bandeja heredada**: se crea un ID libre y se retira solo ese dibujo,
+en una transacción. No se asignan dispositivos automáticamente. Los otros muebles
+heredados conservan su espacio reservado. La TUI da prioridad a la ubicación real
+de un equipo sobre un dibujo anterior que apuntase a su ID.
+
+CLI y TUI de LANRACK comparten estas reglas:
+
+```text
+LANRACK elements
+LANRACK add-element --kind tray --prefix TR --name Bandeja
+LANRACK element TR-00 --placement inside --rack RK-00 --unit 3 --height-u 2
+LANRACK element RT-01 --placement hosted --tray TR-00
+LANRACK element RT-01 --placement independent
+```
+
+Los nombres de proyecto de los cinco launchers son informativos y aparecen en
+el pie. La selección gráfica se realiza desde LANCTL; el botón LANCTL del pie
+usa la coordinación de ventanas existente. Las APIs y comandos históricos de
+proyecto siguen disponibles. Un formulario abierto conserva su contenido y
+rechaza la escritura si cambió el proyecto o el inventario mientras estaba abierto.

@@ -140,6 +140,19 @@ def editable_fields(
                 EditableField("unit", ("location", "unit"), location.get("unit")),
             )
         )
+    if element_type not in {"rack", "wire"}:
+        from lanctl.core.physical_placement import location_status, span
+
+        position = location_status(data)
+        fields.extend(
+            (
+                EditableField("placement", ("placement",), position["kind"]),
+                EditableField(
+                    "tray", ("location", "tray"), (data.get("location") or {}).get("tray")
+                ),
+                EditableField("heightU", ("heightU",), span(data)),
+            )
+        )
     return fields
 
 
@@ -207,6 +220,8 @@ def _section_for(field: EditableField) -> str:
 
 def field_options(field: EditableField) -> tuple[str, ...]:
     """Opciones guiadas para propiedades físicas, sin bloquear edición libre."""
+    if field.label == "placement":
+        return ("inside", "environment", "independent", "hosted")
     if field.label == "type":
         return (
             "router-4rj-1fb",
@@ -321,6 +336,35 @@ def connection_browser_view(
 
 
 def set_field(data: dict[str, Any], field: EditableField, raw_value: str) -> None:
+    if field.label in {"rack", "unit", "tray", "heightU", "placement"}:
+        from lanctl.core.physical_placement import apply_placement
+
+        raw = raw_value.strip()
+        values = {field.label: int(raw) if field.label in {"unit", "heightU"} else raw or None}
+        if field.label == "placement":
+            location = data.get("location") or {}
+            if raw not in {"inside", "environment", "independent", "hosted"}:
+                raise ValueError("Clasificación no válida")
+            values = {
+                "rack": location.get("rack") if raw in {"inside", "environment"} else None,
+                "in_rack": raw == "inside",
+                "unit": (location.get("unit") or 1) if raw == "inside" else 0,
+                "tray": location.get("tray") if raw == "hosted" else None,
+            }
+            if raw in {"inside", "environment"} and not values["rack"]:
+                raise ValueError("Asigna primero un rack")
+            if raw == "hosted" and not values["tray"]:
+                raise ValueError("Asigna primero una bandeja")
+        elif field.label == "rack" and raw:
+            values.update(in_rack=False, unit=0, tray=None)
+        elif field.label == "unit" and int(raw) > 0:
+            values.update(in_rack=True, tray=None)
+        elif field.label == "tray" and not raw:
+            values.update(rack=None, in_rack=False, unit=0)
+        updated = apply_placement(data, values)
+        data.clear()
+        data.update(updated)
+        return
     if field.label.endswith(".kind") or field.label == "kind":
         raw_value = {
             "rj45": "wire.copper",

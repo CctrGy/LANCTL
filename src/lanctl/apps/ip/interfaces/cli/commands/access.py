@@ -5,12 +5,9 @@ import getpass
 import hashlib
 import json
 import os
-import platform
 import signal
 import ssl
-import subprocess
 from contextlib import suppress
-from dataclasses import asdict
 from pathlib import Path
 
 from lanctl.apps.access.keys import generate_certificate, generate_host_key
@@ -148,7 +145,11 @@ def run_access(args):
         service.save_config(config)
         payload = {"hostKey": path, "warning": "Los clientes deberán confirmar la nueva huella"}
     elif action == "serve":
+        from lanctl.apps.access.processes import _await_start_claim
+        from lanctl.apps.access.runtime_state import _publish
+
         protocol = words[1].casefold()
+        _await_start_claim(service, protocol)
         config = service.config()
         settings = config[protocol]
         if not settings.get("enabled"):
@@ -179,11 +180,29 @@ def run_access(args):
                 service.status,
             )
         try:
+            if protocol == "ssh":
+                server.prepare()
+            _publish(
+                service,
+                protocol,
+                settings,
+                "running",
+                "user",
+                token=os.environ.get("LANCTL_ACCESS_START_TOKEN"),
+            )
             server.serve_forever()
         except KeyboardInterrupt:
             pass
         finally:
             server.stop()
+            _publish(
+                service,
+                protocol,
+                settings,
+                "stopped",
+                "user",
+                token=os.environ.get("LANCTL_ACCESS_START_TOKEN"),
+            )
         payload = {"status": "stopped", "protocol": protocol}
     elif action in {"recover", "reset"}:
         raise PermissionError(
@@ -259,7 +278,7 @@ def _user(service, args, words):
             if password != confirmation:
                 raise ValueError("las contraseñas no coinciden")
         keys = [Path(path).read_text(encoding="utf-8").strip() for path in args.ssh_key]
-        return asdict(
+        return _public_user(
             service.auth.add_user(words[1], args.role or ["viewer"], password, keys, args.expires)
         )
     user = service.auth.user(words[1])
@@ -297,6 +316,25 @@ def _user(service, args, words):
     raise ValueError("acción de usuario no válida")
 
 
+def _public_user(user):
+    """Preserve CLI metadata without exposing current or future authenticators."""
+    return {
+        "userId": user.userId,
+        "username": user.username,
+        "roles": user.roles,
+        "enabled": user.enabled,
+        "expiresAt": user.expiresAt,
+        "lockedUntil": user.lockedUntil,
+        "failedAttempts": user.failedAttempts,
+        "passwordHash": "",  # Compatibility key: authenticators never leave the store.
+        "passwordConfigured": bool(user.passwordHash),
+        "sshKeys": user.sshKeys,
+        "createdAt": user.createdAt,
+        "updatedAt": user.updatedAt,
+        "passwordRotatedAt": user.passwordRotatedAt,
+    }
+
+
 def _public_session(session):
     return {
         "sessionId": session.sessionId,
@@ -316,26 +354,9 @@ def _lanctl_command(*arguments):
 
 
 def _start_service_process(service, protocol):
-    command = _lanctl_command(
-        "access",
-        "serve",
-        protocol,
-        "--config",
-        str(service.config_path),
-        "--users",
-        str(service.store.path),
-    )
-    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if platform.system() == "Windows" else 0
-    process = subprocess.Popen(
-        command, creationflags=flags, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    )
-    from lanctl.apps.monitor.lifecycle import _process_identity
+    from lanctl.apps.access.processes import start_service_process
 
-    identity = _process_identity(process.pid)
-    service.update_config(
-        lambda config: config[protocol].update(processId=process.pid, processIdentity=identity)
-    )
-    return process
+    return start_service_process(service, protocol)
 
 
 def _setup_wizard(service):

@@ -1841,7 +1841,7 @@ window.LANCTL_REFERENCE = {
         {
           "choices": [],
           "default": null,
-          "description": "Lista todos los ajustes por categorías, con valor y estado editable.",
+          "description": "Lista preferencias comunes y CLI por categorías, con valor y estado editable.",
           "flags": [
             "--catalog"
           ],
@@ -1863,7 +1863,7 @@ window.LANCTL_REFERENCE = {
         {
           "choices": [],
           "default": null,
-          "description": "Modifica un ajuste; listas y booleanos usan JSON.",
+          "description": "Modifica una preferencia común o CLI; listas y booleanos usan JSON.",
           "flags": [
             "--set"
           ],
@@ -1903,7 +1903,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.4-alpha.1"
       },
       "description": "usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]\n                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]\n                      [--scope {program,project}] [--category CATEGORY]",
-      "details": "Usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]\n                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]\n                      [--scope {program,project}] [--category CATEGORY]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --startup-interface {cli,tui,gui}\n                              Interfaz preferida al abrir LANCTL sin argumentos.\n  --close-gui-on-launch {on,off}\n                              Cierra la GUI principal cuando el launcher solicitado esté\n                              disponible.\n  -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.\n  -list-fields CAMPO [CAMPO ...], --list-fields CAMPO [CAMPO ...], -list CAMPO [CAMPO ...]\n                              Columnas mostradas por list, separadas por espacios o comas.\n  -dhcp-range INICIO-FIN, --dhcp-range INICIO-FIN, -dhcp INICIO-FIN\n                              Rango DHCP manual. Usa 'off' para dejarlo sin configurar.\n  -credentials ARCHIVO, --credentials ARCHIVO\n                              Ruta del almacén de credenciales cifradas.\n  -discovery {icmp,arp,hybrid}, --discovery {icmp,arp,hybrid}\n                              Método predeterminado utilizado por list.\n  --scan-profile {fast,normal,accurate}\n                              Perfil predeterminado de list: fast, normal o accurate.\n  --progress {on,off}         Activa o desactiva el progreso interactivo.\n  --service-identification {on,off}\n                              Activa o desactiva el reconocimiento de servicios en scan.\n  --disconnected-retention {permanent,session,forget}\n                              Persistencia de desconectados: permanent, session o forget.\n  --disconnected-target {unconfirmed,all}\n                              Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).\n  --disconnected-scope {all,dhcp}\n                              Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).\n  --workers WORKERS           Concurrencia predeterminada de los escaneos.\n  --timeout TIMEOUT           Timeout predeterminado por operación de red.\n  --scan-order {ascending,descending,random}\n                              Orden predeterminado de sondeo: ascending, descending o random.\n  --max-hosts MAX_HOSTS       Máximo de hosts autorizado por escaneo.\n  --database ARCHIVO          Ruta del inventario de elementos.\n  --physical-database ARCHIVO\n                              Ruta de la base física SQLite administrada exclusivamente por\n                              LANWIRE.\n  --groups ARCHIVO            Ruta de la base de grupos.\n  --log DIRECTORIO            Directorio de registros.\n  --error-log-level 1-59      Nivel mínimo de ErrorEvent escrito en el log (1 incluye diagnóstico\n                              detallado).\n  --projects-directory DIRECTORIO\n                              Carpeta predeterminada para nombres de proyecto VLF relativos.\n  -save-mode MODO, --save-mode MODO\n                              Política de guardado VLF. Usa 'list' para consultar las opciones\n                              integradas y las aportadas por plugins.\n  -save-interval MINUTOS, --save-interval MINUTOS\n                              Intervalo de automatic.timeToSave en minutos (mínimo 0.1).\n  --cli-exit-save-prompt {on,off}\n                              Consulta si se guarda al terminar cada comando individual de\n                              consola.\n  --cli-command-chaining {on,off}\n                              Permite encadenar órdenes con ; dentro de la CLI interactiva.\n  -log-cleanup {on,off}, --log-cleanup {on,off}\n                              Activa o desactiva la limpieza automática de logs antiguos.\n  -log-retention-days DÍAS, --log-retention-days DÍAS\n                              Días durante los que se conservan los archivos de log.\n  --remote-access {on,off}    Activa el acceso SSH restringido.\n  --remote-bind IP            IPv4 local de escucha SSH.\n  --remote-cidr CIDR          Red de origen autorizada.\n  --remote-port REMOTE_PORT   Puerto del servidor SSH remoto.\n  --remote-password-auth {on,off}\n                              Permite o bloquea autenticación SSH mediante contraseña.\n  --remote-backend {service,user}\n                              Ejecuta el backend como servicio persistente o proceso de usuario.\n  --remote-forced-view {off,gui,tui,plugins,projects,settings}\n                              Vista predeterminada para root forced-view.\n  --tui-key ACCIÓN=TECLA      Asigna una tecla a una acción del TUI. Puede repetirse.\n  --tui-layout {cli.bottom,cli.top}\n                              Coloca el CLI arriba (cli.top) o abajo (cli.bottom).\n  --tui-cli-percent 15-75     Porcentaje vertical reservado al CLI; ListElement conserva al menos\n                              25%.\n  --tui-column COLUMNA=TAMAÑO\n                              Peso de columna (GROUP=15%); IP=15ch y MAC=17ch son fijas.\n  --tui-footer-buttons ACCIONES\n                              Acciones visibles en la barra inferior, separadas por comas; usa all\n                              para todas.\n  --tui-footer-button ACCIÓN=on|off\n                              Muestra u oculta una acción concreta de la barra inferior. Puede\n                              repetirse.\n  --menu                      Editor interactivo por categorías de programa y proyecto.\n  --catalog                   Lista todos los ajustes por categorías, con valor y estado editable.\n  --get RUTA                  Consulta un ajuste por su ruta, por ejemplo ip.workers.\n  --set RUTA VALOR            Modifica un ajuste; listas y booleanos usan JSON.\n  --scope {program,project}   Ámbito de configuración (predeterminado: program).\n  --category CATEGORY         Filtra el catálogo por categoría, por ejemplo network o monitor.",
+      "details": "Usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]\n                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]\n                      [--scope {program,project}] [--category CATEGORY]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --startup-interface {cli,tui,gui}\n                              Interfaz preferida al abrir LANCTL sin argumentos.\n  --close-gui-on-launch {on,off}\n                              Cierra la GUI principal cuando el launcher solicitado esté\n                              disponible.\n  -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.\n  -list-fields CAMPO [CAMPO ...], --list-fields CAMPO [CAMPO ...], -list CAMPO [CAMPO ...]\n                              Columnas mostradas por list, separadas por espacios o comas.\n  -dhcp-range INICIO-FIN, --dhcp-range INICIO-FIN, -dhcp INICIO-FIN\n                              Rango DHCP manual. Usa 'off' para dejarlo sin configurar.\n  -credentials ARCHIVO, --credentials ARCHIVO\n                              Ruta del almacén de credenciales cifradas.\n  -discovery {icmp,arp,hybrid}, --discovery {icmp,arp,hybrid}\n                              Método predeterminado utilizado por list.\n  --scan-profile {fast,normal,accurate}\n                              Perfil predeterminado de list: fast, normal o accurate.\n  --progress {on,off}         Activa o desactiva el progreso interactivo.\n  --service-identification {on,off}\n                              Activa o desactiva el reconocimiento de servicios en scan.\n  --disconnected-retention {permanent,session,forget}\n                              Persistencia de desconectados: permanent, session o forget.\n  --disconnected-target {unconfirmed,all}\n                              Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).\n  --disconnected-scope {all,dhcp}\n                              Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).\n  --workers WORKERS           Concurrencia predeterminada de los escaneos.\n  --timeout TIMEOUT           Timeout predeterminado por operación de red.\n  --scan-order {ascending,descending,random}\n                              Orden predeterminado de sondeo: ascending, descending o random.\n  --max-hosts MAX_HOSTS       Máximo de hosts autorizado por escaneo.\n  --database ARCHIVO          Ruta del inventario de elementos.\n  --physical-database ARCHIVO\n                              Ruta de la base física SQLite administrada exclusivamente por\n                              LANWIRE.\n  --groups ARCHIVO            Ruta de la base de grupos.\n  --log DIRECTORIO            Directorio de registros.\n  --error-log-level 1-59      Nivel mínimo de ErrorEvent escrito en el log (1 incluye diagnóstico\n                              detallado).\n  --projects-directory DIRECTORIO\n                              Carpeta predeterminada para nombres de proyecto VLF relativos.\n  -save-mode MODO, --save-mode MODO\n                              Política de guardado VLF. Usa 'list' para consultar las opciones\n                              integradas y las aportadas por plugins.\n  -save-interval MINUTOS, --save-interval MINUTOS\n                              Intervalo de automatic.timeToSave en minutos (mínimo 0.1).\n  --cli-exit-save-prompt {on,off}\n                              Consulta si se guarda al terminar cada comando individual de\n                              consola.\n  --cli-command-chaining {on,off}\n                              Permite encadenar órdenes con ; dentro de la CLI interactiva.\n  -log-cleanup {on,off}, --log-cleanup {on,off}\n                              Activa o desactiva la limpieza automática de logs antiguos.\n  -log-retention-days DÍAS, --log-retention-days DÍAS\n                              Días durante los que se conservan los archivos de log.\n  --remote-access {on,off}    Activa el acceso SSH restringido.\n  --remote-bind IP            IPv4 local de escucha SSH.\n  --remote-cidr CIDR          Red de origen autorizada.\n  --remote-port REMOTE_PORT   Puerto del servidor SSH remoto.\n  --remote-password-auth {on,off}\n                              Permite o bloquea autenticación SSH mediante contraseña.\n  --remote-backend {service,user}\n                              Ejecuta el backend como servicio persistente o proceso de usuario.\n  --remote-forced-view {off,gui,tui,plugins,projects,settings}\n                              Vista predeterminada para root forced-view.\n  --tui-key ACCIÓN=TECLA      Asigna una tecla a una acción del TUI. Puede repetirse.\n  --tui-layout {cli.bottom,cli.top}\n                              Coloca el CLI arriba (cli.top) o abajo (cli.bottom).\n  --tui-cli-percent 15-75     Porcentaje vertical reservado al CLI; ListElement conserva al menos\n                              25%.\n  --tui-column COLUMNA=TAMAÑO\n                              Peso de columna (GROUP=15%); IP=15ch y MAC=17ch son fijas.\n  --tui-footer-buttons ACCIONES\n                              Acciones visibles en la barra inferior, separadas por comas; usa all\n                              para todas.\n  --tui-footer-button ACCIÓN=on|off\n                              Muestra u oculta una acción concreta de la barra inferior. Puede\n                              repetirse.\n  --menu                      Editor interactivo por categorías de programa y proyecto.\n  --catalog                   Lista preferencias comunes y CLI por categorías, con valor y estado\n                              editable.\n  --get RUTA                  Consulta un ajuste por su ruta, por ejemplo ip.workers.\n  --set RUTA VALOR            Modifica una preferencia común o CLI; listas y booleanos usan JSON.\n  --scope {program,project}   Ámbito de configuración (predeterminado: program).\n  --category CATEGORY         Filtra el catálogo por categoría, por ejemplo network o monitor.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -4942,6 +4942,7 @@ window.LANCTL_REFERENCE = {
         "create",
         "update",
         "save",
+        "import-physical",
         "info",
         "verify",
         "use",
@@ -4951,7 +4952,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.4-alpha.1"
       },
       "description": "usage: LANIP project [-h] ACCIÓN ...",
-      "details": "Usage: LANIP project [-h] ACCIÓN ...\n\nArguments:\n  ACCIÓN\n    status    Muestra el proyecto activo.\n    create    Crea un proyecto VLF vacío por defecto.\n    update    Actualiza datos activos conservando información complementaria.\n    save      Guarda manualmente el proyecto VLF activo.\n    info      Muestra los metadatos del proyecto.\n    verify    Comprueba hashes, estructura y SQLite.\n    use       Selecciona el proyecto VLF que recibirá la auditoría.\n    list      Lista el contenido interno sin extraerlo.\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "details": "Usage: LANIP project [-h] ACCIÓN ...\n\nArguments:\n  ACCIÓN\n    status         Muestra el proyecto activo.\n    create         Crea un proyecto VLF vacío por defecto.\n    update         Actualiza datos activos conservando información complementaria.\n    save           Guarda manualmente el proyecto VLF activo.\n    import-physical\n                   Copia una base IDF histórica al proyecto físico vacío activo.\n    info           Muestra los metadatos del proyecto.\n    verify         Comprueba hashes, estructura y SQLite.\n    use            Selecciona el proyecto VLF que recibirá la auditoría.\n    list           Lista el contenido interno sin extraerlo.\n\nOptions:\n  -h, --help       Show this help and exit.",
       "docs": [
         "VLF.md",
         "STORAGE.md",
@@ -5243,6 +5244,48 @@ window.LANCTL_REFERENCE = {
       ],
       "title": "LANIP project save",
       "usage": "LANIP project save [-h]"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "Base IDF .db de origen; se conserva intacta.",
+          "flags": [],
+          "label": "file",
+          "metavar": "",
+          "required": true
+        }
+      ],
+      "category": "Proyectos",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.4-alpha.1"
+      },
+      "description": "usage: LANIP project import-physical [-h] file",
+      "details": "Usage: LANIP project import-physical [-h] file\n\nArguments:\n  file        Base IDF .db de origen; se conserva intacta.\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "VLF.md",
+        "STORAGE.md",
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanip project import-physical --help"
+      ],
+      "group": "LANIP project",
+      "id": "command-lanip-project-import-physical",
+      "kind": "command",
+      "launcher": "LANIP",
+      "name": "import-physical",
+      "path": [
+        "LANIP",
+        "project",
+        "import-physical"
+      ],
+      "title": "LANIP project import-physical",
+      "usage": "LANIP project import-physical [-h] file"
     },
     {
       "aliases": [],
@@ -8868,13 +8911,16 @@ window.LANCTL_REFERENCE = {
       "children": [
         "list",
         "show",
-        "dimensions"
+        "dimensions",
+        "elements",
+        "add-element",
+        "element"
       ],
       "compatibility": {
         "verified": "0.3.4-alpha.1"
       },
       "description": "Visualiza racks y sus equipos.",
-      "details": "Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]\n               {list,ls,show,dimensions} ...\n\nVisualiza racks y sus equipos.\n\nArguments:\n  {list,ls,show,dimensions}\n    list (ls)                Lista los racks disponibles.\n    show                     Muestra un rack y sus ocupantes.\n    dimensions               Edita altura y ancho de montaje del rack.\n\nOptions:\n  -h, --help                 Show this help and exit.\n  --version                  Muestra la versión común de la suite y termina.\n  --database ARCHIVO.db      Base física IDF compartida.\n  --gui                      Abre la interfaz gráfica de escritorio.\n  -tui, --tui                Abre la interfaz de pantalla completa.\n  --cli, -cli                Abre la consola interactiva.",
+      "details": "Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]\n               {list,ls,show,dimensions,elements,add-element,element} ...\n\nVisualiza racks y sus equipos.\n\nArguments:\n  {list,ls,show,dimensions,elements,add-element,element}\n    list (ls)                 Lista los racks disponibles.\n    show                      Muestra un rack y sus ocupantes.\n    dimensions                Edita altura y ancho de montaje del rack.\n    elements                  Lista todos los elementos, ubicaciones y bandejas.\n    add-element               Crea un elemento físico compartido.\n    element                   Edita o reubica un elemento sin cambiar sus enlaces.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión común de la suite y termina.\n  --database ARCHIVO.db       Base física IDF compartida.\n  --gui                       Abre la interfaz gráfica de escritorio.\n  -tui, --tui                 Abre la interfaz de pantalla completa.\n  --cli, -cli                 Abre la consola interactiva.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -8892,7 +8938,7 @@ window.LANCTL_REFERENCE = {
         "LANRACK"
       ],
       "title": "LANRACK",
-      "usage": "LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]\n               {list,ls,show,dimensions} ..."
+      "usage": "LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]\n               {list,ls,show,dimensions,elements,add-element,element} ..."
     },
     {
       "aliases": [],
@@ -9029,6 +9075,219 @@ window.LANCTL_REFERENCE = {
       "usage": "LANRACK dimensions [-h] --units UNITS --width-inches {10,19,21,23} rack"
     },
     {
+      "aliases": [],
+      "arguments": [],
+      "category": "Racks y salas técnicas",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.4-alpha.1"
+      },
+      "description": "usage: LANRACK elements [-h]",
+      "details": "Usage: LANRACK elements [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanrack elements --help"
+      ],
+      "group": "LANRACK",
+      "id": "command-lanrack-elements",
+      "kind": "command",
+      "launcher": "LANRACK",
+      "name": "elements",
+      "path": [
+        "LANRACK",
+        "elements"
+      ],
+      "title": "LANRACK elements",
+      "usage": "LANRACK elements [-h]"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "Perfil de equipo, panel, outlet o tray.",
+          "flags": [
+            "--kind"
+          ],
+          "label": "--kind",
+          "metavar": "",
+          "required": true
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Prefijo IDF.",
+          "flags": [
+            "--prefix"
+          ],
+          "label": "--prefix",
+          "metavar": "",
+          "required": true
+        },
+        {
+          "choices": [],
+          "default": "",
+          "description": "Nombre del elemento.",
+          "flags": [
+            "--name"
+          ],
+          "label": "--name",
+          "metavar": "",
+          "required": false
+        }
+      ],
+      "category": "Racks y salas técnicas",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.4-alpha.1"
+      },
+      "description": "usage: LANRACK add-element [-h] --kind KIND --prefix PREFIX [--name NAME]",
+      "details": "Usage: LANRACK add-element [-h] --kind KIND --prefix PREFIX [--name NAME]\n\nOptions:\n  -h, --help       Show this help and exit.\n  --kind KIND      Perfil de equipo, panel, outlet o tray.\n  --prefix PREFIX  Prefijo IDF.\n  --name NAME      Nombre del elemento.",
+      "docs": [
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanrack add-element --help"
+      ],
+      "group": "LANRACK",
+      "id": "command-lanrack-add-element",
+      "kind": "command",
+      "launcher": "LANRACK",
+      "name": "add-element",
+      "path": [
+        "LANRACK",
+        "add-element"
+      ],
+      "title": "LANRACK add-element",
+      "usage": "LANRACK add-element [-h] --kind KIND --prefix PREFIX [--name NAME]"
+    },
+    {
+      "aliases": [],
+      "arguments": [
+        {
+          "choices": [],
+          "default": null,
+          "description": "ID del elemento.",
+          "flags": [],
+          "label": "element",
+          "metavar": "",
+          "required": true
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Nombre del elemento.",
+          "flags": [
+            "--name"
+          ],
+          "label": "--name",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Descripción del elemento.",
+          "flags": [
+            "--description"
+          ],
+          "label": "--description",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [
+            "inside",
+            "environment",
+            "independent",
+            "hosted"
+          ],
+          "default": null,
+          "description": "Clasificación física.",
+          "flags": [
+            "--placement"
+          ],
+          "label": "--placement",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "ID del rack de destino.",
+          "flags": [
+            "--rack"
+          ],
+          "label": "--rack",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Unidad inicial del montaje.",
+          "flags": [
+            "--unit"
+          ],
+          "label": "--unit",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Altura ocupada del elemento.",
+          "flags": [
+            "--height-u"
+          ],
+          "label": "--height-u",
+          "metavar": "",
+          "required": false
+        },
+        {
+          "choices": [],
+          "default": null,
+          "description": "Bandeja que aloja al dispositivo.",
+          "flags": [
+            "--tray"
+          ],
+          "label": "--tray",
+          "metavar": "",
+          "required": false
+        }
+      ],
+      "category": "Racks y salas técnicas",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.4-alpha.1"
+      },
+      "description": "usage: LANRACK element [-h] [--name NAME] [--description DESCRIPTION]\n                       [--placement {inside,environment,independent,hosted}] [--rack RACK]\n                       [--unit UNIT] [--height-u HEIGHT_U] [--tray TRAY]\n                       element",
+      "details": "Usage: LANRACK element [-h] [--name NAME] [--description DESCRIPTION]\n                       [--placement {inside,environment,independent,hosted}] [--rack RACK]\n                       [--unit UNIT] [--height-u HEIGHT_U] [--tray TRAY]\n                       element\n\nArguments:\n  element                     ID del elemento.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --name NAME                 Nombre del elemento.\n  --description DESCRIPTION   Descripción del elemento.\n  --placement {inside,environment,independent,hosted}\n                              Clasificación física.\n  --rack RACK                 ID del rack de destino.\n  --unit UNIT                 Unidad inicial del montaje.\n  --height-u HEIGHT_U         Altura ocupada del elemento.\n  --tray TRAY                 Bandeja que aloja al dispositivo.",
+      "docs": [
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanrack element --help"
+      ],
+      "group": "LANRACK",
+      "id": "command-lanrack-element",
+      "kind": "command",
+      "launcher": "LANRACK",
+      "name": "element",
+      "path": [
+        "LANRACK",
+        "element"
+      ],
+      "title": "LANRACK element",
+      "usage": "LANRACK element [-h] [--name NAME] [--description DESCRIPTION]\n                       [--placement {inside,environment,independent,hosted}] [--rack RACK]\n                       [--unit UNIT] [--height-u HEIGHT_U] [--tray TRAY]\n                       element"
+    },
+    {
       "aliases": [
         "ls",
         "del"
@@ -9146,6 +9405,7 @@ window.LANCTL_REFERENCE = {
       ],
       "category": "Launchers",
       "children": [
+        "remote-setup",
         "list",
         "show",
         "set",
@@ -9160,7 +9420,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.4-alpha.1"
       },
       "description": "Gestiona credenciales cifradas del entorno LANCTL.",
-      "details": "Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]\n                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]\n                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]\n                 {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ...\n\nGestiona credenciales cifradas del entorno LANCTL.\n\nArguments:\n  {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}\n    list (ls)                 Lista metadatos; nunca secretos.\n    show                      Muestra metadatos de una credencial.\n    set                       Crea o actualiza una credencial.\n    delete (del)              Elimina una credencial.\n    credential                Gestión, transporte y recuperación de credenciales.\n    doctor                    Comprueba vínculos y permisos sin cambiar datos.\n    settings                  Muestra o selecciona el almacén compartido.\n    protocol                  Resumen por protocolos del almacén.\n    user                      Usuarios del acceso remoto; no cuentas de Windows.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión común de la suite y termina.\n  --database DATABASE         Base de elementos LANCTL.\n  --store STORE               Almacén cifrado de credenciales.\n  --cipher {auto,dpapi,portable}\n                              Proveedor de cifrado; portable pide contraseña.\n  --scope {program,windows,project}\n                              Ubicación; no cambia permisos ni copia secretos automáticamente.\n  --project-dir PROJECT_DIR   Directorio del proyecto para su almacén independiente.\n  --gui                       Abre la interfaz gráfica de escritorio.\n  -tui, --tui                 Abre la interfaz de pantalla completa.\n  --cli, -cli                 Abre la consola interactiva.",
+      "details": "Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]\n                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]\n                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]\n                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}\n                 ...\n\nGestiona credenciales cifradas del entorno LANCTL.\n\nArguments:\n  {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}\n    remote-setup              Crea la primera cuenta remota del servicio en Windows (requiere\n                              administrador).\n    list (ls)                 Lista metadatos; nunca secretos.\n    show                      Muestra metadatos de una credencial.\n    set                       Crea o actualiza una credencial.\n    delete (del)              Elimina una credencial.\n    credential                Gestión, transporte y recuperación de credenciales.\n    doctor                    Comprueba vínculos y permisos sin cambiar datos.\n    settings                  Muestra o selecciona el almacén compartido.\n    protocol                  Resumen por protocolos del almacén.\n    user                      Usuarios del acceso remoto; no cuentas de Windows.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Muestra la versión común de la suite y termina.\n  --database DATABASE         Base de elementos LANCTL.\n  --store STORE               Almacén cifrado de credenciales.\n  --cipher {auto,dpapi,portable}\n                              Proveedor de cifrado; portable pide contraseña.\n  --scope {program,windows,project}\n                              Ubicación; no cambia permisos ni copia secretos automáticamente.\n  --project-dir PROJECT_DIR   Directorio del proyecto para su almacén independiente.\n  --gui                       Abre la interfaz gráfica de escritorio.\n  -tui, --tui                 Abre la interfaz de pantalla completa.\n  --cli, -cli                 Abre la consola interactiva.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -9178,7 +9438,36 @@ window.LANCTL_REFERENCE = {
         "LANACCESS"
       ],
       "title": "LANACCESS",
-      "usage": "LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]\n                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]\n                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]\n                 {list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ..."
+      "usage": "LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]\n                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]\n                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]\n                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}\n                 ..."
+    },
+    {
+      "aliases": [],
+      "arguments": [],
+      "category": "Credenciales y acceso",
+      "children": [],
+      "compatibility": {
+        "verified": "0.3.4-alpha.1"
+      },
+      "description": "usage: LANACCESS remote-setup [-h]",
+      "details": "Usage: LANACCESS remote-setup [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
+      "docs": [
+        "CLI-REFERENCE.md",
+        "CLI.md"
+      ],
+      "examples": [
+        "lanaccess remote-setup --help"
+      ],
+      "group": "LANACCESS",
+      "id": "command-lanaccess-remote-setup",
+      "kind": "command",
+      "launcher": "LANACCESS",
+      "name": "remote-setup",
+      "path": [
+        "LANACCESS",
+        "remote-setup"
+      ],
+      "title": "LANACCESS remote-setup",
+      "usage": "LANACCESS remote-setup [-h]"
     },
     {
       "aliases": [],
@@ -10596,7 +10885,7 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.4-alpha.1"
       },
-      "description": "Evidencia de los 33 puntos de [BACKLOG.md](BACKLOG.md), sobre la versión de desarrollo 0.3.3. «Verificado» identifica el alcance local indicado, con datos de prueba aislados. No implica certificación de instalaciones ni plataformas no ejecutadas. Los cambios permanecen en la rama de trabajo, sin publicación.",
+      "description": "Validación y planificación antes de implementar:",
       "details": "Documento mantenido en docs/BACKLOG-VERIFICATION.md.",
       "docs": [
         "BACKLOG-VERIFICATION.md"
@@ -10606,7 +10895,7 @@ window.LANCTL_REFERENCE = {
       "id": "doc-backlog-verification",
       "kind": "document",
       "name": "BACKLOG-VERIFICATION.md",
-      "title": "Comprobación del backlog — 15/10/2026",
+      "title": "Comprobación del backlog",
       "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/BACKLOG-VERIFICATION.md"
     },
     {
@@ -10614,7 +10903,7 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.4-alpha.1"
       },
-      "description": "Se vuelve a comprobar toda la lista, incluidas las entradas implementadas que esperan el cierre de GUI-DESIGN. No se inicia una segunda compilación durante su validación. El usuario confirma que **todavía no existe un editor oficial configurado**: P40/P42 siguen requiriendo identidad y firma autorizadas.",
+      "description": "Esta sección prevalece sobre los resultados históricos de ciclos anteriores. No se ha publicado ni instalado una versión estable nueva.",
       "details": "Documento mantenido en docs/BACKLOG.md.",
       "docs": [
         "BACKLOG.md"
@@ -10912,7 +11201,7 @@ window.LANCTL_REFERENCE = {
       "id": "doc-known-issues",
       "kind": "document",
       "name": "KNOWN-ISSUES.md",
-      "title": "Limitaciones conocidas de la beta",
+      "title": "Limitaciones conocidas",
       "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/KNOWN-ISSUES.md"
     },
     {
@@ -11421,7 +11710,7 @@ window.LANCTL_REFERENCE = {
     }
   ],
   "meta": {
-    "entryCount": 182,
+    "entryCount": 187,
     "name": "LANCTL Reference",
     "repository": "https://github.com/CctrGy/LANCTL",
     "version": "0.3.4-alpha.1"

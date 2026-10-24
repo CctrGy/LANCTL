@@ -3,10 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import contextlib
-import hashlib
-import io
-import json
 import shutil
 import subprocess
 import sys
@@ -18,6 +14,7 @@ from lanctl.apps.ip.interfaces.gui.main import GuiApi
 from lanctl.apps.suite.gui_support import GuiSupportMixin
 from lanctl.core.config import load_config
 from lanctl.core.progress import ScanProgress
+from lanctl.core.project_context import project_identity, project_operation
 from lanctl.core.projects import (
     activate_project_workspace,
     create_project,
@@ -78,11 +75,14 @@ SETTINGS = (
 
 
 class DesktopApi(GuiSupportMixin, GuiApi):
+    _settings_launcher = "lanip"
+
     def __init__(self):
         super().__init__()
         self._scan_progress = DesktopProgress()
         self._running = Event()
         self._closing = False
+        self._project_context = project_identity(load_config())
 
     def bootstrap(self):
         # Icon registration is also serialized; two concurrent initializations
@@ -102,15 +102,24 @@ class DesktopApi(GuiSupportMixin, GuiApi):
 
     def _inventory_payload(self, query=""):
         payload = super()._inventory_payload(query)
+        payload["projectActions"] = self._project_actions()
         payload["groupCatalog"] = [
             {"name": group.name, "description": group.description, "editable": group.editable}
             for group in self._groups(load_config(), self._database()).load()
         ]
         return payload
 
+    def _projects_payload(self):
+        return {**super()._projects_payload(), "projectActions": self._project_actions()}
+
+    def sync_project(self, query=""):
+        return self._respond(lambda: {**self._projects_payload(), **self._inventory_payload(query)})
+
     @staticmethod
     def _editable_snapshot(device):
-        return {**GuiApi._editable_snapshot(device), "ip": device.ip, "idf": device.idf}
+        from lanctl.core.inventory_editing import editable_values
+
+        return editable_values(device)
 
     def device_record(self, selector):
         """Read the complete stored identity without initiating network probes."""
@@ -134,46 +143,22 @@ class DesktopApi(GuiSupportMixin, GuiApi):
         return self._respond(operation)
 
     def _edit_revision(self, device):
-        return hashlib.sha256(
-            json.dumps(self._editable_snapshot(device), sort_keys=True).encode()
-        ).hexdigest()
+        from lanctl.core.inventory_editing import edit_revision
+
+        return edit_revision(device)
 
     def update_device(self, selector, values, expected_revision=None):
         def operation():
             from lanctl.apps.ip.interfaces.gui.main import GuiEdit
+            from lanctl.core.inventory_editing import edit_inventory_device
             from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
 
-            if not isinstance(values, dict) or set(values) - {
-                "alias",
-                "name",
-                "description",
-                "cnf",
-                "icon",
-                "ip",
-                "idf",
-            }:
-                raise ValueError("Campos de edición no válidos.")
             config = load_config()
             database = self._database()
             groups = self._groups(config, database)
-            from lanctl.core.file_transaction import locked_files
-
-            with locked_files((database.path, groups.path)):
-                device = database.resolve(selector)
-                if expected_revision is not None and expected_revision != self._edit_revision(
-                    device
-                ):
-                    raise ValueError(
-                        "El elemento cambió en otra sesión. Recarga y revisa los cambios antes de aplicar la edición."
-                    )
-                before = self._editable_snapshot(device)
-                edits = [
-                    (key, str(value).strip())
-                    for key, value in values.items()
-                    if str(value).strip() != before[key]
-                ]
-                if edits:
-                    device = groups.edit_device_fields(device.device_id, edits)
+            device, before, edits = edit_inventory_device(
+                database, groups, selector, values, expected_revision
+            )
             if edits:
                 after = self._editable_snapshot(device)
                 history = self._edit_history(database)
@@ -251,7 +236,12 @@ class DesktopApi(GuiSupportMixin, GuiApi):
         try:
             from lanctl.core.session import task
 
-            with task("LANCTL.GUI.Desktop.Operation"):
+            with project_operation(), task("LANCTL.GUI.Desktop.Operation"):
+                identity = project_identity(load_config())
+                if identity != self._project_context:
+                    self._activity.clear()
+                    self._response_ms.clear()
+                    self._project_context = identity
                 return {"ok": True, **operation()}
         except Exception as error:  # noqa: BLE001 - desktop RPC boundary
             from lanctl.core.errors import errors
@@ -272,15 +262,33 @@ class DesktopApi(GuiSupportMixin, GuiApi):
         finally:
             self._lock.release()
 
-    def scan_network(self, profile="normal"):
+    def scan_network(self, profile="normal", source=None, network=None):
         if not self._lock.acquire(blocking=False):
             return {"ok": False, "error": "Hay una operación en curso."}
         try:
+            if source is not None or network is not None:
+                from lanctl.core.network_interfaces import select_interface
+
+                if not isinstance(network, str) or not network.strip():
+                    raise ValueError("Confirma el rango de la interfaz seleccionada")
+                selected = select_interface(source, network)
+                source = selected["id"]
             self._scan_progress = DesktopProgress()
             self._running.set()
             self._activity.clear()
             self._response_ms.clear()
-            return super().scan_network(profile)
+            response = self._scan_with_target(profile, source, network)
+            if response.get("ok") and source is not None:
+                from lanctl.core.first_scan import consume_request
+
+                consume_request()
+            return response
+        except (ValueError, OSError) as error:
+
+            def fail(failure=error):
+                raise failure
+
+            return self._respond(fail)
         finally:
             self._running.clear()
             self._lock.release()
@@ -290,26 +298,50 @@ class DesktopApi(GuiSupportMixin, GuiApi):
 
     def first_scan_options(self):
         def options():
-            import ipaddress
-
-            from lanctl.core.first_scan import consume_request, scan_choices
+            from lanctl.core.first_scan import scan_choices
 
             result = scan_choices()
-            result["requested"] = consume_request()
             result["localIp"] = self._local_ip
-            if not result["range"] and self._local_ip:
-                result["range"] = str(ipaddress.ip_network(f"{self._local_ip}/24", strict=False))
-                result["rangeEstimated"] = True
             return result
 
         return self._respond(options)
+
+    def scan_targets(self):
+        def options():
+            from lanctl.core.first_scan import scan_choices
+            from lanctl.core.network_interfaces import ipv4_interfaces
+
+            result = scan_choices()
+            if not result["requested"]:
+                result["networks"] = ipv4_interfaces()
+                result["interfaceSelectionAvailable"] = bool(result["networks"])
+            result["routing"] = "selected-source" if result["networks"] else "unavailable"
+            result["localIp"] = self._local_ip
+            return result
+
+        return self._respond(options)
+
+    def dismiss_first_scan(self):
+        from lanctl.core.first_scan import consume_request
+
+        return self._respond(lambda: {"dismissed": consume_request()})
 
     def cancel_scan(self):
         self._scan_progress.stop.set()
         return {"ok": True, "message": "Cancelación solicitada; finalizando las sondas en curso."}
 
     def project_state(self):
-        return self._respond(lambda: {"dirty": workspace_is_dirty(load_config())})
+        def operation():
+            from lanctl.core.projects.workspace import project_used_elsewhere
+
+            config = load_config()
+            project = config.get("activeProject")
+            return {
+                "dirty": workspace_is_dirty(config),
+                "shared": bool(project and project_used_elsewhere(project)),
+            }
+
+        return self._respond(operation)
 
     def _discard_current(self):
         config = load_config()
@@ -487,15 +519,19 @@ class DesktopApi(GuiSupportMixin, GuiApi):
 
     def get_settings(self):
         def operation():
-            from lanctl.apps.ip.interfaces.cli.main import build_parser
+            from lanctl.core.config import _LEGACY_PATHS, DEFAULTS
+            from lanctl.core.settings_catalog import VALUE_CHOICES
+            from lanctl.core.settings_policy import SettingsContext, preference_visible
 
             config = load_config()
-            parser = build_parser()._subparsers._group_actions[0].choices["settings"]
+            context = SettingsContext("gui", launcher=self._settings_launcher)
             choices = {
-                option: action.choices
-                for action in parser._actions
-                for option in action.option_strings
-                if action.choices
+                option: (
+                    ("on", "off")
+                    if type(DEFAULTS.get(key)) is bool
+                    else VALUE_CHOICES.get(".".join(_LEGACY_PATHS[key]))
+                )
+                for _, key, _, option in SETTINGS
             }
             return {
                 "fields": [
@@ -510,9 +546,10 @@ class DesktopApi(GuiSupportMixin, GuiApi):
                             if config.get(key) is not None
                             else ("off" if key == "dhcpRange" else "")
                         ),
-                        "choices": list(choices[option]) if option in choices else None,
+                        "choices": list(choices[option]) if choices.get(option) else None,
                     }
                     for section, key, label, option in SETTINGS
+                    if preference_visible(context, ".".join(_LEGACY_PATHS[key]))
                 ]
             }
 
@@ -520,23 +557,13 @@ class DesktopApi(GuiSupportMixin, GuiApi):
 
     def save_settings(self, values):
         def operation():
-            from lanctl.apps.ip.interfaces.cli.main import build_parser
+            from lanctl.apps.suite.settings import save_form_values
+            from lanctl.core.settings_policy import SettingsContext
 
-            options = {key: option for _, key, _, option in SETTINGS}
-            if not isinstance(values, dict) or set(values) - options.keys():
+            options = {key for _, key, _, _ in SETTINGS}
+            if not isinstance(values, dict) or set(values) - options:
                 raise ValueError("Configuración gráfica no válida.")
-            argv = ["settings"]
-            for key, value in values.items():
-                argv.extend([options[key], str(value)])
-            output = io.StringIO()
-            try:
-                with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
-                    args = build_parser().parse_args(argv)
-                    result = args.handler(args)
-            except SystemExit as error:
-                raise ValueError("Valores de configuración no válidos.") from error
-            if result:
-                raise ValueError("No se pudo guardar la configuración.")
+            save_form_values(values, SettingsContext("gui", launcher=self._settings_launcher))
             return {"message": "Configuración guardada correctamente"}
 
         return self._respond(operation)
@@ -549,16 +576,19 @@ class DesktopApi(GuiSupportMixin, GuiApi):
                 saved = self.save_project()
                 if not saved["ok"]:
                     return saved
+            retained = False
             if decision == "discard":
-                config = load_config()
-                if config.get("activeProject") and workspace_is_dirty(config):
-                    activate_project_workspace(
-                        config["activeProject"], refresh=True, discard_changes=True
-                    )
+                from lanctl.core.projects.workspace import discard_workspace_on_close
+
+                retained = discard_workspace_on_close(load_config())
             self._closing = True
-            if self._window:
-                self._window.destroy()
-            return {"closed": True}
+            try:
+                if self._window:
+                    self._window.destroy()
+            except Exception:
+                self._closing = False
+                raise
+            return {"closed": True, "sharedChangesRetained": retained}
 
         return self._respond(operation)
 

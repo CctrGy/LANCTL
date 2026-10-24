@@ -6,6 +6,7 @@ import json
 import re
 import shutil
 import sys
+import tempfile
 from contextlib import suppress
 from copy import deepcopy
 from dataclasses import dataclass, field, make_dataclass
@@ -50,17 +51,8 @@ PLUGIN_REGISTRY = application_path("data/lc/plugins.registry")
 def _synchronized(method):
     @wraps(method)
     def wrapped(self, *args, **kwargs):
-        depth = self._authorization.depth
-        depth.value = getattr(depth, "value", 0) + 1
-        try:
-            with self._lock, locked_file(self.registry_path):
-                return method(self, *args, **kwargs)
-        finally:
-            depth.value -= 1
-            if not depth.value:
-                # External deactivate/stop runs only after all registry locks
-                # in this thread have been released.
-                self._authorization.drain()
+        with self._authorization.transaction():
+            return method(self, *args, **kwargs)
 
     return wrapped
 
@@ -298,54 +290,85 @@ class PluginManager:
         self.initialized = True
         return True
 
-    @_synchronized
     def install(self, package: str | Path) -> InstalledPlugin:
-        incoming = inspect_package(package)
-        if self._read_registry().get(incoming.plugin_id) != self._registry_known.get(
-            incoming.plugin_id
-        ):
-            raise ValueError(
-                f"el estado de {incoming.plugin_id} cambió en otro proceso; recarga los plugins"
-            )
-        existing = self.plugins.get(incoming.plugin_id)
-        if existing:
-            self._ensure_current(existing)
-        if incoming.plugin_id in BUILTIN_PLUGIN_IDS or (
-            existing and existing.manifest.plugin_id in BUILTIN_PLUGIN_IDS
-        ):
-            raise PermissionError(
-                "un complemento integrado no se puede reemplazar con plugin install"
-            )
-        # Verify first so a rejected replacement does not interrupt a valid runtime.
-        verify_package(package)
-        if existing:
-            self.disable(existing.manifest.plugin_id)
-        manifest, destination, result = install_package(package, self.root)
-        plugin = InstalledPlugin(
-            manifest,
-            destination,
-            signature=str(result["signature"]),
-            checksum=str(result["checksum"]),
-        )
-        self.plugins[manifest.plugin_id] = plugin
-        self._save_registry()
-        self.audit(
-            manifest.plugin_id, "INSTALL", manifest.version, "OK", f"checksum={result['checksum']}"
-        )
-        return plugin
+        with tempfile.TemporaryDirectory(prefix="lanctl-plugin-install-") as temporary:
+            snapshot = Path(temporary) / "plugin.lcp"
+            shutil.copyfile(package, snapshot)
+            return self._install_snapshot(snapshot)
 
-    @_synchronized
-    def uninstall(self, plugin_id: str) -> None:
-        plugin = self.get(plugin_id)
-        if plugin.manifest.plugin_id in BUILTIN_PLUGIN_IDS:
-            raise PermissionError(
-                "los complementos integrados pueden desactivarse, pero no desinstalarse"
+    def _install_snapshot(self, package: Path) -> InstalledPlugin:
+        incoming = inspect_package(package)
+        with self._authorization.transaction():
+            if self._read_registry().get(incoming.plugin_id) != self._registry_known.get(
+                incoming.plugin_id
+            ):
+                raise ValueError(
+                    f"el estado de {incoming.plugin_id} cambió en otro proceso; recarga los plugins"
+                )
+            existing = self.plugins.get(incoming.plugin_id)
+            if existing:
+                self._ensure_current(existing)
+            if incoming.plugin_id in BUILTIN_PLUGIN_IDS:
+                raise PermissionError(
+                    "un complemento integrado no se puede reemplazar con plugin install"
+                )
+            # Reject invalid replacements without interrupting valid code.
+            verify_package(package)
+            if existing:
+                self.disable(existing.manifest.plugin_id)
+        # Cleanup runs outside all registry locks before touching package files.
+        with self._authorization.transaction():
+            if self._read_registry().get(incoming.plugin_id) != self._registry_known.get(
+                incoming.plugin_id
+            ):
+                raise ValueError(
+                    f"el estado de {incoming.plugin_id} cambió en otro proceso; recarga los plugins"
+                )
+            if (
+                self.plugins.get(incoming.plugin_id) is not existing
+                or incoming.plugin_id in self._active
+            ):
+                raise RuntimeError("el plugin cambió durante la sustitución; vuelve a intentarlo")
+            if existing:
+                self._ensure_current(existing)
+            self._authorization.ensure_stopped(incoming.plugin_id)
+            manifest, destination, result = install_package(package, self.root)
+            plugin = InstalledPlugin(
+                manifest,
+                destination,
+                signature=str(result["signature"]),
+                checksum=str(result["checksum"]),
             )
-        self.disable(plugin_id)
-        shutil.rmtree(plugin.path)
-        self.plugins.pop(plugin.manifest.plugin_id, None)
-        self._save_registry()
-        self.audit(plugin.manifest.plugin_id, "UNINSTALL", plugin.manifest.version, "OK")
+            self.plugins[manifest.plugin_id] = plugin
+            self._save_registry()
+            self.audit(
+                manifest.plugin_id,
+                "INSTALL",
+                manifest.version,
+                "OK",
+                f"checksum={result['checksum']}",
+            )
+            return plugin
+
+    def uninstall(self, plugin_id: str) -> None:
+        with self._authorization.transaction():
+            plugin = self.get(plugin_id)
+            if plugin.manifest.plugin_id in BUILTIN_PLUGIN_IDS:
+                raise PermissionError(
+                    "los complementos integrados pueden desactivarse, pero no desinstalarse"
+                )
+            self.disable(plugin_id)
+        with self._authorization.transaction():
+            if self.get(plugin_id) is not plugin or plugin.manifest.plugin_id in self._active:
+                raise RuntimeError(
+                    "el plugin cambió durante la desinstalación; vuelve a intentarlo"
+                )
+            self._ensure_current(plugin)
+            self._authorization.ensure_stopped(plugin.manifest.plugin_id)
+            shutil.rmtree(plugin.path)
+            self.plugins.pop(plugin.manifest.plugin_id, None)
+            self._save_registry()
+            self.audit(plugin.manifest.plugin_id, "UNINSTALL", plugin.manifest.version, "OK")
 
     @_synchronized
     def enable(
@@ -563,6 +586,9 @@ class PluginManager:
         with self._lock:
             plugin = self.get(plugin_id)
             closing = self._authorization.cleanups.get(plugin.manifest.plugin_id)
+            runtime = plugin.isolated_runtime or self._authorization.retiring.get(
+                plugin.manifest.plugin_id
+            )
             return {
                 "schemaVersion": 1,
                 "active": plugin.manifest.plugin_id in self._active,
@@ -573,6 +599,15 @@ class PluginManager:
                 "execution": "legacy-in-process"
                 if plugin.manifest.runtime == "trusted"
                 else "isolated",
+                "runtimeApiVersion": plugin.manifest.raw.get("runtimeApiVersion", 1),
+                "processId": runtime.pid if runtime is not None else None,
+                "generation": getattr(runtime, "generation", None),
+                "terminationConfirmed": self._authorization.terminated.get(
+                    plugin.manifest.plugin_id, False
+                ),
+                "cleanupError": self._authorization.cleanup_errors.get(
+                    plugin.manifest.plugin_id, ""
+                ),
             }
 
     @_synchronized
@@ -626,7 +661,12 @@ class PluginManager:
             from lanctl.core.plugins.settings import PluginSettings
 
             limits = plugin.manifest.raw.get("limits", {})
-            plugin.isolated_runtime = IsolatedPluginRuntime(
+            runtime_class = IsolatedPluginRuntime
+            if plugin.manifest.raw.get("runtimeApiVersion", 1) == 2:
+                from lanctl.core.plugins.process_runtime import ProcessPluginRuntime
+
+                runtime_class = ProcessPluginRuntime
+            runtime = runtime_class(
                 plugin.manifest.plugin_id,
                 entry,
                 timeout=float(limits.get("timeoutSeconds", 5)),
@@ -634,7 +674,12 @@ class PluginManager:
                 max_calls=int(limits.get("maxCalls", 1000)),
                 audit=self.audit,
                 settings=PluginSettings(plugin).load(),
-            ).start()
+            )
+            # Keep ownership even when startup/teardown fails.
+            plugin.isolated_runtime = runtime
+            if plugin.manifest.raw.get("runtimeApiVersion", 1) == 2:
+                runtime.bind_api(PluginApi(plugin.manifest.plugin_id, set(plugin.granted), self))
+            runtime.start()
             self.audit(
                 plugin.manifest.plugin_id,
                 "LOAD",

@@ -12,6 +12,13 @@ from lanctl.apps.wire.idf import IDF, IDFSize
 from lanctl.apps.wire.path import application_directory, application_path
 from lanctl.apps.wire.topology import apply_prefix_defaults
 from lanctl.apps.wire.xfile import atomic_write_bytes, locked_file, read, update_json, write_json
+from lanctl.core.physical_placement import (
+    legacy_layout_spans,
+    location_status,
+    span,
+    validate_change,
+    with_location,
+)
 
 DATABASE_FORMAT = "LANWRE-IDF-DB"
 DATABASE_VERSION = 1
@@ -53,7 +60,7 @@ class IDFDatabaseManager:
         """Crea una base vacía si todavía no existe y valida las existentes."""
         with locked_file(self.path):
             if not self.path.exists():
-                write_json(self.path, _empty_database())
+                write_json(self.path, self._new_database())
             database = read(self.path)
             self._validate_database(database)
             changed = False
@@ -67,6 +74,12 @@ class IDFDatabaseManager:
             if changed:
                 write_json(self.path, database)
         return self.path.resolve()
+
+    def _new_database(self):
+        from lanctl.core.projects.physical import require_existing_workspace_inventory
+
+        require_existing_workspace_inventory(self.path)
+        return _empty_database()
 
     def create(
         self,
@@ -95,11 +108,12 @@ class IDFDatabaseManager:
                 )
                 if candidate.value not in records:
                     created = self._new_record(candidate, data)
+                    validate_change(list(records.values()), candidate.value, created["data"])
                     records[candidate.value] = created
                     return
             raise OverflowError(f"no quedan números libres para el prefijo {normalized_prefix}")
 
-        update_json(self.path, _empty_database, reserve)
+        update_json(self.path, self._new_database, reserve)
         return deepcopy(created)
 
     def add(self, value: str | IDF, data: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -111,9 +125,10 @@ class IDFDatabaseManager:
             self._validate_database(database)
             if identifier.value in database["records"]:
                 raise ValueError(f"el IDF ya existe: {identifier.value}")
+            validate_change(list(database["records"].values()), identifier.value, created["data"])
             database["records"][identifier.value] = created
 
-        update_json(self.path, _empty_database, insert)
+        update_json(self.path, self._new_database, insert)
         return deepcopy(created)
 
     def get(self, value: str | IDF) -> dict[str, Any] | None:
@@ -163,7 +178,7 @@ class IDFDatabaseManager:
                 definition["type_profile"] = existing["type_profile"]
             database.setdefault("prefixes", {})[normalized] = definition
 
-        update_json(self.path, _empty_database, store)
+        update_json(self.path, self._new_database, store)
         return deepcopy(definition)
 
     def define_prefix_profile(
@@ -188,7 +203,7 @@ class IDFDatabaseManager:
             }
             database["prefixes"][normalized] = definition
 
-        update_json(self.path, _empty_database, store)
+        update_json(self.path, self._new_database, store)
         return deepcopy(definition)
 
     def get_prefix(self, prefix: str) -> dict[str, str] | None:
@@ -211,7 +226,7 @@ class IDFDatabaseManager:
             except KeyError as error:
                 raise KeyError(normalized) from error
 
-        update_json(self.path, _empty_database, remove)
+        update_json(self.path, self._new_database, remove)
         return deepcopy(deleted)
 
     def update(self, value: str | IDF, data: dict[str, Any]) -> dict[str, Any]:
@@ -225,8 +240,10 @@ class IDFDatabaseManager:
             if identifier.value not in database["records"]:
                 raise KeyError(identifier.value)
             record = database["records"][identifier.value]
+            validate_change(
+                list(database["records"].values()), identifier.value, data, record["data"]
+            )
             if record.get("prefix") == "RK" or (record.get("data") or {}).get("type") == "rack":
-                from lanctl.apps.rack.skins import span
                 from lanctl.core.rack_dimensions import validate_dimension_change
 
                 occupants = [
@@ -235,10 +252,16 @@ class IDFDatabaseManager:
                         span(r.get("data") or {}),
                     )
                     for r in database["records"].values()
-                    if str((r.get("data") or {}).get("location", {}).get("rack", "")).casefold()
+                    if location_status(r.get("data") or {}, list(database["records"].values()))[
+                        "kind"
+                    ]
+                    == "inside"
+                    and str((r.get("data") or {}).get("location", {}).get("rack", "")).casefold()
                     == identifier.value.casefold()
                 ]
-                validate_dimension_change(record.get("data") or {}, data, occupants)
+                validate_dimension_change(
+                    record.get("data") or {}, data, [*occupants, *legacy_layout_spans(data)]
+                )
             old_ports = set((record.get("data") or {}).get("ports") or {})
             new_ports = set(data.get("ports") or {})
             removed_ports = old_ports - new_ports
@@ -260,7 +283,7 @@ class IDFDatabaseManager:
             record["updated_at"] = self._timestamp()
             updated = deepcopy(record)
 
-        update_json(self.path, _empty_database, replace)
+        update_json(self.path, self._new_database, replace)
         return updated
 
     def edit_port(
@@ -313,7 +336,7 @@ class IDFDatabaseManager:
                             candidate["updated_at"] = self._timestamp()
             updated = deepcopy(record)
 
-        update_json(self.path, _empty_database, edit)
+        update_json(self.path, self._new_database, edit)
         return updated
 
     def delete(self, value: str | IDF) -> dict[str, Any]:
@@ -329,6 +352,21 @@ class IDFDatabaseManager:
         def remove(database: dict[str, Any]) -> None:
             nonlocal deleted
             self._validate_database(database)
+            trays = {
+                r["id"]
+                for r in database["records"].values()
+                if (r.get("data", {}).get("location") or {}).get("rack") == identifier.value
+            }
+            if any(
+                (r.get("data", {}).get("location") or {}).get("tray") in trays
+                for r in database["records"].values()
+            ):
+                raise ValueError("Reubica las bandejas con dispositivos antes de eliminar el rack")
+            if any(
+                (r.get("data", {}).get("location") or {}).get("tray") == identifier.value
+                for r in database["records"].values()
+            ):
+                raise ValueError("Reubica los dispositivos alojados antes de eliminar la bandeja")
             try:
                 deleted = database["records"].pop(identifier.value)
             except KeyError as error:
@@ -337,19 +375,25 @@ class IDFDatabaseManager:
                 data = record.get("data")
                 if not isinstance(data, dict):
                     continue
+                changed = False
                 if isinstance(data.get("endpoints"), list):
-                    data["endpoints"] = [
+                    endpoints = [
                         endpoint
                         for endpoint in data["endpoints"]
                         if not isinstance(endpoint, dict)
                         or endpoint.get("device") != identifier.value
                     ]
+                    if endpoints != data["endpoints"]:
+                        data["endpoints"] = endpoints
+                        changed = True
                 location = data.get("location")
                 if isinstance(location, dict) and location.get("rack") == identifier.value:
-                    location["rack"] = None
-                record["updated_at"] = self._timestamp()
+                    data["location"] = with_location(data)["location"]
+                    changed = True
+                if changed:
+                    record["updated_at"] = self._timestamp()
 
-        update_json(self.path, _empty_database, remove)
+        update_json(self.path, self._new_database, remove)
         return deepcopy(deleted)
 
     def _load(self) -> dict[str, Any]:

@@ -17,6 +17,10 @@ def launcher_command(launcher="lanctl", *arguments):
     if launcher not in {"lanctl", "lanip", "lanwire", "lanrack", "lanaccess", "lanmon"}:
         raise ValueError("launcher gráfico no disponible")
     if getattr(sys, "frozen", False):
+        if sys.platform == "win32" and arguments == ("--gui",):
+            window_host = Path(sys.executable).with_name("lanctl-window.exe")
+            if window_host.is_file():
+                return [str(window_host), launcher]
         suffix = ".exe" if sys.platform == "win32" else ""
         return [str(Path(sys.executable).with_name(launcher + suffix)), *arguments]
     if launcher == "lanctl":

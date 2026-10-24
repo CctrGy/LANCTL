@@ -144,14 +144,17 @@ def test_manual_save_missing_project_or_disk_failure_is_explicit(reason):
     tui.reload.assert_not_called()
 
 
-def test_ctrl_s_saves_changed_settings_through_existing_command():
+def test_ctrl_s_saves_changed_settings_through_shared_service(monkeypatch):
     tui = LanctlTui.__new__(LanctlTui)
     field = SettingField("workers", "Workers", "--workers", "12", "8", "entero")
     tui.modal = ModalState("settings", "Settings", ["General"], [[]], items=[field])
     tui._capture = Mock(return_value=(0, "Guardado"))
+    save = Mock()
+    monkeypatch.setattr("lanctl.apps.suite.settings.save_form_values", save)
     tui.reload, tui._set_command_output = Mock(), Mock()
     tui.handle_key("CTRL_S")
-    tui._capture.assert_called_once_with(["settings", "--workers", "12"])
+    tui._capture.assert_not_called()
+    assert save.call_args.args[0] == {"workers": "12"}
     assert tui.modal is None
 
 
@@ -231,11 +234,15 @@ def test_keyboard_conflicts_reserved_keys_disable_and_restore_are_persisted(proj
 
 
 def test_metadata_edit_notifies_edited_project_instead_of_editors_active_project(project):
+    from lanctl.core.config import load_config, save_config
     from lanctl.core.session import Session, bind_session
 
-    path, _ = project
-    editor = Session("lanctl", "gui", {"activeProject": "other.vlf"})
-    viewer = Session("lanip", "gui", {"activeProject": str(path)})
+    path, settings = project
+    save_config({**settings, "activeProject": str(path)})
+    # An in-flight background job retains its originating project; interactive
+    # windows now follow the shared selection instead of pinning independently.
+    editor = Session("lanctl", "backend", {**load_config(), "activeProject": "other.vlf"})
+    viewer = Session("lanip", "gui", load_config())
     for session in (editor, viewer):
         session.stop_event.set()
         session.thread.join()

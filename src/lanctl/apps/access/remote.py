@@ -83,6 +83,10 @@ def required_permission(arguments: list[str]) -> str:
         )
     if command == "project":
         action = arguments[1].casefold() if len(arguments) > 1 else "status"
+        if action == "import-physical":
+            raise PermissionError(
+                "la importación de una base física local no está disponible en remoto"
+            )
         return (
             "inventory.read"
             if action in {"status", "list", "show", "current"}
@@ -143,10 +147,24 @@ class LanctlCommandAdapter:
         arguments = parse_remote_command(command)
         permission = required_permission(arguments)
         self.authorization.require(user, permission)
+        project_settings = False
+        if arguments[0].casefold() == "settings":
+            for index, argument in enumerate(arguments[1:], 1):
+                option, separator, value = argument.partition("=")
+                if option.startswith("--") and len(option) > 2 and "--scope".startswith(option):
+                    value = (
+                        value
+                        if separator
+                        else (arguments[index + 1] if index + 1 < len(arguments) else "")
+                    )
+                    project_settings = project_settings or value == "project"
+            if project_settings:
+                self.authorization.require(user, "project.manage")
         if arguments[0].casefold() == "root":
             return self._root(arguments[1:])
         environment = dict(os.environ)
-        environment.update(PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
+        environment.update(PYTHONUTF8="1", PYTHONIOENCODING="utf-8", LANCTL_REMOTE_SETTINGS="1")
+        environment["LANCTL_REMOTE_PROJECT_SETTINGS"] = "1" if project_settings else "0"
         try:
             completed = self.runner(
                 self.command(arguments),

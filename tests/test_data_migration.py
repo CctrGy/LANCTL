@@ -163,7 +163,7 @@ class DataMigrationTests(unittest.TestCase):
                 patch.dict(
                     "os.environ",
                     {"PROGRAMDATA": str(program_data), "LOCALAPPDATA": str(local_data)},
-                    clear=False,
+                    clear=True,
                 ),
             ):
                 ensure_data_layout()

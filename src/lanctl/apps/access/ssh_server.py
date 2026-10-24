@@ -134,6 +134,8 @@ class SshAccessServer:
         self.closed = threading.Event()
         self.socket = None
         self.capacity = threading.BoundedSemaphore(32)
+        self.transports = set()
+        self.transport_lock = threading.Lock()
 
     def serve_forever(self):
         listener, key = self.prepare()
@@ -199,6 +201,11 @@ class SshAccessServer:
         transport.auth_timeout = 30
         transport.add_server_key(key)
         server = RestrictedSshServer(self.auth, self.authorization, self.password_enabled, source)
+        with self.transport_lock:
+            if self.closed.is_set():
+                transport.close()
+                return
+            self.transports.add(transport)
         try:
             transport.start_server(server=server)
             channel = transport.accept(15)
@@ -225,6 +232,8 @@ class SshAccessServer:
             )
         finally:
             transport.close()
+            with self.transport_lock:
+                self.transports.discard(transport)
 
     def _execute(self, user, command):
         try:
@@ -289,6 +298,9 @@ class SshAccessServer:
 
     def stop(self):
         self.closed.set()
+        with self.transport_lock:
+            for transport in tuple(self.transports):
+                transport.close()
         if self.socket:
             with suppress(OSError):
                 self.socket.close()

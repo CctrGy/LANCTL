@@ -106,7 +106,7 @@ function wireSavePositions() {
   );
 }
 function wireConnections(r) {
-  return state.records.filter(
+  return physicalInventory().filter(
     (w) =>
       w.data.type === "wire" &&
       (w.data.endpoints || []).some((e) => e.device === r.id),
@@ -146,7 +146,7 @@ records = function () {
       (!f.kind || (f.kind === "wires") === (d.type === "wire")) &&
       (!f.prefix || r.prefix === f.prefix) &&
       (!f.group || (r.filterGroups || d.groups || []).includes(f.group)) &&
-      (!f.rack || view === "map" || d.location?.rack === f.rack) &&
+      (!f.rack || view === "map" || physicalRackOf(r) === f.rack) &&
       (!f.mode || (d.connectionMode || "wired") === f.mode) &&
       (!f.medium ||
         d.kind === f.medium ||
@@ -190,12 +190,6 @@ refresh = async function () {
   if (!wireInitialized) {
     wireInitialized = true;
     document.body.classList.add("wire-app");
-    const project = document.createElement("button");
-    project.id = "wire-project";
-    project.textContent = "Cambiar proyecto";
-    project.onclick = () =>
-      wireProjects().catch((e) => message(e.message, true));
-    $("#project-name").parentNode.after(project);
     const more = document.createElement("button");
     more.id = "wire-filters";
     more.textContent = "Filtros";
@@ -233,9 +227,7 @@ renderWire = function (rows, r) {
       rack: [
         "Rack / unidad",
         (x) =>
-          [x.data.location?.rack, x.data.location?.unit]
-            .filter(Boolean)
-            .join(" / "),
+          physicalPlacementLabel(x),
       ],
       mode: [
         "Conexión",
@@ -921,11 +913,8 @@ function wireAction(label, fn) {
   return b;
 }
 fullDetails = function (r) {
-  if (state.launcher !== "lanwire") return wireBase.fullDetails(r);
-  const d = r.data,
-    racks = state.records.filter(
-      (x) => x.data.type === "rack" && x.id !== r.id,
-    );
+  if (!["lanwire", "lanrack"].includes(state.launcher)) return wireBase.fullDetails(r);
+  const d = r.data;
   const identity = document.createElement("p");
   identity.textContent = r.id + " · " + wireName(d.type);
   const general = [
@@ -941,13 +930,7 @@ fullDetails = function (r) {
       wireModes,
     ),
   ];
-  const location = [
-    field("Rack", "rack", d.location?.rack, "text", [
-      ["", "Sin rack"],
-      ...racks.map((x) => [x.id, labelOf(x)]),
-    ]),
-    field("Unidad", "unit", d.location?.unit, "number"),
-  ];
+  const location = physicalLocationFields(r);
   const ports = document.createElement("div");
   for (const [p, value] of Object.entries(d.ports || {})) {
     const row = document.createElement("div");
@@ -1029,13 +1012,10 @@ fullDetails = function (r) {
         ["wire.dac", "DAC"],
       ]),
     );
-  if (d.type === "rack")
-    technicalFields.push(
-      Object.assign(document.createElement("p"), {
-        textContent: `Altura: ${d.units ?? "Sin especificar"} U · Ancho de montaje: ${d.rackDimensions?.widthInches ? d.rackDimensions.widthInches + "″" : "Pendiente de especificar"}. Edita las dimensiones en LANRACK.`,
-      }),
-      wireAction("Abrir LANRACK", () => call("open_gui", "lanrack")),
-    );
+  if (d.type === "rack") technicalFields.push(
+    field("Altura del rack (4–52 U)", "units", d.units ?? d.size_units, "number"),
+    field("Ancho de montaje (pulgadas)", "widthInches", d.rackDimensions?.widthInches || "", "text", [["", "Seleccionar"], [10, "10″"], [19, "19″"], [21, "21″"], [23, "23″"]]),
+  );
   for (const [k, v] of Object.entries({
     ...d,
     created_at: r.created_at,
@@ -1081,7 +1061,7 @@ fullDetails = function (r) {
   showForm(
     "Detalle · " + labelOf(r),
     [
-      center,
+      ...(state.launcher === "lanwire" ? [center] : []),
       wireTabs([
         ["General", general],
         ["Ubicación", location],
@@ -1097,8 +1077,7 @@ fullDetails = function (r) {
         alias: v.alias,
         description: v.description,
         connectionMode: v.connectionMode,
-        rack: v.rack,
-        unit: v.unit ? Number(v.unit) : null,
+        ...physicalLocationValues(v, r),
         groups: v.groups
           .split(",")
           .map((x) => x.trim())
@@ -1109,7 +1088,7 @@ fullDetails = function (r) {
           .map((x) => x.trim())
           .filter(Boolean),
         ...(v.kind ? { kind: v.kind } : {}),
-        ...(v.units ? { units: Number(v.units) } : {}),
+        ...(v.units && (Number(v.units) !== (d.units ?? d.size_units) || String(v.widthInches) !== String(d.rackDimensions?.widthInches || "")) ? { units: Number(v.units), widthInches: Number(v.widthInches) } : {}),
         portChanges: Object.fromEntries(
           Object.keys(d.ports || {}).map((p) => [
             p,
@@ -1164,7 +1143,7 @@ function wirePortConnections(r, p) {
     wireConnect(existing);
     return;
   }
-  const cables = state.records.filter(
+  const cables = physicalInventory().filter(
     (w) => w.data.type === "wire" && (w.data.endpoints || []).length < 2,
   );
   showForm(
@@ -1179,7 +1158,7 @@ function wirePortConnections(r, p) {
       ),
     ],
     async (v) => {
-      const w = state.records.find((x) => x.id === v.wire);
+      const w = physicalInventory().find((x) => x.id === v.wire);
       if (!w) throw Error("Crea primero un cable con un extremo libre.");
       await call("wire_connect", w.id, w.revision, [
         ...(w.data.endpoints || []),
@@ -1480,7 +1459,7 @@ new ResizeObserver(() => {
     } else wirePaint();
   }
 }).observe($("#canvas"));
-wireNew = function () {
+wireNew = function (initialKind = "switch.24ports") {
   const choices = [
     ["switch.5ports", "Switch · 5 puertos", "SW"],
     ["switch.12ports", "Switch · 12 puertos", "SW"],
@@ -1490,6 +1469,8 @@ wireNew = function () {
     ["pc.1port", "Ordenador · 1 puerto", "PC"],
     ["pc.2ports", "Ordenador · 2 puertos", "PC"],
     ["server.2ports", "Servidor · 2 puertos", "SR"],
+    ["tray", "Bandeja para dispositivos", "TR"],
+    ["router.otg", "OTG", "OT"],
     ["panel", "Panel de conexiones · 24 puertos", "PN"],
     ["outlet", "Toma de red · pared y habitación", "PX"],
     ["wire.copper", "Cable de cobre", "WL"],
@@ -1501,7 +1482,7 @@ wireNew = function () {
     field(
       "Tipo",
       "kind",
-      "switch.24ports",
+      initialKind,
       "text",
       choices.map(([v, l]) => [v, l]),
     ),
@@ -1524,7 +1505,11 @@ wireNew = function () {
       [23, "23″"],
     ]),
   ];
-  const height = fields.at(-2).querySelector("input");
+  const heightField = fields.at(-2), widthField = fields.at(-1);
+  const height = heightField.querySelector("input");
+  const endpoints = [["", "Sin conectar"], ...physicalInventory().flatMap(r => Object.keys(r.data.ports || {}).map(port => [JSON.stringify({device: r.id, port}), `${r.data.name || r.id} · ${port}`]))];
+  const endFields = [field("Extremo A", "endpointA", "", "text", endpoints), field("Extremo B", "endpointB", "", "text", endpoints)];
+  fields.push(...endFields);
   height.min = 4;
   height.max = 52;
   height.step = 1;
@@ -1533,20 +1518,32 @@ wireNew = function () {
     fields[1].querySelector("input").value = choices.find(
       (x) => x[0] === kind,
     )[2];
-    fields.at(-1).hidden = fields.at(-2).hidden = kind !== "rack";
+    widthField.hidden = heightField.hidden = kind !== "rack";
+    height.disabled = widthField.querySelector("select").disabled = kind !== "rack";
+    const cable = kind.startsWith("wire.");
+    endFields.forEach(f => { f.hidden = !cable; f.querySelector("select").disabled = !cable; });
+    fields[5].hidden = cable || kind === "rack";
     height.required = kind === "rack";
   };
   fields[0].querySelector("select").onchange = change;
   change();
-  showForm("Nuevo elemento físico", fields, async (values) => {
-    const { units, widthInches, ...data } = values;
+  showForm(initialKind.startsWith("wire.") ? "Nuevo cable" : initialKind === "rack" ? "Nuevo rack" : "Nuevo elemento físico", fields, async (values) => {
+    const { units, widthInches, endpointA, endpointB, ...data } = values;
     const result = await call("wire_create", {
       ...data,
+      ...(values.kind.startsWith("wire.") ? {connectionMode: "wired", endpoints: [endpointA, endpointB].filter(Boolean).map(v => JSON.parse(v))} : {}),
       ...(values.kind === "rack"
         ? { units: Number(units), widthInches: Number(widthInches) }
         : {}),
     });
-    selected = result.id;
+    if (state.launcher !== "lanrack" || values.kind === "rack") selected = result.id;
+    if (state.launcher === "lanwire") {
+      wireClearFilters(); physicalRack = ""; physicalCpd = ""; wireFocus = null;
+      // Cables without both endpoints remain inspectable in the inventory list.
+      view = values.kind.startsWith("wire.") ? "list" : view;
+      if (values.kind === "rack") physicalLevel = "outside";
+      selected = result.id;
+    }
   });
 };
 function wireResizeColumns() {

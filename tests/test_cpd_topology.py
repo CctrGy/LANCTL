@@ -161,6 +161,10 @@ def test_cpd_two_windows_topology_real_connections(workspace):
         wp.locator("#physical-bundles").uncheck()
         assert wp.locator("#wire-lines path").count() == 8
         wp.locator(f'[data-node="{racks[0]}"] strong').dblclick()
+        wp.locator('#detail [name="name"]').wait_for()
+        wp.locator("#cancel").click()
+        wp.locator(f'[data-node="{racks[0]}"] strong').click(button="right")
+        wp.get_by_role("button", name="Ver interior del rack", exact=True).click()
         assert wp.locator("#physical-rack").input_value() == racks[0]
         assert wp.locator(f'[data-node="{switches[0]}"]').count() == 1
         assert wp.locator("#wire-lines path").count() == 3

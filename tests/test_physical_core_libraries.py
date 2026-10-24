@@ -13,10 +13,10 @@ class CoreLibraryTests(unittest.TestCase):
     def test_data_path_uses_configured_root(self):
         with (
             tempfile.TemporaryDirectory() as temporary,
-            patch.dict("os.environ", {"LANWRE_DATA_DIR": temporary}),
+            patch.dict("os.environ", {"LANWRE_DATA_DIR": temporary}, clear=True),
         ):
             self.assertEqual(
-                application_path("data/example.json"), Path(temporary) / "example.json"
+                application_path("data/example.json"), (Path(temporary) / "example.json").resolve()
             )
 
     def test_lanctl_root_has_priority_and_physical_database_is_namespaced(self):
@@ -25,9 +25,9 @@ class CoreLibraryTests(unittest.TestCase):
             tempfile.TemporaryDirectory() as legacy,
             patch.dict("os.environ", {"LANCTL_DATA_DIR": shared, "LANWRE_DATA_DIR": legacy}),
         ):
-            self.assertEqual(data_root(), Path(shared))
+            self.assertEqual(data_root(), Path(shared).resolve())
             self.assertEqual(
-                application_path("data/lw/idf.db"), Path(shared) / "physical" / "idf.db"
+                application_path("data/lw/idf.db"), (Path(shared) / "physical" / "idf.db").resolve()
             )
 
     def test_config_and_language_files_use_json(self):

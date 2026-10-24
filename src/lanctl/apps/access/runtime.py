@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import os
 import threading
 from pathlib import Path
+from uuid import uuid4
 
 from lanctl.core.config import load_config
+from lanctl.core.file_transaction import locked_file
 from lanctl.core.paths import application_path
 
+from .runtime_state import _alive, _publish, _read, _revision
 from .service import AccessService, access_process_running
 
 
@@ -26,6 +30,7 @@ class AccessRuntime:
         self.instances = {}
         self.lock = threading.RLock()
         self.errors = {}
+        self.owner_token = uuid4().hex
 
     @staticmethod
     def _file_version(value):
@@ -39,6 +44,7 @@ class AccessRuntime:
 
     def _signature(self, protocol, settings):
         common = (settings.get("bind"), settings.get("port"), settings.get("cidr"))
+        common = (*common, settings.get("lifecycleRevision"))
         if protocol == "ssh":
             return (
                 *common,
@@ -109,27 +115,60 @@ class AccessRuntime:
             self.service._audit(f"access.{protocol}.runtime.failed", None, "error")
 
     def _stop_protocol(self, protocol):
-        current = self.instances.pop(protocol, None)
+        current = self.instances.get(protocol)
         if not current:
             return
         _signature, server, thread = current
         server.stop()
         thread.join(3)
+        if thread.is_alive():
+            raise TimeoutError(f"No se confirmó la parada del listener {protocol}")
+        self.instances.pop(protocol, None)
+        _publish(
+            self.service,
+            protocol,
+            self.service.config()[protocol],
+            "stopped",
+            "service",
+            token=self.owner_token,
+        )
 
     def reconcile(self):
-        config = self.service.config()
-        with self.lock:
+        # Read and claim a revision under the same lock as settings writers.
+        with self.lock, locked_file(self.service.config_path):
+            config = self.service.config()
             for protocol in ("ssh", "https"):
                 settings = config[protocol]
                 signature = self._signature(protocol, settings)
                 current = self.instances.get(protocol)
-                wanted = bool(settings.get("enabled"))
+                wanted = (
+                    bool(settings.get("enabled")) and settings.get("lifecycleBackend") != "user"
+                )
+                record = _read(self.service, protocol)
+                foreign = (
+                    record.get("state") == "running"
+                    and (
+                        record.get("processId") != os.getpid()
+                        or record.get("token") != self.owner_token
+                    )
+                    and _alive(record)
+                )
                 external = access_process_running(settings)
+                external = external or foreign
                 if current and (
                     not wanted or external or current[0] != signature or not current[2].is_alive()
                 ):
                     self._stop_protocol(protocol)
                     current = None
+                if not wanted and not current and not external:
+                    _publish(
+                        self.service,
+                        protocol,
+                        settings,
+                        "stopped",
+                        "service",
+                        token=self.owner_token,
+                    )
                 if wanted and not external and current is None:
                     try:
                         server = self._build(protocol, settings)
@@ -155,6 +194,23 @@ class AccessRuntime:
                     self.instances[protocol] = (signature, server, thread)
                     self.errors.pop(protocol, None)
                     thread.start()
+                current = self.instances.get(protocol)
+                if (
+                    current
+                    and current[2].is_alive()
+                    and (
+                        record.get("revision") != _revision(settings)
+                        or record.get("state") != "running"
+                    )
+                ):
+                    _publish(
+                        self.service,
+                        protocol,
+                        settings,
+                        "running",
+                        "service",
+                        token=self.owner_token,
+                    )
         return {name: item[2].is_alive() for name, item in self.instances.items()}
 
     def start(self):

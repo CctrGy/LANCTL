@@ -263,6 +263,83 @@ def test_pending_unstarted_cleanup_blocks_new_generation(running, monkeypatch):
         drain()
 
 
+def test_registration_cannot_survive_a_concurrent_revocation(running, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+
+    manager, plugin, _ = running
+    api = plugin.module.saved_api
+    entered, finish = threading.Event(), threading.Event()
+    original = manager.functions.register
+
+    def insert(*args, **kwargs):
+        entered.set()
+        assert finish.wait(3)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(manager.functions, "register", insert)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        registering = pool.submit(
+            api.functions.register,
+            "Review.Plugin.Action.Race",
+            lambda: FunctionResult(True),
+            FunctionResult,
+        )
+        assert entered.wait(3)
+        revoking = pool.submit(manager.disable, "review.plugin")
+        finish.set()
+        registering.result(timeout=3)
+        revoking.result(timeout=3)
+    assert not manager.functions._items
+    with pytest.raises(PermissionError):
+        api.functions.register(
+            "Review.Plugin.Action.Stale", lambda: FunctionResult(True), FunctionResult
+        )
+
+
+def test_process_rpc_cannot_reintroduce_legacy_native_execution(running, tmp_path):
+    manager, legacy, _ = running
+    called = []
+    legacy.module.saved_api.functions.register(
+        "Review.Plugin.Action.Native",
+        lambda: called.append(True) or FunctionResult(True),
+        FunctionResult,
+    )
+    source = tmp_path / "process"
+    source.mkdir()
+    (source / "plugin.info").write_text(
+        json.dumps(
+            dict(
+                schemaVersion=1,
+                id="review.process",
+                version="1.0.0",
+                runtime="isolated",
+                runtimeApiVersion=2,
+                permissions=["functions.call", "functions.register"],
+            )
+        ),
+        encoding="utf-8",
+    )
+    (source / "main.exec").write_text(
+        """
+from lanctl.core.plugins.contracts import FunctionResult
+def activate(api):
+    def call():
+        return api.functions.call('Review.Plugin.Action.Native')
+    api.functions.register('Review.Process.Action.Call', call, FunctionResult)
+""",
+        encoding="utf-8",
+    )
+    package = tmp_path / "process.lcp"
+    build_package(source, package)
+    manager.install(package)
+    manager.enable("review.process", grant={"functions.call", "functions.register"})
+    with pytest.raises(PermissionError, match="heredado"):
+        manager.functions.call("Review.Process.Action.Call")
+    assert not called
+    # Original trusted API remains compatible outside the new process context.
+    assert manager.functions.call("Review.Plugin.Action.Native").success
+
+
 def test_reload_finishes_cleanup_before_new_activation_and_retains_warning(running):
     manager, plugin, _ = running
     previous = plugin.module.saved_api

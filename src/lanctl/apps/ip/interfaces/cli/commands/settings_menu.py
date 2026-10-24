@@ -6,8 +6,7 @@ import argparse
 import json
 import sys
 
-from lanctl.core.config import load_config
-from lanctl.core.settings_catalog import CATEGORIES, catalog, leaves, set_program_value
+from lanctl.core.settings_catalog import CATEGORIES
 
 
 def register_catalog_options(command):
@@ -20,7 +19,7 @@ def register_catalog_options(command):
     action.add_argument(
         "--catalog",
         action="store_true",
-        help="Lista todos los ajustes por categorías, con valor y estado editable.",
+        help="Lista preferencias comunes y CLI por categorías, con valor y estado editable.",
     )
     action.add_argument(
         "--get", metavar="RUTA", help="Consulta un ajuste por su ruta, por ejemplo ip.workers."
@@ -29,7 +28,7 @@ def register_catalog_options(command):
         "--set",
         nargs=2,
         metavar=("RUTA", "VALOR"),
-        help="Modifica un ajuste; listas y booleanos usan JSON.",
+        help="Modifica una preferencia común o CLI; listas y booleanos usan JSON.",
     )
     command.add_argument(
         "--scope",
@@ -43,43 +42,17 @@ def register_catalog_options(command):
 
 
 def _project():
-    from lanctl.core.projects.current import active_project_info
+    from lanctl.apps.suite.settings import active_settings_project
 
-    project = active_project_info()
-    if not project or not project["valid"]:
-        raise ValueError(
-            "Selecciona un proyecto VLF válido con project use antes de configurar el proyecto"
-        )
-    return project["path"]
+    return active_settings_project()
 
 
 def _entries(scope):
-    if scope == "program":
-        entries = catalog(load_config())
-        from lanctl.core.config import canonical_config
+    from lanctl.apps.suite.settings import cli_context, settings_entries
 
-        entries.append(
-            {
-                "path": "access.remote",
-                "category": "access",
-                "value": canonical_config(load_config())["access"]["remote"],
-                "readOnly": "",
-            }
-        )
-        return sorted(entries, key=lambda entry: list(CATEGORIES).index(entry["category"]))
-    from lanctl.core.projects.settings import PROJECT_EDITABLE, project_settings
-
-    return [
-        {
-            "path": path,
-            "category": path.split(".")[0],
-            "value": value,
-            "readOnly": "Campo automático o derivado"
-            if path.split(".")[1] not in PROJECT_EDITABLE.get(path.split(".")[0], set())
-            else "",
-        }
-        for path, value in leaves(project_settings(_project()))
-    ]
+    return settings_entries(
+        cli_context(scope), project_path=_project() if scope == "project" else None
+    )
 
 
 def _decode(text):
@@ -90,50 +63,16 @@ def _decode(text):
 
 
 def _set(scope, path, text):
-    entries = {entry["path"]: entry for entry in _entries(scope)}
-    if path not in entries:
-        raise ValueError(f"Ajuste desconocido: {path}")
-    if entries[path]["readOnly"]:
-        raise ValueError(f"{path}: solo lectura. {entries[path]['readOnly']}")
-    value = _decode(text)
-    if scope == "project":
-        from lanctl.core.projects.settings import update_project_setting
+    from lanctl.apps.suite.settings import cli_context, save_setting
+    from lanctl.core.project_context import project_operation
 
-        category, key = path.split(".", 1)
-        update_project_setting(_project(), category, key, value)
-        return
-    # Reuse the existing command for remote settings: it validates the endpoint
-    # and applies the service backend, rather than just changing a JSON flag.
-    if path == "access.remote" or path.startswith("access.remote."):
-        from .settings import register_settings_command, run_settings
-
-        flags = {
-            "enabled": "--remote-access",
-            "bind": "--remote-bind",
-            "cidr": "--remote-cidr",
-            "port": "--remote-port",
-            "passwordAuthentication": "--remote-password-auth",
-            "backend": "--remote-backend",
-            "forcedView": "--remote-forced-view",
-        }
-        from lanctl.core.config import DOCUMENT_DEFAULTS
-        from lanctl.core.settings_catalog import validate_value
-
-        values = value if path == "access.remote" else {path.rsplit(".", 1)[1]: value}
-        if not isinstance(values, dict) or not values:
-            raise ValueError("access.remote requiere un objeto JSON con ajustes remotos")
-        arguments = ["settings"]
-        for key, item in values.items():
-            if key not in flags:
-                raise ValueError(f"Ajuste remoto desconocido: {key}")
-            validate_value(f"access.remote.{key}", item, DOCUMENT_DEFAULTS["access"]["remote"][key])
-            rendered = ("on" if item else "off") if isinstance(item, bool) else str(item)
-            arguments.extend([flags[key], rendered])
-        parser = argparse.ArgumentParser()
-        register_settings_command(parser.add_subparsers())
-        run_settings(parser.parse_args(arguments))
-    else:
-        set_program_value(path, value)
+    with project_operation():
+        save_setting(
+            cli_context(scope),
+            path,
+            _decode(text),
+            project_path=_project() if scope == "project" else None,
+        )
 
 
 def _print_entries(entries):
@@ -189,11 +128,21 @@ def configuration_menu():
                     if entry["readOnly"]:
                         print(entry["readOnly"])
                         continue
+                    from lanctl.core.config import load_config
+                    from lanctl.core.project_context import (
+                        project_identity,
+                        project_operation,
+                        require_project,
+                    )
+
+                    expected = project_identity(load_config())
                     text = input("Nuevo valor (JSON para listas/booleanos; vacío: cancelar): ")
                     if not text:
                         continue
                     try:
-                        _set(scope, entry["path"], text)
+                        with project_operation():
+                            require_project(expected)
+                            _set(scope, entry["path"], text)
                         print("Configuración guardada.")
                     except (ValueError, OSError) as error:
                         print(f"No se ha podido guardar: {error}")

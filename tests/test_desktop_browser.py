@@ -144,15 +144,24 @@ def test_desktop_browser_flows(tmp_path):
             > page.locator(".table-panel").bounding_box()["y"]
         )
         page.screenshot(path=str(tmp_path / "lanip-desktop.png"), full_page=True)
-        page.locator("#project-new").click()
-        page.locator("input[name=name]").fill("Prueba")
-        page.locator("#desktop-form button[type=submit]").click()
-        page.get_by_text("Proyecto vacío creado", exact=True).first.wait_for()
-        assert page.locator("#device-rows tr").count() == 0
+        for selector in ("#project-new", "#project-open", "#project-select"):
+            assert not page.locator(selector).is_visible()
+        assert page.locator("#lanctl-gui").is_visible()
         page.set_viewport_size({"width": 960, "height": 640})
         assert page.locator("#desktop-settings").is_visible()
         for width, height in ((1280, 800), (960, 640), (760, 720), (390, 844)):
             page.set_viewport_size({"width": width, "height": height})
             assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+        page.evaluate("""() => {
+            window.pywebview.api.project_state = async () => ({ok:true, dirty:true, shared:true});
+            window.pywebview.api.request_close = async decision => {
+                window.closeDecision = decision; return {ok:true, closed:true};
+            };
+            void desktopClose();
+        }""")
+        page.locator("#save-dialog").wait_for()
+        assert "otras sesiones" in page.locator("#save-dialog p").inner_text()
+        page.get_by_role("button", name="Cerrar sin guardar", exact=True).click()
+        page.wait_for_function("window.closeDecision === 'discard'")
         assert not errors
         browser.close()

@@ -90,12 +90,22 @@ meta/public-key.pem          # requerido si existe signature
 ## plugin.info
 
 Campos: `schemaVersion`, `id`, `name`, `version`, `description`, `author`,
-`entryPoint`, `runtime`, `lanctl.minimumVersion`, `lanctl.maximumVersion`,
+`entryPoint`, `runtime`, `runtimeApiVersion`, `lanctl.minimumVersion`, `lanctl.maximumVersion`,
 `permissions`, `capabilities` y `depends`.
 
 Runtimes:
 - `isolated`: ejecuta Python en un proceso separado con timeout, memoria y presupuesto de llamadas.
 - `trusted`: ejecuta `activate(api)` dentro del proceso y necesita `--trust`.
+
+`runtimeApiVersion: 2` opta por RPC versionado dentro de `isolated`: concesión
+por generación, permisos por llamada y terminación confirmada al revocar.
+Admite `log`, `settings`, `require`, funciones con `FunctionResult`, suscripción
+y emisión de eventos del Core, extensiones y lectura JSON del inventario.
+No ejecuta callbacks de plugins heredados desde el RPC. Red, credenciales,
+almacenamiento, monitorización y contratos personalizados necesitan adaptadores
+antes de migrar sus paquetes. Sin este campo se conserva la API aislada v1.
+No se migran ni se conceden permisos automáticamente. `trusted` sigue en proceso
+y requiere reinicio para detener sus hilos nativos tras revocar.
 
 Capacidades reconocidas:
 `plugin`, `theme`, `language`, `settings`, `automation`, `network`, `analysis`,

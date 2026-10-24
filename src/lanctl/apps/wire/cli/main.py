@@ -10,6 +10,7 @@ from lanctl.apps.wire.cli.commands import CommandProcessor
 from lanctl.apps.wire.idf.database import DEFAULT_DATABASE_PATH, IDFDatabaseManager
 from lanctl.core.config import load_config
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
+from lanctl.core.projects.console_session import physical_console_session
 from lanctl.core.session import coordinated_launcher
 
 
@@ -126,19 +127,32 @@ def build_parser() -> LANCTLArgumentParser:
 
 def run_cli(database_path: str) -> int:
     """Consola persistente equivalente al modo CLI de LANCTL."""
-    processor = CommandProcessor(IDFDatabaseManager(database_path))
+    with physical_console_session(database_path) as session:
+        session.start()
+        return _console(session)
+
+
+def _console(session):
+    processor = None
     print(f"LANWIRE CLI {__version__}")
     print("Escribe 'help' para listar comandos y 'exit' para salir.")
     while True:
+        with session.operation():
+            pass
+        for message in session.messages():
+            print(message)
         try:
             command = input("LANWIRE> ")
         except (EOFError, KeyboardInterrupt):
             print()
-            return 0
-        result = processor.execute(command)
+            return 0 if session.request_close(interactive=False) else 1
+        with session.operation() as path:
+            if processor is None or processor.database.path.resolve() != path:
+                processor = CommandProcessor(IDFDatabaseManager(path))
+            result = processor.execute(command)
         for line in result.lines:
             print(line)
-        if result.exit_requested:
+        if result.exit_requested and session.request_close():
             return 0
 
 
@@ -204,11 +218,30 @@ def main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
     arguments = normalize_help_arguments(arguments)
-    args = build_parser().parse_args(arguments)
+    parser = build_parser()
+    default_database = parser.get_default("database")
+    parser.set_defaults(database=None)
+    args = parser.parse_args(arguments)
     if getattr(args, "gui", False):
         from lanctl.apps.suite.launcher_gui import run_gui
 
         return run_gui("lanwire", database=args.database)
+    with physical_console_session(
+        args.database if args.database is not None else default_database,
+        follow_project=args.database is None,
+    ) as session:
+        with session.operation() as path:
+            if args.database is None:
+                args.database = default_database
+        if args.tui or args.cli or args.command in {None, "tui", "cli"}:
+            return _run(args)
+        with session.operation() as path:
+            args.database = str(path)
+            code = _run(args)
+        return code if session.request_close(interactive=False) else 1
+
+
+def _run(args):
     if args.tui or args.command == "tui" or (not args.cli and args.command is None):
         from lanctl.apps.wire.tui import run_tui
 

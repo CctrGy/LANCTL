@@ -75,32 +75,32 @@ def test_no_arbitrary_payloads_and_version_rejection(tmp_path):
         coordinator.sessions()
 
 
-def test_session_project_isolation_and_data_notifications(tmp_path):
+def test_session_follows_shared_project_and_retains_notifications(tmp_path):
     coordinator = Coordinator(tmp_path / "runtime.db")
     first = Session("lanip", "gui", {"activeProject": "A"}, coordinator=coordinator)
-    second = Session("lanip", "tui", {"activeProject": "B"}, coordinator=coordinator)
-    # Deterministic polling without racing the background heartbeat.
     first.stop_event.set()
-    second.stop_event.set()
     first.thread.join()
-    second.thread.join()
     try:
         with patch("lanctl.core.session._current", first):
-            assert overlay_config({"activeProject": "B"})["activeProject"] == "A"
-            saved = prepare_config_save(overlay_config({"workers": 10}), {"activeProject": "B"})
-            assert saved["activeProject"] == "B"
-            assert first.project == "A"
-        received = []
-        first.handler = received.append
-        coordinator.publish(second.id, "LANCTL.Core.Storage.Changed", project="B")
-        first.poll()
-        assert received == []
-        coordinator.publish(second.id, "LANCTL.Core.Storage.Changed", project="A")
-        first.poll()
-        assert received == [{"action": "data-changed"}]
+            assert overlay_config({"activeProject": "B"})["activeProject"] == "B"
+            saved = prepare_config_save({"activeProject": "B"}, {"activeProject": "C"})
+            assert saved["activeProject"] == "C"
+            assert first.project == "B"
+        with patch("lanctl.core.config._load_config", return_value={"activeProject": "B"}):
+            first.poll()  # No window yet: retain the refresh until its handler starts.
+            received = []
+            first.handler = received.append
+            first.poll()
+            assert received == [{"action": "data-changed"}]
+            received.clear()
+            coordinator.publish("other", "LANCTL.Core.Storage.Changed", project="A")
+            first.poll()
+            assert received == []
+            coordinator.publish("other", "LANCTL.Core.Storage.Changed", project="B")
+            first.poll()
+            assert received == [{"action": "data-changed"}]
     finally:
         first.close()
-        second.close()
 
 
 def test_stale_inventory_snapshot_is_rejected(tmp_path):
@@ -116,7 +116,10 @@ def test_stale_inventory_snapshot_is_rejected(tmp_path):
     assert len(json.loads(path.read_text())) == 1
 
 
-def test_real_launchers_keep_project_and_share_settings(tmp_path):
+@pytest.mark.parametrize(
+    "launcher", ["lanctl", "lanip", "lanwire", "lanrack", "lanaccess", "lanmon"]
+)
+def test_real_launchers_follow_project_and_share_settings(tmp_path, launcher):
     config = tmp_path / "config" / "config.json"
     config.parent.mkdir()
     config.write_text(json.dumps({"activeProject": "first.vlf", "workers": 12}))
@@ -134,7 +137,7 @@ def run(argv=None):
     print(json.dumps({'project':value['activeProject'], 'workers':value['workers']}), flush=True)
     return 0
 run([])
-"""
+""".replace("'lanip'", repr(launcher))
     process = subprocess.Popen(
         [sys.executable, "-c", code],
         env=environment,
@@ -158,7 +161,7 @@ run([])
         )
         output, error = process.communicate("continue\n", timeout=15)
         assert process.returncode == 0, error
-        assert json.loads(output) == {"project": "first.vlf", "workers": 24}
+        assert json.loads(output) == {"project": "second.vlf", "workers": 24}
         # Saving unrelated settings must not restore the first session's project.
         assert json.loads(config.read_text())["projects"]["active"] == "second.vlf"
     finally:

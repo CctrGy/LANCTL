@@ -81,6 +81,7 @@ try {
     if (-not (Test-Path -LiteralPath 'dist\lanaccess.exe')) { throw 'PyInstaller did not produce dist\lanaccess.exe' }
     $ExpectedExecutables = @(
         'LANCTL.exe',
+        'lanctl-window.exe',
         'lanip.exe',
         'lanwire.exe',
         'lanrack.exe',
@@ -96,7 +97,7 @@ try {
     if ($UnexpectedExecutables -or $MissingExecutables) {
         throw "Invalid launcher set. Missing=[$($MissingExecutables -join ', ')] Unexpected=[$($UnexpectedExecutables -join ', ')]"
     }
-    foreach ($binary in @('dist\LANCTL.exe','dist\lanip.exe','dist\lanwire.exe','dist\lanmon.exe','dist\lanrack.exe','dist\lanaccess.exe')) {
+    foreach ($binary in @('dist\LANCTL.exe','dist\lanctl-window.exe','dist\lanip.exe','dist\lanwire.exe','dist\lanmon.exe','dist\lanrack.exe','dist\lanaccess.exe')) {
         Sign-And-Verify (Resolve-Path -LiteralPath $binary).Path
     }
     $release = Join-Path $Root 'dist\release'
@@ -108,6 +109,7 @@ try {
     if(Test-Path -LiteralPath $portable){Remove-Item -LiteralPath $portable -Recurse -Force}
     New-Item -ItemType Directory -Path $portable | Out-Null
     Copy-Item dist\LANCTL.exe (Join-Path $portable 'LANCTL.exe')
+    Copy-Item dist\lanctl-window.exe (Join-Path $portable 'lanctl-window.exe')
     Copy-Item dist\lanip.exe (Join-Path $portable 'lanip.exe')
     Copy-Item dist\lanwire.exe (Join-Path $portable 'lanwire.exe')
     Copy-Item dist\lanmon.exe (Join-Path $portable 'lanmon.exe')

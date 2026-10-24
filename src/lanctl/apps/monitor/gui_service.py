@@ -1,5 +1,7 @@
 """Live monitor view and bounded command adapter; opening never starts probes."""
 
+import hashlib
+import json
 from dataclasses import asdict
 from pathlib import Path
 
@@ -7,11 +9,82 @@ from lanctl.apps.monitor.database import IncidentRepository, MonitorDatabase, Se
 from lanctl.apps.monitor.lifecycle import SingletonLock
 from lanctl.core.config import load_config
 from lanctl.core.database import DeviceDatabase
+from lanctl.core.file_transaction import locked_files
+from lanctl.core.group_database import GroupDatabase
 from lanctl.core.history import HistoryService
+from lanctl.core.inventory_editing import edit_inventory_device, edit_revision, editable_values
 from lanctl.core.paths import application_path
 
 
 class MonitorGuiService:
+    EDITABLE_FIELDS = frozenset({"name", "alias", "description", "ip"})
+
+    @staticmethod
+    def _inventory():
+        config = load_config()
+        database = DeviceDatabase(config["database"])
+        return database, GroupDatabase(config["groups"], database)
+
+    @staticmethod
+    def _revision(device):
+        # Membership is part of this editor's revision, not a second stored state.
+        return hashlib.sha256(
+            json.dumps([edit_revision(device), sorted(device.groups)]).encode()
+        ).hexdigest()
+
+    def _record(self, device, groups):
+        values = editable_values(device)
+        return {
+            "id": device.device_id,
+            "editable": {key: values[key] for key in sorted(self.EDITABLE_FIELDS)},
+            "revision": self._revision(device),
+            "groups": list(device.groups),
+            "groupCatalog": [
+                {"name": group.name, "editable": group.editable} for group in groups.load()
+            ],
+        }
+
+    def _require_revision(self, device, expected):
+        if not isinstance(expected, str) or expected != self._revision(device):
+            raise ValueError("El equipo cambió en otra sesión. Recarga su ficha antes de editar.")
+
+    def device_record(self, identifier):
+        database, groups = self._inventory()
+        with locked_files((database.path, groups.path)):
+            return self._record(database.resolve(identifier), groups)
+
+    def update_device(self, identifier, expected, values):
+        if (
+            not isinstance(values, dict)
+            or set(values) - self.EDITABLE_FIELDS
+            or any(not isinstance(value, str) for value in values.values())
+        ):
+            raise ValueError("Campos de equipo no editables desde esta ficha.")
+        database, groups = self._inventory()
+        with locked_files((database.path, groups.path)):
+            self._require_revision(database.resolve(identifier), expected)
+            device, _, edits = edit_inventory_device(database, groups, identifier, values)
+            result = self._record(device, groups)
+        if edits:
+            from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+
+            save_active_project(SaveTrigger.CHANGE)
+        return result
+
+    def edit_group(self, identifier, expected, action, name):
+        if action not in {"add", "remove"}:
+            raise ValueError("Acción de pertenencia no permitida.")
+        database, groups = self._inventory()
+        with locked_files((database.path, groups.path)):
+            device = database.resolve(identifier)
+            self._require_revision(device, expected)
+            getattr(groups, action)(name, device.device_id)
+            result = self._record(database.resolve(device.device_id), groups)
+        from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+
+        save_active_project(SaveTrigger.CHANGE)
+        return result
+
     def snapshot(self):
         config = load_config()
         with MonitorDatabase(application_path(config["monitorDatabase"])) as db:

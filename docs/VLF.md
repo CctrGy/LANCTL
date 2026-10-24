@@ -23,10 +23,40 @@ estructura fija. No debe confundirse la compresión ZIP con cifrado.
 project create ARCHIVO.vlf [metadatos]
 project update ARCHIVO.vlf
 project save
+project import-physical ARCHIVO.db
 project info ARCHIVO.vlf [--json]
 project verify ARCHIVO.vlf [--json]
 project list ARCHIVO.vlf
 ```
+
+## Inventario físico por proyecto
+
+El contenedor admite la entrada opcional `devices/physical.json` con
+`{"schemaVersion":1,"inventory":{...}}`. `inventory` conserva el documento IDF
+versionado completo, incluidos CPD, prefijos, registros y relaciones. Se valida
+antes de materializar y guardar, y queda cubierto por los hashes del VLF.
+Los proyectos antiguos sin esa entrada abren una base física vacía. El
+workspace coloca su copia en `physical/idf.db`; guardar/reabrir restaura esa
+copia independientemente de la instalación original.
+
+La base física histórica permanece separada. `project import-physical` exige
+un proyecto activo con inventario físico vacío, valida y copia el archivo sin
+modificar el original. La importación y las ediciones CLI/TUI/GUI de
+LANWIRE/LANRACK aplican el disparador `change` de la política compartida:
+`automatic.allChanges` guarda el VLF; los otros modos conservan los cambios
+pendientes hasta su disparador correspondiente o `project save` explícito.
+La operación fija el proyecto y guarda una sola vez después de liberar los
+locks físicos. Las consultas, ediciones rechazadas sin escritura y bases
+externas seleccionadas explícitamente no disparan el guardado del proyecto.
+Si falla el guardado del VLF, el cambio permanece en la base de trabajo y se
+informa del error; se debe reintentar `project save`, sin repetir la edición.
+Si desaparece la base materializada no se recrea vacía:
+hay que recuperar una copia o recargar explícitamente el proyecto.
+
+Los lectores VLF 1.0 anteriores pueden abrir el inventario lógico, pero sus
+escritores anteriores a esta extensión no garantizan conservar la nueva
+entrada física al volver a guardar. La compatibilidad de lectura no implica
+esa conservación por ejecutables antiguos.
 
 ## SaveMode
 
@@ -47,6 +77,26 @@ La variante histórica `automatic..allChanges` se acepta y se normaliza a un
 solo punto. Todos los modos comprueban el hash del workspace antes de escribir.
 Un plugin puede aportar opciones mediante `project-save-mode`, declarando los
 disparadores `change`, `scan`, `close` o `timer`.
+
+Las consolas físicas LANWIRE/LANRACK conectan `change`, `close` y `timer` a
+la misma política. Cada consola persistente tiene un temporizador, que se
+detiene al salir y reintenta tras errores de guardado. La consulta de cierre
+ofrece `S` (guardar), `n` (salir conservando el workspace) y `c` (cancelar).
+Un fallo al guardar mantiene abierta la consola para reintentar sin repetir
+la edición. EOF o interrupción de la entrada principal cierra sin preguntar;
+EOF/interrupción durante la confirmación cancela ese intento de cierre.
+
+Un comando aislado aplica `close`, no crea temporizador ni solicita entrada.
+Con `manual.inCloseConsult` conserva los cambios pendientes sin guardar el
+VLF; se pueden guardar después con `project save`. Un fallo de guardado al
+cerrar devuelve un código de error.
+
+Sin `--database`, los servicios físicos siguen la selección compartida entre
+operaciones. La TUI invalida el formulario/comando pendiente al cambiar de
+proyecto. Una operación en curso y sus guardados mantienen el workspace de
+origen. `--database` fija el destino incluso si coincide inicialmente con
+el proyecto activo; una base externa nunca se exporta a ese VLF. La GUI
+mantiene su ciclo de vida independiente.
 
 ## Carpeta predeterminada
 

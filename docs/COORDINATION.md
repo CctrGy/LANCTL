@@ -58,12 +58,18 @@ root forced-view settings --session ID
 
 ## Proyectos, escrituras y refresco
 
-- Cada sesión fija sus rutas de proyecto e inventario al arrancar. Seleccionar
-  otro proyecto cambia esa sesión y el último proyecto para aperturas futuras;
-  no cambia el proyecto de las sesiones ya abiertas.
+- La configuración compartida es la autoridad sobre el proyecto seleccionado.
+  Las sesiones interactivas la reconcilian al leer y durante el heartbeat, aun
+  si se perdió un evento o el escritor no tenía sesión. Las ventanas abiertas
+  actualizan contexto, datos y nombre de proyecto; no conservan una selección
+  independiente indefinidamente.
 - Las opciones generales continúan compartidas. Guardar opciones desde una
   sesión antigua no restaura su proyecto sobre el último proyecto seleccionado.
-- Los temporizadores de guardado conservan el contexto de su interfaz propietaria.
+- Cada operación GUI y comando de inventario conserva una instantánea durante
+  su ejecución, para que un cambio concurrente no redirija sus escrituras.
+  Los trabajos backend ya iniciados conservan el proyecto original hasta
+  terminar; el cambio de ventana no inicia ni redirige sondas de monitorización.
+  Los temporizadores de guardado siguen a su interfaz propietaria.
 - Dos sesiones sobre el mismo proyecto ven el mismo workspace. Los locks del SO,
   escrituras atómicas y journal devices/groups siguen protegiendo los datos;
   el registro de eventos no los sustituye.
@@ -75,6 +81,11 @@ root forced-view settings --session ID
 - LANIP GUI/TUI y LANWIRE TUI reciben notificaciones. LANIP difiere la recarga
   durante escaneos, formularios y ediciones; LANWIRE mientras edita un detalle.
   No se inicia un escaneo al recibir una notificación.
+- Las GUI nativas envían la identidad del proyecto y de sus almacenes con las
+  acciones de edición (`project_call`, sobre aditivo v1). Un formulario antiguo
+  se rechaza sin aplicar cambios; actualizar una vista no autoriza una edición
+  preparada en otro proyecto. LANACCESS vuelve a bloquear el almacén al renovar
+  su servicio. Los métodos RPC existentes conservan sus firmas.
 - Las consolas de comandos leen datos al ejecutar sus consultas; no se imprime
   salida asíncrona sobre el texto que el usuario está escribiendo.
 

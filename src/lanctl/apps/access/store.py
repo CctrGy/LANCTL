@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from lanctl.core.file_transaction import atomic_write_json, locked_file
+from lanctl.core.file_transaction import atomic_write_json, locked_files
 
 from .models import AccessSession, RemoteUser
 
@@ -16,14 +16,38 @@ class AccessStore:
         # las contraseñas continúan siendo hashes Scrypt, nunca texto plano.
         legacy = self.path.with_name("users.json")
         if self.path.name.casefold() == "users.dc" and not self.path.exists() and legacy.exists():
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            legacy.replace(self.path)
+            with locked_files(self._compatible_paths()):
+                if not self.path.exists() and legacy.exists():
+                    legacy.replace(self.path)
+
+    def _compatible_paths(self):
+        if self.path.name.casefold() in {"users.dc", "users.json"}:
+            return [self.path.with_name("users.dc"), self.path.with_name("users.json")]
+        return [self.path]
+
+    def _follow_migration(self):
+        canonical = self.path.with_name("users.dc")
+        if (
+            self.path.name.casefold() == "users.json"
+            and not self.path.exists()
+            and canonical.exists()
+        ):
+            self.path = canonical
 
     @staticmethod
     def _empty():
         return {"schemaVersion": 1, "users": [], "sessions": [], "pairings": [], "roles": {}}
 
     def _load_unlocked(self):
+        if self.path.name.casefold() == "users.json":
+            # Legacy readers stay valid if another component migrates the file.
+            # The paired lock closes the exists/read/rename race.
+            with locked_files(self._compatible_paths()):
+                self._follow_migration()
+                return self._read_current()
+        return self._read_current()
+
+    def _read_current(self):
         if not self.path.exists():
             return self._empty()
         value = json.loads(self.path.read_text(encoding="utf-8"))
@@ -50,12 +74,14 @@ class AccessStore:
         items.append(replacement)
 
     def save(self, value):
-        with locked_file(self.path):
+        with locked_files(self._compatible_paths()):
+            self._follow_migration()
             self._save_unlocked(value)
 
     def update(self, mutator):
         """Agrupa lectura, modificacion y escritura en una transaccion de hilos."""
-        with locked_file(self.path):
+        with locked_files(self._compatible_paths()):
+            self._follow_migration()
             value = self._load_unlocked()
             result = mutator(value)
             self._save_unlocked(value)

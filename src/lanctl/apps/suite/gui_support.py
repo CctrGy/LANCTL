@@ -9,10 +9,95 @@ import sys
 from threading import Lock, Thread
 
 _STATE_LOCK = Lock()
+_PROJECT_ACTIONS = frozenset(
+    {
+        "use_project",
+        "create_project",
+        "save_project",
+        "project_state",
+        "request_close",
+        "update_device",
+        "delete_device",
+        "undo_edit",
+        "redo_edit",
+        "scan_network",
+        "diagnose_device",
+        "get_device_details",
+        "plugin_action",
+        "wake_device",
+        "open_device",
+        "open_service",
+        "open_terminal",
+        "group_action",
+        "create_group",
+        "save_settings",
+        "save_setting",
+        "save_catalog_setting",
+        "save_launcher_setting",
+        "wire_create",
+        "wire_organization",
+        "wire_update",
+        "wire_connect",
+        "wire_port",
+        "wire_delete",
+        "rack_appearance",
+        "rack_dimensions",
+        "rack_create",
+        "rack_element",
+        "rack_destinations",
+        "rack_organization",
+        "access_unlock",
+        "access_lock",
+        "access_set",
+        "access_update",
+        "access_delete",
+        "access_open",
+        "monitor_action",
+        "monitor_samples",
+        "monitor_incident",
+        "monitor_device",
+        "monitor_update",
+        "monitor_group",
+    }
+)
 
 
 class GuiSupportMixin:
     """Explicit RPC surface used by all six native GUI windows."""
+
+    def project_call(self, expected, method, arguments):
+        """Version 1 additive RPC envelope for actions from a displayed project.
+
+        Existing RPC methods remain callable by legacy clients. The native GUI
+        sends the identity rendered with its data, never a backend-only cache.
+        """
+
+        def operation():
+            from lanctl.core.project_context import project_operation, require_project
+
+            if (
+                not isinstance(method, str)
+                or method not in _PROJECT_ACTIONS
+                or not isinstance(arguments, list)
+            ):
+                raise ValueError("Operación de proyecto no permitida")
+            target = getattr(self, method, None)
+            if not callable(target):
+                raise ValueError("Operación no disponible en este launcher")
+            # Do not wait behind a scan and then apply an obsolete queued edit.
+            if not self._lock.acquire(blocking=False):
+                raise RuntimeError("Hay una operación en curso; espera o cancela el escaneo.")
+            try:
+                with project_operation():
+                    require_project(expected)
+                    return target(*arguments)
+            finally:
+                self._lock.release()
+
+        return self._support_reply(operation)
+
+    def _project_actions(self):
+        return sorted(name for name in _PROJECT_ACTIONS if callable(getattr(self, name, None)))
 
     def _support_state(self):
         with _STATE_LOCK:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import json
+from copy import deepcopy
 
 from lanctl.apps.ip.infrastructure.services.lan_scanner import SCAN_ORDERS
 from lanctl.apps.ip.infrastructure.services.scan_profiles import SCAN_PROFILES
@@ -21,9 +22,8 @@ from lanctl.apps.ip.interfaces.tui.layout import (
     normalize_column_specs,
     normalize_panel_layout,
 )
+from lanctl.core.config import CONFIG_PATH as CONFIG_PATH  # Compatibility export.
 from lanctl.core.config import (
-    CONFIG_PATH,
-    canonical_config,
     load_config,
     normalize_dhcp_range,
     save_config,
@@ -37,7 +37,6 @@ from lanctl.core.device_retention import (
     normalize_retention_scope,
     normalize_retention_target,
 )
-from lanctl.core.file_transaction import transactional_file
 from lanctl.core.output import normalize_columns
 
 
@@ -245,9 +244,70 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
     command.set_defaults(handler=dispatch_settings)
 
 
-@transactional_file(CONFIG_PATH)
 def run_settings(args: argparse.Namespace) -> int:
+    from lanctl.core import config as config_module
+    from lanctl.core.file_transaction import locked_file
+    from lanctl.core.project_context import project_operation
+
+    with locked_file(config_module.CONFIG_PATH), project_operation():
+        return _run_settings(args)
+
+
+def _run_settings(args: argparse.Namespace) -> int:
+    # The public adapter is also called directly with Namespace instances.
+    # argparse choices alone are not a validation boundary.
+    for name in (
+        "close_gui_on_launch",
+        "progress",
+        "service_identification",
+        "cli_exit_save_prompt",
+        "cli_command_chaining",
+        "log_cleanup",
+        "remote_access",
+        "remote_password_auth",
+    ):
+        value = getattr(args, name, None)
+        if value is not None and value not in {"on", "off"}:
+            raise ValueError(f"{name}: usa on u off")
     config = load_config()
+    original = deepcopy(config)
+    from lanctl.apps.suite.settings import cli_context, settings_entries
+
+    context = cli_context(legacy_paths=True)
+    # Validate requested privileged routes even when their value is unchanged:
+    # a no-op must not bypass the remote restriction and initialize a backend.
+    if context.interface == "remote" and any(
+        getattr(args, key, None) is not None
+        for key in (
+            "credentials",
+            "database",
+            "physical_database",
+            "groups",
+            "log",
+            "projects_directory",
+            "remote_access",
+            "remote_bind",
+            "remote_cidr",
+            "remote_port",
+            "remote_password_auth",
+            "remote_backend",
+            "remote_forced_view",
+        )
+    ):
+        raise ValueError("Administración local: solo lectura desde la CLI remota")
+    if context.interface == "remote" and any(
+        getattr(args, key, None) is not None
+        for key in (
+            "close_gui_on_launch",
+            "tui_key",
+            "tui_layout",
+            "tui_cli_percent",
+            "tui_column",
+            "tui_footer_buttons",
+            "tui_footer_button",
+        )
+    ):
+        raise ValueError("Preferencias de otra interfaz: solo lectura desde la CLI remota")
     if (
         args.network_range is None
         and getattr(args, "startup_interface", None) is None
@@ -292,8 +352,24 @@ def run_settings(args: argparse.Namespace) -> int:
         and args.tui_footer_buttons is None
         and args.tui_footer_button is None
     ):
-        print(json.dumps(canonical_config(config), indent=2, ensure_ascii=False))
-        print(f"\nArchivo: {CONFIG_PATH.resolve()}")
+        context = cli_context()
+        if context.interface == "remote":
+            print(
+                json.dumps(
+                    {entry["path"]: entry["value"] for entry in settings_entries(context)},
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+        else:
+            document = {}
+            for entry in settings_entries(context):
+                target = document
+                parts = entry["path"].split(".")
+                for part in parts[:-1]:
+                    target = target.setdefault(part, {})
+                target[parts[-1]] = entry["value"]
+            print(json.dumps(document, indent=2, ensure_ascii=False))
         return 0
 
     changes: list[str] = []
@@ -530,69 +606,52 @@ def run_settings(args: argparse.Namespace) -> int:
         config["tuiFooterButtons"] = [action for action in FOOTER_ACTIONS if action in visible]
         changes.append("Visibilidad de botones del TUI actualizada")
 
-    path = save_config(config)
+    config = _prepare_legacy_changes(original, config, context)
     if remote_changed:
-        try:
-            _configure_remote_access(config, bind, cidr, port)
-        except PermissionError:
-            changes.append(
-                "Backend remoto: valores guardados; aplicación pendiente de permisos de administrador"
-            )
+        from lanctl.apps.access.settings_lifecycle import remote_settings_transaction
+
+        with remote_settings_transaction(original, config):
+            path = save_config(config)
+    else:
+        path = save_config(config)
     ok("CONFIGURADO", "\n".join((*changes, f"Archivo: {path}")))
     return 0
 
 
-def _configure_remote_access(config: dict, bind: str, cidr: str, port: int) -> None:
-    import os
-    import signal
-    from contextlib import suppress
+def _prepare_legacy_changes(original, candidate, context):
+    # Explicit local --tui-* / --close-gui-on-launch options are compatibility
+    # administration routes. Generic --set and remote commands never use them.
+    from lanctl.core.settings_policy import SettingsContext, changed_values, prepare_program_changes
 
-    from lanctl.apps.access.keys import generate_host_key
-    from lanctl.apps.access.service import AccessService, access_process_running
-    from lanctl.core.paths import application_path
-
-    previous_scope = os.environ.get("LANCTL_DATA_SCOPE")
-    os.environ["LANCTL_DATA_SCOPE"] = config["remoteAccessBackend"]
-    try:
-        access = AccessService(
-            application_path(config["accessConfig"]),
-            application_path(config["accessUsers"]),
+    groups = {"cli": {}, "gui": {}, "tui": {}}
+    for path, value in changed_values(original, candidate).items():
+        interface = (
+            "tui"
+            if path.startswith("tui.")
+            else "gui"
+            if path == "startup.closeGuiOnLaunch"
+            else "cli"
         )
-        access.initialize()
-        was_enabled = bool(access.config()["ssh"].get("enabled"))
-        if bind and cidr:
-            access.configure(
-                "ssh",
-                bind=bind,
-                cidr=cidr,
-                port=port,
-                password_authentication=config["remoteAccessPasswordAuthentication"],
+        groups[interface][path] = value
+    result = original
+    for interface, changes in groups.items():
+        if changes:
+            target = (
+                context
+                if interface == "cli" or context.interface == "remote"
+                else SettingsContext(interface)
             )
-        access_config = access.config()
-        access_config["control"]["forcedView"] = config["remoteAccessForcedView"]
-        if config["remoteAccessEnabled"] and not access_config["ssh"].get("hostKey"):
-            access_config["ssh"]["hostKey"] = generate_host_key(
-                application_path("data/lc/access/ssh_host_ed25519_key")
-            )
-        access.save_config(access_config)
-        if config["remoteAccessEnabled"]:
-            if not was_enabled:
-                access.enable("ssh")
-            if config["remoteAccessBackend"] == "user" and not access_process_running(
-                access.config()["ssh"]
-            ):
-                from lanctl.apps.ip.interfaces.cli.commands.access import _start_service_process
+            result = prepare_program_changes(result, changes, target)
+    if result is not original:
+        from lanctl.core.session import PROJECT_KEYS
 
-                _start_service_process(access, "ssh")
-        else:
-            current = access.config()["ssh"]
-            pid = current.get("processId")
-            if pid and access_process_running(current):
-                with suppress(OSError):
-                    os.kill(int(pid), signal.SIGTERM)
-            access.disable("ssh")
-    finally:
-        if previous_scope is None:
-            os.environ.pop("LANCTL_DATA_SCOPE", None)
-        else:
-            os.environ["LANCTL_DATA_SCOPE"] = previous_scope
+        result.project_base = {key: deepcopy(original.get(key)) for key in PROJECT_KEYS}
+        result.base_values = deepcopy(dict(original))
+    return result
+
+
+def _configure_remote_access(config: dict, bind: str, cidr: str, port: int) -> None:
+    """Compatibility adapter; the application service owns remote configuration."""
+    from lanctl.apps.access.settings import apply_remote_settings
+
+    apply_remote_settings(config)

@@ -30,6 +30,13 @@ Inno instala en Program Files y puede añadir LANCTL al PATH. Sin un certificado
 de firma configurado en GitHub Secrets, Windows mostrará editor desconocido o
 SmartScreen; la verificación SHA-256 sigue siendo obligatoria.
 
+El Setup interactivo ofrece crear la primera cuenta administrativa de acceso
+remoto del servicio mediante `lanaccess remote-setup`. El asistente pide usuario,
+contraseña y confirmación en su propia ventana, conserva cuentas existentes y
+permite omitir el paso. No activa SSH/HTTPS ni abre puertos; consulta
+[la configuración de acceso](ACCESS.md#cuenta-inicial-desde-el-instalador-de-windows).
+La instalación silenciosa omite este asistente.
+
 ## Linux y Raspberry Pi OS 64-bit
 
 Uso rápido:
@@ -61,9 +68,15 @@ una acción explícita del administrador.
 
 ## Datos, actualización y rollback
 
+Los accesos gráficos de Windows utilizan `lanctl-window.exe` para evitar una
+consola adicional. El host solo admite los seis launchers GUI. Desde una
+terminal, los ejecutables habituales conservan `--gui`, CLI/TUI, redirecciones
+y códigos de salida; la terminal existente no se oculta ni se cierra. Los
+fallos de arranque gráfico quedan en los registros y muestran un aviso.
+
 Los binarios y los datos están separados. En Windows, `Program Files\LANCTL`
 contiene los ejecutables onefile `LANCTL.exe`, `lanip.exe`,
-`lanwire.exe`, `lanrack.exe`, `lanaccess.exe` y `lanmon.exe`
+`lanwire.exe`, `lanrack.exe`, `lanaccess.exe`, `lanmon.exe` y `lanctl-window.exe`
 además de la documentación; inventario, configuración,
 logs, monitorización, plugins y proyectos viven en `ProgramData\LANCTL`. Los
 secretos de usuario (DPAPI, host keys y configuración de acceso) viven bajo el
@@ -76,7 +89,7 @@ mecanismos transaccionales; el instalador portable prepara una carpeta nueva y
 conserva la anterior antes del cambio.
 
 El ZIP portable contiene `LANCTL.exe`, `lanip.exe`, `lanwire.exe`,
-`lanrack.exe`, `lanaccess.exe`, `lanmon.exe`,
+`lanrack.exe`, `lanaccess.exe`, `lanmon.exe`, `lanctl-window.exe`,
 `README-portable.txt` y el marcador firmado `LANCTL.portable`; sus datos se guardan en `data/lanctl` dentro del propio
 directorio portable. Un override `LANCTL_DATA_DIR` debe ser absoluto. Al detectar
 datos de versiones antiguas junto al EXE, LANCTL los copia al nuevo destino sin

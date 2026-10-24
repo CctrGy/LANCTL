@@ -1,6 +1,7 @@
 import argparse
 import json
 import zipfile
+from contextlib import contextmanager
 from copy import deepcopy
 
 import pytest
@@ -80,23 +81,34 @@ def test_catalog_filter_and_set_cli(settings_file, capsys):
 
 
 def test_menu_navigation_edits_and_returns(settings_file, monkeypatch):
-    answers = iter(["1", "8", "1", "12", "0", "0", "0"])
+    categories = list(
+        dict.fromkeys(entry["category"] for entry in settings_menu._entries("program"))
+    )
+    answers = iter(["1", str(categories.index("ip") + 1), "1", "12", "0", "0", "0"])
     monkeypatch.setattr("builtins.input", lambda _: next(answers))
     assert settings_menu.configuration_menu() == 0
     assert config.load_config()["workers"] == 12
 
 
-def test_remote_settings_use_existing_backend(monkeypatch):
-    from lanctl.apps.ip.interfaces.cli.commands import settings
+def test_remote_settings_use_existing_backend(settings_file, monkeypatch):
+    from lanctl.apps.access import settings_lifecycle
 
     calls = []
-    monkeypatch.setattr(settings, "run_settings", lambda args: calls.append(args))
+
+    @contextmanager
+    def transaction(previous, candidate):
+        calls.append(candidate)
+        yield
+
+    monkeypatch.setattr(settings_lifecycle, "remote_settings_transaction", transaction)
+    monkeypatch.setattr("lanctl.core.local_permissions.require_admin", lambda: None)
+    monkeypatch.setattr("lanctl.apps.access.network.port_available", lambda *_: True)
     settings_menu._set(
         "program", "access.remote", '{"bind":"192.168.1.2","cidr":"192.168.1.0/24","enabled":true}'
     )
-    assert calls[0].remote_bind == "192.168.1.2"
-    assert calls[0].remote_cidr == "192.168.1.0/24"
-    assert calls[0].remote_access == "on"
+    assert calls[0]["remoteAccessBind"] == "192.168.1.2"
+    assert calls[0]["remoteAccessCidr"] == "192.168.1.0/24"
+    assert calls[0]["remoteAccessEnabled"] is True
 
 
 @pytest.fixture
@@ -147,7 +159,9 @@ def test_project_cli_reads_and_edits_active_project(project, monkeypatch, capsys
     assert project_settings(path)["lan"]["company"] == "Example"
     args = parser().parse_args(["settings", "--scope", "project", "--catalog"])
     assert args.handler(args) == 0
-    assert "identity.id" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "identity.name" in output
+    assert "identity.id" not in output
     before = path.read_bytes()
     with pytest.raises(ValueError):
         update_project_setting(path, "identity", "id", "replacement")
@@ -157,28 +171,26 @@ def test_project_cli_reads_and_edits_active_project(project, monkeypatch, capsys
 
 
 def test_unmapped_fields_survive_session_load_and_save(settings_file):
-    from threading import RLock
-    from types import SimpleNamespace
+    from lanctl.core.session import Session, bind_session
 
-    from lanctl.core.session import PROJECT_KEYS, bind_session
-
-    settings = config.load_config()
-    session = SimpleNamespace(
-        lock=RLock(),
-        resources=set(),
-        config={key: settings.get(key) for key in PROJECT_KEYS},
-        emit=lambda *args: None,
-    )
-    with bind_session(session):
-        set_program_value("projects.workspace.directory", "custom/workspace")
-        set_program_value("ip.workers", 14)
-        set_program_value("tui.keyBindings.save", None)
-        set_program_value("projects.saveIntervalMinutes", 0.5)
-        document = config.canonical_config(config.load_config())
-        assert document["projects"]["workspace"]["directory"] == "custom/workspace"
-        assert document["ip"]["workers"] == 14
-        assert document["tui"]["keyBindings"]["save"] is None
-        assert document["projects"]["saveIntervalMinutes"] == 0.5
+    document = config.canonical_config(config.load_config())
+    document["projects"]["workspace"]["directory"] = "custom/workspace"
+    config.save_config(config.config_from_document(document))
+    session = Session("lanctl", "gui", config.load_config())
+    session.stop_event.set()
+    session.thread.join()
+    try:
+        with bind_session(session):
+            set_program_value("ip.workers", 14)
+            set_program_value("tui.keyBindings.save", None)
+            set_program_value("projects.saveIntervalMinutes", 0.5)
+            document = config.canonical_config(config.load_config())
+            assert document["projects"]["workspace"]["directory"] == "custom/workspace"
+            assert document["ip"]["workers"] == 14
+            assert document["tui"]["keyBindings"]["save"] is None
+            assert document["projects"]["saveIntervalMinutes"] == 0.5
+    finally:
+        session.close()
 
 
 def test_project_network_preferences_apply_on_activation_without_losing_pending_data(

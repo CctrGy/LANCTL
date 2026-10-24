@@ -66,6 +66,12 @@ def register_project_command(commands: argparse._SubParsersAction) -> None:
     save = actions.add_parser("save", help="Guarda manualmente el proyecto VLF activo.")
     save.set_defaults(project_handler=_save)
 
+    physical = actions.add_parser(
+        "import-physical", help="Copia una base IDF histórica al proyecto físico vacío activo."
+    )
+    physical.add_argument("file", help="Base IDF .db de origen; se conserva intacta.")
+    physical.set_defaults(project_handler=_import_physical)
+
     info = actions.add_parser("info", help="Muestra los metadatos del proyecto.")
     info.add_argument("file", help="Proyecto VLF.")
     info.add_argument("--json", action="store_true", help="Devuelve JSON.")
@@ -194,6 +200,18 @@ def _save(args) -> int:
     if not result.saved:
         raise ValueError("no hay un proyecto activo que guardar")
     ok("GUARDADO", f"{result.path} | SaveMode {result.mode}")
+    return 0
+
+
+def _import_physical(args) -> int:
+    from lanctl.core.project_context import project_identity
+    from lanctl.core.projects.physical import import_inventory
+
+    result = import_inventory(args.file, project_identity(load_config()))
+    ok(
+        "INVENTARIO FÍSICO",
+        f"{result['records']} elementos importados; guarda el proyecto con project save",
+    )
     return 0
 
 

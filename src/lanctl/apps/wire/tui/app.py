@@ -7,7 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
-from contextlib import suppress
+from contextlib import nullcontext, suppress
 from copy import deepcopy
 from pathlib import Path
 
@@ -47,6 +47,9 @@ from lanctl.apps.wire.tui.keyboard import read_key
 from lanctl.apps.wire.tui.renderer import RichTuiRenderer, detail_modal_footer, footer_bar
 from lanctl.apps.wire.tui.settings import load_settings, save_settings
 from lanctl.core.layout import terminal_columns, terminal_rows
+from lanctl.core.project_context import project_identity
+from lanctl.core.projects.console_session import physical_console_session
+from lanctl.core.projects.physical_mutations import PhysicalSaveError, physical_edit
 
 ENTER_SCREEN = "\x1b[?1049h\x1b[?7l\x1b[2J\x1b[H"
 LEAVE_SCREEN = "\x1b[?25h\x1b[?7h\x1b[?1049l"
@@ -96,6 +99,8 @@ class LanwireTui:
         self.command_cursor = 0
         self._cli_prompt_line = 1
         self.running = True
+        self._console_session = None
+        self._project_key = None
         self._last_size = (0, 0)
         self.reload()
 
@@ -599,6 +604,12 @@ class LanwireTui:
         return self._modal_size_locked
 
     def execute(self) -> None:
+        with self._console_session.operation() if self._console_session else nullcontext() as path:
+            if path is not None and self._sync_project(path):
+                return
+            self._execute()
+
+    def _execute(self):
         command = self.command.strip()
         self.command = ""
         self.command_cursor = 0
@@ -644,6 +655,48 @@ class LanwireTui:
         self.cli_scroll = 0
 
     def handle_key(self, key: str) -> None:
+        try:
+            with (
+                self._console_session.operation()
+                if self._console_session
+                else nullcontext() as path
+            ):
+                if path is not None and self._sync_project(path):
+                    return
+                self._handle_key(key)
+        except PhysicalSaveError as error:
+            self.reload()
+            self.messages.append(f"Error: {error}")
+
+    def _sync_project(self, path):
+        from lanctl.core.config import load_config
+
+        key = (str(path), tuple(project_identity(load_config())))
+        changed = self.database.path.resolve() != path or (
+            self._project_key is not None and self._project_key != key
+        )
+        self._project_key = key
+        if not changed:
+            return False
+        self.database = IDFDatabaseManager(path)
+        self.commands = CommandProcessor(self.database)
+        self.view_id = self.editor_buffer = self.editor_option_index = None
+        self.action_buffer = self.action_option_index = None
+        self.delete_confirmation_id = self.utility_modal = self.settings_draft = None
+        self.list_prefix = self.list_group = None
+        self.modal_focus = "view"
+        self.modal_selection = self.modal_endpoint = self.modal_scroll = 0
+        self.editor_selection = self.action_selection = self.menu_selection = 0
+        self.action_filter = self.command = ""
+        self.command_cursor = self.selected_index = self.tree_scroll = 0
+        self._modal_size_key = self._modal_size_locked = None
+        self.navigation_stack.clear()
+        self.records = []
+        self.reload()
+        self.messages.append("Proyecto actualizado. Se cerró la edición anterior sin aplicarla.")
+        return True
+
+    def _handle_key(self, key):
         if self.utility_modal:
             self._handle_utility_key(key)
             return
@@ -893,6 +946,7 @@ class LanwireTui:
         self.help_scroll = 0
         self.settings_draft = deepcopy(self.settings) if modal == "settings" else None
 
+    @physical_edit
     def _handle_utility_key(self, key: str) -> None:
         if self.utility_modal == "help":
             if key in ("ESC", "F1"):
@@ -1240,6 +1294,7 @@ class LanwireTui:
         query = self.action_filter.casefold().strip()
         return tuple(option for option in options if query in option.casefold())
 
+    @physical_edit
     def _execute_wire_side_action(self, wire: dict) -> None:
         side = cable_sides(wire)[min(self.modal_endpoint, 1)]
         if side is not None:
@@ -1297,6 +1352,7 @@ class LanwireTui:
         except (ValueError, TypeError) as error:
             self.messages.append(f"No se pudo conectar: {error}")
 
+    @physical_edit
     def _connect_selected_port(self, record: dict, port: str, wire_id: str) -> None:
         wire = next((item for item in self.all_records if item["id"] == wire_id), None)
         if wire is None or (wire.get("data") or {}).get("type") != "wire":
@@ -1317,6 +1373,7 @@ class LanwireTui:
         self.reload()
         self.messages.append(f"Conectado {wire_id} a {record['id']}.{port}")
 
+    @physical_edit
     def _move_selected_connection(
         self, record: dict, port: str, wire_id: str | None, target_port: str
     ) -> None:
@@ -1346,6 +1403,7 @@ class LanwireTui:
             f"Movido {wire_id}: {record['id']}.{port} -> {record['id']}.{target_port}"
         )
 
+    @physical_edit
     def _edit_or_save_field(self) -> None:
         record = self._modal_record()
         if not record:
@@ -1425,6 +1483,7 @@ class LanwireTui:
             self.editor_buffer = None
             self.messages.append(f"Error [{reported.code}] editando {field.label}: {reported.text}")
 
+    @physical_edit
     def _delete_selected_port(self) -> None:
         context = self._selected_connector()
         if context is None:
@@ -1556,6 +1615,7 @@ class LanwireTui:
             self.modal_endpoint = 0
         self.modal_scroll = 0
 
+    @physical_edit
     def _disconnect_selected_port(self) -> None:
         record = self._modal_record()
         if not record or not str((record.get("data") or {}).get("type", "")).startswith("device."):
@@ -1593,6 +1653,26 @@ class LanwireTui:
     def run(self) -> int:
         if not getattr(self.stream, "isatty", lambda: False)():
             raise RuntimeError("la TUI requiere una terminal interactiva")
+        with physical_console_session(self.database.path) as lifecycle:
+            self._console_session = lifecycle
+            try:
+                with lifecycle.operation() as path:
+                    self._sync_project(path)
+                lifecycle.start()
+                return self._run_console(lifecycle)
+            finally:
+                self._console_session = None
+
+    def _close_input(self, prompt):
+        self.stream.write(LEAVE_SCREEN)
+        self.stream.flush()
+        try:
+            return input(prompt)
+        finally:
+            self.stream.write(ENTER_SCREEN)
+            self.stream.flush()
+
+    def _run_console(self, lifecycle):
         just_fix_windows_console()
         self.stream.write(ENTER_SCREEN)
         self.stream.flush()
@@ -1608,14 +1688,29 @@ class LanwireTui:
         try:
             self.render()
             while self.running:
-                key = read_key(0.1)
+                try:
+                    key = read_key(0.1)
+                except (EOFError, KeyboardInterrupt):
+                    return 0 if lifecycle.request_close(interactive=False) else 1
                 size_changed = self.dimensions() != self._last_size
-                if changed.is_set() and not self.view_id and self.editor_buffer is None:
+                if changed.is_set():
                     changed.clear()
-                    self.reload()
+                    with lifecycle.operation() as path:
+                        switched = self._sync_project(path)
+                        if not switched and not self.view_id and self.editor_buffer is None:
+                            self.reload()
+                    if switched:
+                        key = None  # a queued key belongs to the previous view
                     size_changed = True
+                messages = lifecycle.messages()
+                self.messages.extend(messages)
+                size_changed = size_changed or bool(messages)
                 if key is not None:
                     self.handle_key(key)
+                if not self.running and not lifecycle.request_close(
+                    input_fn=self._close_input, output_fn=self.messages.append
+                ):
+                    self.running = True
                 if key is not None or size_changed:
                     self.render()
             return 0

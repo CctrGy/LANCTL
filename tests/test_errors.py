@@ -34,6 +34,8 @@ def test_error_event_redacts_secrets_embedded_in_messages_and_values():
         "SECURITY.REDACTION.TEST",
         "password=visible token:abc Authorization=BearerValue Bearer bearer-secret",
         details={"context": f"cookie=session-secret {private_key}"},
+        # A random UUID may legitimately contain the short test secret "abc".
+        correlation_id="00000000-0000-4000-8000-000000000000",
     )
 
     serialized = json.dumps(event.to_dict())

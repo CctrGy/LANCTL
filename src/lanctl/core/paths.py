@@ -3,10 +3,30 @@ from __future__ import annotations
 import os
 import platform
 import sys
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
 PORTABLE_MARKER = "LANCTL.portable"
 PORTABLE_MARKER_CONTENT = "LANCTL-PORTABLE-V1"
+_data_scope = ContextVar("lanctl_data_scope", default=None)
+
+
+@contextmanager
+def scoped_data_paths(scope):
+    """Resolve one operation's paths without changing the process environment."""
+    if scope not in {"user", "service"}:
+        raise ValueError("Ámbito de datos desconocido")
+    token = _data_scope.set(scope)
+    try:
+        yield
+    finally:
+        _data_scope.reset(token)
+
+
+def _scope():
+    return _data_scope.get() or os.environ.get("LANCTL_DATA_SCOPE", "").casefold()
+
 
 _STRUCTURED_PATHS = {
     ".config": Path("config/config.json"),
@@ -62,7 +82,9 @@ def is_portable_install() -> bool:
 
 
 def service_data_scope() -> bool:
-    return os.environ.get("LANCTL_DATA_SCOPE", "").casefold() in {
+    if _data_scope.get() is not None:
+        return _data_scope.get() == "service"
+    return _scope() in {
         "service",
         "system",
     } or os.environ.get("LANCTL_SERVICE_MODE", "").casefold() in {
@@ -85,7 +107,7 @@ def data_root() -> Path:
         return (application_directory() / "data" / "lanctl").resolve()
     if getattr(sys, "frozen", False):
         if platform.system() == "Windows":
-            if os.environ.get("LANCTL_DATA_SCOPE", "").casefold() == "user":
+            if _scope() == "user":
                 local = Path(os.environ.get("LOCALAPPDATA", application_directory()))
                 return (local / "LANCTL" / "data").resolve()
             return (Path(os.environ.get("PROGRAMDATA", r"C:\ProgramData")) / "LANCTL").resolve()

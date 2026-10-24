@@ -296,21 +296,25 @@ class GuiApi:
         return self._respond(operation)
 
     def scan_network(self, profile: str = "normal") -> dict:
+        return self._scan_with_target(profile)
+
+    def _scan_with_target(self, profile="normal", source=None, network=None):
         def operation() -> dict:
             if profile not in {"fast", "normal", "accurate"}:
                 raise ValueError("perfil de escaneo GUI no válido")
             from lanctl.apps.ip.interfaces.cli.main import build_parser
 
-            args = build_parser().parse_args(
-                [
-                    "list",
-                    "--profile",
-                    profile,
-                    "--no-progress",
-                    "--format",
-                    "json",
-                ]
-            )
+            arguments = [
+                "list",
+                "--profile",
+                profile,
+                "--no-progress",
+                "--format",
+                "json",
+            ]
+            if source is not None:
+                arguments.extend(["--interface", source, "--network", network])
+            args = build_parser().parse_args(arguments)
 
             def capture(rows, activity) -> None:
                 for row, active in zip(rows, activity):
@@ -562,8 +566,10 @@ class GuiApi:
         return self._respond(operation)
 
     def _respond(self, operation) -> dict:
+        from lanctl.core.project_context import project_operation
+
         try:
-            with self._lock:
+            with self._lock, project_operation():
                 result = operation()
                 from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
 
@@ -702,6 +708,8 @@ class GuiApi:
             "description": "descripción",
             "icon": "icono",
             "cnf": "CNF",
+            "ip": "IP",
+            "idf": "IDF",
         }
         fields = ", ".join(labels[key] for key in edit.after if key != "cnf")
         return f"{fields or 'estado'} de {edit.device_label}"
@@ -716,17 +724,21 @@ class GuiApi:
                 "no hay ediciones que deshacer" if undo else "no hay ediciones que rehacer"
             )
         edit = source[-1]
-        device = database.resolve(edit.device_id)
-        current = self._editable_snapshot(device)
-        expected = edit.after if undo else edit.before
-        if any(current.get(key) != value for key, value in expected.items()):
-            raise ValueError("no se puede aplicar: el elemento cambió después de esta edición")
-        target = edit.before if undo else edit.after
-        order = ("alias", "name", "description", "icon", "cnf")
-        changes = [
-            (key, target[key]) for key in order if key in target and current[key] != target[key]
-        ]
-        device = self._groups(config, database).edit_device_fields(edit.device_id, changes)
+        from lanctl.core.file_transaction import locked_files
+
+        groups = self._groups(config, database)
+        with locked_files((database.path, groups.path)):
+            device = database.resolve(edit.device_id)
+            current = self._editable_snapshot(device)
+            expected = edit.after if undo else edit.before
+            if any(current.get(key) != value for key, value in expected.items()):
+                raise ValueError("no se puede aplicar: el elemento cambió después de esta edición")
+            target = edit.before if undo else edit.after
+            order = ("alias", "name", "description", "icon", "cnf", "ip", "idf")
+            changes = [
+                (key, target[key]) for key in order if key in target and current[key] != target[key]
+            ]
+            device = groups.edit_device_fields(edit.device_id, changes)
         source.pop()
         destination.append(edit)
         action = "Deshecho" if undo else "Rehecho"
@@ -742,6 +754,8 @@ class GuiApi:
         history.redo[:] = [edit for edit in history.redo if edit.device_id != device_id]
 
     def _inventory_payload(self, query: str = "") -> dict:
+        from lanctl.core.project_context import project_identity
+
         devices = [self._serialize(device) for device in self._database().load()]
         wanted = str(query or "").strip().casefold()
         if wanted:
@@ -763,6 +777,7 @@ class GuiApi:
         active = sum(device["active"] for device in devices)
         return {
             "devices": devices,
+            "projectContext": project_identity(load_config()),
             "editHistory": self._edit_history_payload(),
             "summary": {
                 "total": len(devices),
@@ -815,6 +830,8 @@ class GuiApi:
         }
 
     def _projects_payload(self) -> dict:
+        from lanctl.core.project_context import project_identity
+
         config = load_config()
         configured = config.get("projectsDirectory")
         directory = (
@@ -850,6 +867,7 @@ class GuiApi:
         projects.sort(key=lambda item: item["name"].casefold())
         return {
             "projects": projects,
+            "projectContext": project_identity(config),
             "activeProject": active["path"] if active else "",
             "activeProjectInfo": active,
         }

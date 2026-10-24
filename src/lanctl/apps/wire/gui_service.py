@@ -5,6 +5,7 @@ import ipaddress
 import json
 from copy import deepcopy
 
+from lanctl.apps.wire.idf import IDF
 from lanctl.apps.wire.idf.database import IDFDatabaseManager
 from lanctl.apps.wire.topology import (
     build_new_idf_data,
@@ -13,6 +14,8 @@ from lanctl.apps.wire.topology import (
     groups_for,
 )
 from lanctl.core.file_transaction import locked_file
+from lanctl.core.physical_placement import apply_placement, location_status, with_location
+from lanctl.core.projects.physical_mutations import physical_edit
 
 
 def revision(record):
@@ -27,10 +30,17 @@ class WireGuiService:
         from lanctl.apps.rack.organization import snapshot
 
         with locked_file(self.database.path):
+            records = self.database.all()
+            index = {r["id"]: r for r in records}
             return {
                 "records": [
-                    {**r, "revision": revision(r), "filterGroups": sorted(groups_for(r))}
-                    for r in self.database.all()
+                    {
+                        **r,
+                        "revision": revision(r),
+                        "filterGroups": sorted(groups_for(r)),
+                        "placement": location_status(r["data"], index),
+                    }
+                    for r in records
                 ],
                 "storage": str(self.database.path),
                 **snapshot(self.database),
@@ -52,15 +62,7 @@ class WireGuiService:
                 if not isinstance(values[key], str):
                     raise ValueError(f"{key} debe ser texto")
                 result[key] = values[key].strip()
-        if "rack" in values:
-            unit = values.get("unit")
-            if unit is not None and (type(unit) is not int or not 1 <= unit <= 100):
-                raise ValueError("La unidad debe estar entre 1 y 100")
-            result["location"] = {
-                **result.get("location", {}),
-                "rack": values["rack"],
-                "unit": unit,
-            }
+        result = apply_placement(result, values)
         if "connectionMode" in values:
             if values["connectionMode"] not in {"wired", "wifi", "mixed"}:
                 raise ValueError("Selecciona cable, Wi-Fi o ambas conexiones")
@@ -96,6 +98,7 @@ class WireGuiService:
             }
         return result
 
+    @physical_edit
     def create(self, values):
         kind = values["kind"]
         if kind == "rack":
@@ -103,6 +106,8 @@ class WireGuiService:
 
             units = validate_height(values.get("units", 42))
             data = {"type": "rack", "units": units}
+        elif kind == "tray":
+            data = {"type": "tray", "ports": {}}
         elif kind in {"panel", "outlet"}:
             data = {
                 "type": f"device.{kind}",
@@ -116,9 +121,15 @@ class WireGuiService:
             data,
             {key: value for key, value in values.items() if key not in {"kind", "units"}},
         )
-        record = self.database.create(values["prefix"], data=data)
+        if kind not in {"rack", "wire.copper", "wire.fiber", "wire.dac"} and "location" not in data:
+            data = with_location(data)
+        with locked_file(self.database.path):
+            if "endpoints" in values:
+                data["endpoints"] = self._endpoints(data, values["endpoints"])
+            record = self.database.create(values["prefix"], data=data)
         return {"id": record["id"]}
 
+    @physical_edit
     def update(self, identifier, expected, values):
         with locked_file(self.database.path):
             record = self._record(identifier, expected)
@@ -160,64 +171,58 @@ class WireGuiService:
                         compatible, reason = compatible_connection(cable, port)
                         if not compatible:
                             raise ValueError(reason)
-            from lanctl.apps.rack.skins import span, validate_location
-
-            if data.get("type") == "rack":
-                for other in all_records:
-                    location = other["data"].get("location", {})
-                    if location.get("rack") == identifier and (
-                        (location.get("unit") or 0) + span(other["data"]) - 1
-                    ) > data.get("units", 42):
-                        raise ValueError("La altura deja equipos fuera del rack")
-            if data.get("location", {}).get("rack"):
-                rack = self.database.get(data["location"]["rack"])
-                if not rack or rack["data"].get("type") != "rack":
-                    raise ValueError("El rack indicado no existe")
-                if data["location"].get("unit") and data["location"]["unit"] > int(
-                    rack["data"].get("units", 42)
-                ):
-                    raise ValueError("La unidad excede la altura del rack")
-            if "rack" in values or "unit" in values:
-                validate_location(all_records, identifier, data)
             self.database.update(identifier, data)
 
+    @physical_edit
     def connect(self, identifier, expected, endpoints):
-        if not isinstance(endpoints, list) or len(endpoints) > 2:
-            raise ValueError("Un cable admite como máximo dos extremos")
         with locked_file(self.database.path):
             wire = self._record(identifier, expected)
-            if wire["data"].get("type") != "wire":
-                raise ValueError("Selecciona un cable")
-            if wire["data"].get("source") and len(endpoints) > 1:
-                raise ValueError("El suministro externo ya ocupa uno de los extremos del cable")
-            seen = set()
-            normalized = []
-            for endpoint in endpoints:
-                device = self.database.get(endpoint["device"])
-                port = (device or {}).get("data", {}).get("ports", {}).get(endpoint["port"])
-                if port is None:
-                    raise ValueError("El equipo o puerto indicado no existe")
-                compatible, reason = compatible_connection(wire["data"], port)
-                if not compatible:
-                    raise ValueError(reason)
-                endpoint = {"device": device["id"], "port": endpoint["port"]}
-                normalized.append(endpoint)
-                key = (device["id"], endpoint["port"])
-                if key in seen:
-                    raise ValueError("Los dos extremos no pueden ocupar el mismo puerto")
-                seen.add(key)
-                for other in self.database.all():
-                    if other["id"] != identifier and endpoint in other["data"].get("endpoints", []):
-                        raise ValueError(f"El puerto ya está ocupado por {other['id']}")
             data = deepcopy(wire["data"])
-            data["endpoints"] = normalized
+            data["endpoints"] = self._endpoints(data, endpoints, identifier)
             self.database.update(identifier, data)
 
+    def _endpoints(self, data, endpoints, identifier=None):
+        """Shared validation; caller holds the inventory lock through commit."""
+        if not isinstance(endpoints, list) or len(endpoints) > 2:
+            raise ValueError("Un cable admite como máximo dos extremos")
+        if data.get("type") != "wire":
+            raise ValueError("Selecciona un cable")
+        if data.get("source") and len(endpoints) > 1:
+            raise ValueError("El suministro externo ya ocupa uno de los extremos del cable")
+        records = self.database.all()
+        index = {r["id"]: r for r in records}
+        seen = set()
+        normalized = []
+        for endpoint in endpoints:
+            if not isinstance(endpoint, dict) or not all(
+                isinstance(endpoint.get(key), str) for key in ("device", "port")
+            ):
+                raise ValueError("Cada extremo necesita un equipo y un puerto de texto")
+            device = index.get(IDF.parse(endpoint["device"]).value)
+            port = (device or {}).get("data", {}).get("ports", {}).get(endpoint["port"])
+            if port is None:
+                raise ValueError("El equipo o puerto indicado no existe")
+            compatible, reason = compatible_connection(data, port)
+            if not compatible:
+                raise ValueError(reason)
+            endpoint = {"device": device["id"], "port": endpoint["port"]}
+            key = (device["id"], endpoint["port"])
+            if key in seen:
+                raise ValueError("Los dos extremos no pueden ocupar el mismo puerto")
+            seen.add(key)
+            for other in records:
+                if other["id"] != identifier and endpoint in other["data"].get("endpoints", []):
+                    raise ValueError(f"El puerto ya está ocupado por {other['id']}")
+            normalized.append(endpoint)
+        return normalized
+
+    @physical_edit
     def port(self, identifier, expected, port, name, position):
         with locked_file(self.database.path):
             self._record(identifier, expected)
             self.database.edit_port(identifier, port, name=name, position=int(position))
 
+    @physical_edit
     def delete(self, identifier, expected):
         with locked_file(self.database.path):
             self._record(identifier, expected)

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from lanctl.apps.wire.graph import topology_lines
 from lanctl.apps.wire.idf.database import IDFDatabaseManager
 from lanctl.apps.wire.idf.sample_topology import seed_sample_topology
 from lanctl.apps.wire.log import write_exception
 from lanctl.apps.wire.topology import NEW_IDF_PROFILES, build_new_idf_data
+from lanctl.core.projects.physical_mutations import PhysicalSaveError, physical_mutation
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,16 @@ class CommandProcessor:
 
     def execute_parts(self, parts: list[str], *, selected_id: str | None = None) -> CommandResult:
         """Ejecuta argumentos ya separados, sin volver a interpretar sus comillas."""
+        try:
+            with physical_mutation(self.database.path) as mutation:
+                result = self._execute_parts(parts, selected_id=selected_id)
+            if mutation is not None and mutation.changed and not result.refresh:
+                result = replace(result, refresh=True)
+            return result
+        except PhysicalSaveError as error:
+            return CommandResult((f"Error: {error}",), refresh=True)
+
+    def _execute_parts(self, parts, *, selected_id=None):
         if not parts:
             return CommandResult()
         action = parts[0].casefold()

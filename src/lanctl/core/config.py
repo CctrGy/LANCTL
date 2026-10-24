@@ -88,6 +88,7 @@ DOCUMENT_DEFAULTS = {
         },
         "networkDatabase": None,
         "networkGroups": None,
+        "legacyPhysicalDatabase": None,
         "databaseLog": None,
     },
     "plugins": {
@@ -261,6 +262,7 @@ DEFAULTS = {
     "projectWorkspace": None,
     "networkDatabase": None,
     "networkGroups": None,
+    "legacyPhysicalDatabase": None,
     "databaseLog": None,
     "plugins": "data/lc/plugins",
     "pluginRegistry": "data/lc/plugins.registry",
@@ -368,6 +370,7 @@ _LEGACY_PATHS = {
     "projectWorkspace": ("projects", "workspace", "active"),
     "networkDatabase": ("projects", "networkDatabase"),
     "networkGroups": ("projects", "networkGroups"),
+    "legacyPhysicalDatabase": ("projects", "legacyPhysicalDatabase"),
     "databaseLog": ("projects", "databaseLog"),
     "plugins": ("plugins", "directory"),
     "pluginRegistry": ("plugins", "registry"),
@@ -436,9 +439,16 @@ class ConfigSnapshot(dict):
     def __init__(self, values: dict, document: dict | None = None) -> None:
         super().__init__(values)
         self.document = deepcopy(document) if document is not None else None
+        from lanctl.core.session import PROJECT_KEYS
+
+        self.project_base = {key: deepcopy(values.get(key)) for key in PROJECT_KEYS}
+        self.base_values = deepcopy(values)
 
     def __deepcopy__(self, memo):
-        return ConfigSnapshot(deepcopy(dict(self), memo), deepcopy(self.document, memo))
+        result = ConfigSnapshot(deepcopy(dict(self), memo), deepcopy(self.document, memo))
+        result.project_base = deepcopy(self.project_base, memo)
+        result.base_values = deepcopy(self.base_values, memo)
+        return result
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
@@ -721,13 +731,26 @@ def update_config(update: Callable[[dict], Any]) -> dict:
 
     with locked_file(CONFIG_PATH):
         config = load_config()
+        original = deepcopy(config)
         replacement = update(config)
         if replacement is not None:
             config = replacement
+            if isinstance(config, ConfigSnapshot):
+                # Document-based editors construct a new snapshot after the
+                # edit. Its baseline must still be the transaction's input.
+                from lanctl.core.session import PROJECT_KEYS
+
+                config.project_base = {key: deepcopy(original.get(key)) for key in PROJECT_KEYS}
+                config.base_values = deepcopy(dict(original))
         save_config(config)
         return config
 
 
 def config_from_document(document: dict) -> ConfigSnapshot:
     """Adapt a canonical document to the session-aware compatible config view."""
-    return _document_to_legacy(canonical_config(document))
+    snapshot = _document_to_legacy(canonical_config(document))
+    # An explicit document is a replacement, not a snapshot read from storage.
+    # update_config supplies the actual baseline when used transactionally.
+    snapshot.project_base = None
+    snapshot.base_values = None
+    return snapshot

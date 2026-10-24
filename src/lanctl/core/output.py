@@ -134,6 +134,7 @@ DARK_FIELD_COLORS = {
     "description": Fore.LIGHTBLACK_EX,
     "manufacturer": Fore.LIGHTBLACK_EX,
     "deviceId": Fore.LIGHTBLACK_EX,
+    "idf": Fore.LIGHTBLACK_EX,
     "protocols": Fore.CYAN,
     "users": Fore.CYAN,
     "discovery": Fore.CYAN,

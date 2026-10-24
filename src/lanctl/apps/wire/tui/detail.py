@@ -7,6 +7,8 @@ from typing import Any
 from rich.text import Text
 
 from lanctl.apps.wire.topology import groups_for
+from lanctl.core.physical_placement import location_status, span
+from lanctl.core.rack_dimensions import dimension_status
 
 
 def port_connections(records: list[dict[str, Any]]) -> dict[tuple[str, str], str]:
@@ -262,7 +264,9 @@ def _special_port(port: dict[str, Any]) -> bool:
 def selectable_ports(record: dict[str, Any]) -> list[str]:
     data = record.get("data") or {}
     if data.get("type") == "rack":
-        return [str(unit) for unit in range(1, max(0, int(data.get("size_units", 0))) + 1)]
+        return [
+            str(unit) for unit in range(1, max(0, int(dimension_status(data)["heightU"] or 0)) + 1)
+        ]
     return list(data.get("ports", {}))
 
 
@@ -270,23 +274,24 @@ def rack_occupant(
     record: dict[str, Any], records: list[dict[str, Any]], unit: str | int
 ) -> dict[str, Any] | None:
     target_unit = int(unit)
-    layout = _rack_layout_item(record, target_unit)
-    if layout and layout.get("idf"):
-        linked = next(
-            (candidate for candidate in records if candidate["id"] == layout["idf"]), None
-        )
-        if linked is not None:
-            return linked
-    return next(
-        (
-            candidate
-            for candidate in records
-            if (candidate.get("data") or {}).get("location", {}).get("rack") == record["id"]
-            and int((candidate.get("data") or {}).get("location", {}).get("unit", -1))
-            == target_unit
-        ),
-        None,
-    )
+    for candidate in records:
+        position = location_status(candidate.get("data") or {}, records)
+        if (
+            position["kind"] == "inside"
+            and position["rack"] == record["id"]
+            and position["unit"] <= target_unit < position["unit"] + span(candidate["data"])
+        ):
+            return candidate
+    return None
+
+
+def _active_rack_layout(record, records, unit):
+    item = _rack_layout_item(record, unit)
+    if item and item.get("idf"):
+        linked = next((r for r in records if r["id"] == item["idf"]), None)
+        if linked and not location_status(linked["data"], records)["needsReview"]:
+            return None
+    return item
 
 
 def _rack_layout_item(record: dict[str, Any], unit: int) -> dict[str, Any] | None:
@@ -357,13 +362,13 @@ def element_sidebar(
     if groups:
         lines.append(f"groups: {'/'.join(groups)}")
     if element_type == "rack":
-        units = max(0, int(data.get("size_units", 0)))
+        units = max(0, int(dimension_status(data)["heightU"] or 0))
         # En los racks esta columna funciona como leyenda física: cada línea
         # queda enfrentada a su U correspondiente en lugar de ser una ficha
         # genérica separada del dibujo.
         lines = []
         for unit in range(1, units + 1):
-            layout = _rack_layout_item(record, unit)
+            layout = _active_rack_layout(record, records, unit)
             if layout:
                 relative = unit - int(layout.get("unit", unit))
                 labels = layout.get("label_lines")
@@ -390,9 +395,10 @@ def element_sidebar(
                 f"connected: {sum((record['id'], name) in connected for name in ports)}",
             )
         )
-        location = data.get("location") or {}
-        if location.get("rack"):
-            lines.append(f"rack: {location['rack']} / U{location.get('unit', '-')}")
+        position = location_status(data, records)
+        lines.append(
+            f"ubicación: {position['kind']} · rack: {position['rack']} · U{position['unit']} · bandeja: {position['tray']}"
+        )
         selected_data = ports.get(selected_port, {}) if selected_port in ports else {}
         speeds = selected_data.get("speeds") or data.get("speeds") or ["10M", "100M", "1G"]
         lines.extend(("", "speeds:", "  " + "/".join(map(str, speeds))))
@@ -470,13 +476,13 @@ def _generic_lines(record: dict[str, Any]) -> list[str]:
 
 def _rack_lines(record: dict[str, Any], records: list[dict[str, Any]], width: int) -> list[str]:
     """Dibuja una fila por unidad; el recorte vertical lo gestiona el modal."""
-    units = max(0, int((record.get("data") or {}).get("size_units", 0)))
+    units = max(0, int(dimension_status(record.get("data") or {})["heightU"] or 0))
     # Reserva los dos indicadores Uxx y deja que el cuerpo aproveche el ancho.
     body_width = max(24, min(54, width - 12))
     lines: list[str] = []
     for unit in range(1, units + 1):
         label = f"U{unit:02}"
-        layout = _rack_layout_item(record, unit)
+        layout = _active_rack_layout(record, records, unit)
         occupant = rack_occupant(record, records, unit)
         body = (
             _rack_layout_visual(layout, unit, body_width)

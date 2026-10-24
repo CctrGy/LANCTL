@@ -208,6 +208,7 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
     depth = _MAIN_DEPTH.get()
     depth_token = _MAIN_DEPTH.set(depth + 1)
     autosave_scheduler = None
+    gui_owns_close = False
     project_independent = ephemeral_requested
     try:
         from lanctl.core.data_migration import ensure_data_layout
@@ -279,6 +280,7 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
                 request_first_scan()
             from lanctl.apps.ip.interfaces.gui.desktop import run_gui
 
+            gui_owns_close = True
             return run_gui()
         if args.tui or (not args.command and not args.cli):
             from lanctl.apps.ip.interfaces.tui.main import run_tui
@@ -286,11 +288,14 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
             return run_tui(None if args.tui in (None, "inventory") else args.tui)
         if args.cli:
             return run_global_cli()
-        result = _run_handler(args)
-        if not project_independent:
-            from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+        from lanctl.core.project_context import project_operation
 
-            save_active_project(SaveTrigger.CHANGE)
+        with project_operation():
+            result = _run_handler(args)
+            if not project_independent:
+                from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+
+                save_active_project(SaveTrigger.CHANGE)
         return result
     except KeyboardInterrupt:
         print_error(t("LANCTL.CORE.APP.CANCELLED"))
@@ -325,7 +330,9 @@ def main(argv: list[str] | None = None, *, program_name: str = "LANCTL") -> int:
                 from lanctl.core.projects.save_policy import close_active_project
 
                 settings = load_config()
-                if _should_close_active_project(interactive_launch, settings):
+                if not gui_owns_close and _should_close_active_project(
+                    interactive_launch, settings
+                ):
                     close_active_project()
             except Exception as error:  # noqa: BLE001 - el cierre no debe ocultar el resultado
                 write_log(f"PROJECT AUTOSAVE CLOSE ERROR detail={error}")

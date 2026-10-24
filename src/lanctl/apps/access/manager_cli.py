@@ -62,6 +62,10 @@ def build_parser() -> LANCTLArgumentParser:
     )
     mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola interactiva.")
     commands = parser.add_subparsers(dest="command")
+    commands.add_parser(
+        "remote-setup",
+        help="Crea la primera cuenta remota del servicio en Windows (requiere administrador).",
+    )
     commands.add_parser("list", aliases=["ls"], help="Lista metadatos; nunca secretos.")
     show = commands.add_parser("show", help="Muestra metadatos de una credencial.")
     show.add_argument("credential_id", help="Identificador de la credencial.")
@@ -271,7 +275,15 @@ def _interactive_command(manager, command):
 def _main(argv: list[str] | None = None) -> int:
     configure_utf8_stdio()
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
-    args = build_parser().parse_args(arguments)
+    parser = build_parser()
+    default_database = parser.get_default("database")
+    default_store = parser.get_default("store")
+    parser.set_defaults(database=None, store=None)
+    args = parser.parse_args(arguments)
+    if args.command == "remote-setup":
+        from lanctl.apps.access.remote_setup import run_remote_setup
+
+        return run_remote_setup()
     if args.scope == "windows":
         import os
 
@@ -292,6 +304,10 @@ def _main(argv: list[str] | None = None) -> int:
         from lanctl.apps.suite.launcher_gui import run_gui
 
         return run_gui("lanaccess", database=args.database, store=args.store, cipher=args.cipher)
+    if args.database is None:
+        args.database = default_database
+    if args.store is None:
+        args.store = default_store
     manager = AccessManager(args.database, args.store)
     manager.store.cipher = args.cipher
     if args.command == "credential":

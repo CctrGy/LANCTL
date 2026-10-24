@@ -55,9 +55,13 @@ function replaceHandler(selector, event, handler) {
   old.replaceWith(fresh);
   fresh.addEventListener(event, handler);
 }
-function chooseSave() {
+function chooseSave(shared = false) {
   return new Promise(resolve => {
     const dialog = $("#save-dialog");
+    dialog.querySelector("p").textContent = shared
+      ? "Los cambios aplicados son compartidos con otras sesiones. Cerrar sin guardar conserva esos cambios para las otras sesiones y no modifica el archivo del proyecto."
+      : "El proyecto tiene modificaciones sin guardar.";
+    dialog.querySelector('[data-decision="discard"]').textContent = shared ? "Cerrar sin guardar" : "Descartar";
     dialog.oncancel = event => {event.preventDefault(); finish("cancel");};
     function finish(answer) { dialog.close(); resolve(answer); }
     dialog.querySelectorAll("button").forEach(button => button.onclick=()=>finish(button.dataset.decision));
@@ -77,7 +81,7 @@ async function desktopClose() {
   try {
     if(desktopBusy){await call("cancel_scan");let stopped=false;for(let i=0;i<100;i++){if(!(await call("scan_status")).running){stopped=true;break;}await new Promise(resolve=>setTimeout(resolve,100));}if(!stopped)return message("Cancelación solicitada. Espera a que termine la operación y vuelve a cerrar.",true);}
     const status = await call("project_state");
-    const decision = status.dirty || editorDirty() ? await chooseSave() : "discard";
+    const decision = status.dirty || editorDirty() ? await chooseSave(status.shared) : "discard";
     if(decision === "save") await commitEditor();
     if(decision !== "cancel") await call("request_close", decision);
   } catch(error) { message(error.message, true); }
@@ -145,7 +149,7 @@ window.addEventListener("pywebviewready", () => {
   desktopReady = true;
   replaceHandler("#project-save","click",async()=>{
     setBusy(true,"Guardando proyecto…");
-    try {await commitEditor(); const payload=await call("save_project"); renderProjects(payload); renderInventory(payload); message(payload.message);}
+    try {await commitEditor(); const payload=await call("save_project"); renderProjects(payload); renderInventory(payload);message(payload.message);}
     catch(error){message(error.message,true);} finally{setBusy(false);}
   });
   replaceHandler("#save-device","click",async()=>{
@@ -185,32 +189,16 @@ window.addEventListener("pywebviewready", () => {
       try {const status=await call("scan_status"); $("#scan-progress").value=100*status.current/Math.max(1,status.total);}
       catch(error) { message(error.message,true); }
     },500);
-    try {const payload=await call("scan_network",$("#scan-profile").value); renderInventory(payload); message(payload.message);}
+    try {const target=window.lanipScanTarget;const payload=await call("scan_network",$("#scan-profile").value,...(target?[target.source,target.network]:[])); renderInventory(payload);window.lanipScanCompleted?.(); message(payload.message);}
     catch(error) {message(error.message,true);}
     finally {clearInterval(poll); $("#cancel-scan").hidden=true; $("#scan-progress").hidden=true; setBusy(false);}
   });
   $("#cancel-scan").onclick=async()=>{try {message((await call("cancel_scan")).message);} catch(error){message(error.message,true);}};
-  async function activate(path) {
-    if(!path || !await protectProject()) return;
-    const payload=await call("use_project",path,true);
-    state.selectedId=null; renderProjects(payload); renderInventory(payload); message(payload.message);
+  // Project selection belongs to LANCTL; these legacy DOM IDs remain for API compatibility.
+  for (const id of ["#project-select", "#project-open", "#project-new"]) {
+    const el = $(id); el.hidden = true; el.disabled = true;
+    replaceHandler(id, id === "#project-select" ? "change" : "click", () => {});
   }
-  replaceHandler("#project-select","change",async event=>{
-    try {await activate(event.target.value);} catch(error){message(error.message,true);}
-    finally {renderProjects(await call("list_projects"));}
-  });
-  replaceHandler("#project-open","click",async()=>{
-    try {await activate((await call("select_project_file")).path);} catch(error){message(error.message,true);}
-  });
-  replaceHandler("#project-new","click",async()=>{
-    try {
-      if(!await protectProject()) return;
-      showForm("Crear proyecto vacío",[{key:"name",label:"Nombre",value:""},{key:"directory",label:"Carpeta (vacío: predeterminada)",value:""}],async values=>{
-        const payload=await call("create_project",values.name,values.directory,true);
-        state.selectedId=null; renderProjects(payload); renderInventory(payload); message(payload.message);
-      });
-    } catch(error){message(error.message,true);}
-  });
   $("#desktop-settings").onclick=async()=>{
     try {
       const payload=await call("get_settings");
@@ -233,10 +221,11 @@ setInterval(async()=>{
   window.desktopDataChanged=false;
   try {
     const selectedProject=$("#project-select").value;
-    const payload=await call("list_devices",$("#device-search").value);
+    const payload=await call(window.pywebview?.api?.sync_project?"sync_project":"list_devices",$("#device-search").value);
     if(desktopBusy || editorDirty() || document.querySelector("dialog[open]") || $("#project-select").value!==selectedProject) {
       window.desktopDataChanged=true; return;
     }
+    if(payload.projects)renderProjects(payload);
     renderInventory(payload);
   }
   catch(error) { window.desktopDataChanged=true; message(error.message,true); }

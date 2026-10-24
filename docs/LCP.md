@@ -98,13 +98,67 @@ continúa ejecutándose de forma transaccional por el núcleo.
 
 ## Runtimes y confianza
 
-- `isolated`: carga manifiestos y extensiones declarativas. No ejecuta
-  `main.exec` dentro de LANCTL.
+- `isolated`: carga manifiestos y extensiones declarativas; `main.exec`, si
+  existe, se ejecuta en un proceso separado con límites de memoria y llamadas.
+  `runtimeApiVersion` omitido o `1` conserva la API anterior (`log`, preferencias).
 - `trusted`: ejecuta `activate(api)` dentro del proceso y exige
   `plugin enable ID --trust`.
 
 Los permisos no convierten Python in-process en un sandbox; `trusted` debe
 reservarse para código conocido.
+
+### Proceso cancelable y API v2
+
+Un paquete puede optar explícitamente por `"runtime": "isolated"` y
+`"runtimeApiVersion": 2`. No se cambia el esquema LCP 1, se conceden permisos
+adicionales ni se migra un paquete instalado. Las versiones de runtime
+desconocidas se rechazan; v2 no es válido con `trusted`. Los autores deben
+declarar una versión de LANCTL que implemente v2 y reconstruir/verificar el LCP;
+no basta editar el manifiesto de un paquete firmado.
+
+El proceso usa JSON acotado, versión de protocolo y una generación nueva por
+activación. El host valida cada llamada contra la autorización vigente, antes
+y después de ejecutarla. El catálogo v2 es deliberadamente explícito:
+
+| Operación | Permiso / retorno |
+| --- | --- |
+| `require`, `log`, `settings` | Concesión vigente; solo preferencias del propio plugin. |
+| `functions.register` | `functions.register`; callback con retorno `FunctionResult`. |
+| `functions.call` | `functions.call`; contratos transportables, sin ejecutar callbacks heredados in-process. |
+| `events.subscribe`, `events.emit` | `events.listen` / `events.emit`; contratos del Core y `HookDecision`; namespace y propietario conservados. Los callbacks heredados no se ejecutan desde RPC v2. |
+| `extensions.register` | Permiso correspondiente al tipo; devuelve `Extension`. |
+| `inventory.list` | `inventory.read`; devuelve copias JSON de los dispositivos del workspace. No es el snapshot de sesión viva de P50. |
+
+Solo se transportan valores JSON, fechas y los contratos concretos declarados
+por el protocolo. No se importan clases por nombre recibido ni se deserializa
+pickle. Contratos de funciones personalizados, nuevos esquemas de eventos,
+credenciales, red, almacenamiento y monitorización directa requieren sus
+adaptadores antes de migrar un plugin que los use. La API `trusted` existente
+permanece disponible con sus contratos anteriores.
+
+La revocación retira primero la concesión y los registros/callbacks; después
+termina el proceso con un plazo independiente del presupuesto de activación.
+No se garantiza ejecutar `deactivate` al terminar por revocación. Se confirma
+la muerte del proceso antes de autorizar otra generación. Si falla, se conserva
+su referencia y `runtime_status` informa `cleanupError`, `cleanupPending` y
+`terminationConfirmed`; `processId`, `generation` y `runtimeApiVersion` son
+campos aditivos. También se retiran las generaciones dependientes. Un efecto
+ya completado en el Core no se deshace al revocar; una llamada revocada no se
+devuelve como éxito autorizado. Los errores de carga/activación del worker
+conservan fase, archivo y línea del plugin cuando están disponibles; los fallos
+de llamadas conservan el identificador de función y el diagnóstico remoto.
+`terminationConfirmed` corresponde al propietario consultado, no es una
+confirmación agregada de todos los launchers abiertos.
+
+Los procesos no comparten locks de almacenamiento con el worker y sus canales
+son exclusivos de cada generación. El proceso termina si desaparece el host,
+incluidos los hilos no cooperativos. La política Python y sus límites siguen
+sin constituir un sandbox del sistema operativo contra código hostil.
+
+Un `trusted` heredado mantiene `execution: legacy-in-process` y puede indicar
+`restartRequired`: sus hilos nativos solo desaparecen al reiniciar el host.
+Migrarlo requiere adaptar y volver a verificar el paquete; no se presenta como
+cancelable por el mero hecho de retirar sus accesos al Core.
 
 ## Comandos
 
