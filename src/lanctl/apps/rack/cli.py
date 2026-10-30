@@ -13,6 +13,7 @@ from lanctl.core.config import load_config
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.core.projects.console_session import physical_console_session
 from lanctl.core.session import coordinated_launcher
+from lanctl.shared.i18n import initialize_language, t
 
 
 def configure_utf8_stdio() -> None:
@@ -24,68 +25,94 @@ def configure_utf8_stdio() -> None:
 
 
 def build_parser() -> LANCTLArgumentParser:
-    parser = LANCTLArgumentParser(prog="LANRACK", description="Visualiza racks y sus equipos.")
+    parser = LANCTLArgumentParser(
+        prog="LANRACK", description=t("LANCTL.UI.TEXT.DISPLAY_RACKS_AND_THEIR_EQUIPMENT")
+    )
     parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
-        help="Muestra la versión común de la suite y termina.",
+        help=t("LANCTL.UI.TEXT.SHOW_THE_COMMON_SUITE_VERSION_AND_EXIT"),
     )
     parser.add_argument(
         "--database",
         default=load_config().get("physicalDatabase", DEFAULT_DATABASE_PATH),
         metavar="ARCHIVO.db",
-        help="Base física IDF compartida.",
+        help=t("LANCTL.UI.TEXT.SHARED_PHYSICAL_IDF_DATABASE"),
     )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--gui", action="store_true", help="Abre la interfaz gráfica de escritorio.")
     mode.add_argument(
-        "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
+        "--gui", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_DESKTOP_GRAPHICAL_INTERFACE")
     )
-    mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola interactiva.")
+    mode.add_argument(
+        "-tui",
+        "--tui",
+        action="store_true",
+        help=t("LANCTL.UI.TEXT.OPEN_THE_FULL_SCREEN_INTERFACE"),
+    )
+    mode.add_argument(
+        "--cli", "-cli", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_INTERACTIVE_CONSOLE")
+    )
     commands = parser.add_subparsers(dest="command")
-    commands.add_parser("list", aliases=["ls"], help="Lista los racks disponibles.")
-    show = commands.add_parser("show", help="Muestra un rack y sus ocupantes.")
-    show.add_argument("rack", help="ID o nombre del rack.")
-    dimensions = commands.add_parser("dimensions", help="Edita altura y ancho de montaje del rack.")
-    dimensions.add_argument("rack", help="ID del rack.")
-    dimensions.add_argument("--units", type=int, required=True, help="Altura de 4 a 52 U.")
+    commands.add_parser("list", aliases=["ls"], help=t("LANCTL.UI.TEXT.LIST_AVAILABLE_RACKS"))
+    show = commands.add_parser("show", help=t("LANCTL.UI.TEXT.SHOW_A_RACK_AND_ITS_OCCUPANTS"))
+    show.add_argument("rack", help=t("LANCTL.UI.TEXT.RACK_ID_OR_NAME"))
+    dimensions = commands.add_parser(
+        "dimensions", help=t("LANCTL.UI.TEXT.EDIT_THE_RACK_HEIGHT_AND_MOUNTING_WIDTH")
+    )
+    dimensions.add_argument("rack", help=t("LANCTL.UI.TEXT.RACK_ID"))
+    dimensions.add_argument(
+        "--units", type=int, required=True, help=t("LANCTL.UI.TEXT.HEIGHT_FROM_4_TO_52_U")
+    )
     dimensions.add_argument(
         "--width-inches",
         type=int,
         choices=(10, 19, 21, 23),
         required=True,
-        help="Ancho de montaje en pulgadas.",
+        help=t("LANCTL.UI.TEXT.MOUNTING_WIDTH_IN_INCHES"),
     )
-    commands.add_parser("elements", help="Lista todos los elementos, ubicaciones y bandejas.")
-    add = commands.add_parser("add-element", help="Crea un elemento físico compartido.")
-    add.add_argument("--kind", required=True, help="Perfil de equipo, panel, outlet o tray.")
-    add.add_argument("--prefix", required=True, help="Prefijo IDF.")
-    add.add_argument("--name", default="", help="Nombre del elemento.")
+    commands.add_parser("elements", help=t("LANCTL.UI.TEXT.LIST_ALL_ELEMENTS_LOCATIONS_AND_TRAYS"))
+    add = commands.add_parser(
+        "add-element", help=t("LANCTL.UI.TEXT.CREATE_A_SHARED_PHYSICAL_ELEMENT")
+    )
+    add.add_argument(
+        "--kind", required=True, help=t("LANCTL.UI.TEXT.EQUIPMENT_PANEL_OUTLET_OR_TRAY_PROFILE")
+    )
+    add.add_argument("--prefix", required=True, help=t("LANCTL.UI.TEXT.IDF_PREFIX"))
+    add.add_argument("--name", default="", help=t("LANCTL.UI.TEXT.ELEMENT_NAME"))
     edit = commands.add_parser(
-        "element", help="Edita o reubica un elemento sin cambiar sus enlaces."
+        "element", help=t("LANCTL.UI.TEXT.EDIT_OR_RELOCATE_AN_ELEMENT_WITHOUT_CHANGING_ITS_LINKS")
     )
-    edit.add_argument("element", help="ID del elemento.")
-    edit.add_argument("--name", help="Nombre del elemento.")
-    edit.add_argument("--description", help="Descripción del elemento.")
+    edit.add_argument("element", help=t("LANCTL.UI.TEXT.ELEMENT_ID"))
+    edit.add_argument("--name", help=t("LANCTL.UI.TEXT.ELEMENT_NAME"))
+    edit.add_argument("--description", help=t("LANCTL.UI.TEXT.ELEMENT_DESCRIPTION"))
     edit.add_argument(
         "--placement",
         choices=("inside", "environment", "independent", "hosted"),
-        help="Clasificación física.",
+        help=t("LANCTL.UI.TEXT.PHYSICAL_CLASSIFICATION"),
     )
-    edit.add_argument("--rack", help="ID del rack de destino.")
-    edit.add_argument("--unit", type=int, help="Unidad inicial del montaje.")
-    edit.add_argument("--height-u", type=int, help="Altura ocupada del elemento.")
-    edit.add_argument("--tray", help="Bandeja que aloja al dispositivo.")
+    edit.add_argument("--rack", help=t("LANCTL.UI.TEXT.DESTINATION_RACK_ID"))
+    edit.add_argument("--unit", type=int, help=t("LANCTL.UI.TEXT.STARTING_MOUNTING_UNIT"))
+    edit.add_argument(
+        "--height-u", type=int, help=t("LANCTL.UI.TEXT.HEIGHT_OCCUPIED_BY_THE_ELEMENT")
+    )
+    edit.add_argument("--tray", help=t("LANCTL.UI.TEXT.TRAY_HOUSING_THE_DEVICE"))
     return parser
 
 
 def _print_rack(rack: dict) -> None:
     print(
-        f"{rack['id']} | {rack['name']} | {rack['units']}U | {rack['widthInches'] or '?'} pulgadas | {len(rack['occupants'])} elementos"
+        t(
+            "LANCTL.UI.SUMMARY.VALUE_VALUE_VALUEU_VALUE_INCHES_VALUE_ELEMENTS",
+            value0=f"{rack['id']}",
+            value1=f"{rack['name']}",
+            value2=f"{rack['units']}",
+            value3=f"{rack['widthInches'] or '?'}",
+            value4=f"{len(rack['occupants'])}",
+        )
     )
     for warning in rack["dimensions"]["warnings"]:
-        print(f"  Revisar: {warning}")
+        print(t("LANCTL.UI.DETAIL.REVIEW_VALUE", value0=f"{warning}"))
     for item in rack["occupants"]:
         placement = item.get("placement", {})
         unit = (
@@ -136,6 +163,7 @@ def run_tui(service: RackService) -> int:
 
 @coordinated_launcher("lanrack")
 def main(argv: list[str] | None = None) -> int:
+    initialize_language()
     configure_utf8_stdio()
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
     parser = build_parser()
@@ -163,7 +191,7 @@ def main(argv: list[str] | None = None) -> int:
                 code = _run(args)
             return code if session.request_close(interactive=False) else 1
     except PhysicalSaveError as error:
-        print(f"Error: {error}")
+        print(t("LANCTL.UI.DETAIL.ERROR_VALUE", value0=f"{error}"))
         return 1
 
 
@@ -239,7 +267,14 @@ def _session_console(session, service, *, tui=False):
         with session.operation() as path:
             rows = current_service(path).list()
         inventory = "\n".join(
-            f"{row['id']:<12} {row['name']} · {row['units']}U · {row['widthInches'] or '?'} pulgadas · {len(row['occupants'])} elementos"
+            t(
+                "LANCTL.UI.SUMMARY.VALUE_VALUE_VALUEU_VALUE_INCHES_VALUE_ELEMENTS_0F275CC5",
+                value0=f"{row['id']:<12}",
+                value1=f"{row['name']}",
+                value2=f"{row['units']}",
+                value3=f"{row['widthInches'] or '?'}",
+                value4=f"{len(row['occupants'])}",
+            )
             + (" · REVISAR DIMENSIONES" if row["dimensions"]["needsReview"] else "")
             for row in rows
         )

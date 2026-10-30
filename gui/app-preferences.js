@@ -6,7 +6,7 @@
   const rpc = async (method, ...args) => {
     const result = await window.pywebview.api[method](...args);
     if (!result.ok)
-      throw new Error(result.error || "No se pudo completar la operación");
+      throw new Error(result.error || window.LanctlI18n.t("LANCTL.UI.TEXT.COULD_NOT_COMPLETE_THE_OPERATION"));
     return result;
   };
   let saved = null,
@@ -81,13 +81,13 @@
   }
   const dialog = document.createElement("dialog");
   dialog.className = "preferences-dialog";
-  dialog.setAttribute("aria-label", "Apariencia de la interfaz");
-  dialog.innerHTML = `<form><h2>Apariencia</h2><p>Vista previa en esta ventana. Aplicar guarda la selección para toda la suite.</p>
-    <div class="theme-choices" role="group" aria-label="Tema"></div>
-    <label>Densidad<select name="density"><option value="comfortable">Cómoda</option><option value="compact">Compacta</option></select></label>
-    <label>Tamaño del texto<select name="fontScale"><option value="0.9">90 %</option><option value="1">100 %</option><option value="1.1">110 %</option><option value="1.2">120 %</option><option value="1.3">130 %</option></select></label>
-    <label class="check"><input type="checkbox" name="reducedMotion"> Reducir animaciones</label>
-    <p role="status" class="preferences-feedback"></p><div class="actions"><button type="button" data-preference="reset">Restablecer</button><button type="button" data-preference="cancel">Cancelar</button><button class="primary" type="submit">Aplicar</button></div></form>`;
+  dialog.setAttribute("aria-label", window.LanctlI18n.t("LANCTL.UI.VIEW.INTERFACE_APPEARANCE"));
+  dialog.innerHTML = `<form><h2><span data-i18n="LANCTL.UI.TEXT.APPEARANCE">Apariencia</span></h2><p><span data-i18n="LANCTL.UI.HTML.PREVIEW_IN_THIS_WINDOW_APPLY_SAVES_THE_SELECTION_FOR_THE_ENTIRE_SUITE">Vista previa en esta ventana. Aplicar guarda la selección para toda la suite.</span></p>
+    <div class="theme-choices" role="group" aria-label="Tema" data-i18n-aria-label="LANCTL.UI.TEXT.THEME"></div>
+    <label><span data-i18n="LANCTL.UI.HTML.DENSITY">Densidad</span><select name="density"><option value="comfortable" data-i18n="LANCTL.UI.SCREEN.COMFORTABLE">Cómoda</option><option value="compact" data-i18n="LANCTL.UI.HTML.COMPACT">Compacta</option></select></label>
+    <label><span data-i18n="LANCTL.UI.HTML.TEXT_SIZE">Tamaño del texto</span><select name="fontScale"><option value="0.9">90 %</option><option value="1">100 %</option><option value="1.1">110 %</option><option value="1.2">120 %</option><option value="1.3">130 %</option></select></label>
+    <label class="check"><input type="checkbox" name="reducedMotion"> <span data-i18n="LANCTL.UI.TEXT.REDUCE_ANIMATIONS">Reducir animaciones</span></label>
+    <p role="status" class="preferences-feedback"></p><div class="actions"><button type="button" data-preference="reset"><span data-i18n="LANCTL.UI.HTML.RESET">Restablecer</span></button><button type="button" data-preference="cancel"><span data-i18n="LANCTL.INVENTORY.MANUAL.CANCEL">Cancelar</span></button><button class="primary" type="submit"><span data-i18n="LANCTL.UI.TEXT.APPLY">Aplicar</span></button></div></form>`;
   document.body.append(dialog);
   let draft;
   function preview() {
@@ -157,9 +157,9 @@
     }
     dialog.querySelector(".preferences-feedback").textContent =
       saved.effectivePlugin
-        ? "El plugin " +
+        ? window.LanctlI18n.t("LANCTL.UI.FRAGMENT.PLUGIN") +
           saved.effectivePlugin +
-          " amplía la paleta seleccionada."
+          window.LanctlI18n.t("LANCTL.UI.FRAGMENT.EXTENDS_THE_SELECTED_PALETTE")
         : "";
     fill();
     dialog.showModal();
@@ -198,7 +198,7 @@
   button.type = "button";
   button.id = "gui-appearance";
   button.hidden = true;
-  button.textContent = "Apariencia";
+  window.LanctlI18n.bindText(button,"LANCTL.UI.TEXT.APPEARANCE");
   button.onclick = () =>
     open().catch((error) => {
       if (typeof message === "function") message(error.message, true);
@@ -214,7 +214,7 @@
       saved = result;
       apply(result);
     } catch (error) {
-      console.warn("Preferencias GUI:", error.message);
+      console.warn(window.LanctlI18n.t("LANCTL.UI.VIEW.GUI_PREFERENCES"), error.message);
     } finally {
       reading = false;
     }

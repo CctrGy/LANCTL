@@ -309,3 +309,33 @@ def test_real_gui_entrypoints_follow_project_storage_unless_explicit(workspace, 
             vault = str(tmp_path / "explicit.vault")
             assert entry(["--gui", "--store", vault]) == 0
             assert launch.call_args.kwargs["store"] == vault
+
+
+def test_project_rpc_bridge_names_and_python_keyword_compatibility(workspace):
+    import inspect
+
+    from lanctl.apps.suite.gui_support import GuiSupportMixin
+
+    # pywebview makes JS function parameters from these positional names.
+    # Naming one `arguments` shadows the object it serializes for the RPC.
+    params = inspect.getfullargspec(GuiSupportMixin.project_call).args[1:]
+    assert "arguments" not in params
+    window = api("lanmon")
+    context = project_identity(config.load_config())
+    assert window.project_call(context, "project_state", [])["ok"]
+    assert window.project_call(context, "project_state", arguments=[])["ok"]
+    assert not window.project_call(context, "project_state", "invalid")["ok"]
+
+
+@pytest.fixture(autouse=True)
+def spanish_regression_labels(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from lanctl.shared import i18n
+
+    manager = i18n.LanguageManager(tmp_path / "test-languages")
+    manager.initialize("en")
+    manager.install(Path(__file__).resolve().parents[1] / "bundled/languages/spanish.lang")
+    monkeypatch.setattr(i18n, "_MANAGER", manager)
+    with i18n.language_context("es"):
+        yield

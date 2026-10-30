@@ -14,6 +14,7 @@ from rich.table import Table
 from rich.text import Text
 
 from lanctl.core.terminal_ui import ManagementScreen
+from lanctl.shared.i18n import t
 
 
 class LogViewModel:
@@ -141,9 +142,7 @@ def follow_log_tui(*, limit=100, minimum=1):
             while True:
                 model.ingest(follower.poll())
                 page_size = max(1, shutil.get_terminal_size((100, 30)).lines - 11)
-                table = Table(
-                    title="LANMON · Log operativo compartido (no auditoría VLF)", expand=True
-                )
+                table = Table(title=t("LANCTL.MONITOR.LOG.TITLE"), expand=True)
                 table.add_column("Archivo", no_wrap=True)
                 table.add_column("Nivel", width=5)
                 table.add_column("Mensaje")

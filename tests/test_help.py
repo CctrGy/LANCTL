@@ -71,7 +71,7 @@ class HelpTests(unittest.TestCase):
                 self.assertIn(t("LANCTL.PARSER.SECTION.OPTIONS"), help_text)
                 self.assertNotIn("usage:", help_text)
                 self.assertNotIn("positional arguments:", help_text)
-                self.assertNotIn("options:", help_text)
+                self.assertNotIn("\noptions:", help_text)
                 self.assertNotIn("==SUPPRESS==", help_text)
 
     def test_tty_help_uses_the_common_palette(self):

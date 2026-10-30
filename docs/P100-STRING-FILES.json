@@ -1,0 +1,2578 @@
+[
+  {
+    "file": "src/lanctl/__init__.py",
+    "sha256": "db67544cb874de6a3921851bf23b79cbeccf04b308651ab009bf7b396d4fd4ec",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 1
+  },
+  {
+    "file": "src/lanctl/__main__.py",
+    "sha256": "9b0e2a615518df96406e32e4358237f3958bc9df4a1f50210aa25402d401694f",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 1
+  },
+  {
+    "file": "src/lanctl/apps/__init__.py",
+    "sha256": "f7121e9237f2cd50b90a035db51ae734428ba80c6b432ae3bff9e074b2512480",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/access/__init__.py",
+    "sha256": "c853668a9808ee3c3ad556cd3cc75cd5ebe98ed05f0b5ab21e77bbf7037171b7",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 3
+  },
+  {
+    "file": "src/lanctl/apps/access/audit.py",
+    "sha256": "c715c479781ff6d6451b3232aa1e2d1c6ad567f57c64ab77c227544735aeb855",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 10
+  },
+  {
+    "file": "src/lanctl/apps/access/auth.py",
+    "sha256": "d76ce515831cd740b64883574104abdc96bf20e6ff318a6a16c267c33333426c",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 71
+  },
+  {
+    "file": "src/lanctl/apps/access/credential_service.py",
+    "sha256": "0b240da1a13bdde7f43907d1d18679e8ad1471219ccb7852d4064816e27a8e68",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 13
+  },
+  {
+    "file": "src/lanctl/apps/access/firewall.py",
+    "sha256": "9f6cff7be1383085c2b52c0af0fe9c0cf07fde53421b1bef04d6b3f22b705708",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 35
+  },
+  {
+    "file": "src/lanctl/apps/access/gui_service.py",
+    "sha256": "81f2cad0ddb641fea6a8efa49509123e57d50f7376deb2a106e9e1dff11fc992",
+    "launcher": "LANACCESS",
+    "interface": "GUI",
+    "entries": 60
+  },
+  {
+    "file": "src/lanctl/apps/access/https_server.py",
+    "sha256": "72f71d59cdbf318eb7143ec10dc2495dc47b4bf9cb1aa0ab392dd2ea0983eb9e",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 101
+  },
+  {
+    "file": "src/lanctl/apps/access/keys.py",
+    "sha256": "12a2b0b1c5644e9899b61234e38ac140fada64ef3c408540783ec5743d417b36",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 6
+  },
+  {
+    "file": "src/lanctl/apps/access/manager_cli.py",
+    "sha256": "d0eb6e01d82b65c5a845b65fd895b570e4c59bebda6df992ee419a6991576e4a",
+    "launcher": "LANACCESS",
+    "interface": "CLI/TUI",
+    "entries": 316
+  },
+  {
+    "file": "src/lanctl/apps/access/models.py",
+    "sha256": "216b03cd1bce0946e88a5ca639057270e568c0320b0e7c4b939f1e858b2f6ef6",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 40
+  },
+  {
+    "file": "src/lanctl/apps/access/network.py",
+    "sha256": "a1246814ef2c9912a0ad5ca906703559c864c3e3b2452b76478a21a135c021f0",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 7
+  },
+  {
+    "file": "src/lanctl/apps/access/processes.py",
+    "sha256": "3617b3a276972b60e22c801dde9810ffc2ca8f0087c8f6127aa0138a0d0d8c00",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 36
+  },
+  {
+    "file": "src/lanctl/apps/access/remote.py",
+    "sha256": "8f8c89eba5d2286cf1fa2034224687b281cb661a2a645216ed892fe9eaec842d",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 218
+  },
+  {
+    "file": "src/lanctl/apps/access/remote_setup.py",
+    "sha256": "5af1a129f8fbfc8576ffadaf9476e7844ebbf8a15646a6d09fd07cbeda542a9d",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 67
+  },
+  {
+    "file": "src/lanctl/apps/access/root_control.py",
+    "sha256": "326251d04d857dc1a9cbe1c341468c6bf5fe93a19b96656d313ceae0c793f7dd",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 138
+  },
+  {
+    "file": "src/lanctl/apps/access/runtime.py",
+    "sha256": "9509e4eecf345e11ba51e15c682b5d3b5a2bce3fb4056cef156bcd5db9b998af",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 60
+  },
+  {
+    "file": "src/lanctl/apps/access/runtime_state.py",
+    "sha256": "27817f93702b0f94f0abf297bd679fcb76dfc24c73fd49f61b0e2e78024a6ab6",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 60
+  },
+  {
+    "file": "src/lanctl/apps/access/service.py",
+    "sha256": "670be3b275f86cfce24652345a47a77197472d096673b0e37f5421d17e087d8b",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 106
+  },
+  {
+    "file": "src/lanctl/apps/access/settings.py",
+    "sha256": "7abcb8fb430f04bdf112d7f50d00db6e5c63b2d01421117fd85798c5fe0adcb9",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 45
+  },
+  {
+    "file": "src/lanctl/apps/access/settings_lifecycle.py",
+    "sha256": "a5e07605a53d4090ce33505f633613e63d5120746b8001af58512f8aa141c0bf",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 246
+  },
+  {
+    "file": "src/lanctl/apps/access/ssh_server.py",
+    "sha256": "5d38443316afbcaf2b97b98bb889d2016000d87f9ccdeca5efd03804ece48100",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 49
+  },
+  {
+    "file": "src/lanctl/apps/access/store.py",
+    "sha256": "9fa98d34ef277e1871b3ddcf4edf9df0c1880a140d3b50d47f5fc95dc8888d2b",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 41
+  },
+  {
+    "file": "src/lanctl/apps/access/vault_service.py",
+    "sha256": "6bf90f2c96e6c26ed0b6a4e8e63277d90cf0378100e1e218e2dbbff23c53df8c",
+    "launcher": "LANACCESS",
+    "interface": "SHARED",
+    "entries": 23
+  },
+  {
+    "file": "src/lanctl/apps/ip/__init__.py",
+    "sha256": "539a9f38d55e48c96dca8fe8bd2324688e73e2f3550913b270a72c24ec5fb686",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/__main__.py",
+    "sha256": "222efbba2ddd5ae05b1b707b347bdec67a08efdf1cd2c716cfa96ea4d37071c1",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 1
+  },
+  {
+    "file": "src/lanctl/apps/ip/domain/__init__.py",
+    "sha256": "0bec12d843ea5a0e3b94b2ba58da8d80c4560cd48f15ace91d63d324eca4516c",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/domain/discovery.py",
+    "sha256": "0d2eb98c187bb1e45c3400784bd248e05ea68522f552ad6d0900ea1651c18a0e",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 4
+  },
+  {
+    "file": "src/lanctl/apps/ip/domain/models/__init__.py",
+    "sha256": "abd232d9c7ae1aee8b30c7814e0b6a0f5e459a8d759c260ccb2cbaa10a287aa0",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 6
+  },
+  {
+    "file": "src/lanctl/apps/ip/domain/models/device.py",
+    "sha256": "d47fc675758c27e3f864f8957db0fe2ec8dd9cf719209ae33fb9b87836d6f346",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 170
+  },
+  {
+    "file": "src/lanctl/apps/ip/domain/models/group.py",
+    "sha256": "d11676fea340530dfc65bd176f50127cb90968fc683b8d055d30b0556d72960f",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 14
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/__init__.py",
+    "sha256": "1938e5fb963fb783c4bc5c87a34be45173403d65d80a23b618f1012c149c7b66",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/__init__.py",
+    "sha256": "e5c21fa877dd9f7fa0b5075ef4c49a36aab3e8f2c444160127d67df9c49122b8",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 6
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/adapters/__init__.py",
+    "sha256": "b3017fde16ef18e0c440d8ae83099ac1d8aaf90ad96ce904fb69ab8a2342e22b",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 2
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/adapters/base.py",
+    "sha256": "f1cf4cc9c9af104e9dd5a2a3cda556f96252d638e9518bfc88cc71afdc59207e",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/adapters/fake.py",
+    "sha256": "0bfe6ba3bf6cb42e9a647e1e428d403cf6430a7945b180f5589e6017d489fcb6",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 1
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/catalog.py",
+    "sha256": "a85b01e6c4a37b88d7daa9ec702d2ab5d890dda57db3b13edd659ca6c386cea7",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 159
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/context.py",
+    "sha256": "1412219d56699d92dccd142209454db362ad59c0d6a5d2af85496a0c6fb11fe9",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/executor.py",
+    "sha256": "18da80cada6b59ee4f073210f2274492f05441017315f500ee7a8e53f19a4938",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 3
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/models.py",
+    "sha256": "50c4fa034d72a61691d0c462798dafe785e1761a7095a8ba5e27cc9233df567e",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 6
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/planner.py",
+    "sha256": "9d32f2a2b1218f91c1f65afe4b4ee8bca791fd500264d5fbf34627b2f7924292",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 53
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/cisco/profiles.py",
+    "sha256": "82fb2aafbaa207fe602626f6d1ff82b49d6c3053eba1435132366f77c5323cc4",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 37
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/protocols/__init__.py",
+    "sha256": "4a75306022258dba31c4cd08344d7934b9cb44839d820a2e414b608256f87959",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/protocols/radmin.py",
+    "sha256": "214e0065c3d077ae3e32dbfc01307e7134244d1cbbe7db26f468610024b78720",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 58
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/protocols/ssh.py",
+    "sha256": "55e6ad9a2aca5a287b5b9d96fb187c62a8235129de9e1611b9deea3dfe7bdcd4",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 90
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/repositories/__init__.py",
+    "sha256": "77424f584c61c96b93cdcfdeed5e6076b0ba563cba3c98863cfb900062a03a8b",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 1
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/repositories/memory_device_repository.py",
+    "sha256": "ccc59538d6ceee97eff65d5a11dcc05be621f658a424d83a40ae7cb10c8de200",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/services/__init__.py",
+    "sha256": "301d1a2b4efd27aea6063bb07cbcf929312a1a8b222a4cf3cc3c8feae144687e",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/services/discovery_provider.py",
+    "sha256": "0aa353688e80a5a53a982ea9f19be96e404d1e31de5ce6ab6fa3682eb24830b3",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 2
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/services/element_scanner.py",
+    "sha256": "ab48ee5467f9c825b0acb6c30e746afe376bbca826314176c3e036bb7e35dd9c",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 169
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/services/lan_scanner.py",
+    "sha256": "f89aee8419be5f73b1cad25ff1f9aec9428d951e0349b91c8b82d7a57dcc5e12",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 166
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/services/manufacturer.py",
+    "sha256": "da35de991c3f68e0eed77c140315284e0013644371e5b48dbeac9b17a5149333",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 7
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/services/network_discovery.py",
+    "sha256": "30c004010cdd8250954593cc9169277dcd1f022fec5925904694b7ffe465340d",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 14
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/services/scan_profiles.py",
+    "sha256": "e5ef6d1077c1777e2816b3279f77167ffa61da8e8330e6fb5d4753ec7e37b93a",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 16
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/services/source_binding.py",
+    "sha256": "49ad68adc9532cc89f9614f43e9b8a505baa68b24cc000d1eaff4c28a217cc94",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 5
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/terminals/__init__.py",
+    "sha256": "04b9e4c21994a4584f61b1d0d61e2ff2a31036f05b223069dd0bfb68eb8da8e7",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 2
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/terminals/registry.py",
+    "sha256": "a079b478cfeb041cf0d3c918f378168cd06016eb9e3c97837b65de6d43b27bb6",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 17
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/terminals/ssh_color.py",
+    "sha256": "828e10383bdb4885328e00975cbc12699215947b9eb0225b467de18936c511ce",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 25
+  },
+  {
+    "file": "src/lanctl/apps/ip/infrastructure/terminals/tr064.py",
+    "sha256": "f47b0f26d6f9999fc285944d858bf34ce03983c688752bd2fa29616b9aafcc38",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 24
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/__init__.py",
+    "sha256": "fc30174966a315dbeaebde300fee177eeb7348eeb7584006dfad9cdcecbac7f4",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/__init__.py",
+    "sha256": "cde498f8cc1d1aaaddc30edbbc0988f5837d7e6f9e030330997b37bc88f41dad",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/__init__.py",
+    "sha256": "936155fd08f846d966732324d7c392fd9175bc97ed5d2fe8304f0341ee1120f0",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/access.py",
+    "sha256": "8919369bd06f178b7fee37621b873d0ddfac88b512b3c06d34fca6397fe94db7",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 299
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/call.py",
+    "sha256": "45006b834f55d50fd29f421f74ad90c018f8312f14655de7f9ad6e9a4699bf81",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 50
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/cnf.py",
+    "sha256": "72d36de2739c43589baaa88e36a663f05038e60434a04937304768f426dccabc",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 17
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/credential.py",
+    "sha256": "3b7908a2585ae9ed562d95062f14264b560d424776d6d50a6479c71fd4aac03c",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 50
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/database.py",
+    "sha256": "e891afe8b2920e9a22aec8b8e962a2d78880bfa5355a52f690b29267f3e5fcaf",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 50
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/demo.py",
+    "sha256": "267610c11d6e5799a3085021a8b8b679062687c6ced541093c838ba65761ce56",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 187
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/download_settings.py",
+    "sha256": "f2127e0d52bdb6d68473e32a15375fd2fdefa6427a08ba37c02cd7c546d95616",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 77
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/element.py",
+    "sha256": "53ad66856621588fcee18162d1aa41714a36aae8f7eaa2f15a60dd7c59785f26",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 140
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/ephemeral.py",
+    "sha256": "db0f4e899aae52a446c9e090a1c39adc4eba068a39dbb486d8cef020bad2757b",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 107
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/error.py",
+    "sha256": "9a5f44ab7bd463567a9d12c2955bca17018224106f043cbb965f74bbd2a18364",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 15
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/group.py",
+    "sha256": "963c4dd48ac798e38e84f66679e327dc5f58edb7365b4fbe46701fcd5aed86a9",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 115
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/history.py",
+    "sha256": "278160d9eb443f163aace4e2133c35e9997773203cc2b784487426ee9ac052ad",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 61
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/lab.py",
+    "sha256": "54b7ea3edaa9b0e8fce668a92c9f8abbe3073af0ba8ffb36a66ab4527593417c",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 233
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/language.py",
+    "sha256": "4d5354d6d3e051bbd662adedb781a7e17fda7a9c0c0818fa71098d692d553e82",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 89
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/lanwire.py",
+    "sha256": "908e9947da707e9e4972f7b1b6741b0a741a1931d9fc1d4688d85abb10c05cb2",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 44
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/list.py",
+    "sha256": "992658f201bc3b80b9570f4d7b918b3a191122e15a8cff6f2b6ae03a76497613",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 197
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/modes.py",
+    "sha256": "4db5f7e66a1b45f7ca67c42953cfd8002786bebc47cf673e54842dbde1e7b8f7",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 53
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/monitor.py",
+    "sha256": "59400014ad9058d09c974efe2c4bdafc82ae6a79b49c8bc968ee273fb598e4b0",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/open.py",
+    "sha256": "fd8e993eccf454502a0a650aef90246cb03e08cbe5d0c911ed4b84a105d5de4d",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 114
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/ping.py",
+    "sha256": "6b24d66355dfbfb1e9afe98c3b86b859655f9ba4efe64fafa67d73c0d5012eee",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 83
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/plugin.py",
+    "sha256": "358471c8ad561e8e782a8b87ecbddfa20c7c9abe8b463ea70f9b513735cf05b1",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 157
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/project.py",
+    "sha256": "22f2d5b2ca60c3d218fc614a9d5c6aa18b40d77513d72a1851ec0af4f667dedd",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 201
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/protocol.py",
+    "sha256": "736b27d9a1cb960db00c891ce30bab63480e67b7519b0701fc09b0a8364a73cd",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 35
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/radmin.py",
+    "sha256": "b795c16dec4d66c42b953651c670ce1949b87eabc6ef9847799bfbe13af6a8b1",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 59
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/recurrent.py",
+    "sha256": "020d9e26867c46011ebd7c736e5b8da8094a20bab49b5861710d61c6db285fd6",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 28
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/scan.py",
+    "sha256": "e61de966fc03c4e98739fe7a663f87aa4aa573f2b29255b493f73353ba5db593",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 107
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/search.py",
+    "sha256": "4b79b88126fea7fbd436375e0c30c29f461e3ad03b9d9c6a1b883a13e4ff2d86",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 21
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/settings.py",
+    "sha256": "1fc028f42d9e86131950a4b68907a10a0bc6a63eaca4f240d734350ea561c951",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 374
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/settings_menu.py",
+    "sha256": "e43bd0c3ab93ecb77d843515f9a92c05351e08a80dd1099f1821d402bc4bc3d6",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 78
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/smb.py",
+    "sha256": "de830d524739984d78cea446b9bca417abd7790aa6dc3883b566a2873993e14b",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 148
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/ssh.py",
+    "sha256": "4483234e358a66d5de17ffe286e9350afd8cc52d96053d6c282d8c9532edbdc4",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 79
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/switch.py",
+    "sha256": "c88306711884b2cf5a31dc9fcc2b8e5f24a1dc1f42e6dc343ae1c2462de9d775",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 180
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/terminal.py",
+    "sha256": "470809171b7826e89cae4556a92a2b24a1dbe166170b03488e021d01350f6fcc",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 25
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/commands/wol.py",
+    "sha256": "4dbd113721f42cade6c3948be988c14fda2a9ae9c843d66809ad24ff69f6c151",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 486
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/cli/main.py",
+    "sha256": "5b1fae5994f98372441b2523afed29c6ed86b03cc01c72af578217d732299d46",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 157
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/gui/__init__.py",
+    "sha256": "de98b762bd086aaa33945923855909ca11cb055708a1a29ed9fb1a179ba4832f",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/gui/desktop.py",
+    "sha256": "0d9e11bb69c994069a2fb5065b9cfe248d5daed4636fec020f72c697060c6b0a",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 307
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/gui/main.py",
+    "sha256": "43f2314846435473bb79005587de26a6b9f3908075a1d51e4300e647da9f0d76",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 497
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/gui/theme.py",
+    "sha256": "5492379b5d7324c6d156d53b8ba86e4b571d0d4c7eeca4c4c2b980f1b00b2596",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 62
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/__init__.py",
+    "sha256": "4ba8291beb7c8ab746a171fbe9adc42d03903b4fa3ad251cae9d7e3d6fbe75f6",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/clipboard.py",
+    "sha256": "c3d9354ada0d596bbad8631daec4ec3902320794be064179127a01a4330ebe89",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 9
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/controllers.py",
+    "sha256": "b28a5019f0b992c9401fa6105840ff96a20acc144e59f2424cf1ecb77024568a",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 87
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/keyboard.py",
+    "sha256": "688e385e2a63d6b2ef0ce8f9a3ea58419af5fc0720a7e05dfc76dbdaab0f3983",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 295
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/layout.py",
+    "sha256": "551c20f5d5e67fc122026a2b23ecc40ab7a98ceff46e2eeabd54b62ae4e6143e",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 74
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+    "sha256": "a0d8ce53868330318f2e050454010909a261fb4c86fcb36f3c6f25d3395c16df",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 2020
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/managers.py",
+    "sha256": "6e9ffc87b03117d095e16584b045879b03d0bd473f16f0fb0a41602f7f6cb189",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 91
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/modal.py",
+    "sha256": "8d3f00257edf4cc7a5709ca87a1eff76383fbe63bc2df546c0d7682fba7c3b0d",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 3
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/render.py",
+    "sha256": "b57f8182b4074845146a70977f4fd53dcd9d2178944037d61d61f34037c0526c",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 50
+  },
+  {
+    "file": "src/lanctl/apps/ip/interfaces/tui/theme.py",
+    "sha256": "ab9ec2d0c8e941b3cf6864cfd2e6a2a2acf858661882facd4ffc35cfdc6d2fcd",
+    "launcher": "LANIP",
+    "interface": "TUI",
+    "entries": 7
+  },
+  {
+    "file": "src/lanctl/apps/ip/lab/__init__.py",
+    "sha256": "bb32c1e814e7a14c7846a19d79932b0737ea0c50aa651988d783767ced685d93",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 4
+  },
+  {
+    "file": "src/lanctl/apps/ip/lab/provider.py",
+    "sha256": "0778c3b2ca604962d426ec921ad29c939a37d527e77d41d31e47cae7639d1318",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 42
+  },
+  {
+    "file": "src/lanctl/apps/ip/lab/scenario.py",
+    "sha256": "922834a947f702c2703536b30c5bf62054a274271a1a0b8c0f682c6a26a123c9",
+    "launcher": "LANIP",
+    "interface": "SHARED",
+    "entries": 164
+  },
+  {
+    "file": "src/lanctl/apps/monitor/__init__.py",
+    "sha256": "2a37d4ceb172b2fa2ab74f79b3caa0c11fd6b98d49682062a11d5e17e991ad56",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 20
+  },
+  {
+    "file": "src/lanctl/apps/monitor/bug_reports.py",
+    "sha256": "ec333e8243e7dd7783512c938a002d0645bbaf68c78d76f7c0dbeb87b204fb3d",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 10
+  },
+  {
+    "file": "src/lanctl/apps/monitor/checks.py",
+    "sha256": "929d0775ff72690faf1a38473720033c201f82b42c115d93f36f4c93a4e55293",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 36
+  },
+  {
+    "file": "src/lanctl/apps/monitor/commands.py",
+    "sha256": "e74a89ea375366c7cdaaf16dcf66bce76dcb82ab9134d05dfeda12862967178e",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 374
+  },
+  {
+    "file": "src/lanctl/apps/monitor/configuration.py",
+    "sha256": "282bfbdb74f6dd27ec52dc7538af5b3e5f087be613a8454bc31dc77351f30ac6",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 147
+  },
+  {
+    "file": "src/lanctl/apps/monitor/database.py",
+    "sha256": "322acb83732a7a47360c598bcbd0b91971c65e3615fb2704f53e34261e6f6ecb",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 109
+  },
+  {
+    "file": "src/lanctl/apps/monitor/event_view.py",
+    "sha256": "3b56bd926de836867f8a6154dd6081bfecd4b88e058a1e68aa78e8e3dddeed92",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 46
+  },
+  {
+    "file": "src/lanctl/apps/monitor/gui_service.py",
+    "sha256": "62b94bb26582f46d56ac1c9327cd0bb783fcc3db56c446ee4815229dee84c4b2",
+    "launcher": "LANMON",
+    "interface": "GUI",
+    "entries": 85
+  },
+  {
+    "file": "src/lanctl/apps/monitor/identity.py",
+    "sha256": "a194b3c806feb9c011c1d7027552a7b35cbaee93d985c0c93d48477f51e32dd7",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 6
+  },
+  {
+    "file": "src/lanctl/apps/monitor/incidents.py",
+    "sha256": "6f04e229be1c25dfc14716447b8cb85be6848b31a11d6698523a2afefb67a750",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 10
+  },
+  {
+    "file": "src/lanctl/apps/monitor/interfaces.py",
+    "sha256": "4aaaf6732dd432df0e5fd7024652f80588e98c069263775ecae107764d014166",
+    "launcher": "LANMON",
+    "interface": "CLI/TUI",
+    "entries": 31
+  },
+  {
+    "file": "src/lanctl/apps/monitor/lifecycle.py",
+    "sha256": "5806914dbaca7a41994385cb08bcf3d64a830715f427e589724677279ef9de80",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 47
+  },
+  {
+    "file": "src/lanctl/apps/monitor/log_stream.py",
+    "sha256": "7d0bc57cf0a822122cab4d7ea683a4705598720e3d9cd3071c9d0f2071967b06",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 34
+  },
+  {
+    "file": "src/lanctl/apps/monitor/log_tui.py",
+    "sha256": "4856a991709bada4f06d0afa21a74c00d6dfa534e34bf203be112928bb9a65a9",
+    "launcher": "LANMON",
+    "interface": "TUI",
+    "entries": 58
+  },
+  {
+    "file": "src/lanctl/apps/monitor/models.py",
+    "sha256": "4fa0e8489407935f44577de940f822d7c4a9656e5cc2a7528069a00adffd89da",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 30
+  },
+  {
+    "file": "src/lanctl/apps/monitor/operations.py",
+    "sha256": "1f09ed4205f8d20e0b8a5661a0df4aa6789756f544dcc1c4a253f0b2a6ba62d2",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 35
+  },
+  {
+    "file": "src/lanctl/apps/monitor/outages.py",
+    "sha256": "a0b59e99cb72f2063eb01aa2275dfde77d3e58afe49a923fa37ea193ef2953b1",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 9
+  },
+  {
+    "file": "src/lanctl/apps/monitor/reports.py",
+    "sha256": "e60e4a7202c5e26bd366179107773c9ec94ea64b654b529d9ca637228de8d3e9",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 44
+  },
+  {
+    "file": "src/lanctl/apps/monitor/repositories.py",
+    "sha256": "fee03a4437385294ed6ec5e863d8359ae73df9fd05c93000f070663d082660cc",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 3
+  },
+  {
+    "file": "src/lanctl/apps/monitor/scheduler.py",
+    "sha256": "7fe511b0a3e56382793ee24cea1a6b53510326dde74d253f4a470dd409e535e6",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 12
+  },
+  {
+    "file": "src/lanctl/apps/monitor/service.py",
+    "sha256": "f4c8d1eb4a5241f34ecf57926bc2542f4911050810cd608bf491574c8c31ae80",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 130
+  },
+  {
+    "file": "src/lanctl/apps/monitor/sessions.py",
+    "sha256": "66a046c89720a8b9f4e6672687f77216fac671c4ca01d50730530c282172b4c6",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 7
+  },
+  {
+    "file": "src/lanctl/apps/monitor/state.py",
+    "sha256": "8459da7b082898c7e94809382cf0e385ab04ba63ef9743eeec19934ee68746ca",
+    "launcher": "LANMON",
+    "interface": "SHARED",
+    "entries": 15
+  },
+  {
+    "file": "src/lanctl/apps/rack/__init__.py",
+    "sha256": "5d2ef435a8d67fb76590cf00a23e1f3b7d3b339c502ff8bc0c45b3dd67b000eb",
+    "launcher": "LANRACK",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/rack/cli.py",
+    "sha256": "eeaf600d878d37fbbb4c722616f62c64b088171b438f8ff46bc0cb5494133b6d",
+    "launcher": "LANRACK",
+    "interface": "CLI/TUI",
+    "entries": 156
+  },
+  {
+    "file": "src/lanctl/apps/rack/organization.py",
+    "sha256": "f1d5f75978b3c93127f053c80dcc88291ca98bad9cc6d2272415ac04e513a418",
+    "launcher": "LANRACK",
+    "interface": "SHARED",
+    "entries": 67
+  },
+  {
+    "file": "src/lanctl/apps/rack/service.py",
+    "sha256": "748b35272dcf3de37e37912008057255771f410ff29979a6327cdac28bdfafa1",
+    "launcher": "LANRACK",
+    "interface": "SHARED",
+    "entries": 133
+  },
+  {
+    "file": "src/lanctl/apps/rack/skins.py",
+    "sha256": "793a453f50e7dedc4253ee487d8cb717a69d7736944c8db978d04304ea480c05",
+    "launcher": "LANRACK",
+    "interface": "SHARED",
+    "entries": 75
+  },
+  {
+    "file": "src/lanctl/apps/suite/__init__.py",
+    "sha256": "fcf4ec62e0e782f725bc8b5add0d93eb8bae92a2082be8a4214c7c00cd6afd0c",
+    "launcher": "LANCTL",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/suite/gui.py",
+    "sha256": "52e6741115286e113fd01c643d15c50bfaea426cff6de5314cdf725f46f16583",
+    "launcher": "LANCTL",
+    "interface": "GUI",
+    "entries": 165
+  },
+  {
+    "file": "src/lanctl/apps/suite/gui_support.py",
+    "sha256": "c0f01273a9e2477ffffcb04e4912b901e3e046d5b84ecd0dbbfd2c0d5a72988f",
+    "launcher": "LANCTL",
+    "interface": "GUI",
+    "entries": 206
+  },
+  {
+    "file": "src/lanctl/apps/suite/interfaces.py",
+    "sha256": "82dd4033a8f827a5e214111593497d3397b3162e0efbdf3ffc3d978b0d4e8f24",
+    "launcher": "LANCTL",
+    "interface": "CLI/TUI",
+    "entries": 8
+  },
+  {
+    "file": "src/lanctl/apps/suite/launcher_gui.py",
+    "sha256": "b709b808efc8943e4f98b025559354a12a998ed9a42280b27109d9ea40eff9d3",
+    "launcher": "LANCTL",
+    "interface": "GUI",
+    "entries": 129
+  },
+  {
+    "file": "src/lanctl/apps/suite/processes.py",
+    "sha256": "609206408bd3259d565f184601c6509cfe99bb4ae888f107887e9b918fe4e33b",
+    "launcher": "LANCTL",
+    "interface": "SHARED",
+    "entries": 49
+  },
+  {
+    "file": "src/lanctl/apps/suite/settings.py",
+    "sha256": "2d63f2247019e2bf833f173780b05147c6a79fbbf9224ed5126d3848fa17e0e2",
+    "launcher": "LANCTL",
+    "interface": "SHARED",
+    "entries": 81
+  },
+  {
+    "file": "src/lanctl/apps/suite/settings_form.py",
+    "sha256": "0b25ab637aab01892c5f919dcd90875c4d4e5f9f017e506d2a1352fb511fcb30",
+    "launcher": "LANCTL",
+    "interface": "SHARED",
+    "entries": 37
+  },
+  {
+    "file": "src/lanctl/apps/suite/window_style.py",
+    "sha256": "bb39d4e0b7c4578b62a8b26f210ce3b0049013ff0c964c0ff8597f9db77ca089",
+    "launcher": "LANCTL",
+    "interface": "SHARED",
+    "entries": 6
+  },
+  {
+    "file": "src/lanctl/apps/wire/__init__.py",
+    "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/wire/cli/__init__.py",
+    "sha256": "433aa9132417cf69aeaf7a8efd7e3938ccf0dab7a386c88bee6c5a589a6ea544",
+    "launcher": "LANWIRE",
+    "interface": "CLI",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/wire/cli/commands.py",
+    "sha256": "0a450d97bc2ffc8134f1a0fab6c522a917337f60decb900165e5cc13232b844e",
+    "launcher": "LANWIRE",
+    "interface": "CLI",
+    "entries": 241
+  },
+  {
+    "file": "src/lanctl/apps/wire/cli/main.py",
+    "sha256": "f88f09ce3549c04c78e73a705679f308f9e0016c0269d1ecf9ca5c8b19f61f5d",
+    "launcher": "LANWIRE",
+    "interface": "CLI",
+    "entries": 201
+  },
+  {
+    "file": "src/lanctl/apps/wire/error.py",
+    "sha256": "df762b035467871998d334123f0b5eaf2408351a0250db9dc97269013757e8a5",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 32
+  },
+  {
+    "file": "src/lanctl/apps/wire/graph.py",
+    "sha256": "021b191c2beb4542da4d478eaf82a18f230119265c2da52d9ffa5e7e9bd4998c",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 33
+  },
+  {
+    "file": "src/lanctl/apps/wire/gui_service.py",
+    "sha256": "e73ef737f7916c619b86eb631d644ac57958a215723ab7dcd7eb175ca05ea59b",
+    "launcher": "LANWIRE",
+    "interface": "GUI",
+    "entries": 140
+  },
+  {
+    "file": "src/lanctl/apps/wire/idf/__init__.py",
+    "sha256": "77c250dc9b9bc3c7a9d963df3695c40b743e5a553725b26070a2232903a15d8c",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 2
+  },
+  {
+    "file": "src/lanctl/apps/wire/idf/database.py",
+    "sha256": "17effdff61e45f037729534a9c335b75e752ed0aebb0fc255053dd511d6ba2b9",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 165
+  },
+  {
+    "file": "src/lanctl/apps/wire/idf/idf.py",
+    "sha256": "9b489abadb8e9bae793099ebe5a7fb8d9690bc020fd8ce08962f28b210034741",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 16
+  },
+  {
+    "file": "src/lanctl/apps/wire/idf/manager.py",
+    "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/apps/wire/idf/sample_topology.py",
+    "sha256": "35c7f1fff976fcb2bb67fa9cbe87557dca0394578d9cad74d33e6a545c99bbb9",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 375
+  },
+  {
+    "file": "src/lanctl/apps/wire/log.py",
+    "sha256": "7dfccef58c91b7e48d9df068c53f51004cd68f44b827a362a72478d772398fa2",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 28
+  },
+  {
+    "file": "src/lanctl/apps/wire/models/__init__.py",
+    "sha256": "33931f4972012bfceb287a7f24d5085ee1c069e78a9475e7153f5b40b3574c11",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 11
+  },
+  {
+    "file": "src/lanctl/apps/wire/models/basics.py",
+    "sha256": "12b08a6d36305029cd510c3f341f1097d7d29cf038acfea8b43a814516ad63aa",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 9
+  },
+  {
+    "file": "src/lanctl/apps/wire/models/panel.py",
+    "sha256": "f87524ef4fc5b641f41f7ba490f6d4ea4752095bce7b18b126c3b330a0b1e1f3",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 5
+  },
+  {
+    "file": "src/lanctl/apps/wire/models/rack.py",
+    "sha256": "9d73e30487ba1d14f2868e0d5a6b2f50387960baff56f16dcfc5890812951c80",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 10
+  },
+  {
+    "file": "src/lanctl/apps/wire/models/switch.py",
+    "sha256": "9b649f4d96cb8e08411d7cd1954c7ead1e393687c2be5660d3a47a560ff3155b",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 4
+  },
+  {
+    "file": "src/lanctl/apps/wire/models/terminal.py",
+    "sha256": "49141c6e54778cbf87f75f5a97cba7a0c1708196727ad428b4e2e68910741986",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 4
+  },
+  {
+    "file": "src/lanctl/apps/wire/path.py",
+    "sha256": "b65e732dd4f21e2b1bc38f8f51085fb61a298881b5eefb5586cf3d84afb7037a",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 20
+  },
+  {
+    "file": "src/lanctl/apps/wire/topology.py",
+    "sha256": "b53c8b71c050b8f58d7f0f51ffb175862256ffc04beec69f756f56ba3ab94977",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 217
+  },
+  {
+    "file": "src/lanctl/apps/wire/tui/__init__.py",
+    "sha256": "73cf1b3c4f43c93d74b60901137c8c3d6fe55bdf2b8a2f7a0a9dbcd73e0a58d3",
+    "launcher": "LANWIRE",
+    "interface": "TUI",
+    "entries": 3
+  },
+  {
+    "file": "src/lanctl/apps/wire/tui/app.py",
+    "sha256": "6e21663f41bff6b0ceb89daac4dda33a493ae71396e68cff1a5a10d6562bb98a",
+    "launcher": "LANWIRE",
+    "interface": "TUI",
+    "entries": 630
+  },
+  {
+    "file": "src/lanctl/apps/wire/tui/detail.py",
+    "sha256": "bbc8b6cbc6ffa620209479f0e5a63697f3fce36eaea16cabb721258857402545",
+    "launcher": "LANWIRE",
+    "interface": "TUI",
+    "entries": 288
+  },
+  {
+    "file": "src/lanctl/apps/wire/tui/editor.py",
+    "sha256": "dd51ddbdc2a4d01d8a976231a88b3c521f13dd40f24bafaf24e905a82c5b1cb7",
+    "launcher": "LANWIRE",
+    "interface": "TUI",
+    "entries": 366
+  },
+  {
+    "file": "src/lanctl/apps/wire/tui/help.py",
+    "sha256": "2972f2c16540948bb9c84227eb7d007c3d6e9f5b582071ff7242fc242adc0902",
+    "launcher": "LANWIRE",
+    "interface": "TUI",
+    "entries": 121
+  },
+  {
+    "file": "src/lanctl/apps/wire/tui/keyboard.py",
+    "sha256": "793854c1e7f008d28eea28cd418a9cf75b54ce9d33332283b1a423a407d26f6b",
+    "launcher": "LANWIRE",
+    "interface": "TUI",
+    "entries": 88
+  },
+  {
+    "file": "src/lanctl/apps/wire/tui/renderer.py",
+    "sha256": "f3c8e7edf7b15ba1fdde56c874d1504b03af11da5751d8ba1fd3b41e25156e08",
+    "launcher": "LANWIRE",
+    "interface": "TUI",
+    "entries": 125
+  },
+  {
+    "file": "src/lanctl/apps/wire/tui/settings.py",
+    "sha256": "5d0c2e1edd2c0dfe7a970abecf3befdd3cf23d4bb8a694b7ee21d2815d75fe36",
+    "launcher": "LANWIRE",
+    "interface": "TUI",
+    "entries": 54
+  },
+  {
+    "file": "src/lanctl/apps/wire/xfile.py",
+    "sha256": "ed51791166d1e58aca0dbc8874eb769fc01808622a3b897fd14e2471aa441b57",
+    "launcher": "LANWIRE",
+    "interface": "SHARED",
+    "entries": 25
+  },
+  {
+    "file": "src/lanctl/bootstrap/__init__.py",
+    "sha256": "3bf4ef42c140f9be1c3d70a45d4458193596e130985d909225795ffbcf5f608b",
+    "launcher": "SHARED",
+    "interface": "CLI",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/bootstrap/commands.py",
+    "sha256": "a6ec734e51fd9d8f5880474f91e4d334104fbbfe25be8a79438a76a144af1c21",
+    "launcher": "SHARED",
+    "interface": "CLI",
+    "entries": 11
+  },
+  {
+    "file": "src/lanctl/bootstrap/gui.py",
+    "sha256": "a8f51560773c6474b6dc8fe02083a54ad83ebf65af263e7691ccb0ae2cccdbae",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 25
+  },
+  {
+    "file": "src/lanctl/bootstrap/lanaccess.py",
+    "sha256": "78ba1ddb5e063b8093c4a5549d76ca8dd0e0f9fc5261cc2f77dfc610cb93178f",
+    "launcher": "LANACCESS",
+    "interface": "CLI",
+    "entries": 1
+  },
+  {
+    "file": "src/lanctl/bootstrap/lanctl.py",
+    "sha256": "9e4ce1a9aa5652d5c64edaa31fc3568ef75d2cf051428484b25dfbf9b1eaad7b",
+    "launcher": "LANCTL",
+    "interface": "CLI",
+    "entries": 134
+  },
+  {
+    "file": "src/lanctl/bootstrap/lanip.py",
+    "sha256": "33570d1cce4b24ad2d96b210cef9d248c04ef60674fcbb7decb606930c28e888",
+    "launcher": "LANIP",
+    "interface": "CLI",
+    "entries": 6
+  },
+  {
+    "file": "src/lanctl/bootstrap/lanmon.py",
+    "sha256": "6329d42668c6f68241d7101de6529f184417a15925c3e81e905a67848200d973",
+    "launcher": "LANMON",
+    "interface": "CLI",
+    "entries": 51
+  },
+  {
+    "file": "src/lanctl/bootstrap/lanrack.py",
+    "sha256": "698e2638b04cb978e645dde4a52e5a080b0c6878375f811cbe3187e538487871",
+    "launcher": "LANRACK",
+    "interface": "CLI",
+    "entries": 1
+  },
+  {
+    "file": "src/lanctl/bootstrap/lanwire.py",
+    "sha256": "e56faaa4d33f410c1c90f0353dbb41be762e012375ca9a03e0c6a3aab0aeea55",
+    "launcher": "LANWIRE",
+    "interface": "CLI",
+    "entries": 1
+  },
+  {
+    "file": "src/lanctl/core/__init__.py",
+    "sha256": "82af6bb575b6b4fb13bfab6c73e9aa97272e32776d193bfeadb89c28112261f9",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/core/activity.py",
+    "sha256": "381ba9073dcb9b4dda89173e5da9e2c889b58f8a95b4dd1fbefcaeedccbdf6bf",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 32
+  },
+  {
+    "file": "src/lanctl/core/clink_integration.py",
+    "sha256": "d209f2411026362a0d079215c765aa0a5e0d3f648868824a23b8900e7de79377",
+    "launcher": "SHARED",
+    "interface": "CLI",
+    "entries": 63
+  },
+  {
+    "file": "src/lanctl/core/command_line.py",
+    "sha256": "4fe4dc6ff14b78af80457a94bf719b8c286b554d4f0e0ce53e3516fcdf262d4f",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 7
+  },
+  {
+    "file": "src/lanctl/core/conditions.py",
+    "sha256": "0513ab7fcb141ebda66741513d252ab4e26e2054a8583bb7da8c1f37fc238a75",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 102
+  },
+  {
+    "file": "src/lanctl/core/config.py",
+    "sha256": "d71d86c0cdc82b14bee46e621f8209f7143c0c13502bf45e3e723d214d535f17",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 860
+  },
+  {
+    "file": "src/lanctl/core/console.py",
+    "sha256": "cea9f03bdd182d05f8b088cffe4073168fe0d1ede9b86b0c2f370fa9e95fde6b",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 14
+  },
+  {
+    "file": "src/lanctl/core/coordination.py",
+    "sha256": "4a21ddbaa4e16737a061723d1cb14afaeccdb20679dd96d01c0b005ecb1bb2af",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 74
+  },
+  {
+    "file": "src/lanctl/core/coordination_cli.py",
+    "sha256": "052785953423d177bbed654f23ec51055c1ba091035a4ae6324f474b40ae61f1",
+    "launcher": "SHARED",
+    "interface": "CLI",
+    "entries": 34
+  },
+  {
+    "file": "src/lanctl/core/credentials.py",
+    "sha256": "26c62259606d0bc51ba745f66f2b434be938a7dc0895589814338b0b1a524186",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 58
+  },
+  {
+    "file": "src/lanctl/core/data_migration.py",
+    "sha256": "3a6dc30646f6ad43a6567cfb30b31810df70608bacaef04a2ea1f03f7f3603d1",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 115
+  },
+  {
+    "file": "src/lanctl/core/database.py",
+    "sha256": "5df4f682446f7260dbec21c926c463ac50bebc912288b1b1c3d9140b74e106f6",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 248
+  },
+  {
+    "file": "src/lanctl/core/device_retention.py",
+    "sha256": "da1b0c5f0b4ef180f90bceb17226e6ef38265b72931bfc82424d2af5257ee657",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 46
+  },
+  {
+    "file": "src/lanctl/core/diagnostics.py",
+    "sha256": "bbdebe2ecec2c4d416dc406976fb161e5d4325f92024b8e9620e8addc4cf54df",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 108
+  },
+  {
+    "file": "src/lanctl/core/differences.py",
+    "sha256": "eec964628c7583cb2a6d89bb3c5582ca653021b0513936873b6a0b1767460116",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 23
+  },
+  {
+    "file": "src/lanctl/core/error_catalog.py",
+    "sha256": "ed8f9b05628bb6e8e628ef85b313cf996206ff8b1ae64ed217d8931bbaa451c9",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 22
+  },
+  {
+    "file": "src/lanctl/core/errors.py",
+    "sha256": "2edac830f41e93596d5955200e368c67031f6bfff244c2f90ab95a6ed04654ce",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 64
+  },
+  {
+    "file": "src/lanctl/core/file_transaction.py",
+    "sha256": "c5b30c43570868164db988ca90cac9049fd48bec6e3e11bafca73858b1b37d83",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 17
+  },
+  {
+    "file": "src/lanctl/core/first_scan.py",
+    "sha256": "31f9f551fa5191aa91c4148d97bf0a41f367d094aac7077c301e3ae829b50b43",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 40
+  },
+  {
+    "file": "src/lanctl/core/group_database.py",
+    "sha256": "0583fd63f868df41e6cbea1c764f57400661873aa24d64e718c78335caee35bb",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 69
+  },
+  {
+    "file": "src/lanctl/core/gui_instance.py",
+    "sha256": "4ca914aa0027191f62fdcbe7c3da79cda14237177d284bedcc420eb60498ba41",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 18
+  },
+  {
+    "file": "src/lanctl/core/gui_preferences.py",
+    "sha256": "76954d89a3648ede9f3f025b42ce38f435d357c44d52ba04a482a1250d893f59",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 109
+  },
+  {
+    "file": "src/lanctl/core/history.py",
+    "sha256": "aadb5bbb57091505e197ff1f11e50bc61d55a78004882ad22514bf60fdb69935",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 65
+  },
+  {
+    "file": "src/lanctl/core/installation.py",
+    "sha256": "ba049a48a13540a06eba83cd8963f66263b6264274541d59cabb03aee0d18d87",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 23
+  },
+  {
+    "file": "src/lanctl/core/installation_languages.py",
+    "sha256": "7d76fb8ac940b13024823a4d1e8c4affea3c335b01ab743cfe05b0f8340d8737",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 30
+  },
+  {
+    "file": "src/lanctl/core/interactive_console.py",
+    "sha256": "99ad8474c0d4804a12e4e5b6bb5bae39c8ac0b01eb35c2d957a6400e854317ab",
+    "launcher": "SHARED",
+    "interface": "CLI/TUI",
+    "entries": 54
+  },
+  {
+    "file": "src/lanctl/core/inventory_editing.py",
+    "sha256": "ff10d8d47ffebfa7cee9c225abefbbf13ca1a3fe966756b33655c1612f17ca99",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 16
+  },
+  {
+    "file": "src/lanctl/core/layout.py",
+    "sha256": "c5253294271ec09f0168143502fe9c3b95a2ea723c3f2c7f77a6acbf98272b5a",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 17
+  },
+  {
+    "file": "src/lanctl/core/local_permissions.py",
+    "sha256": "f62b204244709ab74a21404f13238abb15a663b9ff45509edd2ab02c50f9af12",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 13
+  },
+  {
+    "file": "src/lanctl/core/log_cleanup.py",
+    "sha256": "9b3496f275d022e7bfc165dac0d446fc166ea38dc64e56a9f98f0d738ecc3bc0",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 7
+  },
+  {
+    "file": "src/lanctl/core/logger.py",
+    "sha256": "78a5e3c5d6afacc7776ed7d0ef9d151f5862697038b9a1ec2b98dfab184c6403",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 12
+  },
+  {
+    "file": "src/lanctl/core/network_interfaces.py",
+    "sha256": "1259186366814e2a6f4d78fa5af82f10c6d8df92c2a32f6e0658b4d608508ff4",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 62
+  },
+  {
+    "file": "src/lanctl/core/official_links.py",
+    "sha256": "d83976d41e0ff0cf8380ce3fce34699fb39c30d4db03e4bd1703f023710b0527",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 10
+  },
+  {
+    "file": "src/lanctl/core/output.py",
+    "sha256": "2a206e7b5dc94d4875d885c23c7682e082cefa28c4f08e2c78710706afc222cb",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 205
+  },
+  {
+    "file": "src/lanctl/core/parser.py",
+    "sha256": "81c3b867dbef30ed096ef102ed1d890881b4346f9a576c422ad250fc73a5fb3c",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 39
+  },
+  {
+    "file": "src/lanctl/core/paths.py",
+    "sha256": "cae01c407e2a7db2bed0ee3e224fb6d215ebf16540ce65a152e1cd2e4d2da810",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 114
+  },
+  {
+    "file": "src/lanctl/core/persistence.py",
+    "sha256": "d43be63f24bf954118b66870c977b904f325543c2e42b1c800d5e2f4a68a45bf",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 55
+  },
+  {
+    "file": "src/lanctl/core/physical_placement.py",
+    "sha256": "2d252ad5b74695504559ecade58fa093c92b9a41fb2f50a0a659b7d60a8af478",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 199
+  },
+  {
+    "file": "src/lanctl/core/plugin_storage.py",
+    "sha256": "60f627c43592c63b7dcc42523c8c6ba3dcc4fe8570d212cd661121acdde7cacf",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 17
+  },
+  {
+    "file": "src/lanctl/core/plugins/__init__.py",
+    "sha256": "c420cc87cee49cee42f2c31b56bed64a8da495b8bfe2674a11bffa7a48a7a97b",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 28
+  },
+  {
+    "file": "src/lanctl/core/plugins/api.py",
+    "sha256": "3dda79088ede0a5178e89ac95de80cb6ff1b7f997258d0e8949692fb753950b4",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 71
+  },
+  {
+    "file": "src/lanctl/core/plugins/authorization.py",
+    "sha256": "d3eb595ddcbe0b6f4f37cb2a5254258dd61acd393832aa680dbc45d8734bdf28",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 20
+  },
+  {
+    "file": "src/lanctl/core/plugins/builtin.py",
+    "sha256": "47580f408f59d85692ae2a7329382a23cadd53774975e9f1c4fea4f55135be36",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 72
+  },
+  {
+    "file": "src/lanctl/core/plugins/contracts.py",
+    "sha256": "7118d8006be6e342bb66de1b6e02fc3f8c057a8780576b623efec0106fa7d96c",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 5
+  },
+  {
+    "file": "src/lanctl/core/plugins/declarative_commands.py",
+    "sha256": "a2102309aee559c87d3c7f999ee8e91810ef5aae8bf1f7d540682c110e9577b6",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 42
+  },
+  {
+    "file": "src/lanctl/core/plugins/device_adapters.py",
+    "sha256": "c506f72e993637805096c97d2240b64b97cbb8d808575ac7c1a7e179ac0aefb1",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 14
+  },
+  {
+    "file": "src/lanctl/core/plugins/events.py",
+    "sha256": "a66f33350938f5646f2728fbf7ad9b95bea3868eb16bcef302bc63fe77d0c8b8",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 25
+  },
+  {
+    "file": "src/lanctl/core/plugins/extensions.py",
+    "sha256": "3bfdb3b2d46c79f968c41082af648603461710f5e6d922989951270fd8cbf92e",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 22
+  },
+  {
+    "file": "src/lanctl/core/plugins/functions.py",
+    "sha256": "7d6a541bb1bf56575f44956e6de97ae65b6941dcd40a92d33aff06ffa09261b0",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 15
+  },
+  {
+    "file": "src/lanctl/core/plugins/isolated_runtime.py",
+    "sha256": "a3781d45dcdc5df0f31e93182ed1e760a3b22ebb998b2cd5a2dd31fea887d2da",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 154
+  },
+  {
+    "file": "src/lanctl/core/plugins/manager.py",
+    "sha256": "992fe027c4d205ab81f33fc15c48cdb60088ad330ad71d850e5b6d59e237398e",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 311
+  },
+  {
+    "file": "src/lanctl/core/plugins/models.py",
+    "sha256": "5a1dc09a039bb5b4892fc9845b02b48dfe43a622671dcfe5f577e6d482e52df7",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 74
+  },
+  {
+    "file": "src/lanctl/core/plugins/package.py",
+    "sha256": "19cada012f830a92140b345fa5549f2d6fae628967b894f7ca8353989449df6b",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 113
+  },
+  {
+    "file": "src/lanctl/core/plugins/process_api.py",
+    "sha256": "df6f33c4593640dea67cadd25d9e05265eb471f9c359c0c896fcf778b49b8773",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 29
+  },
+  {
+    "file": "src/lanctl/core/plugins/process_runtime.py",
+    "sha256": "039f3eedf2117db513668ab29ca333c7598b41bf8f180f8cd9b38077285ef042",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 75
+  },
+  {
+    "file": "src/lanctl/core/plugins/publishers.py",
+    "sha256": "da9ab7f5e30770d8ac8d32f25b056589ca27a96a68dfdd332d8b52bee2230cfa",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 25
+  },
+  {
+    "file": "src/lanctl/core/plugins/runtime_protocol.py",
+    "sha256": "2287091b961c9e036876ab35276fa2e9737b881201fb3de898c162f7cad9d6e3",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 79
+  },
+  {
+    "file": "src/lanctl/core/plugins/scanners.py",
+    "sha256": "ca5e1a2c7713af2f2d3cacb6daff3b9a7924ce9de177e0d94a423948cfe5b104",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 13
+  },
+  {
+    "file": "src/lanctl/core/plugins/selection.py",
+    "sha256": "9bfadffe67a8708a528ff10b08f5ab670e92cf3d72d32fc62ad47fe345b7df8f",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 17
+  },
+  {
+    "file": "src/lanctl/core/plugins/settings.py",
+    "sha256": "e229ea54b3a53dae7854b6f78bc88f142da3fb7fdb40421d659bd434019ee121",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 83
+  },
+  {
+    "file": "src/lanctl/core/plugins/smb_runtime.py",
+    "sha256": "16e79d30b69a4ca0c17835b5b17e491f067467716c172d41fea4e6827fe60986",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 232
+  },
+  {
+    "file": "src/lanctl/core/plugins/theme.py",
+    "sha256": "1f8ca16453d51f3b8beeadf5d74fd31ef85d2faba38272ddf914cb7090afe705",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 62
+  },
+  {
+    "file": "src/lanctl/core/plugins/ui_contracts.py",
+    "sha256": "a31c46d0d2f812ffd68c002f68589958a2eea66ce978e852f6cf2cde83330acb",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 75
+  },
+  {
+    "file": "src/lanctl/core/plugins/wol_runtime.py",
+    "sha256": "069ab9bf9df18d7af9e43b4b79dfb3de306164b516c9ced40fc1a2f33795e6ba",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 10
+  },
+  {
+    "file": "src/lanctl/core/progress.py",
+    "sha256": "feadfe2759471338ab6db6903e3a1d99ea8bf8e8b7fbe140253060d9bf6c28c4",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 7
+  },
+  {
+    "file": "src/lanctl/core/project_context.py",
+    "sha256": "486e4b1d5aef5170ba1c717b2b23e45086fcc2c31e63f2bee50a61eaada72c5b",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 14
+  },
+  {
+    "file": "src/lanctl/core/projects/__init__.py",
+    "sha256": "b310349198fde5b6aa3a3a98793c91385d3039c59dc1a3164618e4dd14925159",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 70
+  },
+  {
+    "file": "src/lanctl/core/projects/catalog.py",
+    "sha256": "ae47b0331251d213124a61ede253db5454946629ca81e5e3795f8346b62defd8",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 23
+  },
+  {
+    "file": "src/lanctl/core/projects/console_session.py",
+    "sha256": "26655f1599351668c8b0ad52310f4ac0bb4ef8995b02c2bb288e4518774e0789",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 37
+  },
+  {
+    "file": "src/lanctl/core/projects/current.py",
+    "sha256": "b367b996abf84b4da45fc394c6086dad5aed695d66521ae21a2a114a66dcb227",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 9
+  },
+  {
+    "file": "src/lanctl/core/projects/fingerprint.py",
+    "sha256": "8f97940c5a83538373f25fbc9b27e0879f15713cb126f62fdaf632d2587289ac",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 7
+  },
+  {
+    "file": "src/lanctl/core/projects/metadata.py",
+    "sha256": "9e83720528ba8d6ccce21bec31889da005c060febbccecb4c3b729fbb62ecd20",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 62
+  },
+  {
+    "file": "src/lanctl/core/projects/paths.py",
+    "sha256": "8361f8088450d1dc7cd719504278217f95af033e1a77658d74386671fb4417d1",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 17
+  },
+  {
+    "file": "src/lanctl/core/projects/physical.py",
+    "sha256": "a5a2431912383aee232c0e67c21342ab0fd5b87e121b71992830890ad552cc32",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 38
+  },
+  {
+    "file": "src/lanctl/core/projects/physical_mutations.py",
+    "sha256": "9b5ebb2562acf46d78484a7da06606be9176399eb77dc60dcfb60267f85948d0",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 13
+  },
+  {
+    "file": "src/lanctl/core/projects/save_policy.py",
+    "sha256": "2731078027bec2009552ef2d63383727945fa52876d3c52cb9a5d50d70780354",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 108
+  },
+  {
+    "file": "src/lanctl/core/projects/settings.py",
+    "sha256": "9dca3c7b559a21b9414c4c1d311994be7f87a2fdfbe5a8a6e2314e27bf3778be",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 141
+  },
+  {
+    "file": "src/lanctl/core/projects/vlf.py",
+    "sha256": "fa375afdf679fadcbdce82a942a0032aa828a7e4eae9c84c5ad7149c9cc882dd",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 350
+  },
+  {
+    "file": "src/lanctl/core/projects/workspace.py",
+    "sha256": "4bdb360e5aac46753524832e076d01f6c3d1ef198b8847b0c05d601363cec025",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 97
+  },
+  {
+    "file": "src/lanctl/core/query.py",
+    "sha256": "25867502412a12b7d9700ea533a6f3ef8f98ed43851397ca27ad2072381f4938",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 35
+  },
+  {
+    "file": "src/lanctl/core/rack_dimensions.py",
+    "sha256": "39f34764f109ed82c549ce5eb4c71554ffb77d5cfa301f9d198b56ce1cc6a663",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 34
+  },
+  {
+    "file": "src/lanctl/core/recurrent_elements.py",
+    "sha256": "ec06b1adb92173e2b838a01eae0011b139b7aaadf8ae0a1ee15e3fdf3b758fa9",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 30
+  },
+  {
+    "file": "src/lanctl/core/resources.py",
+    "sha256": "9b61d6c9d38b8ea11bcc72b7acda1ba1d0ea1f3700a40e242ab992308d55ea54",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 2
+  },
+  {
+    "file": "src/lanctl/core/secret_input.py",
+    "sha256": "9c480e089607fb350406c14d370daa468990eeab1f1bbe1b79c46667a32853bf",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 1
+  },
+  {
+    "file": "src/lanctl/core/session.py",
+    "sha256": "cb9c78dca2d82181231055397fc3e70cc9150751dbf1ae0e47c799a21b206b53",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 108
+  },
+  {
+    "file": "src/lanctl/core/session_context.py",
+    "sha256": "1a70c849fc66064fffca5aa7b2232004025c7f9a8d44f3528219fbdd7212eff7",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 10
+  },
+  {
+    "file": "src/lanctl/core/settings_catalog.py",
+    "sha256": "bbc78df5e170b7f8b510e397c45c0dd460845972a2a88f2eed395764184b1295",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 159
+  },
+  {
+    "file": "src/lanctl/core/settings_policy.py",
+    "sha256": "5086834c7e247cffa62599df8fdf1f4ba623b32bbc67c06080ec262dd644f989",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 109
+  },
+  {
+    "file": "src/lanctl/core/tasking.py",
+    "sha256": "c8bfacdc9244e18c1ebd053602dcbf7920bcdda3e3bf3d3c54732d9d8f9ca6e6",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 20
+  },
+  {
+    "file": "src/lanctl/core/terminal_integration.py",
+    "sha256": "7ba14a9675368bd370e9fb892970cf30eb455c6ce3182c548b5d7eb1e9dd5ada",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 4
+  },
+  {
+    "file": "src/lanctl/core/terminal_ui.py",
+    "sha256": "b0d67d07fd2916da0010beb711b97e49e7f2bc9ba4eb8e8a7ab4f7d8e013773b",
+    "launcher": "SHARED",
+    "interface": "TUI",
+    "entries": 48
+  },
+  {
+    "file": "src/lanctl/core/tr064.py",
+    "sha256": "3cb3badb22068c3b7fedf4749139820bc47b20df5aad008a8bb50c7f7ebf8e75",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 46
+  },
+  {
+    "file": "src/lanctl/core/updates.py",
+    "sha256": "4684d1aa1678a40450cb5801a70f3ab868fa126da9071d2a743e0c30029685a4",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 98
+  },
+  {
+    "file": "src/lanctl/core/vault_crypto.py",
+    "sha256": "f978bda38fd4c6d0641b42426cbe3c64e19a426fa198048386cbfb1c0ec95cef",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 11
+  },
+  {
+    "file": "src/lanctl/core/window_icons.py",
+    "sha256": "5cca8f337a835ac1cafec4670e46334ec238f6d0040f87d01b4fe949f6aa60ab",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 5
+  },
+  {
+    "file": "src/lanctl/infrastructure/__init__.py",
+    "sha256": "095c2ed26ceb0cb5756c118c84a0233f7f33dee5192ceca9f67c0753cb572c24",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/infrastructure/distribution/__init__.py",
+    "sha256": "e78107af223b084c076df88432a65f9590de18505f59eb91003f70fa8ecdd97a",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 4
+  },
+  {
+    "file": "src/lanctl/infrastructure/distribution/release.py",
+    "sha256": "ce1b61492cae18b833b7eee2604f80e22d70fa1cd12638ecc29c2008cf3518fd",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 27
+  },
+  {
+    "file": "src/lanctl/infrastructure/platform/__init__.py",
+    "sha256": "77a2f7ce27cef715069123e14f9c74a02d85b930a07892b754b439e71eef4088",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 2
+  },
+  {
+    "file": "src/lanctl/infrastructure/platform/base.py",
+    "sha256": "370e5c9d045b4dffffca8c0757c7145124ae8c97c6fcd8167c919cd343b325ea",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 2
+  },
+  {
+    "file": "src/lanctl/infrastructure/platform/linux.py",
+    "sha256": "7053fe34253fdf146269617349566810e7538c13ba23bc969c0fd8038dd7c577",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 39
+  },
+  {
+    "file": "src/lanctl/infrastructure/platform/windows.py",
+    "sha256": "d13a6263211b271d6b541bf80ec4d2871d6411d02d92aa00edf96ec5af65e22c",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 116
+  },
+  {
+    "file": "src/lanctl/infrastructure/platform/windows_service.py",
+    "sha256": "14817779c1d4584d227ee03d26cb2aaed4d800cdf88199096431a99b0eb5f371",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 15
+  },
+  {
+    "file": "src/lanctl/shared/__init__.py",
+    "sha256": "a626d3798bfdcf060cca925d78dc6ffaa92b8870e65364dd85dc2d3b547dfbbe",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 0
+  },
+  {
+    "file": "src/lanctl/shared/assets/__init__.py",
+    "sha256": "868dd5a1d37855e53b473a832c00e7b3a40bc39c320b92ffef35c1e076e186ba",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 6
+  },
+  {
+    "file": "src/lanctl/shared/assets/icons.py",
+    "sha256": "437daa3b17e9023b3562f13ea48e1e0309c6f57bcf7390c5545641e6fa914584",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 60
+  },
+  {
+    "file": "src/lanctl/shared/i18n.py",
+    "sha256": "27bcafed4a34bf96bd3d0b11719ed7d4d8ed7752aebf18a21176244f5b72c1fb",
+    "launcher": "SHARED",
+    "interface": "SHARED",
+    "entries": 399
+  },
+  {
+    "file": "gui/app-dialogs.js",
+    "sha256": "0362af4d0bf6d436eb71abb9814ee0b6e102aee8f999a60a12c0ad14672101f9",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 14
+  },
+  {
+    "file": "gui/app-preferences.css",
+    "sha256": "27b06d6233ffd8f83bee66f0e19c18252ce9fdcf30b4a3dfd0ebd1a0eb83cd2b",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 5
+  },
+  {
+    "file": "gui/app-preferences.js",
+    "sha256": "10917c871573783985e792b73a8e52a645075011aa02a95de699689ad656172a",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 68
+  },
+  {
+    "file": "gui/app-support.js",
+    "sha256": "084bd8133df1f7e6f6e2adfad8af5e1bf0c7039bcebd0e03e27bd75f4fa89292",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 85
+  },
+  {
+    "file": "gui/app.js",
+    "sha256": "ab28fb707386d3e5fa82779349c5f9409ff9fd42e0f1ec74b896ccdfd3915db6",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 488
+  },
+  {
+    "file": "gui/desktop.css",
+    "sha256": "24a1852c7b72991b9976f978bb0ca94ffc640ba1ed8110e0b77050226c16c355",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 0
+  },
+  {
+    "file": "gui/desktop.js",
+    "sha256": "987926abbccb66167e697d2903769efbbf6aa8238a1593ec3c2701f1dfe30239",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 178
+  },
+  {
+    "file": "gui/device-sheet.js",
+    "sha256": "81c6516d15403bedfb051d8d362fb510abb356a19c6cbc2c615f59d68b285bcf",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 213
+  },
+  {
+    "file": "gui/first-scan.js",
+    "sha256": "138ddb070f47e296831e91ba8690f62986783ee7def5c23bd9dd3f3197cb1c0a",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 49
+  },
+  {
+    "file": "gui/index.html",
+    "sha256": "3607bc695879bcb86cff87c5ea086ecfaf9d5ce2e8b97261e8dd43d08a4a8a39",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 517
+  },
+  {
+    "file": "gui/lanip-controls.js",
+    "sha256": "5b16f3fe36a16a6e40e8eb344b53fbb9e146d2c20938d0a4611f95da1ce62bdc",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 72
+  },
+  {
+    "file": "gui/lanip.css",
+    "sha256": "893f47c70aa746e39c650bb236aadcdfa6e7d54cc58cf16be8a4ac961c15d62b",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 20
+  },
+  {
+    "file": "gui/lanip.js",
+    "sha256": "ea55bb01699f99a7d1f485aca4b2197de8a7f895570641279aa2cd2495bb699e",
+    "launcher": "LANIP",
+    "interface": "GUI",
+    "entries": 78
+  },
+  {
+    "file": "gui/launcher-prototypes.css",
+    "sha256": "6e923d491507f9401b11a410ef0b66137d486e10baf48ce7eadff74d06a74997",
+    "launcher": "SHARED",
+    "interface": "GUI:PROTOTYPE",
+    "entries": 0
+  },
+  {
+    "file": "gui/launcher-prototypes.html",
+    "sha256": "e8bfa2cf615afa585356a3b3b0b32105334cc33b0bc2b3d85abbb5c1a2e5d217",
+    "launcher": "SHARED",
+    "interface": "GUI:PROTOTYPE",
+    "entries": 80
+  },
+  {
+    "file": "gui/launcher-prototypes.js",
+    "sha256": "75dbb11474e6800d6a5e9a4c1473820d3781d15f0fc4b0924e4c0ba0b76a4c5e",
+    "launcher": "SHARED",
+    "interface": "GUI:PROTOTYPE",
+    "entries": 420
+  },
+  {
+    "file": "gui/launcher.css",
+    "sha256": "0eb5f320fb46d63488df78a7e0c9670e973327ae552606f269fe19e479739609",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 0
+  },
+  {
+    "file": "gui/launcher.html",
+    "sha256": "4e7a80ea07f2be3970a57205bbe97b2f22008e78f7dc21efe6452bba6d9c028b",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 107
+  },
+  {
+    "file": "gui/launcher.js",
+    "sha256": "7a5b26c2437d243e477419011461e5a944324e700c5ab9d078d9e3506bb9a256",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 588
+  },
+  {
+    "file": "gui/monitor-support.js",
+    "sha256": "dc88c44012f9abc7007d6576581d9cb16531fa49ab1dbdbe6f01c0eaaab1b5f9",
+    "launcher": "LANMON",
+    "interface": "GUI",
+    "entries": 143
+  },
+  {
+    "file": "gui/physical-editor.js",
+    "sha256": "66c49de2b90efa13d73e6c943c171b911f8b021b903befff17f7f837a5c77471",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 182
+  },
+  {
+    "file": "gui/physical-gui.js",
+    "sha256": "d3297dd5b6a7748109ac5e1c19bba98e13161e84591b0059f515d67adbee6a8a",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 300
+  },
+  {
+    "file": "gui/prototypes/settings-preview.html",
+    "sha256": "3196c1e64b9d4e88973f28158a9a37563bc39c5eb9b9a8ce5060a41d9864a4a5",
+    "launcher": "SHARED",
+    "interface": "GUI:PROTOTYPE",
+    "entries": 199
+  },
+  {
+    "file": "gui/rack-dimensions.js",
+    "sha256": "7dbb9e2bc82c0a51c23ce44378e3f31a3a0a487e8564c2a72f5cdb5642a3ae26",
+    "launcher": "LANRACK",
+    "interface": "GUI",
+    "entries": 49
+  },
+  {
+    "file": "gui/rack-skins.js",
+    "sha256": "df2972c21dc73b128a6110c8344bbb651d637f04430fead110d7f5ba350df505",
+    "launcher": "LANRACK",
+    "interface": "GUI",
+    "entries": 148
+  },
+  {
+    "file": "gui/record-editors.js",
+    "sha256": "86de0d2fe3ae571f2ffcfc85b27d2a2d07687ccff15fd6203967afb5f5136f27",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 82
+  },
+  {
+    "file": "gui/remote-setup.css",
+    "sha256": "dc31c8c3c07c8084f8fb775cc29aa1b6a97eb8e3778edef847cd3b9850c900b3",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 1
+  },
+  {
+    "file": "gui/remote-setup.html",
+    "sha256": "c9ef7c54659ed2f3c3f8c449f739355b502e31ca3711eae96abe766f4ce7ec2c",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 47
+  },
+  {
+    "file": "gui/remote-setup.js",
+    "sha256": "55c9ebeb5dda59d1eb7f6c926db995101c3b8a9af3375156f6073e760203f56f",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 28
+  },
+  {
+    "file": "gui/styles.css",
+    "sha256": "e5b611ab6767328bc91e47ed0a39fea88b36a77437dd5d045f3eebf03babdd43",
+    "launcher": "SHARED",
+    "interface": "GUI",
+    "entries": 14
+  },
+  {
+    "file": "gui/suite-settings.css",
+    "sha256": "d3d6670ed47147ea38c11a399a42f8d3fb22219c7c50ed28c5a8e466b143151e",
+    "launcher": "LANCTL",
+    "interface": "GUI",
+    "entries": 0
+  },
+  {
+    "file": "gui/suite-settings.js",
+    "sha256": "69c9eec712703f772d18a2d2128bfc73f7e1e052e0b210ed2b20f669746d6439",
+    "launcher": "LANCTL",
+    "interface": "GUI",
+    "entries": 288
+  },
+  {
+    "file": "gui/suite.css",
+    "sha256": "44188ed2194bd8de0936413fc9b528278703b353b4acf268c5f4b7bd3aef9558",
+    "launcher": "LANCTL",
+    "interface": "GUI",
+    "entries": 2
+  },
+  {
+    "file": "gui/suite.html",
+    "sha256": "87b4dbb7f96db073c767f65115e5ef259e375ce3e7b43550df6f7ce7b8fe9d19",
+    "launcher": "LANCTL",
+    "interface": "GUI",
+    "entries": 101
+  },
+  {
+    "file": "gui/suite.js",
+    "sha256": "1c28fbe65134008f5fef3f8b8f4f5dcc0ea723dded4048fbeb1cb1fec5880b7f",
+    "launcher": "LANCTL",
+    "interface": "GUI",
+    "entries": 514
+  },
+  {
+    "file": "gui/wire-gui.js",
+    "sha256": "f2cd5a88a7220aec10782920ace14f37acb6fb050df89658cfc70599198a541a",
+    "launcher": "LANWIRE",
+    "interface": "GUI",
+    "entries": 754
+  },
+  {
+    "file": "plugins-src/lanctl.analysis.mac-vendor/api/api.map",
+    "sha256": "d9eb49d296f9f3355080daf66dafeed63fbd00062dff6c1b66b47848e2398d13",
+    "launcher": "lanctl.analysis.mac-vendor",
+    "interface": "PLUGIN",
+    "entries": 11
+  },
+  {
+    "file": "plugins-src/lanctl.analysis.mac-vendor/main.exec",
+    "sha256": "0a3edbd407a1b9e2f6909f8b258ec12b56b833ed70633cc0ca2561ecf7ba899d",
+    "launcher": "lanctl.analysis.mac-vendor",
+    "interface": "PLUGIN",
+    "entries": 77
+  },
+  {
+    "file": "plugins-src/lanctl.analysis.mac-vendor/plugin.info",
+    "sha256": "fc7e3da24984514e5e86e4bc9b3857c66b9448bac445aa21e38cc09b1598c909",
+    "launcher": "lanctl.analysis.mac-vendor",
+    "interface": "PLUGIN",
+    "entries": 20
+  },
+  {
+    "file": "plugins-src/lanctl.discovery.mdns-ssdp/api/api.map",
+    "sha256": "fae2ee91a1ded31cb225bd1d6da638b1621f50cb55b42580c7c2fb6d6a26bd01",
+    "launcher": "lanctl.discovery.mdns-ssdp",
+    "interface": "PLUGIN",
+    "entries": 5
+  },
+  {
+    "file": "plugins-src/lanctl.discovery.mdns-ssdp/main.exec",
+    "sha256": "02a97af94606949f0608117f1e2ed0fcf489850343b23554b06449a1345f52b4",
+    "launcher": "lanctl.discovery.mdns-ssdp",
+    "interface": "PLUGIN",
+    "entries": 18
+  },
+  {
+    "file": "plugins-src/lanctl.discovery.mdns-ssdp/plugin.info",
+    "sha256": "d4bb51f43dac45f340d6222ee2908d35712b74be8225afdfa69bf86b5d45ef22",
+    "launcher": "lanctl.discovery.mdns-ssdp",
+    "interface": "PLUGIN",
+    "entries": 15
+  },
+  {
+    "file": "plugins-src/lanctl.discovery.windows-smb/api/api.map",
+    "sha256": "b773d0c33c12b791ac3d94801aae1239329f9c0e18c7dc1828a5f81f1bdf9f03",
+    "launcher": "lanctl.discovery.windows-smb",
+    "interface": "PLUGIN",
+    "entries": 46
+  },
+  {
+    "file": "plugins-src/lanctl.discovery.windows-smb/main.exec",
+    "sha256": "a9581bbc240ed3affe8c2432d22fa11a1fc720aa1dc36dd94626e4f352942bde",
+    "launcher": "lanctl.discovery.windows-smb",
+    "interface": "PLUGIN",
+    "entries": 78
+  },
+  {
+    "file": "plugins-src/lanctl.discovery.windows-smb/plugin.info",
+    "sha256": "39c76a08edd04d5b41b599d255d4ef19a75f931517c8faf2f55e3cc93e939b37",
+    "launcher": "lanctl.discovery.windows-smb",
+    "interface": "PLUGIN",
+    "entries": 27
+  },
+  {
+    "file": "plugins-src/lanctl.integration.terminal/api/api.map",
+    "sha256": "499f652b52a9442120447580237e0dea38ef594c3fbbb257777333cc165f7733",
+    "launcher": "lanctl.integration.terminal",
+    "interface": "PLUGIN",
+    "entries": 6
+  },
+  {
+    "file": "plugins-src/lanctl.integration.terminal/main.exec",
+    "sha256": "7109cbf000959e5618b6668f48dcedacb38dfc84492d4032b8960f0656fe918c",
+    "launcher": "lanctl.integration.terminal",
+    "interface": "PLUGIN",
+    "entries": 123
+  },
+  {
+    "file": "plugins-src/lanctl.integration.terminal/plugin.info",
+    "sha256": "7873ce474331536435a9a031ae1ac7af30eb991d4cbb7cb817e3f6f1ee3933a7",
+    "launcher": "lanctl.integration.terminal",
+    "interface": "PLUGIN",
+    "entries": 13
+  },
+  {
+    "file": "plugins-src/lanctl.lab.network-emulator/api/events.registry",
+    "sha256": "887271565b34f2f1b83d5a05139a152480b0c9e38642313ebe71cf12cf0f8514",
+    "launcher": "lanctl.lab.network-emulator",
+    "interface": "PLUGIN",
+    "entries": 6
+  },
+  {
+    "file": "plugins-src/lanctl.lab.network-emulator/api/events.schema",
+    "sha256": "3de908766a2257f7bd916947e33fbab9946ebf2e1a2f96d5c5ae21692ebaf193",
+    "launcher": "lanctl.lab.network-emulator",
+    "interface": "PLUGIN",
+    "entries": 13
+  },
+  {
+    "file": "plugins-src/lanctl.lab.network-emulator/main.exec",
+    "sha256": "83168f4ad4e493bdc0bfff59ec52b444b51a78124f087e2f0016126a7a5faefb",
+    "launcher": "lanctl.lab.network-emulator",
+    "interface": "PLUGIN",
+    "entries": 2
+  },
+  {
+    "file": "plugins-src/lanctl.lab.network-emulator/plugin.info",
+    "sha256": "50eb11598c7822dc403dc311bf94df336f00350bb3799cb6bf230d7fef2e0fbc",
+    "launcher": "lanctl.lab.network-emulator",
+    "interface": "PLUGIN",
+    "entries": 15
+  },
+  {
+    "file": "plugins-src/lanctl.network.wol/main.exec",
+    "sha256": "112a083ff83ffbec748a563992abbf7fc899a16c1fe0ebcd4775ebafda019436",
+    "launcher": "lanctl.network.wol",
+    "interface": "PLUGIN",
+    "entries": 15
+  },
+  {
+    "file": "plugins-src/lanctl.network.wol/plugin.info",
+    "sha256": "6890471d2c0d85b93963d8951176fbe8d2942390ac239157ee5609a9b43a4d87",
+    "launcher": "lanctl.network.wol",
+    "interface": "PLUGIN",
+    "entries": 16
+  },
+  {
+    "file": "bundled/languages/catalog.json",
+    "sha256": "cfc250002580ed85b362e3ba8b57db7788d084d1f0a72dbf42d269c6e49790ff",
+    "launcher": "SHARED",
+    "interface": "CATALOG",
+    "entries": 8
+  },
+  {
+    "file": "bundled/languages/english.lang",
+    "sha256": "a0fa85b038cb77a558bc2a6f680a19df1776d7a741e147af460d0900546077fd",
+    "launcher": "SHARED",
+    "interface": "CATALOG",
+    "entries": 73
+  },
+  {
+    "file": "bundled/languages/spanish.lang",
+    "sha256": "b451c45e0d72d17b42f566bc7fbd1c3f4d50481ced17400b05403bdca7309820",
+    "launcher": "SHARED",
+    "interface": "CATALOG",
+    "entries": 73
+  },
+  {
+    "file": "packaging/clink/lanctl.lua",
+    "sha256": "cd6b1372925cb30bf9dbcc87dad452f3719f5377d2779dd83735f92fc375a1ad",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 1512
+  },
+  {
+    "file": "packaging/entrypoints/gui_entry.py",
+    "sha256": "1ba95819b6cfe5d115953a5fa909cf19ac93d5b78f0d8b29ae93e91e733fb1a3",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 1
+  },
+  {
+    "file": "packaging/entrypoints/lanaccess_entry.py",
+    "sha256": "653f09c801e43362e4a5689350fc296a6d677d73a8ef69c0f30f3e2c6ba5daac",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 1
+  },
+  {
+    "file": "packaging/entrypoints/lanctl_entry.py",
+    "sha256": "f85ba28cbfc0911294a418dec6f0a9dd5ccbd00825de3b91919f46382eb06a88",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 1
+  },
+  {
+    "file": "packaging/entrypoints/lanip_entry.py",
+    "sha256": "e7b0618f0de53fdd7746670e5dd9531ff8f9132fdfa8048c68c9395abf141932",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 1
+  },
+  {
+    "file": "packaging/entrypoints/lanmon_entry.py",
+    "sha256": "98f59bd57adedc5fcfbf79b3dc1851e5126f6e2045723dc51a452c6f9188cb47",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 1
+  },
+  {
+    "file": "packaging/entrypoints/lanrack_entry.py",
+    "sha256": "b349b06cd9d767f623bdec94b0285a6e794862cac0ebf94790c255a92879137e",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 1
+  },
+  {
+    "file": "packaging/entrypoints/lanwire_entry.py",
+    "sha256": "4ccc0e28fdef4c573fe11acb28f6014498d702c47312a7e64c451b0e6f678a69",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 1
+  },
+  {
+    "file": "packaging/inno/LANCTL.iss",
+    "sha256": "2bf87f07fbdf1bea26d76749bb052bdf4ad6903388e27809727c18adcdd427ce",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 277
+  },
+  {
+    "file": "packaging/inno/messages.iss",
+    "sha256": "f45e243fa391a9d25bfc877b35f7c2612ba0da23ab44e26a7c13185e870983dc",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 0
+  },
+  {
+    "file": "packaging/inno/program-languages.iss",
+    "sha256": "bc038ae5c6afebd10eeb6d1517ba0e8da5504ac3506a71f5469dd14a11514382",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 4
+  },
+  {
+    "file": "packaging/portable/prepare.ps1",
+    "sha256": "cbf4b5c7a3e8507e574cc41b09b26fa60c92e2d85aa6fa66a4744af32dcca431",
+    "launcher": "INSTALLER",
+    "interface": "INSTALLER",
+    "entries": 6
+  }
+]

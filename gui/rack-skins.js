@@ -42,16 +42,16 @@ function rackFitElevation() {
   elevation.style.setProperty("--rack-unit-height", height + "px");
 }
 const rackSizeObserver = new ResizeObserver(rackFitElevation);
-const rackSkinKinds = [
-  ["auto", "Automático según inventario"],
-  ["switch", "Switch"],
-  ["panel", "Panel de conexiones"],
-  ["server", "Servidor"],
+const rackSkinKinds = ()=>([
+  ["auto", window.LanctlI18n.t("LANCTL.UI.VIEW.AUTOMATIC_FROM_INVENTORY")],
+  ["switch", window.LanctlI18n.t("LANCTL.UI.WORD.SWITCH")],
+  ["panel", window.LanctlI18n.t("LANCTL.UI.VIEW.PATCH_PANEL")],
+  ["server", window.LanctlI18n.t("LANCTL.UI.EXTENSION.SERVER")],
   ["ups", "SAI / UPS"],
-  ["router", "Router / cortafuegos"],
-  ["shelf", "Bandeja"],
-  ["blank", "Panel ciego"],
-];
+  ["router", window.LanctlI18n.t("LANCTL.UI.VIEW.ROUTER_FIREWALL")],
+  ["shelf", window.LanctlI18n.t("LANCTL.UI.WORD.TRAY")],
+  ["blank", window.LanctlI18n.t("LANCTL.UI.VIEW.BLANK_PANEL")],
+]);
 function rackAutoSkin(r) {
   const data = r.data || {},
     type = data.type || r.type || "";
@@ -98,7 +98,7 @@ function rackFace(r, override) {
     copper = ports.filter((e) => !fiber.includes(e));
   const used = new Set(r.connectedPorts || []),
     name = r.name || r.id;
-  const title = `${name} · ${r.id} · ${units} U · Frente genérico ${p.kind} · ${p.rj45} RJ45 + ${p.sfp} SFP`;
+  const title = window.LanctlI18n.t("LANCTL.UI.WEB.VALUE0_VALUE1_VALUE2_U_GENERIC_FRONT_VALUE3_VALUE4_RJ45_VALUE5_SFP",{value0:(name),value1:(r.id),value2:(units),value3:(p.kind),value4:(p.rj45),value5:(p.sfp)});
   const label = name.length > 33 ? name.slice(0, 30) + "…" : name;
   let body = `<rect class="skin-chassis" x="${p.rackmount ? 18 : 200}" y="5" width="${p.rackmount ? 1164 : 800}" height="${h - 12}" rx="5"/>`;
   if (p.rackmount)
@@ -107,7 +107,7 @@ function rackFace(r, override) {
   else
     body += `<path class="skin-tray" d="M5 ${h - 8} H1195 M12 ${h - 18} V${h - 4} M1188 ${h - 18} V${h - 4}"/>`;
   const textX = p.rackmount ? 38 : 220;
-  body += `<text class="skin-device-name" x="${textX}" y="25">${esc(label)}</text><text class="skin-device-id" x="${textX}" y="42">${esc(r.id)} · ${esc(rackSkinKinds.find((k) => k[0] === p.kind)?.[1] || p.kind)}</text>`;
+  body += `<text class="skin-device-name" x="${textX}" y="25">${esc(label)}</text><text class="skin-device-id" x="${textX}" y="42">${esc(r.id)} · ${esc(rackSkinKinds().find((k) => k[0] === p.kind)?.[1] || p.kind)}</text>`;
   if (["switch", "panel", "router"].includes(p.kind)) {
     const columns = Math.max(1, Math.ceil(p.rj45 / 2)),
       area = p.rj45 > 24 ? 650 : 390,
@@ -122,7 +122,7 @@ function rackFace(r, override) {
         y = 15 + row * 33;
       const port = copper[i],
         active = port && used.has(port[0]);
-      body += `<g class="skin-port ${active ? "connected" : ""}" data-skin-port="${esc(port?.[0] || "")}" data-connector="rj45"><title>${esc(port ? port[0] + (active ? " · Conectado" : " · Sin conexión registrada") : "RJ45 " + (i + 1) + " · Representación sin puerto asociado")}</title><rect x="${x}" y="${y}" width="${size}" height="21" rx="1"/><path d="M${x + size * 0.25} ${y + 3} H${x + size * 0.75} M${x + size * 0.3} ${y + 6} H${x + size * 0.7}"/><text x="${x + size / 2}" y="${y + 29}">${i + 1}</text></g>`;
+      body += `<g class="skin-port ${active ? "connected" : ""}" data-skin-port="${esc(port?.[0] || "")}" data-connector="rj45"><title>${esc(port ? port[0] + (active ? window.LanctlI18n.t("LANCTL.UI.FRAGMENT.CONNECTED") : window.LanctlI18n.t("LANCTL.UI.FRAGMENT.NO_RECORDED_CONNECTION")) : "RJ45 " + (i + 1) + window.LanctlI18n.t("LANCTL.UI.FRAGMENT.REPRESENTATION_WITHOUT_AN_ASSOCIATED_PORT"))}</title><rect x="${x}" y="${y}" width="${size}" height="21" rx="1"/><path d="M${x + size * 0.25} ${y + 3} H${x + size * 0.75} M${x + size * 0.3} ${y + 6} H${x + size * 0.7}"/><text x="${x + size / 2}" y="${y + 29}">${i + 1}</text></g>`;
     }
     const sfpStart = p.rackmount ? 1065 : 945,
       cols = Math.max(1, Math.ceil(p.sfp / 2)),
@@ -131,7 +131,7 @@ function rackFace(r, override) {
       const x = sfpStart + Math.floor(i / 2) * sfpCell,
         y = 15 + (i % 2) * 33,
         port = fiber[i];
-      body += `<g class="skin-port skin-sfp ${port && used.has(port[0]) ? "connected" : ""}" data-connector="sfp"><title>${esc(port ? port[0] : "SFP " + (i + 1) + " · Representación sin puerto asociado")}</title><rect x="${x}" y="${y}" width="${Math.max(7, sfpCell - 4)}" height="20" rx="1"/><text x="${x + sfpCell / 2 - 2}" y="${y + 29}">S${i + 1}</text></g>`;
+      body += `<g class="skin-port skin-sfp ${port && used.has(port[0]) ? "connected" : ""}" data-connector="sfp"><title>${esc(port ? port[0] : "SFP " + (i + 1) + window.LanctlI18n.t("LANCTL.UI.FRAGMENT.REPRESENTATION_WITHOUT_AN_ASSOCIATED_PORT"))}</title><rect x="${x}" y="${y}" width="${Math.max(7, sfpCell - 4)}" height="20" rx="1"/><text x="${x + sfpCell / 2 - 2}" y="${y + 29}">S${i + 1}</text></g>`;
     }
     body += `<circle class="skin-power" cx="${textX + 5}" cy="62" r="3"/><text class="skin-device-id" x="${textX + 17}" y="65">${p.rj45} RJ45${p.sfp ? " + " + p.sfp + " SFP" : ""}</text>`;
   } else if (p.kind === "server") {
@@ -178,11 +178,11 @@ function rackSkinElevation(rack) {
       const label = `${r.name || r.id} · ${r.id} · ${span} U`;
       html += `<button class="rack-skin-unit occupied" data-rack-occupant="${esc(r.id)}" style="--rack-span:${span}" title="${esc(label)}" aria-label="${esc(label)}"><span class="rack-u-label">${span > 1 ? `${Number(r.unit) + span - 1}–${r.unit}` : r.unit} U</span><span class="rack-skin-face">${rackFace(r)}<span class="rack-skin-caption">${esc(r.name || r.id)}</span></span></button>`;
     } else
-      html += `<button class="rack-skin-unit rack-skin-empty" disabled><span class="rack-u-label">${u} U</span><span>Libre</span></button>`;
+      html += `<button class="rack-skin-unit rack-skin-empty" disabled><span class="rack-u-label">${u} U</span><span><span data-i18n="LANCTL.UI.HTML.FREE">Libre</span></span></button>`;
   }
   if (conflicts.size)
     html =
-      '<p class="error">Hay posiciones solapadas en el inventario: ' +
+      "<p class=\"error\"><span data-i18n=\"LANCTL.UI.HTML.OVERLAPPING_INVENTORY_POSITIONS\">Hay posiciones solapadas en el inventario:</span> " +
       [...conflicts].sort((a, b) => b - a).join(", ") +
       " U. Revisa sus ubicaciones en LANWIRE.</p>" +
       html;
@@ -199,28 +199,27 @@ function rackSkinEditor(r) {
   preview.className = "rack-skin-preview";
   const note = document.createElement("p");
   note.className = "muted";
-  note.textContent =
-    "Frentes genéricos. La apariencia no crea puertos ni cambia conexiones. La altura ocupa unidades desde la posición inicial hacia arriba; se validará el espacio disponible.";
+  window.LanctlI18n.bindText(note,"LANCTL.UI.VIEW.GENERIC_FRONTS_APPEARANCE_DOES_NOT_CREATE_PORTS_OR_CHANGE_CONNECTIONS_HEIGHT_OCCUPIES_UNITS_UPW");
   const profiles = state.skinProfiles || [];
   const fields = [
-    field("Plantilla", "preset", "custom", "text", [
-      ["custom", "Personalizado"],
+    field(window.LanctlI18n.t("LANCTL.UI.WORD.TEMPLATE"), "preset", "custom", "text", [
+      ["custom", window.LanctlI18n.t("LANCTL.UI.WORD.CUSTOM")],
       ...profiles.map((p) => [p.id, p.name]),
     ]),
-    field("Tipo de frente", "kind", values.kind, "text", rackSkinKinds),
-    field("Puertos RJ45 (representación)", "rj45", values.rj45, "number"),
-    field("Puertos SFP / SFP+ (representación)", "sfp", values.sfp, "number"),
-    field("Altura ocupada (U)", "units", values.units, "number"),
-    field("Formato", "rackmount", String(values.rackmount), "text", [
-      ["true", "Montaje en rack"],
-      ["false", "Sobremesa sobre bandeja"],
+    field(window.LanctlI18n.t("LANCTL.UI.VIEW.FRONT_TYPE"), "kind", values.kind, "text", rackSkinKinds()),
+    field(window.LanctlI18n.t("LANCTL.UI.VIEW.RJ45_PORTS_REPRESENTATION"), "rj45", values.rj45, "number"),
+    field(window.LanctlI18n.t("LANCTL.UI.VIEW.SFP_SFP_PORTS_REPRESENTATION"), "sfp", values.sfp, "number"),
+    field(window.LanctlI18n.t("LANCTL.UI.VIEW.OCCUPIED_HEIGHT_U"), "units", values.units, "number"),
+    field(window.LanctlI18n.t("LANCTL.UI.WORD.FORMAT"), "rackmount", String(values.rackmount), "text", [
+      ["true", window.LanctlI18n.t("LANCTL.UI.VIEW.RACK_MOUNTING")],
+      ["false", window.LanctlI18n.t("LANCTL.UI.VIEW.DESKTOP_ON_A_TRAY")],
     ]),
   ];
   const controls = document.createElement("div");
   controls.className = "rack-skin-controls";
   controls.append(...fields);
   showForm(
-    "Frente visual · " + (r.name || r.id),
+    window.LanctlI18n.t("LANCTL.UI.FRAGMENT.VISUAL_FRONT") + (r.name || r.id),
     [preview, note, controls],
     () => call("rack_appearance", state.organizationRevision, r.id, read()),
   );
@@ -276,7 +275,7 @@ rackOccupantDetails = function (r) {
   front.innerHTML = rackFace(r);
   panel.prepend(
     front,
-    wireAction("Personalizar frente", () => {
+    wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.CUSTOMIZE_FRONT"), () => {
       $("#detail").close();
       rackSkinEditor(r);
     }),
@@ -292,8 +291,8 @@ render = function () {
   const toggle = document.createElement("button");
   toggle.id = "rack-skins-toggle";
   toggle.textContent = rackSkinsVisible
-    ? "Ver unidades simples"
-    : "Ver frentes de equipos";
+    ? window.LanctlI18n.t("LANCTL.UI.TEXT.SHOW_SIMPLE_UNITS")
+    : window.LanctlI18n.t("LANCTL.UI.VIEW.VIEW_EQUIPMENT_FRONTS");
   toggle.onclick = () => {
     rackSkinsVisible = !rackSkinsVisible;
     rackSkinStore();

@@ -15,50 +15,58 @@ from lanctl.core.config import load_config
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.layout import fit_text, terminal_columns, wrapped_lines
 from lanctl.core.logger import write_log
+from lanctl.shared.i18n import t
 
 
 def register_scan_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
     command = commands.add_parser(
         "scan",
-        help="Inspecciona en profundidad un único elemento de la LAN.",
+        help=t("LANCTL.UI.HELP.INSPECT_A_SINGLE_LAN_ELEMENT_IN_DEPTH"),
         description=(
-            "Resuelve un elemento por IP, MAC o alias y comprueba identidad, "
-            "disponibilidad y puertos TCP. No modifica el dispositivo."
+            t(
+                "LANCTL.UI.HELP.RESOLVE_AN_ELEMENT_BY_IP_MAC_OR_ALIAS_AND_CHECK_IDENTITY_AVAILABILITY_AND_TCP_PORTS_DOES_NOT_MO"
+            )
         ),
     )
-    command.add_argument("selector", help="IP, MAC o alias registrado en LANCTL.")
+    command.add_argument("selector", help=t("LANCTL.UI.HELP.IP_MAC_OR_ALIAS_REGISTERED_IN_LANCTL"))
     command.add_argument(
         "--ports",
         default="common",
         metavar="LISTA",
-        help="Puertos o rangos: 22,80,443,8000-8100 (por defecto: common).",
+        help=t("LANCTL.UI.HELP.PORTS_OR_RANGES_22_80_443_8000_8100_DEFAULT_COMMON"),
     )
     command.add_argument(
         "--all-ports",
         action="store_true",
-        help="Autoriza explícitamente el escaneo TCP 1-65535.",
+        help=t("LANCTL.UI.HELP.EXPLICITLY_AUTHORIZE_A_TCP_1_65535_SCAN"),
     )
     command.add_argument(
-        "--timeout", type=float, default=0.5, help="Tiempo máximo por conexión, en segundos."
+        "--timeout",
+        type=float,
+        default=0.5,
+        help=t("LANCTL.UI.HELP.MAXIMUM_TIMEOUT_PER_CONNECTION_IN_SECONDS"),
     )
     command.add_argument(
-        "--workers", type=int, default=128, help="Número máximo de conexiones simultáneas."
+        "--workers",
+        type=int,
+        default=128,
+        help=t("LANCTL.UI.HELP.MAXIMUM_NUMBER_OF_CONCURRENT_CONNECTIONS"),
     )
     command.add_argument(
         "--banners",
         action="store_true",
-        help="Lee banners pasivos; no envía sondas específicas de protocolo.",
+        help=t("LANCTL.UI.HELP.READ_PASSIVE_BANNERS_DO_NOT_SEND_PROTOCOL_SPECIFIC_PROBES"),
     )
     command.add_argument(
         "--identify",
         action="store_true",
         default=bool(config.get("serviceIdentification", True)),
-        help="Reconoce servicios y deduce el tipo de dispositivo con evidencias.",
+        help=t("LANCTL.UI.HELP.RECOGNIZE_SERVICES_AND_INFER_DEVICE_TYPE_FROM_EVIDENCE"),
     )
-    command.add_argument("--json", action="store_true", help="Salida JSON.")
+    command.add_argument("--json", action="store_true", help=t("LANCTL.UI.HELP.JSON_OUTPUT"))
     command.add_argument(
-        "--database", default=config["database"], help="Archivo JSON de elementos."
+        "--database", default=config["database"], help=t("LANCTL.UI.HELP.ELEMENT_JSON_FILE")
     )
     command.set_defaults(handler=run_scan)
 
@@ -149,27 +157,74 @@ def run_scan(args: argparse.Namespace) -> int:
         return 0
 
     state = (
-        _color("ACTIVO", Fore.LIGHTGREEN_EX)
+        _color(t("LANCTL.LANGUAGE.FIELD.ACTIVE"), Fore.LIGHTGREEN_EX)
         if result.reachable
         else _color("NO DETECTADO", Fore.LIGHTRED_EX)
     )
     print(f"\n{_color('ELEMENTO', Fore.CYAN)}")
-    print(f"  Estado       : {state}")
-    print(f"  IP registrada: {_color(device.ip, Fore.LIGHTBLUE_EX)}")
-    print(f"  MAC registrada: {_color(_shown(device.mac), Fore.LIGHTMAGENTA_EX)}")
-    print(f"  MAC observada : {_shown(result.observed_mac)}")
-    match_text = "Sí" if identity_match is True else "NO" if identity_match is False else "-"
-    print(f"  Coincidencia  : {match_text}")
-    print(f"  Alias / nombre: {_shown(device.alias)} / {_shown(device.name)}")
-    print(f"  Fabricante    : {_shown(manufacturer)}")
-    print(f"  Hostname      : {_shown(result.hostname or device.default_name)}")
-    print(f"  Grupos        : {_shown(', '.join(device.groups))}")
-    print(f"  Latencia / TTL: {_shown(result.latency_ms)} ms / {_shown(result.ttl)}")
+    print(t("LANCTL.UI.DETAIL.STATE_VALUE_2921817C", value0=f"{state}"))
+    print(
+        t("LANCTL.UI.SUMMARY.REGISTERED_IP_VALUE", value0=f"{_color(device.ip, Fore.LIGHTBLUE_EX)}")
+    )
+    print(
+        t(
+            "LANCTL.UI.SUMMARY.REGISTERED_MAC_VALUE",
+            value0=f"{_color(_shown(device.mac), Fore.LIGHTMAGENTA_EX)}",
+        )
+    )
+    print(
+        t("LANCTL.UI.SUMMARY.OBSERVED_MAC_VALUE_8B6BBDFA", value0=f"{_shown(result.observed_mac)}")
+    )
+    match_text = (
+        t("LANCTL.UI.TEXT.YES")
+        if identity_match is True
+        else "NO"
+        if identity_match is False
+        else "-"
+    )
+    print(t("LANCTL.UI.DETAIL.MATCH_VALUE_67CFE32A", value0=f"{match_text}"))
+    print(
+        t(
+            "LANCTL.UI.DETAIL.ALIAS_NAME_VALUE_VALUE",
+            value0=f"{_shown(device.alias)}",
+            value1=f"{_shown(device.name)}",
+        )
+    )
+    print(t("LANCTL.UI.DETAIL.MANUFACTURER_VALUE_77F5D6AD", value0=f"{_shown(manufacturer)}"))
+    print(
+        t(
+            "LANCTL.UI.DETAIL.HOSTNAME_VALUE",
+            value0=f"{_shown(result.hostname or device.default_name)}",
+        )
+    )
+    print(t("LANCTL.UI.DETAIL.GROUPS_VALUE_CBB70DC6", value0=f"{_shown(', '.join(device.groups))}"))
+    print(
+        t(
+            "LANCTL.UI.DETAIL.LATENCY_TTL_VALUE_MS_VALUE",
+            value0=f"{_shown(result.latency_ms)}",
+            value1=f"{_shown(result.ttl)}",
+        )
+    )
     if args.identify:
         identification = result.identification
-        print(f"  Tipo probable  : {_shown(identification.device_type)}")
-        print(f"  Confianza      : {_shown(identification.confidence)}")
-        print(f"  Evidencias     : {_shown('; '.join(identification.evidence))}")
+        print(
+            t(
+                "LANCTL.UI.MESSAGE.PROBABLE_TYPE_VALUE_1B275E0A",
+                value0=f"{_shown(identification.device_type)}",
+            )
+        )
+        print(
+            t(
+                "LANCTL.UI.DETAIL.CONFIDENCE_VALUE_584F7720",
+                value0=f"{_shown(identification.confidence)}",
+            )
+        )
+        print(
+            t(
+                "LANCTL.UI.DETAIL.EVIDENCE_VALUE_D2013F98",
+                value0=f"{_shown('; '.join(identification.evidence))}",
+            )
+        )
 
     print(f"\n{_color('PUERTOS TCP ABIERTOS', Fore.CYAN)}")
     if result.open_ports:
@@ -188,13 +243,15 @@ def run_scan(args: argparse.Namespace) -> int:
                 f"{fit_text(port.service, 16):<16}  {port.confidence:<10}  {banner}"
             )
     else:
-        print("  Ninguno detectado en el conjunto examinado.")
-    summary = (
-        f"Examinados: {result.scanned_ports} | Abiertos: {len(result.open_ports)} "
-        f"| Duración: {result.duration:.2f} s"
+        print(t("LANCTL.UI.PROMPT.NONE_DETECTED_IN_THE_EXAMINED_SET"))
+    summary = t(
+        "LANCTL.UI.MESSAGE.EXAMINED_VALUE_OPEN_VALUE_DURATION_VALUE_S",
+        value0=f"{result.scanned_ports}",
+        value1=f"{len(result.open_ports)}",
+        value2=f"{result.duration:.2f}",
     )
     for index, line in enumerate(wrapped_lines(summary, max(1, (terminal_columns() or 120) - 2))):
         print(("\n  " if index == 0 else "  ") + line)
     if not args.all_ports:
-        print("  Alcance: puertos habituales; usa --all-ports para 1-65535.")
+        print(t("LANCTL.UI.PRESENTATION.COMMON_PORTS_SCOPE"))
     return 0 if result.reachable else 1

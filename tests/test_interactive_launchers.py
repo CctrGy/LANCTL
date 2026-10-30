@@ -4,6 +4,7 @@ import pytest
 
 from lanctl.bootstrap.lanctl import main
 from lanctl.core.interactive_console import command_console
+from lanctl.shared.i18n import t
 
 
 @pytest.mark.parametrize(
@@ -135,7 +136,7 @@ def test_builtin_rejects_arguments(capsys):
     dispatch = Mock()
     with patch("builtins.input", side_effect=["clear anything", "exit"]):
         assert command_console("TEST", dispatch) == 0
-    assert "Uso: clear" in capsys.readouterr().out
+    assert t("LANCTL.CONSOLE.USAGE.NO_ARGUMENTS", command="clear") in capsys.readouterr().out
     dispatch.assert_not_called()
 
 
@@ -150,3 +151,41 @@ def test_tui_clear_redraws_without_leaving_screen():
     assert active.draw.call_count == 2
     active.suspended.assert_not_called()
     dispatch.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "command,arguments",
+    [
+        ("help", ["--help"]),
+        ("help settings", ["settings", "--help"]),
+        ("lanip --help", ["lanip", "--help"]),
+        ("version", ["--version"]),
+    ],
+)
+def test_tui_help_and_version_stay_inside_the_screen(command, arguments):
+    def dispatch(words):
+        assert words == arguments
+        print("Read-only help content")
+        raise SystemExit(0)
+
+    with (
+        patch("lanctl.core.interactive_console.ManagementScreen") as manager,
+        patch("builtins.input", side_effect=[command, "exit"]),
+    ):
+        assert command_console("LANCTL", dispatch, tui=True) == 0
+    screen = manager.return_value.__enter__.return_value
+    screen.suspended.assert_not_called()
+    screen.show_text.assert_called_once()
+    assert "Read-only help content" in screen.show_text.call_args.args[0]
+
+
+@pytest.mark.parametrize("command", ["commands", "pwd"])
+def test_tui_readonly_builtins_stay_inside_the_screen(command):
+    with (
+        patch("lanctl.core.interactive_console.ManagementScreen") as manager,
+        patch("builtins.input", side_effect=[command, "exit"]),
+    ):
+        assert command_console("LANCTL", Mock(), tui=True) == 0
+    screen = manager.return_value.__enter__.return_value
+    screen.suspended.assert_not_called()
+    screen.show_text.assert_called_once()

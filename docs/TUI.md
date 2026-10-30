@@ -1,7 +1,14 @@
 # Manual del TUI
 
-Inicia la interfaz con `lanctl --tui`. También puede abrir directamente
-`PLUGINS`, `PROJECTS` o `SETTINGS`. La pantalla se adapta automáticamente a
+Inicia el anfitrión de la suite con `lanctl --tui`. Dentro, `help` y
+`help settings` muestran ayuda en una vista del propio TUI, sin salir a la
+consola. Usa `↑/↓`, `RePág/AvPág` e `Inicio/Fin` para desplazarte y `Esc` o
+`Enter` para volver al panel. `commands`, `pwd` y `version` usan la misma vista.
+
+El TUI de inventario se abre con `lanctl lanip --tui`. También puede abrir
+directamente `PLUGINS`, `PROJECTS` o `SETTINGS`, por ejemplo
+`lanctl lanip --tui SETTINGS`. Las teclas de la tabla siguiente corresponden
+a ese TUI de inventario. La pantalla se adapta automáticamente a
 terminales estrechas; se recomienda un mínimo de 80×24 para la demostración.
 
 ## Teclas principales

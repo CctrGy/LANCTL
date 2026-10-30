@@ -21,6 +21,7 @@ from lanctl.core.history import DeviceSnapshot, HistoryEvent, HistoryService
 from lanctl.core.logger import write_log
 from lanctl.core.plugins.wol_runtime import send_magic_packet, validate_mac
 from lanctl.core.tasking import TASK_ID, JsonStore, result, utc_now
+from lanctl.shared.i18n import t
 
 POWER_ACTIONS = {"shutdown", "restart", "sleep", "hibernate"}
 
@@ -28,12 +29,14 @@ POWER_ACTIONS = {"shutdown", "restart", "sleep", "hibernate"}
 def register_wol_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
     command = commands.add_parser(
-        "wol", help="Enciende equipos mediante Wake-on-LAN y ejecuta secuencias seguras."
+        "wol", help=t("LANCTL.UI.HELP.WAKE_DEVICES_THROUGH_WAKE_ON_LAN_AND_RUN_SAFE_SEQUENCES")
     )
     command.add_argument(
         "words",
         nargs="*",
-        help="NAME [wakeup|status|shutdown|restart|sleep|hibernate|configure] o sequence ...",
+        help=t(
+            "LANCTL.UI.HELP.NAME_WAKEUP_STATUS_SHUTDOWN_RESTART_SLEEP_HIBERNATE_CONFIGURE_OR_SEQUENCE"
+        ),
     )
     command.add_argument(
         "-if", "--if", dest="conditions", action="append", default=[], metavar="CONDICIÓN"
@@ -107,13 +110,15 @@ def register_wol_command(commands: argparse._SubParsersAction) -> None:
         "power_transport": "Transporte autorizado para apagar o reiniciar.",
         "power_platform": "Sistema operativo remoto.",
         "power_command": "Plantilla administrada ACCIÓN=COMANDO.",
-        "database": "Archivo JSON de elementos.",
-        "store": "Almacén cifrado de credenciales.",
+        "database": t("LANCTL.UI.HELP.ELEMENT_JSON_FILE"),
+        "store": t("LANCTL.UI.TEXT.ENCRYPTED_CREDENTIAL_STORE"),
         "sequences": "Archivo transaccional de secuencias.",
     }
     for parser_action in command._actions:
         if parser_action.help is None:
-            parser_action.help = help_by_dest.get(parser_action.dest, "Opción Wake-on-LAN.")
+            parser_action.help = help_by_dest.get(
+                parser_action.dest, t("LANCTL.UI.PROMPT.WAKE_ON_LAN_OPTION")
+            )
     command.set_defaults(handler=run_wol)
 
 
@@ -346,7 +351,9 @@ def _wake(
             "timeout",
             started,
             code="WOL.VERIFY.TIMEOUT",
-            message="El dispositivo no fue detectado; el paquete enviado no garantiza el encendido",
+            message=t(
+                "LANCTL.UI.PROMPT.THE_DEVICE_WAS_NOT_DETECTED_SENDING_THE_PACKET_DOES_NOT_GUARANTEE_WAKE_UP"
+            ),
             run_id=run_id,
             error_event=event,
         ).to_dict()
@@ -456,7 +463,7 @@ def _sequence_locked(args, database, store, defaults=None) -> dict | list:
                     "blocked",
                     utc_now(),
                     code="WOL.SEQUENCE.BLOCKED",
-                    message="Dependencia no completada",
+                    message=t("LANCTL.UI.PROMPT.DEPENDENCY_NOT_COMPLETED"),
                     dependency=failed,
                 ).to_dict()
             else:
@@ -586,7 +593,7 @@ def _power(args, database, selector: str, action: str) -> dict:
             "blocked",
             started,
             code="WOL.POWER.UNSUPPORTED",
-            message="Configura el transporte SSH con 'wol NAME configure'",
+            message=t("LANCTL.UI.PROMPT.CONFIGURE_SSH_TRANSPORT_WITH_WOL_NAME_CONFIGURE"),
             run_id=run_id,
         ).to_dict()
     method = str(_options(args, device)["method"])
@@ -608,7 +615,7 @@ def _power(args, database, selector: str, action: str) -> dict:
             "blocked",
             started,
             code="WOL.POWER.CONFIRMATION_REQUIRED",
-            message="usa --yes para confirmar",
+            message=t("LANCTL.UI.VALUE.CONFIRM"),
             run_id=run_id,
         ).to_dict()
     seconds = _schedule_seconds(args.schedule)
@@ -740,7 +747,10 @@ def run_wol(args: argparse.Namespace) -> int:
                     row.get("runId"),
                     row.get("taskId"),
                     row.get("operationId"),
-                    row.get("error", {}).get("message", f"Wake-on-LAN: {row['status']}"),
+                    row.get("error", {}).get(
+                        "message",
+                        t("LANCTL.UI.DETAIL.WAKE_ON_LAN_VALUE", value0=f"{row['status']}"),
+                    ),
                     row.get("error"),
                     row.get("durationMs"),
                 )

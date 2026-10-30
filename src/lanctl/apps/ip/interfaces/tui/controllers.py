@@ -7,6 +7,7 @@ from rich.text import Text
 
 from lanctl.apps.ip.interfaces.tui.modal import ModalState, SettingField
 from lanctl.core.layout import fit_text
+from lanctl.shared.i18n import t
 
 SETTINGS_FOOTER = "←/→ menú  ↑/↓ variable  Tab editar  Ctrl+S guardar  Esc salir"
 
@@ -86,7 +87,7 @@ class SettingsEditor:
                         f" {cls._pad(field.value or 'None', value_width)}  {field.visible or 'OFF'}"
                     )
             else:
-                value = field.value or "(vacío)"
+                value = field.value or t("LANCTL.UI.SCREEN.EMPTY")
                 chunks = (
                     textwrap.wrap(
                         value,
@@ -102,7 +103,10 @@ class SettingsEditor:
                         (
                             f"{marker}{changed} {cls._pad(field.label, table_width - 4)}",
                             f"   {cls._pad(value, table_width - 4)}",
-                            f"   Formato: {cls._pad(field.hint, table_width - 12)}",
+                            t(
+                                "LANCTL.UI.DETAIL.FORMAT_VALUE",
+                                value0=f"{cls._pad(field.hint, table_width - 12)}",
+                            ),
                         )
                     )
                 else:
@@ -126,7 +130,7 @@ class SettingsEditor:
             )
         )
         state = (
-            "edición activa"
+            t("LANCTL.UI.SCREEN.EDITING_ACTIVE")
             if modal.editing
             else "modificado, pendiente de guardar"
             if selected.value != selected.original
@@ -134,9 +138,14 @@ class SettingsEditor:
         )
         rows.extend(
             (
-                f"  Clave: {selected.key}  ·  Opción CLI: {selected.option}  ·  Estado: {state}",
+                t(
+                    "LANCTL.UI.MESSAGE.KEY_VALUE_CLI_OPTION_VALUE_STATE_VALUE",
+                    value0=f"{selected.key}",
+                    value1=f"{selected.option}",
+                    value2=f"{state}",
+                ),
                 "",
-                "* cambio pendiente · Esc abre el menú de salida y guardado",
+                t("LANCTL.UI.SCREEN.PENDING_CHANGE_ESC_OPENS_THE_EXIT_AND_SAVE_MENU"),
             )
         )
         # Ninguna fila puede forzar autowrap: el redimensionado del terminal
@@ -177,9 +186,13 @@ class SettingsEditor:
             if modal.editing:
                 modal.edit_snapshot = field.value
                 modal.footer = (
-                    "←/→ cambiar valor  ↑/↓ cambiar valor  escribir reemplazar  Tab aceptar  Esc cancelar"
+                    t(
+                        "LANCTL.UI.SCREEN.CHANGE_VALUE_CHANGE_VALUE_TYPE_REPLACE_TAB_ACCEPT_ESC_CANCEL"
+                    )
                     if field.choices
-                    else "escribir reemplazar  Backspace/Delete editar  Tab aceptar  Esc cancelar"
+                    else t(
+                        "LANCTL.UI.SCREEN.TYPE_REPLACE_BACKSPACE_DELETE_EDIT_TAB_ACCEPT_ESC_CANCEL"
+                    )
                 )
             else:
                 modal.footer = SETTINGS_FOOTER

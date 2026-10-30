@@ -466,7 +466,11 @@ if __name__ == '__main__':
         deadline = time.monotonic() + 10
         while not pid_file.exists() and owner.poll() is None and time.monotonic() < deadline:
             time.sleep(0.05)
-        assert pid_file.exists(), "the owner failed to activate its worker"
+        assert pid_file.exists(), "the owner failed to activate its worker: " + (
+            owner.stderr.read().decode(errors="replace")
+            if owner.poll() is not None
+            else "still running"
+        )
         pid = int(pid_file.read_text())
         if os.name == "nt":
             from ctypes import wintypes

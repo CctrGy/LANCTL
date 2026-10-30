@@ -9,29 +9,42 @@ import sys
 from lanctl.apps.ip.lab import LabRepository, generate_scenario, validate_scenario
 from lanctl.core.console import ok
 from lanctl.core.file_transaction import atomic_write_json, atomic_write_text
+from lanctl.shared.i18n import t
 
 
 def register_lab_command(commands: argparse._SubParsersAction) -> None:
-    lab = commands.add_parser("lab", help="Gestiona redes LAN simuladas sin tráfico real.")
+    lab = commands.add_parser(
+        "lab", help=t("LANCTL.UI.HELP.MANAGE_SIMULATED_LANS_WITHOUT_REAL_TRAFFIC")
+    )
     actions = lab.add_subparsers(dest="lab_action", required=True, metavar="ACCIÓN")
-    generate = actions.add_parser("generate", help="Genera un escenario reproducible.")
-    generate.add_argument("--name", default="lab", help="Nombre del escenario.")
-    generate.add_argument("--cidr", default="192.0.2.0/24", help="Red IPv4 virtual.")
+    generate = actions.add_parser(
+        "generate", help=t("LANCTL.UI.HELP.GENERATE_A_REPRODUCIBLE_SCENARIO")
+    )
+    generate.add_argument("--name", default="lab", help=t("LANCTL.UI.HELP.SCENARIO_NAME"))
+    generate.add_argument(
+        "--cidr", default="192.0.2.0/24", help=t("LANCTL.UI.HELP.VIRTUAL_IPV4_NETWORK")
+    )
     generate.add_argument(
         "--profile",
         choices=("home", "office", "datacenter", "industrial", "chaotic"),
         default="home",
-        help="Perfil de dispositivos.",
+        help=t("LANCTL.UI.HELP.DEVICE_PROFILE"),
     )
-    generate.add_argument("--devices", type=int, default=20, help="Cantidad de dispositivos.")
-    generate.add_argument("--seed", type=int, default=1, help="Semilla reproducible.")
-    generate.add_argument("--active-percent", type=float, default=80, help="Porcentaje activo.")
-    generate.add_argument("--dhcp-percent", type=float, default=70, help="Porcentaje DHCP.")
+    generate.add_argument(
+        "--devices", type=int, default=20, help=t("LANCTL.UI.HELP.NUMBER_OF_DEVICES")
+    )
+    generate.add_argument("--seed", type=int, default=1, help=t("LANCTL.UI.HELP.REPRODUCIBLE_SEED"))
+    generate.add_argument(
+        "--active-percent", type=float, default=80, help=t("LANCTL.UI.HELP.ACTIVE_PERCENTAGE")
+    )
+    generate.add_argument(
+        "--dhcp-percent", type=float, default=70, help=t("LANCTL.UI.HELP.DHCP_PERCENTAGE")
+    )
     generate.add_argument(
         "--type",
         choices=("snapshot", "timeline", "chaos"),
         default="snapshot",
-        help="Evolución del escenario.",
+        help=t("LANCTL.UI.HELP.SCENARIO_EVOLUTION"),
     )
     generate.set_defaults(handler=run_lab)
     for name, help_text in (
@@ -40,44 +53,52 @@ def register_lab_command(commands: argparse._SubParsersAction) -> None:
         ("stop", "Desactiva el proveedor simulado."),
     ):
         actions.add_parser(name, help=help_text).set_defaults(handler=run_lab)
-    start = actions.add_parser("start", help="Activa explícitamente un escenario virtual.")
-    start.add_argument("scenario", help="Nombre del escenario.")
-    start.set_defaults(handler=run_lab)
-    validate = actions.add_parser("validate", help="Valida un escenario.")
-    validate.add_argument("scenario", help="Nombre del escenario.")
-    validate.set_defaults(handler=run_lab)
-    export = actions.add_parser("export", help="Exporta un escenario.")
-    export.add_argument("scenario", help="Nombre del escenario.")
-    export.add_argument(
-        "--format", choices=("json", "csv"), default="json", help="Formato de salida."
+    start = actions.add_parser(
+        "start", help=t("LANCTL.UI.HELP.EXPLICITLY_ACTIVATE_A_VIRTUAL_SCENARIO")
     )
-    export.add_argument("--output", help="Archivo de destino; stdout si se omite.")
+    start.add_argument("scenario", help=t("LANCTL.UI.HELP.SCENARIO_NAME"))
+    start.set_defaults(handler=run_lab)
+    validate = actions.add_parser("validate", help=t("LANCTL.UI.HELP.VALIDATE_A_SCENARIO"))
+    validate.add_argument("scenario", help=t("LANCTL.UI.HELP.SCENARIO_NAME"))
+    validate.set_defaults(handler=run_lab)
+    export = actions.add_parser("export", help=t("LANCTL.UI.HELP.EXPORT_A_SCENARIO"))
+    export.add_argument("scenario", help=t("LANCTL.UI.HELP.SCENARIO_NAME"))
+    export.add_argument(
+        "--format", choices=("json", "csv"), default="json", help=t("LANCTL.UI.HELP.OUTPUT_FORMAT")
+    )
+    export.add_argument("--output", help=t("LANCTL.UI.HELP.DESTINATION_FILE_STDOUT_IF_OMITTED"))
     export.set_defaults(handler=run_lab)
-    imported = actions.add_parser("import", help="Importa un escenario JSON.")
-    imported.add_argument("file", help="Archivo JSON.")
+    imported = actions.add_parser("import", help=t("LANCTL.UI.HELP.IMPORT_A_JSON_SCENARIO"))
+    imported.add_argument("file", help=t("LANCTL.UI.HELP.JSON_FILE"))
     imported.set_defaults(handler=run_lab)
-    network = actions.add_parser("network", help="Crea manualmente una red virtual.")
+    network = actions.add_parser(
+        "network", help=t("LANCTL.UI.HELP.MANUALLY_CREATE_A_VIRTUAL_NETWORK")
+    )
     network_actions = network.add_subparsers(dest="network_action", required=True)
-    create = network_actions.add_parser("create", help="Crea un escenario vacío.")
-    create.add_argument("--name", required=True, help="Nombre del escenario.")
-    create.add_argument("--cidr", default="192.0.2.0/24", help="CIDR virtual.")
+    create = network_actions.add_parser("create", help=t("LANCTL.UI.HELP.CREATE_AN_EMPTY_SCENARIO"))
+    create.add_argument("--name", required=True, help=t("LANCTL.UI.HELP.SCENARIO_NAME"))
+    create.add_argument("--cidr", default="192.0.2.0/24", help=t("LANCTL.UI.HELP.VIRTUAL_CIDR"))
     create.set_defaults(handler=run_lab)
-    device = actions.add_parser("device", help="Edita dispositivos simulados.")
+    device = actions.add_parser("device", help=t("LANCTL.UI.HELP.EDIT_SIMULATED_DEVICES"))
     device_actions = device.add_subparsers(dest="device_action", required=True)
-    add = device_actions.add_parser("add", help="Añade un dispositivo.")
-    add.add_argument("scenario", help="Escenario.")
-    add.add_argument("--ip", required=True, help="IPv4 simulada.")
-    add.add_argument("--mac", required=True, help="MAC simulada.")
-    add.add_argument("--alias", default="", help="Alias.")
-    add.add_argument("--name", default="", help="Nombre.")
-    add.add_argument("--inactive", action="store_true", help="Lo crea inactivo.")
+    add = device_actions.add_parser("add", help=t("LANCTL.UI.HELP.ADD_A_DEVICE"))
+    add.add_argument("scenario", help=t("LANCTL.UI.HELP.SCENARIO"))
+    add.add_argument("--ip", required=True, help=t("LANCTL.UI.HELP.SIMULATED_IPV4"))
+    add.add_argument("--mac", required=True, help=t("LANCTL.UI.HELP.SIMULATED_MAC"))
+    add.add_argument("--alias", default="", help=t("LANCTL.UI.HELP.ALIAS"))
+    add.add_argument("--name", default="", help=t("LANCTL.UI.HELP.NAME"))
+    add.add_argument("--inactive", action="store_true", help=t("LANCTL.UI.HELP.CREATE_IT_INACTIVE"))
     add.set_defaults(handler=run_lab)
-    delete = device_actions.add_parser("delete", help="Elimina un dispositivo.")
-    delete.add_argument("scenario", help="Escenario.")
-    delete.add_argument("device", help="ID, IP, MAC o alias.")
+    delete = device_actions.add_parser("delete", help=t("LANCTL.UI.HELP.DELETE_A_DEVICE"))
+    delete.add_argument("scenario", help=t("LANCTL.UI.HELP.SCENARIO"))
+    delete.add_argument("device", help=t("LANCTL.UI.HELP.ID_IP_MAC_OR_ALIAS"))
     delete.set_defaults(handler=run_lab)
-    evolve = actions.add_parser("evolve", help="Avanza el reloj y aplica eventos pendientes.")
-    evolve.add_argument("--seconds", type=float, required=True, help="Segundos virtuales.")
+    evolve = actions.add_parser(
+        "evolve", help=t("LANCTL.UI.HELP.ADVANCE_THE_CLOCK_AND_APPLY_PENDING_EVENTS")
+    )
+    evolve.add_argument(
+        "--seconds", type=float, required=True, help=t("LANCTL.UI.HELP.VIRTUAL_SECONDS")
+    )
     evolve.set_defaults(handler=run_lab)
 
 
@@ -97,7 +118,14 @@ def run_lab(args) -> int:
         scenario = generate_scenario(name=args.name, cidr=args.cidr, devices=1, seed=0)
         scenario["devices"] = []
         repository.save(scenario)
-        ok("LANLAB", f"Red virtual creada: {args.name} | {scenario['cidr']}")
+        ok(
+            "LANLAB",
+            t(
+                "LANCTL.UI.MESSAGE.VIRTUAL_NETWORK_CREATED_VALUE_VALUE",
+                value0=f"{args.name}",
+                value1=f"{scenario['cidr']}",
+            ),
+        )
         return 0
     if action == "device":
         scenario = repository.load(args.scenario)
@@ -129,7 +157,7 @@ def run_lab(args) -> int:
                 }
             )
             repository.save(validate_scenario(scenario))
-            ok("LANLAB", f"Dispositivo añadido: {args.ip}")
+            ok("LANLAB", t("LANCTL.UI.MESSAGE.DEVICE_ADDED_VALUE", value0=f"{args.ip}"))
             return 0
         before = len(scenario["devices"])
         selector = args.device.casefold()
@@ -142,7 +170,7 @@ def run_lab(args) -> int:
         if len(scenario["devices"]) == before:
             raise ValueError(f"dispositivo simulado no encontrado: {args.device}")
         repository.save(scenario)
-        ok("LANLAB", f"Dispositivo eliminado: {args.device}")
+        ok("LANLAB", t("LANCTL.UI.MESSAGE.DEVICE_DELETED_VALUE", value0=f"{args.device}"))
         return 0
     if action == "evolve":
         scenario = repository.active()
@@ -167,7 +195,7 @@ def run_lab(args) -> int:
                 "clock": scenario["clock"],
             },
         )
-        ok("LANLAB", f"Reloj virtual: {scenario['clock']:.1f}s")
+        ok("LANLAB", t("LANCTL.UI.MESSAGE.VIRTUAL_CLOCK_VALUES", value0=f"{scenario['clock']:.1f}"))
         return 0
     if action == "generate":
         scenario = generate_scenario(
@@ -182,8 +210,16 @@ def run_lab(args) -> int:
         )
         path = repository.save(scenario)
         _emit("LANCTL.Network.Lab.Created", {"scenario_id": scenario["id"], "path": str(path)})
-        ok("LANLAB", f"{args.name} | {args.devices} dispositivos | seed {args.seed}")
-        print(f" Archivo: {path}")
+        ok(
+            "LANLAB",
+            t(
+                "LANCTL.UI.SUMMARY.VALUE_VALUE_DEVICES_SEED_VALUE",
+                value0=f"{args.name}",
+                value1=f"{args.devices}",
+                value2=f"{args.seed}",
+            ),
+        )
+        print(t("LANCTL.UI.DETAIL.FILE_VALUE_2A0C89A4", value0=f"{path}"))
         return 0
     if action == "list":
         active = repository.active_name()
@@ -197,7 +233,10 @@ def run_lab(args) -> int:
             "LANCTL.Network.Lab.Start",
             {"scenario_id": scenario["id"], "seed": scenario.get("seed")},
         )
-        ok("LANLAB ACTIVO", f"{args.scenario} | puramente virtual")
+        ok(
+            t("LANCTL.UI.STATUS.LANLAB_ACTIVE"),
+            t("LANCTL.UI.SUMMARY.VALUE_PURELY_VIRTUAL", value0=f"{args.scenario}"),
+        )
         return 0
     if action == "stop":
         scenario = repository.active()
@@ -207,7 +246,7 @@ def run_lab(args) -> int:
                 "LANCTL.Network.Lab.Stop",
                 {"scenario_id": scenario["id"], "seed": scenario.get("seed")},
             )
-        ok("LANLAB", "Proveedor simulado desactivado")
+        ok("LANLAB", t("LANCTL.UI.PROMPT.SIMULATED_PROVIDER_DISABLED"))
         return 0
     if action == "status":
         scenario = repository.active()
@@ -216,13 +255,20 @@ def run_lab(args) -> int:
     if action == "validate":
         scenario = repository.load(args.scenario)
         validate_scenario(scenario)
-        ok("LANLAB VÁLIDO", f"{args.scenario} | {len(scenario['devices'])} dispositivos")
+        ok(
+            t("LANCTL.UI.STATUS.LANLAB_VALID"),
+            t(
+                "LANCTL.UI.SUMMARY.VALUE_VALUE_DEVICES",
+                value0=f"{args.scenario}",
+                value1=f"{len(scenario['devices'])}",
+            ),
+        )
         return 0
     if action == "import":
         with open(args.file, encoding="utf-8") as stream:
             scenario = validate_scenario(json.load(stream))
         repository.save(scenario)
-        ok("LANLAB IMPORTADO", scenario["name"])
+        ok(t("LANCTL.UI.STATUS.LANLAB_IMPORTED"), scenario["name"])
         return 0
     scenario = repository.load(args.scenario)
     if args.format == "json":

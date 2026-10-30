@@ -9,6 +9,7 @@ from rich.text import Text
 from lanctl.apps.wire.topology import groups_for
 from lanctl.core.physical_placement import location_status, span
 from lanctl.core.rack_dimensions import dimension_status
+from lanctl.shared.i18n import t
 
 
 def port_connections(records: list[dict[str, Any]]) -> dict[tuple[str, str], str]:
@@ -96,7 +97,7 @@ def element_detail(
 
 def _heading(record: dict[str, Any]) -> str:
     data = record.get("data") or {}
-    name = data.get("name") or data.get("alias") or "Sin nombre"
+    name = data.get("name") or data.get("alias") or t("LANCTL.UI.SCREEN.UNNAMED")
     return f"{record['id']}  {name}  [{data.get('type', 'element')}]"
 
 
@@ -178,7 +179,13 @@ def _panel_link_lines(record: dict[str, Any], records: list[dict[str, Any]]) -> 
         outlet_id = data.get("outlet")
         outlet = next((item for item in records if item["id"] == outlet_id), None)
         lines.append(
-            _structured_link_line(record, port, outlet, records, str(data.get("mark") or "-"))
+            _structured_link_line(
+                record,
+                port,
+                outlet,
+                records,
+                str(data.get("mark") or "-"),
+            )
         )
     return lines
 
@@ -397,7 +404,13 @@ def element_sidebar(
         )
         position = location_status(data, records)
         lines.append(
-            f"ubicación: {position['kind']} · rack: {position['rack']} · U{position['unit']} · bandeja: {position['tray']}"
+            t(
+                "LANCTL.UI.MESSAGE.LOCATION_VALUE_RACK_VALUE_UVALUE_TRAY_VALUE",
+                value0=f"{position['kind']}",
+                value1=f"{position['rack']}",
+                value2=f"{position['unit']}",
+                value3=f"{position['tray']}",
+            )
         )
         selected_data = ports.get(selected_port, {}) if selected_port in ports else {}
         speeds = selected_data.get("speeds") or data.get("speeds") or ["10M", "100M", "1G"]

@@ -13,6 +13,7 @@ from rich.text import Text
 
 from lanctl.apps.ip.interfaces.tui.layout import adaptive_layout
 from lanctl.apps.ip.interfaces.tui.theme import DEFAULT_THEME, TuiTheme
+from lanctl.shared.i18n import t
 
 
 class RichTuiRenderer:
@@ -236,7 +237,7 @@ class RichTuiRenderer:
             ("ENABLED", "bold green"),
             ("DISABLED", "bright_black"),
             ("BLOCKED", "bold yellow"),
-            ("ERROR", "bold red"),
+            (t("LANCTL.COMMON.STATUS.ERROR"), "bold red"),
             ("INCOMPATIBLE", "bold red"),
         ):
             start = plain.find(state)

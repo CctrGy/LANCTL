@@ -4,7 +4,8 @@ import hashlib
 import ipaddress
 import json
 from collections.abc import Iterable, Mapping
-from datetime import datetime
+from datetime import datetime, timedelta
+from uuid import uuid4
 
 from lanctl.apps.ip.domain.models import Device, normalize_cnf, normalize_mac
 from lanctl.apps.ip.domain.models.device import is_private_mac, reserved_device_role
@@ -81,7 +82,13 @@ class DeviceDatabase:
         mac_indexes = {
             device.mac.upper(): index for index, device in enumerate(devices) if device.mac
         }
-        ip_indexes = {device.ip: index for index, device in enumerate(devices)}
+        ip_counts = {}
+        for device in devices:
+            ip_counts[device.ip] = ip_counts.get(device.ip, 0) + 1
+        # An address reused by several manual entries is not sufficient identity.
+        ip_indexes = {
+            device.ip: index for index, device in enumerate(devices) if ip_counts[device.ip] == 1
+        }
         reserved_indexes = {
             role: index
             for index, device in enumerate(devices)
@@ -635,7 +642,19 @@ class DeviceDatabase:
         ip: str = "-",
         idf: str = "",
     ) -> Device:
-        normalized_mac = normalize_mac(mac)
+        return self._add_device(mac, name, alias, description, ip, idf, manual=False)
+
+    @transactional_method
+    def add_manual_device(self, mac="", name="", alias="", description="-", ip="-", idf=""):
+        """Create a provisional identity without requiring a discovered MAC.
+
+        A reused address is allowed only when no recently seen device owns it.
+        The legacy add_device contract keeps its stricter uniqueness policy.
+        """
+        return self._add_device(mac, name, alias, description, ip, idf, manual=True)
+
+    def _add_device(self, mac, name, alias, description, ip, idf, *, manual):
+        normalized_mac = normalize_mac(mac) if mac.strip() or not manual else ""
         if ip == "-":
             normalized_ip = "-"
         else:
@@ -651,10 +670,23 @@ class DeviceDatabase:
             idf = str(IDF.parse(idf))
 
         devices = self.load()
-        if any(device.mac == normalized_mac for device in devices):
+        if normalized_mac and any(device.mac == normalized_mac for device in devices):
             raise ValueError(f"ya existe un elemento con la MAC {normalized_mac}")
-        if normalized_ip != "-" and any(device.ip == normalized_ip for device in devices):
-            raise ValueError(f"la IP {normalized_ip} ya está en uso")
+        if normalized_ip != "-":
+            for existing in devices:
+                if existing.ip != normalized_ip:
+                    continue
+                active = False
+                if existing.last_seen:
+                    try:
+                        seen = datetime.fromisoformat(existing.last_seen).astimezone()
+                    except ValueError:
+                        # Unknown activity must not authorize an address collision.
+                        active = True
+                    else:
+                        active = seen >= datetime.now().astimezone() - timedelta(minutes=10)
+                if not manual or active:
+                    raise ValueError(f"la IP {normalized_ip} ya está en uso")
         if alias and any(device.alias.casefold() == alias.casefold() for device in devices):
             raise ValueError(f"el alias {alias} ya está en uso")
         if idf and any(device.idf.casefold() == idf.casefold() for device in devices):
@@ -668,6 +700,7 @@ class DeviceDatabase:
             alias=alias,
             description=description or "-",
             idf=idf,
+            device_id=f"dev_{uuid4().hex}" if manual else "",
         )
         devices.append(device)
         self._write(devices)

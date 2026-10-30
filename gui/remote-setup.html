@@ -3,25 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LANACCESS · Cuenta de acceso remoto</title>
+  <title data-i18n="LANCTL.ACCESS.REMOTE.TITLE">LANACCESS · Cuenta de acceso remoto</title>
   <link rel="icon" href="../assets/launcher-icons/lanaccess.svg">
   <link rel="stylesheet" href="remote-setup.css">
-  <script src="remote-setup.js" defer></script>
+  <script src="i18n-defaults.js"></script><script src="i18n.js"></script><script src="remote-setup.js" defer></script>
 </head>
 <body>
-  <header><img src="../assets/launcher-icons/lanaccess.svg" alt=""><div><strong>LAN<span>ACCESS</span></strong><small>CONFIGURACIÓN DE ACCESO REMOTO</small></div></header>
+  <header><img src="../assets/launcher-icons/lanaccess.svg" alt=""><div><strong>LAN<span>ACCESS</span></strong><small><span data-i18n="LANCTL.UI.TEXT.REMOTE_ACCESS_SETUP">CONFIGURACIÓN DE ACCESO REMOTO</span></small></div></header>
   <main>
-    <h1>Crear cuenta de acceso remoto</h1>
-    <p>Esta cuenta administrativa permite identificarse en los accesos remotos del servicio de LANCTL. Es independiente de tu cuenta de Windows y de las credenciales de los dispositivos del inventario.</p>
-    <p id="scope" class="notice">Comprobando la configuración…</p>
+    <h1><span data-i18n="LANCTL.UI.TEXT.CREATE_REMOTE_ACCESS_ACCOUNT">Crear cuenta de acceso remoto</span></h1>
+    <p><span data-i18n="LANCTL.UI.TEXT.THIS_ADMINISTRATIVE_ACCOUNT_IDENTIFIES_YOU_WHEN_ACCESSING_THE_LANCTL_SERVICE_REMOTELY">Esta cuenta administrativa permite identificarse en los accesos remotos del servicio de LANCTL. Es independiente de tu cuenta de Windows y de las credenciales de los dispositivos del inventario.</span></p>
+    <p id="scope" class="notice"><span data-i18n="LANCTL.UI.TEXT.CHECKING_CONFIGURATION">Comprobando la configuración…</span></p>
     <form id="account-form">
-      <label>Nombre de usuario<input name="username" autocomplete="username" required disabled></label>
-      <label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required disabled><small>Al menos 12 caracteres.</small></label>
-      <label>Confirmar contraseña<input name="confirmation" type="password" autocomplete="new-password" minlength="12" required disabled></label>
+      <label><span data-i18n="LANCTL.UI.TEXT.USERNAME_9DBC56A1">Nombre de usuario</span><input name="username" autocomplete="username" required disabled></label>
+      <label><span data-i18n="LANCTL.UI.TEXT.PASSWORD">Contraseña</span><input name="password" type="password" autocomplete="new-password" minlength="12" required disabled><small><span data-i18n="LANCTL.UI.TEXT.AT_LEAST_12_CHARACTERS">Al menos 12 caracteres.</span></small></label>
+      <label><span data-i18n="LANCTL.UI.TEXT.CONFIRM_PASSWORD">Confirmar contraseña</span><input name="confirmation" type="password" autocomplete="new-password" minlength="12" required disabled></label>
       <p id="account-role"></p>
       <p id="status" role="status" aria-live="polite"></p>
     </form>
   </main>
-  <footer><small>LANCTL · Configuración local</small><div class="actions"><button type="button" id="cancel">Ahora no</button><button type="submit" form="account-form" class="primary" disabled>Crear cuenta</button></div></footer>
+  <footer><small><span data-i18n="LANCTL.UI.HTML.LANCTL_LOCAL_SETTINGS">LANCTL · Configuración local</span></small><div class="actions"><button type="button" id="cancel"><span data-i18n="LANCTL.UI.TEXT.NOT_NOW">Ahora no</span></button><button type="submit" form="account-form" class="primary" disabled><span data-i18n="LANCTL.UI.TEXT.CREATE_ACCOUNT">Crear cuenta</span></button></div></footer>
 </body>
 </html>

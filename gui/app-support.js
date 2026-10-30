@@ -6,7 +6,7 @@
     const result = await window.pywebview.api[method](...args);
     if (!result.ok) {
       throw Object.assign(
-        new Error(result.error || "No se pudo completar la operación"),
+        new Error(result.error || window.LanctlI18n.t("LANCTL.UI.TEXT.COULD_NOT_COMPLETE_THE_OPERATION")),
         { errorDetails: result.errorDetails },
       );
     }
@@ -17,7 +17,8 @@
     const button = document.createElement("button");
     button.type = "button";
     button.id = id;
-    button.textContent = label;
+    if (label.startsWith("LANCTL.")) window.LanctlI18n.bindText(button, label);
+    else button.textContent = label;
     button.hidden = true;
     button.onclick = () =>
       Promise.resolve(click()).catch((error) => message(error.message, true));
@@ -49,7 +50,7 @@
           if (queue[0] === item) queue.shift();
         }
       } catch (error) {
-        console.warn("Actividad pendiente de enviar a LANMON:", error.message);
+        console.warn(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.ACTIVITY_PENDING_SUBMISSION_TO_LANMON"), error.message);
       }
     })().finally(() => {
       transmission = null;
@@ -59,7 +60,7 @@
   const notice = document.createElement("dialog");
   notice.className = "support-dialog";
   notice.setAttribute("aria-labelledby", "support-error-title");
-  notice.innerHTML = `<h2 id="support-error-title">No se ha completado la operación</h2><p class="support-error-summary"></p><details><summary>Ver detalles</summary><pre class="support-error-details"></pre></details><div class="actions"><button type="button" data-error="close">Cerrar</button><button type="button" class="primary" data-error="report">Preparar reporte en LANMON</button></div>`;
+  notice.innerHTML = `<h2 id="support-error-title"><span data-i18n="LANCTL.UI.TEXT.THE_OPERATION_WAS_NOT_COMPLETED">No se ha completado la operación</span></h2><p class="support-error-summary"></p><details><summary><span data-i18n="LANCTL.UI.TEXT.VIEW_DETAILS">Ver detalles</span></summary><pre class="support-error-details"></pre></details><div class="actions"><button type="button" data-error="close"><span data-i18n="LANCTL.UI.TEXT.CLOSE">Cerrar</span></button><button type="button" class="primary" data-error="report"><span data-i18n="LANCTL.UI.TEXT.PREPARE_REPORT_IN_LANMON">Preparar reporte en LANMON</span></button></div>`;
   document.body.append(notice);
   let lastError = "",
     repeats = 0,
@@ -79,14 +80,14 @@
     lastTime = Date.now();
     repeats = repeated ? repeats + 1 : 1;
     notice.querySelector(".support-error-summary").textContent =
-      text.slice(0, 260) + (repeats > 1 ? ` · Repetido ${repeats} veces` : "");
+      text.slice(0, 260) + (repeats > 1 ?  window.LanctlI18n.t("LANCTL.UI.WEB.REPEATED",{value0:(repeats)}) : "");
     notice.querySelector(".support-error-details").textContent =
       text +
       (details
         ? "\n\n" +
           [
-            ["Origen", details.origin],
-            ["Código", details.code],
+            [window.LanctlI18n.t("LANCTL.UI.TEXT.SOURCE"), details.origin],
+            [window.LanctlI18n.t("LANCTL.UI.VIEW.CODE"), details.code],
             ["ID", details.errorId],
           ]
             .filter(([, value]) => value)
@@ -135,14 +136,14 @@
     await flush();
     if (queue.length)
       throw new Error(
-        "No se ha podido conservar la actividad. Reintenta antes de abrir el reporte.",
+        window.LanctlI18n.t("LANCTL.UI.VIEW.ACTIVITY_COULD_NOT_BE_PRESERVED_RETRY_BEFORE_OPENING_THE_REPORT"),
       );
     if (window.openLanmonView) return window.openLanmonView(view);
     return api("open_monitor", view);
   }
-  footerButton("report-bug", "Report a bug", () => openMonitor("report"));
+  footerButton("report-bug", window.LanctlI18n.t("LANCTL.UI.VIEW.REPORT_A_BUG"), () => openMonitor("report"));
   if (document.querySelector("#lanip-cli"))
-    footerButton("live-logs", "Registros", () => api("open_live_logs"));
+    footerButton("live-logs", "LANCTL.UI.TEXT.LOGS", () => api("open_live_logs"));
   document.addEventListener(
     "click",
     (event) => {
@@ -176,8 +177,8 @@
   );
   const updates = document.createElement("dialog");
   updates.className = "support-dialog";
-  updates.setAttribute("aria-label", "Actualizaciones");
-  updates.innerHTML = `<h2>Actualizaciones</h2><p class="update-state" role="status"></p><dl class="update-versions"></dl><pre class="update-notes"></pre><a class="update-link" target="_blank" rel="noopener" hidden>Ver versión y descargas en GitHub</a><div class="actions"><button type="button" data-update="close">Cerrar</button><button type="button" data-update="later" hidden>Recordar más tarde</button><button type="button" class="primary" data-update="check">Buscar actualizaciones</button></div>`;
+  updates.setAttribute("aria-label", window.LanctlI18n.t("LANCTL.UI.HTML.UPDATES"));
+  updates.innerHTML = `<h2><span data-i18n="LANCTL.UI.HTML.UPDATES">Actualizaciones</span></h2><p class="update-state" role="status"></p><dl class="update-versions"></dl><pre class="update-notes"></pre><a class="update-link" target="_blank" rel="noopener" hidden><span data-i18n="LANCTL.UI.HTML.VIEW_RELEASE_AND_DOWNLOADS_ON_GITHUB">Ver versión y descargas en GitHub</span></a><div class="actions"><button type="button" data-update="close"><span data-i18n="LANCTL.UI.TEXT.CLOSE">Cerrar</span></button><button type="button" data-update="later" hidden><span data-i18n="LANCTL.UI.HTML.REMIND_ME_LATER">Recordar más tarde</span></button><button type="button" class="primary" data-update="check"><span data-i18n="LANCTL.UI.HTML.CHECK_FOR_UPDATES">Buscar actualizaciones</span></button></div>`;
   document.body.append(updates);
   let latestUpdate = null,
     updateReading = false,
@@ -202,20 +203,20 @@
     latestUpdate = result;
     updates.querySelector(".update-state").textContent =
       {
-        idle: "Pulsa Buscar actualizaciones para consultar versiones estables.",
-        checking: "Buscando versiones estables…",
-        current: "La versión instalada está al día.",
-        available: "Hay una versión estable superior disponible.",
+        idle: window.LanctlI18n.t("LANCTL.UI.VIEW.CLICK_CHECK_FOR_UPDATES_TO_QUERY_STABLE_RELEASES"),
+        checking: window.LanctlI18n.t("LANCTL.UI.VIEW.CHECKING_STABLE_RELEASES"),
+        current: window.LanctlI18n.t("LANCTL.UI.VIEW.THE_INSTALLED_VERSION_IS_UP_TO_DATE"),
+        available: window.LanctlI18n.t("LANCTL.UI.VIEW.A_NEWER_STABLE_RELEASE_IS_AVAILABLE"),
         unavailable:
-          "No se pudo consultar GitHub. Puedes reintentarlo más tarde.",
+          window.LanctlI18n.t("LANCTL.UI.VIEW.COULD_NOT_QUERY_GITHUB_YOU_CAN_TRY_AGAIN_LATER"),
       }[result.status] ||
       result.error ||
-      "Consulta finalizada.";
+      window.LanctlI18n.t("LANCTL.UI.VIEW.QUERY_FINISHED");
     const versions = updates.querySelector(".update-versions");
     versions.replaceChildren();
     for (const [label, value] of [
-      ["Instalada", result.installed],
-      ["Disponible", result.available],
+      [window.LanctlI18n.t("LANCTL.UI.WORD.INSTALLED"), result.installed],
+      [window.LanctlI18n.t("LANCTL.UI.TEXT.AVAILABLE"), result.available],
     ])
       if (value) {
         const dt = document.createElement("dt"),
@@ -269,7 +270,7 @@
         if (!updates.open) updates.showModal();
       }
     } catch (error) {
-      console.warn("Actualizaciones:", error.message);
+      console.warn(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.UPDATES"), error.message);
     } finally {
       updateReading = false;
     }

@@ -21,29 +21,36 @@ from lanctl.core.projects import (
     resolve_project_path,
     verify_project,
 )
+from lanctl.shared.i18n import t
 
 
 def register_project_command(commands: argparse._SubParsersAction) -> None:
     command = commands.add_parser(
         "project",
         aliases=["projects"],
-        help="Crea, actualiza e inspecciona proyectos LANCTL .vlf.",
+        help=t("LANCTL.UI.HELP.CREATE_UPDATE_AND_INSPECT_LANCTL_VLF_PROJECTS"),
     )
     actions = command.add_subparsers(dest="project_action", metavar="ACCIÓN")
 
-    status = actions.add_parser("status", help="Muestra el proyecto activo.")
-    status.add_argument("--json", action="store_true", help="Devuelve JSON.")
+    status = actions.add_parser("status", help=t("LANCTL.UI.HELP.SHOW_THE_ACTIVE_PROJECT"))
+    status.add_argument("--json", action="store_true", help=t("LANCTL.UI.HELP.RETURN_JSON"))
     status.set_defaults(project_handler=_status)
 
-    create = actions.add_parser("create", help="Crea un proyecto VLF vacío por defecto.")
-    create.add_argument("file", help="Archivo de salida; se añade .vlf si falta.")
-    create.add_argument("--name", help="Nombre humano del proyecto.")
-    create.add_argument("--description", default="", help="Descripción general.")
-    create.add_argument("--author", default=getpass.getuser(), help="Autor del proyecto.")
-    create.add_argument("--lan-name", default="", help="Nombre humano de la LAN.")
-    create.add_argument("--location", default="", help="Ubicación física.")
-    create.add_argument("--company", default="", help="Empresa u organización.")
-    create.add_argument("--responsible", default="", help="Responsable de la LAN.")
+    create = actions.add_parser(
+        "create", help=t("LANCTL.UI.HELP.CREATE_AN_EMPTY_VLF_PROJECT_BY_DEFAULT")
+    )
+    create.add_argument("file", help=t("LANCTL.UI.HELP.OUTPUT_FILE_VLF_IS_APPENDED_IF_MISSING"))
+    create.add_argument("--name", help=t("LANCTL.UI.HELP.HUMAN_READABLE_PROJECT_NAME"))
+    create.add_argument("--description", default="", help=t("LANCTL.UI.HELP.GENERAL_DESCRIPTION"))
+    create.add_argument(
+        "--author", default=getpass.getuser(), help=t("LANCTL.UI.HELP.PROJECT_AUTHOR")
+    )
+    create.add_argument("--lan-name", default="", help=t("LANCTL.UI.HELP.HUMAN_READABLE_LAN_NAME"))
+    create.add_argument("--location", default="", help=t("LANCTL.UI.HELP.PHYSICAL_LOCATION"))
+    create.add_argument("--company", default="", help=t("LANCTL.UI.HELP.COMPANY_OR_ORGANIZATION"))
+    create.add_argument(
+        "--responsible", default="", help=t("LANCTL.UI.HELP.PERSON_RESPONSIBLE_FOR_THE_LAN")
+    )
     create.add_argument(
         "--empty",
         action="store_true",
@@ -52,42 +59,58 @@ def register_project_command(commands: argparse._SubParsersAction) -> None:
     create.add_argument(
         "--clone-current",
         action="store_true",
-        help="Crea el proyecto copiando explícitamente el inventario y grupos activos.",
+        help=t(
+            "LANCTL.UI.HELP.CREATE_THE_PROJECT_BY_EXPLICITLY_COPYING_THE_ACTIVE_INVENTORY_AND_GROUPS"
+        ),
     )
-    create.add_argument("--force", action="store_true", help="Sobrescribe un VLF existente.")
+    create.add_argument(
+        "--force", action="store_true", help=t("LANCTL.UI.HELP.OVERWRITE_AN_EXISTING_VLF")
+    )
     create.set_defaults(project_handler=_create)
 
     update = actions.add_parser(
-        "update", help="Actualiza datos activos conservando información complementaria."
+        "update",
+        help=t("LANCTL.UI.HELP.UPDATE_ACTIVE_DATA_WHILE_PRESERVING_SUPPLEMENTARY_INFORMATION"),
     )
-    update.add_argument("file", help="Proyecto VLF existente.")
+    update.add_argument("file", help=t("LANCTL.UI.HELP.EXISTING_VLF_PROJECT"))
     update.set_defaults(project_handler=_update)
 
-    save = actions.add_parser("save", help="Guarda manualmente el proyecto VLF activo.")
+    save = actions.add_parser("save", help=t("LANCTL.UI.HELP.MANUALLY_SAVE_THE_ACTIVE_VLF_PROJECT"))
     save.set_defaults(project_handler=_save)
 
     physical = actions.add_parser(
-        "import-physical", help="Copia una base IDF histórica al proyecto físico vacío activo."
+        "import-physical",
+        help=t(
+            "LANCTL.UI.HELP.COPY_A_HISTORICAL_IDF_DATABASE_INTO_THE_ACTIVE_EMPTY_PHYSICAL_PROJECT"
+        ),
     )
-    physical.add_argument("file", help="Base IDF .db de origen; se conserva intacta.")
+    physical.add_argument(
+        "file", help=t("LANCTL.UI.HELP.SOURCE_IDF_DB_DATABASE_PRESERVED_UNCHANGED")
+    )
     physical.set_defaults(project_handler=_import_physical)
 
-    info = actions.add_parser("info", help="Muestra los metadatos del proyecto.")
-    info.add_argument("file", help="Proyecto VLF.")
-    info.add_argument("--json", action="store_true", help="Devuelve JSON.")
+    info = actions.add_parser("info", help=t("LANCTL.UI.HELP.SHOW_PROJECT_METADATA"))
+    info.add_argument("file", help=t("LANCTL.UI.HELP.VLF_PROJECT"))
+    info.add_argument("--json", action="store_true", help=t("LANCTL.UI.HELP.RETURN_JSON"))
     info.set_defaults(project_handler=_info)
 
-    verify = actions.add_parser("verify", help="Comprueba hashes, estructura y SQLite.")
-    verify.add_argument("file", help="Proyecto VLF.")
-    verify.add_argument("--json", action="store_true", help="Devuelve JSON.")
+    verify = actions.add_parser(
+        "verify", help=t("LANCTL.UI.HELP.CHECK_HASHES_STRUCTURE_AND_SQLITE")
+    )
+    verify.add_argument("file", help=t("LANCTL.UI.HELP.VLF_PROJECT"))
+    verify.add_argument("--json", action="store_true", help=t("LANCTL.UI.HELP.RETURN_JSON"))
     verify.set_defaults(project_handler=_verify)
 
-    use = actions.add_parser("use", help="Selecciona el proyecto VLF que recibirá la auditoría.")
-    use.add_argument("file", help="Proyecto VLF existente.")
+    use = actions.add_parser(
+        "use", help=t("LANCTL.UI.HELP.SELECT_THE_VLF_PROJECT_THAT_RECEIVES_THE_AUDIT")
+    )
+    use.add_argument("file", help=t("LANCTL.UI.HELP.EXISTING_VLF_PROJECT"))
     use.set_defaults(project_handler=_use)
 
-    listing = actions.add_parser("list", help="Lista el contenido interno sin extraerlo.")
-    listing.add_argument("file", help="Proyecto VLF.")
+    listing = actions.add_parser(
+        "list", help=t("LANCTL.UI.HELP.LIST_INTERNAL_CONTENTS_WITHOUT_EXTRACTING_THEM")
+    )
+    listing.add_argument("file", help=t("LANCTL.UI.HELP.VLF_PROJECT"))
     listing.set_defaults(project_handler=_list)
     command.set_defaults(handler=run_project, project_handler=_status, json=False)
 
@@ -102,17 +125,27 @@ def _status(args) -> int:
         print(json.dumps(info or {}, ensure_ascii=False, indent=2))
         return 0
     if info is None:
-        ok("PROYECTO", "No hay ningún proyecto seleccionado")
+        ok(t("LANCTL.UI.STATUS.PROJECT"), t("LANCTL.UI.PROMPT.NO_PROJECT_SELECTED"))
         return 0
     state = "válido" if info["valid"] else "no disponible o dañado"
-    ok("PROYECTO ACTIVO", f"{info['name']} | {state}")
-    print(f" Archivo : {info['path']}")
+    ok(t("LANCTL.UI.STATUS.ACTIVE_PROJECT"), f"{info['name']} | {state}")
+    print(t("LANCTL.UI.DETAIL.FILE_VALUE_539A9E46", value0=f"{info['path']}"))
     if info["id"]:
         print(f" UUID    : {info['id']}")
     settings = load_config()
-    print(f" SaveMode: {settings.get('projectSaveMode', 'manual')}")
+    print(
+        t(
+            "LANCTL.UI.DETAIL.SAVEMODE_VALUE_603C21DC",
+            value0=f"{settings.get('projectSaveMode', 'manual')}",
+        )
+    )
     if str(settings.get("projectSaveMode", "")).casefold() == "automatic.timetosave":
-        print(f" Intervalo: {settings.get('projectSaveIntervalMinutes', 5)} minutos")
+        print(
+            t(
+                "LANCTL.UI.DETAIL.INTERVAL_VALUE_MINUTES",
+                value0=f"{settings.get('projectSaveIntervalMinutes', 5)}",
+            )
+        )
     return 0
 
 
@@ -161,8 +194,15 @@ def _create(args) -> int:
         },
     )
     write_log(f"PROJECT CREATE id={project['id']} path={result['path']}")
-    ok("PROYECTO", f"{project['name']} | {project['devices']} dispositivos")
-    print(f" Archivo : {result['path']}")
+    ok(
+        t("LANCTL.UI.STATUS.PROJECT"),
+        t(
+            "LANCTL.UI.SUMMARY.VALUE_VALUE_DEVICES",
+            value0=f"{project['name']}",
+            value1=f"{project['devices']}",
+        ),
+    )
+    print(t("LANCTL.UI.DETAIL.FILE_VALUE_539A9E46", value0=f"{result['path']}"))
     print(f" UUID    : {project['id']}")
     print(f" SHA-256 : {result['checksum']}")
     return 0
@@ -187,8 +227,8 @@ def _update(args) -> int:
     verified = verify_project(saved.path)
     backup = str(Path(saved.path).with_suffix(Path(saved.path).suffix + ".bak"))
     write_log(f"PROJECT UPDATE path={saved.path}")
-    ok("ACTUALIZADO", saved.path)
-    print(f" Backup  : {backup}")
+    ok(t("LANCTL.UI.STATUS.UPDATED"), saved.path)
+    print(t("LANCTL.UI.DETAIL.BACKUP_VALUE", value0=f"{backup}"))
     print(f" SHA-256 : {verified['checksum']}")
     return 0
 
@@ -199,7 +239,14 @@ def _save(args) -> int:
     result = save_active_project(force=True)
     if not result.saved:
         raise ValueError("no hay un proyecto activo que guardar")
-    ok("GUARDADO", f"{result.path} | SaveMode {result.mode}")
+    ok(
+        t("LANCTL.UI.STATUS.SAVED"),
+        t(
+            "LANCTL.UI.DETAIL.VALUE_SAVEMODE_VALUE",
+            value0=f"{result.path}",
+            value1=f"{result.mode}",
+        ),
+    )
     return 0
 
 
@@ -209,8 +256,11 @@ def _import_physical(args) -> int:
 
     result = import_inventory(args.file, project_identity(load_config()))
     ok(
-        "INVENTARIO FÍSICO",
-        f"{result['records']} elementos importados; guarda el proyecto con project save",
+        t("LANCTL.UI.STATUS.PHYSICAL_INVENTORY"),
+        t(
+            "LANCTL.UI.SUMMARY.VALUE_ELEMENTS_IMPORTED_SAVE_THE_PROJECT_WITH_PROJECT_SAVE",
+            value0=f"{result['records']}",
+        ),
     )
     return 0
 
@@ -235,7 +285,10 @@ def _use(args) -> int:
             "project_id": project_info.get("id"),
         },
     )
-    ok("PROYECTO ACTIVO", f"{project_info.get('name') or Path(resolved).stem} | {resolved}")
+    ok(
+        t("LANCTL.UI.STATUS.ACTIVE_PROJECT"),
+        f"{project_info.get('name') or Path(resolved).stem} | {resolved}",
+    )
     print(f" SHA-256 : {result['checksum']}")
     return 0
 
@@ -246,14 +299,14 @@ def _info(args) -> int:
         print(json.dumps(info, ensure_ascii=False, indent=2))
         return 0
     fields = (
-        ("PROYECTO", info.get("name")),
+        (t("LANCTL.UI.STATUS.PROJECT"), info.get("name")),
         ("DESCRIPCIÓN", info.get("description")),
         ("AUTOR", info.get("author")),
         ("UUID", info.get("id")),
         ("FORMATO", info.get("formatVersion")),
         ("LANCTL", info.get("lanctlVersion")),
-        ("CREADO", info.get("created")),
-        ("ACTUALIZADO", info.get("updated")),
+        (t("LANCTL.UI.STATUS.CREATED"), info.get("created")),
+        (t("LANCTL.UI.STATUS.UPDATED"), info.get("updated")),
         ("DISPOSITIVOS", info.get("devices")),
         ("GRUPOS", info.get("groups")),
         ("CONTENT HASH", info.get("contentHash")),
@@ -272,9 +325,16 @@ def _verify(args) -> int:
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
-        ok("VLF VÁLIDO", f"Formato {result['formatVersion']} | {result['entries']} archivos")
+        ok(
+            t("LANCTL.UI.STATUS.VLF_VALID"),
+            t(
+                "LANCTL.UI.DETAIL.FORMAT_VALUE_VALUE_FILES",
+                value0=f"{result['formatVersion']}",
+                value1=f"{result['entries']}",
+            ),
+        )
         print(f" SHA-256 : {result['checksum']}")
-        print(f" Tamaño  : {result['size']} bytes")
+        print(t("LANCTL.UI.MESSAGE.SIZE_VALUE_BYTES", value0=f"{result['size']}"))
     return 0
 
 

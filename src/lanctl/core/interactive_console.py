@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from contextlib import nullcontext
+import io
+from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from rich.console import Console, Group
@@ -14,6 +15,7 @@ from lanctl.core.command_line import split_command_line
 from lanctl.core.console import error as print_error
 from lanctl.core.errors import LanctlError, errors
 from lanctl.core.terminal_ui import ManagementScreen
+from lanctl.shared.i18n import t
 
 CONSOLE_HELP = """Comandos de consola:
   clear | cls       Limpiar la pantalla (no borra datos ni logs).
@@ -30,7 +32,7 @@ def command_console(
 ):
     """Run commands with native streams: passwords and child TUIs are never captured."""
     shortcuts = shortcuts or {}
-    status = "Preparado. help muestra los comandos; exit vuelve o sale."
+    status = t("LANCTL.UI.TEXT.READY_HELP_LISTS_COMMANDS_EXIT_RETURNS_OR_EXITS")
     with ManagementScreen() if tui else nullcontext(None) as screen:
         if not screen:
             print(f"{name} CLI {__version__} | help | exit")
@@ -47,7 +49,7 @@ def command_console(
                 errors.from_exception(
                     exc, origin="LANCTL.Suite.Console.Render", code="CONSOLE.VIEW.FAILED", level=34
                 )
-                content = "No se pudo cargar el panel. Puedes consultar ayuda o salir."
+                content = t("LANCTL.UI.TEXT.COULD_NOT_LOAD_THE_PANEL_YOU_CAN_VIEW_HELP_OR_EXIT")
                 status = str(exc)
             if screen:
                 screen.draw(
@@ -56,8 +58,12 @@ def command_console(
                             Text(content),
                             title=f"{name} TUI · {__version__}",
                         ),
-                        Panel(Text(status), title="Estado"),
-                        Text("Introduce un comando y pulsa Enter · help ayuda · exit salir"),
+                        Panel(Text(status), title=t("LANCTL.UI.TEXT.STATUS")),
+                        Text(
+                            t(
+                                "LANCTL.UI.TEXT.ENTER_A_COMMAND_AND_PRESS_ENTER_HELP_FOR_HELP_EXIT_TO_QUIT"
+                            )
+                        ),
                     )
                 )
             try:
@@ -68,7 +74,7 @@ def command_console(
                     with screen.suspended() if screen else nullcontext():
                         if on_close():
                             return 0
-                    status = "Cierre cancelado; la consola sigue abierta."
+                    status = t("LANCTL.UI.TEXT.CLOSE_CANCELLED_THE_CONSOLE_REMAINS_OPEN")
                     continue
                 if not line:
                     continue
@@ -79,21 +85,22 @@ def command_console(
                 builtin = words[0].casefold()
                 if builtin in {"clear", "cls", "pwd", "commands"}:
                     if len(words) != 1:
-                        status = f"Uso: {builtin} (sin argumentos)."
+                        status = t("LANCTL.CONSOLE.USAGE.NO_ARGUMENTS", command=builtin)
                         if not screen:
                             print(status)
                         continue
                     if builtin in {"clear", "cls"}:
-                        status = "Preparado."
+                        status = t("LANCTL.UI.TEXT.READY")
                         if not screen:
                             console = Console()
                             if console.is_terminal:
                                 console.clear()
                         continue
-                    with screen.suspended() if screen else nullcontext():
-                        print(str(Path.cwd()) if builtin == "pwd" else CONSOLE_HELP)
-                        if screen:
-                            input("Pulsa Enter para volver al panel…")
+                    content = str(Path.cwd()) if builtin == "pwd" else t("LANCTL.CONSOLE.HELP.TEXT")
+                    if screen:
+                        screen.show_text(content, title=f"{name} · {builtin}")
+                    else:
+                        print(content)
                     status = "Última operación: correcta (código 0)."
                     continue
                 general_help = len(words) == 1 and builtin in {"help", "--help", "-h", "/?"}
@@ -106,11 +113,36 @@ def command_console(
                     if not screen:
                         print(status)
                     continue
+                # Help is read-only content, not a child interactive session.
+                # Capture only explicit help/version requests; passwords and
+                # real CLI/TUI applications retain their native terminal streams.
+                if screen and (
+                    any(word in {"--help", "-h", "/?"} for word in words) or words == ["--version"]
+                ):
+                    output = io.StringIO()
+                    with redirect_stdout(output), redirect_stderr(output):
+                        if general_help:
+                            print(t("LANCTL.CONSOLE.HELP.TEXT"))
+                        try:
+                            result = dispatch(words)
+                            code = result if isinstance(result, int) else 0
+                        except SystemExit as exc:
+                            code = exc.code if isinstance(exc.code, int) else 1
+                    screen.show_text(
+                        output.getvalue() or t("LANCTL.UI.PROMPT.THE_COMMAND_RETURNED_NO_CONTENT"),
+                        title=f"{name} · {' '.join(words)}",
+                    )
+                    status = t(
+                        "LANCTL.UI.MESSAGE.LAST_OPERATION_VALUE_CODE_VALUE",
+                        value0=f"{('correcta' if code == 0 else 'fallida')}",
+                        value1=f"{code}",
+                    )
+                    continue
                 # A child TUI owns the terminal until it returns. No nested alternate buffers.
                 with screen.suspended() if screen else nullcontext():
                     try:
                         if general_help:
-                            print(CONSOLE_HELP)
+                            print(t("LANCTL.CONSOLE.HELP.TEXT"))
                         result = dispatch(words)
                         code = result if isinstance(result, int) else 0
                     except SystemExit as exc:
@@ -121,11 +153,15 @@ def command_console(
                         code = exc.exit_code
                     except KeyboardInterrupt:
                         # Cancel the operation, not its parent management console.
-                        print("Operación cancelada.")
+                        print(t("LANCTL.CORE.APP.CANCELLED"))
                         code = 130
-                    status = f"Última operación: {'correcta' if code == 0 else 'fallida'} (código {code})."
+                    status = t(
+                        "LANCTL.UI.MESSAGE.LAST_OPERATION_VALUE_CODE_VALUE",
+                        value0=f"{('correcta' if code == 0 else 'fallida')}",
+                        value1=f"{code}",
+                    )
                     if screen:
-                        input("Pulsa Enter para volver al panel…")
+                        input(t("LANCTL.UI.SCREEN.PRESS_ENTER_TO_RETURN_TO_THE_PANEL"))
             except (EOFError, KeyboardInterrupt):
                 if on_close is None:
                     return 0

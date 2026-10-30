@@ -9,6 +9,8 @@ from rich.console import Console, RenderableType
 from rich.panel import Panel
 from rich.text import Text
 
+from lanctl.shared.i18n import t
+
 
 class RichTuiRenderer:
     def __init__(self, stream: TextIO) -> None:
@@ -215,7 +217,7 @@ def help_modal_footer() -> Text:
         ("↑/↓", "seleccionar"),
         ("Enter", "detalle"),
         ("Tab", "preparar"),
-        ("←/→", "sección"),
+        ("←/→", t("LANCTL.UI.SCREEN.SECTION")),
         ("F1/Esc", "cerrar"),
     ):
         if text:
@@ -233,15 +235,15 @@ def footer_bar(width: int) -> Text:
     """
 
     actions = [
-        ("F1", "Ayuda", "normal", True),
+        ("F1", t("LANCTL.UI.TEXT.HELP"), "normal", True),
         ("F12", "Config.", "accent", False),
-        ("Ctrl+S", "Guardar", "save", False),
+        ("Ctrl+S", t("LANCTL.UI.TEXT.SAVE"), "save", False),
         ("F7", "Plugins", "normal", False),
         ("F9", "Base IDF", "normal", False),
-        ("Ctrl+C", "Copiar", "normal", False),
+        ("Ctrl+C", t("LANCTL.UI.TEXT.COPY"), "normal", False),
         ("Ctrl+J", "JSON", "normal", False),
         ("Ctrl+H", "Hist.", "normal", False),
-        ("Esc", "Salir", "normal", True),
+        ("Esc", t("LANCTL.UI.TEXT.QUIT"), "normal", True),
     ]
     compact = {
         "Seleccionar": "Sel.",

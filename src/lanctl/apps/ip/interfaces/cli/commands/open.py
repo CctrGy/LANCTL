@@ -23,6 +23,7 @@ from lanctl.apps.ip.interfaces.cli.commands.terminal import run_terminal
 from lanctl.core.config import load_config
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.logger import write_log
+from lanctl.shared.i18n import t
 
 OPEN_PROTOCOLS = (
     "auto",
@@ -64,46 +65,58 @@ def register_open_command(commands: argparse._SubParsersAction) -> None:
     command = commands.add_parser(
         "open",
         aliases=["connect"],
-        help="Abre un elemento con un cliente acorde al protocolo.",
+        help=t("LANCTL.UI.HELP.OPEN_AN_ELEMENT_WITH_A_PROTOCOL_APPROPRIATE_CLIENT"),
     )
-    command.add_argument("selector", help="IP, MAC o alias del elemento.")
+    command.add_argument("selector", help=t("LANCTL.UI.HELP.ELEMENT_IP_MAC_OR_ALIAS"))
     command.add_argument(
         "protocol",
         nargs="?",
         default="auto",
         choices=OPEN_PROTOCOLS,
-        help="Protocolo o detección automática.",
+        help=t("LANCTL.UI.HELP.PROTOCOL_OR_AUTOMATIC_DETECTION"),
     )
-    command.add_argument("--port", type=int, help="Puerto alternativo.")
-    command.add_argument("--path", default="", help="Ruta HTTP/FTP/RTSP o recurso SMB.")
-    command.add_argument("--mode", choices=RADMIN_MODES, help="Modo de conexión Radmin.")
-    command.add_argument("--through", help="Servidor Radmin intermedio HOST:PUERTO.")
+    command.add_argument("--port", type=int, help=t("LANCTL.UI.HELP.ALTERNATIVE_PORT"))
     command.add_argument(
-        "--fullscreen", action="store_true", help="Abre control o vista a pantalla completa."
+        "--path", default="", help=t("LANCTL.UI.HELP.HTTP_FTP_RTSP_PATH_OR_SMB_RESOURCE")
+    )
+    command.add_argument(
+        "--mode", choices=RADMIN_MODES, help=t("LANCTL.UI.HELP.RADMIN_CONNECTION_MODE")
+    )
+    command.add_argument("--through", help=t("LANCTL.UI.HELP.INTERMEDIATE_RADMIN_SERVER_HOST_PORT"))
+    command.add_argument(
+        "--fullscreen",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.OPEN_FULL_SCREEN_CONTROL_OR_VIEW"),
     )
     command.add_argument(
         "--color-depth",
         type=int,
         choices=COLOR_DEPTHS,
-        help="Profundidad de color de Radmin (1, 2, 4, 8, 16 o 24 bits).",
+        help=t("LANCTL.UI.HELP.RADMIN_COLOR_DEPTH_1_2_4_8_16_OR_24_BITS"),
     )
     command.add_argument(
         "--updates",
         type=int,
-        help="Máximo de actualizaciones de pantalla por segundo (1-120).",
+        help=t("LANCTL.UI.HELP.MAXIMUM_SCREEN_UPDATES_PER_SECOND_1_120"),
     )
-    command.add_argument("--phonebook", help="Ruta de phonebook Radmin .rpb.")
+    command.add_argument("--phonebook", help=t("LANCTL.UI.HELP.RADMIN_RPB_PHONEBOOK_PATH"))
     command.add_argument(
         "--phonebook-id",
         type=int,
-        help="Identificador de entrada dentro del phonebook de Radmin.",
-    )
-    command.add_argument("--dry-run", action="store_true", help="Muestra el destino sin abrirlo.")
-    command.add_argument(
-        "--database", default=config["database"], help="Archivo JSON de elementos."
+        help=t("LANCTL.UI.HELP.ENTRY_IDENTIFIER_WITHIN_THE_RADMIN_PHONEBOOK"),
     )
     command.add_argument(
-        "--store", default=config["credentials"], help="Almacén cifrado de credenciales."
+        "--dry-run",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.SHOW_THE_TARGET_WITHOUT_OPENING_IT"),
+    )
+    command.add_argument(
+        "--database", default=config["database"], help=t("LANCTL.UI.HELP.ELEMENT_JSON_FILE")
+    )
+    command.add_argument(
+        "--store",
+        default=config["credentials"],
+        help=t("LANCTL.UI.TEXT.ENCRYPTED_CREDENTIAL_STORE"),
     )
     command.set_defaults(handler=run_open)
 

@@ -40,15 +40,16 @@ from lanctl.core.config import load_config, save_config
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.history import HistoryService
 from lanctl.core.paths import application_path, data_root
+from lanctl.shared.i18n import t
 
 
 def register_monitor_command(commands):
     config = load_config()
-    command = commands.add_parser("monitor", help="Opera sesiones y checks del monitor LAN.")
+    command = commands.add_parser("monitor", help=t("LANCTL.MONITOR.COMMAND.HELP"))
     command.add_argument(
         "words",
         nargs="*",
-        help="attach, detach, status, once, session, incidents, incident, service o foreground.",
+        help=t("LANCTL.MONITOR.ACTION.HELP"),
     )
     command.add_argument("--project")
     command.add_argument("--permanent", action="store_true")
@@ -71,41 +72,43 @@ def register_monitor_command(commands):
     command.add_argument("--unknown", action="store_true")
     command.add_argument("--follow", action="store_true")
     command.add_argument(
-        "--sessions", default=config["monitorRuntime"], help="Estado runtime de sesiones."
+        "--sessions", default=config["monitorRuntime"], help=t("LANCTL.MONITOR.SESSIONS.HELP")
     )
     command.add_argument(
         "--incidents-store",
         default=config["monitorIncidents"],
-        help="Estado runtime de incidencias.",
+        help=t("LANCTL.MONITOR.INCIDENTS.HELP"),
     )
     command.add_argument(
-        "--lock", default=config["monitorLock"], help="Lock singleton del monitor."
+        "--lock", default=config["monitorLock"], help=t("LANCTL.MONITOR.LOCK.HELP")
     )
     command.add_argument(
-        "--monitor-db", default=config["monitorDatabase"], help="Repositorio SQLite del monitor."
+        "--monitor-db", default=config["monitorDatabase"], help=t("LANCTL.MONITOR.DATABASE.HELP")
     )
     command.add_argument(
-        "--profiles", default=config["monitorProfiles"], help="Perfiles personalizados."
+        "--profiles", default=config["monitorProfiles"], help=t("LANCTL.MONITOR.PROFILES.HELP")
     )
     command.add_argument(
         "--assignments-store",
         default=config["monitorAssignments"],
-        help="Asignaciones persistentes.",
+        help=t("LANCTL.MONITOR.ASSIGNMENTS.HELP"),
     )
-    command.add_argument("--profile", help="Perfil monitor.")
+    command.add_argument("--profile", help=t("LANCTL.MONITOR.PROFILE.HELP"))
     command.add_argument(
         "--priority",
         choices=("low", "normal", "high", "critical"),
         default="normal",
-        help="Prioridad de asignación.",
+        help=t("LANCTL.MONITOR.PRIORITY.HELP"),
     )
-    command.add_argument("--check", action="append", default=[], help="Check ping, arp o port:NN.")
-    command.add_argument("--presence", help="Intervalo de presencia.")
-    command.add_argument("--discovery", help="Intervalo de descubrimiento.")
-    command.add_argument("--services", help="Intervalo de servicios.")
-    command.add_argument("--deep", help="Intervalo profundo.")
-    command.add_argument("--workers", type=int, help="Workers del perfil.")
-    command.add_argument("--timeout", type=float, help="Timeout del perfil.")
+    command.add_argument(
+        "--check", action="append", default=[], help=t("LANCTL.MONITOR.CHECK.HELP")
+    )
+    command.add_argument("--presence", help=t("LANCTL.MONITOR.PRESENCE.HELP"))
+    command.add_argument("--discovery", help=t("LANCTL.MONITOR.DISCOVERY.HELP"))
+    command.add_argument("--services", help=t("LANCTL.MONITOR.SERVICES.HELP"))
+    command.add_argument("--deep", help=t("LANCTL.MONITOR.DEEP.HELP"))
+    command.add_argument("--workers", type=int, help=t("LANCTL.MONITOR.WORKERS.HELP"))
+    command.add_argument("--timeout", type=float, help=t("LANCTL.MONITOR.TIMEOUT.HELP"))
     for action in command._actions:
         if action.help is None:
             action.help = "Opción operativa del monitor."

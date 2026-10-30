@@ -32,6 +32,13 @@ def parser_tree(parser: argparse.ArgumentParser, path: tuple[str, ...] = ("LANCT
 
 
 def generate() -> str:
+    from lanctl.shared.i18n import language_context
+
+    with language_context("en"):
+        return _generate()
+
+
+def _generate() -> str:
     # La referencia es un artefacto multiplataforma: usa la sintaxis común
     # POSIX/Windows y documenta /? por separado, evitando diffs según el runner.
     variables = ("LANCTL_CANONICAL_HELP", "LOGNAME", "USER", "LNAME", "USERNAME")

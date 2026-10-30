@@ -13,6 +13,7 @@ from lanctl.apps.ip.infrastructure.services.lan_scanner import active_arp_mac
 from lanctl.core.config import load_config
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.logger import write_log
+from lanctl.shared.i18n import t
 
 PING_METHODS = ("auto", "ping", "arp")
 
@@ -21,44 +22,46 @@ def register_ping_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
     command = commands.add_parser(
         "ping",
-        help="Comprueba puntualmente si un elemento responde por PING o ARP.",
+        help=t("LANCTL.UI.HELP.CHECK_ONCE_WHETHER_AN_ELEMENT_RESPONDS_TO_PING_OR_ARP"),
         description=(
-            "Diagnostica un único elemento sin modificar la base de datos. "
-            "PING prueba ICMP; ARP realiza una consulta activa en la LAN; "
-            "AUTO combina ambos métodos."
+            t(
+                "LANCTL.UI.HELP.DIAGNOSE_A_SINGLE_ELEMENT_WITHOUT_CHANGING_THE_DATABASE_PING_TESTS_ICMP_ARP_PERFORMS_AN_ACTIVE_"
+            )
         ),
     )
-    command.add_argument("selector", help="IP, MAC, alias o nombre registrado.")
+    command.add_argument("selector", help=t("LANCTL.UI.HELP.IP_MAC_ALIAS_OR_REGISTERED_NAME"))
     method = command.add_mutually_exclusive_group()
     method.add_argument(
         "--method",
         choices=PING_METHODS,
         default="auto",
-        help="Buscador utilizado: auto, ping o arp (por defecto: auto).",
+        help=t("LANCTL.UI.HELP.LOOKUP_METHOD_AUTO_PING_OR_ARP_DEFAULT_AUTO"),
     )
     method.add_argument(
         "--ping",
         dest="method",
         action="store_const",
         const="ping",
-        help="Usa únicamente una solicitud ICMP.",
+        help=t("LANCTL.UI.HELP.USE_ONLY_ONE_ICMP_REQUEST"),
     )
     method.add_argument(
         "--arp",
         dest="method",
         action="store_const",
         const="arp",
-        help="Usa únicamente una solicitud ARP activa.",
+        help=t("LANCTL.UI.HELP.USE_ONLY_ONE_ACTIVE_ARP_REQUEST"),
     )
     command.add_argument(
         "--timeout",
         type=float,
         default=config["timeout"],
-        help="Tiempo máximo de cada comprobación, en segundos.",
+        help=t("LANCTL.UI.HELP.MAXIMUM_TIMEOUT_PER_CHECK_IN_SECONDS"),
     )
-    command.add_argument("--json", action="store_true", help="Devuelve el diagnóstico como JSON.")
     command.add_argument(
-        "--database", default=config["database"], help="Archivo JSON de elementos."
+        "--json", action="store_true", help=t("LANCTL.UI.HELP.RETURN_DIAGNOSTICS_AS_JSON")
+    )
+    command.add_argument(
+        "--database", default=config["database"], help=t("LANCTL.UI.HELP.ELEMENT_JSON_FILE")
     )
     command.set_defaults(handler=run_ping)
 
@@ -138,14 +141,30 @@ def run_ping(args: argparse.Namespace) -> int:
             else _paint("NO DETECTADO", Fore.LIGHTRED_EX)
         )
         print(f"{_paint('CONEXIÓN', Fore.CYAN)} {args.selector}")
-        print(f"  Estado       : {state}")
+        print(t("LANCTL.UI.DETAIL.STATE_VALUE_2921817C", value0=f"{state}"))
         print(f"  IP           : {_paint(ip, Fore.LIGHTBLUE_EX)}")
-        print(f"  Buscador     : {args.method.upper()}")
-        print(f"  Detectado por: {' + '.join(methods) or '-'}")
-        print(f"  Latencia     : {f'{latency:.2f} ms' if latency is not None else '-'}")
+        print(t("LANCTL.UI.DETAIL.LOOKUP_METHOD_VALUE", value0=f"{args.method.upper()}"))
+        print(t("LANCTL.UI.MESSAGE.DETECTED_BY_VALUE", value0=f"{' + '.join(methods) or '-'}"))
+        print(
+            t(
+                "LANCTL.UI.DETAIL.LATENCY_VALUE",
+                value0=f"{(f'{latency:.2f} ms' if latency is not None else '-')}",
+            )
+        )
         print(f"  TTL          : {ttl if ttl is not None else '-'}")
-        print(f"  MAC observada: {_paint(arp_mac or '-', Fore.LIGHTMAGENTA_EX)}")
+        print(
+            t(
+                "LANCTL.UI.SUMMARY.OBSERVED_MAC_VALUE",
+                value0=f"{_paint(arp_mac or '-', Fore.LIGHTMAGENTA_EX)}",
+            )
+        )
         if expected_mac:
             match = "SÍ" if identity_match else "NO" if identity_match is False else "-"
-            print(f"  Identidad MAC: {match} | esperada {expected_mac}")
+            print(
+                t(
+                    "LANCTL.UI.DETAIL.MAC_IDENTITY_VALUE_EXPECTED_VALUE",
+                    value0=f"{match}",
+                    value1=f"{expected_mac}",
+                )
+            )
     return 0 if detected else 1

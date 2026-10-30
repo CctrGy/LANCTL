@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LANCTL · Ejemplo de configuración</title>
+<style>
+:root{color-scheme:dark;--bg:#15191d;--panel:#20272c;--input:#171d21;--line:#37424b;--text:#edf2f5;--muted:#9fadb8;--accent:#b2ef26;--accent-text:#1b2609;font:14px/1.5 "Segoe UI",system-ui,sans-serif}
+:root[data-theme=light]{color-scheme:light;--bg:#f2f5f7;--panel:#fff;--input:#f6f8fa;--line:#cdd6dd;--text:#202c35;--muted:#586875;--accent:#b2ef26;--accent-text:#1b2609}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}button,input,select{font:inherit;color:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:9px 16px}button:hover{border-color:#8ca85c}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.app{height:100vh;height:100dvh;display:flex;flex-direction:column;max-width:1100px;margin:auto}header{padding:25px 30px 21px;display:flex;gap:20px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{font-size:20px;font-weight:750;letter-spacing:2px}.brand span{color:var(--accent)}.brand small{display:block;color:var(--muted);font-size:10px;font-weight:500;letter-spacing:2px;margin-top:4px}.badge{color:var(--muted);font-size:11px;letter-spacing:.7px;padding:5px 10px;border:1px solid var(--line);border-radius:20px}main{padding:24px 30px 28px;overflow:auto;flex:1;min-height:0}h1{font-size:25px;margin:0;font-weight:650;letter-spacing:-.5px}.intro{color:var(--muted);margin:5px 0 22px}.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:24px}.tabs button{border:0;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;background:transparent;color:var(--muted);padding:11px 20px}.tabs button[aria-selected=true]{color:var(--text);background:var(--panel);border-bottom-color:var(--accent)}[hidden]{display:none!important}.section-title{font-size:16px;margin:0 0 4px;font-weight:650}.section-description{color:var(--muted);font-size:12px;margin:0 0 20px}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;margin-bottom:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px}.field{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:13px}.field>span{font-weight:550}.field small{color:var(--muted);font-size:11px}input:not([type=checkbox]),select{width:100%;min-width:0;background:var(--input);border:1px solid var(--line);border-radius:7px;padding:10px 12px}input[type=checkbox]{accent-color:var(--accent);width:17px;height:17px;flex:none;margin:2px 0 0}.check{display:flex;gap:12px;align-items:start;cursor:pointer;font-size:13px}.check strong{font-weight:550;display:block}.check small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.check+.check{margin-top:19px}.suffix{position:relative}.suffix input{padding-right:70px}.suffix>span{position:absolute;right:13px;top:11px;color:var(--muted);font-size:12px}.folder{display:flex;gap:8px}.folder input{flex:1}.folder button{flex:none;padding:8px 12px}footer{border-top:1px solid var(--line);padding:17px 30px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--bg)}.actions{display:flex;gap:10px;flex-wrap:wrap}.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:650}.state{font-size:12px;color:var(--muted);margin:0;flex:1;min-width:140px}.state.changed{color:var(--text)}.quiet{background:transparent}dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:24px;width:min(440px,90vw)}dialog::backdrop{background:#0009}dialog h2{font-size:18px;margin:0 0 7px}dialog p{font-size:12px;color:var(--muted)}dialog button{display:block;width:100%;text-align:left;margin-top:10px}.preview-swatch{height:55px;border-radius:8px;margin-top:16px;background:var(--input);border:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:14px;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+@media(max-width:650px){header{padding:18px}main{padding:20px 18px}.grid{grid-template-columns:1fr}.card{padding:18px}footer{padding:15px 18px}.tabs button{padding:10px 13px}.badge{font-size:10px}.actions{width:100%;justify-content:flex-end}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand">LAN<span>CTL</span><small>CONFIGURACIÓN DEL PROGRAMA</small></div><span class="badge">PROTOTIPO INTERACTIVO</span></header>
+<main>
+<h1>Configuración</h1><p class="intro">Un lugar para ajustar cómo funciona y se presenta LANCTL.</p>
+<nav class="tabs" role="tablist" aria-label="Categorías de configuración">
+<button type="button" role="tab" id="tab-general" aria-selected="true" aria-controls="general" tabindex="0">General</button>
+<button type="button" role="tab" id="tab-network" aria-selected="false" aria-controls="network" tabindex="-1">Red</button>
+<button type="button" role="tab" id="tab-appearance" aria-selected="false" aria-controls="appearance" tabindex="-1">Apariencia</button>
+</nav>
+<form id="settings">
+<section id="general" role="tabpanel" aria-labelledby="tab-general">
+<div class="card"><h2 class="section-title">Inicio y preferencias</h2><p class="section-description">Las opciones que utilizas cada día.</p>
+<div class="grid">
+<label class="field"><span>Nombre del entorno</span><input name="name" value="Mi red local" maxlength="80"><small>Un nombre fácil de reconocer para tu espacio de trabajo.</small></label>
+<label class="field"><span>Idioma</span><select name="language"><option>Español</option><option>English</option></select><small>Selector de ejemplo para el idioma de la interfaz.</small></label>
+<label class="field"><span>Interfaz al iniciar</span><select name="startup"><option>Interfaz gráfica (GUI)</option><option>Terminal visual (TUI)</option><option>Línea de comandos (CLI)</option></select></label>
+<label class="field"><span>Carpeta de proyectos</span><span class="folder"><input name="folder" value="~/Documentos/LanCTL"><button id="browse" type="button" title="Elegir una carpeta de ejemplo">Elegir…</button></span><small>Destino de ejemplo para proyectos nuevos.</small></label>
+</div></div>
+<div class="card"><h2 class="section-title">Ventanas y cierre</h2><p class="section-description">Decide cómo se comporta el programa mientras trabajas.</p>
+<label class="check"><input name="confirm" type="checkbox" checked><span><strong>Consultar antes de cerrar con cambios</strong><small>Ofrecer guardar, descartar o continuar trabajando.</small></span></label>
+<label class="check"><input name="closeLauncher" type="checkbox"><span><strong>Cerrar LANCTL al abrir otra aplicación</strong><small>Dejar abierta únicamente la aplicación que acabas de iniciar.</small></span></label>
+</div></section>
+<section id="network" role="tabpanel" aria-labelledby="tab-network" hidden>
+<div class="card"><h2 class="section-title">Descubrimiento de red</h2><p class="section-description">Campos de ejemplo. Este prototipo no envía tráfico ni realiza escaneos.</p>
+<div class="grid"><label class="field"><span>Rango de red</span><input name="range" value="192.168.1.0/24"><small>Dirección y máscara en formato CIDR.</small></label>
+<label class="field"><span>Perfil de escaneo</span><select name="profile"><option>Rápido</option><option selected>Normal</option><option>Preciso</option></select></label>
+<label class="field"><span>Tiempo de espera</span><span class="suffix"><input name="timeout" type="number" value="1.5" min="0.1" max="30" step="0.1"><span>segundos</span></span></label>
+<label class="field"><span>Comprobaciones simultáneas</span><input name="workers" type="number" value="32" min="1" max="256" step="1"></label></div></div>
+<div class="card"><label class="check"><input name="dns" type="checkbox" checked><span><strong>Resolver nombres DNS</strong><small>Mostrar nombres reconocibles junto a las direcciones IP.</small></span></label></div>
+</section>
+<section id="appearance" role="tabpanel" aria-labelledby="tab-appearance" hidden>
+<div class="card"><h2 class="section-title">Tu espacio de trabajo</h2><p class="section-description">Prueba el tema claro u oscuro en esta misma ventana.</p>
+<div class="grid"><label class="field"><span>Tema</span><select name="theme"><option value="dark">Oscuro</option><option value="light">Claro</option></select></label>
+<label class="field"><span>Densidad de controles</span><select name="density"><option>Cómoda</option><option>Compacta</option></select><small>Ejemplo de selector de distribución.</small></label></div>
+<div class="preview-swatch"><span class="dot"></span>Vista previa · Los cambios de tema se aplican solo a este ejemplo.</div></div>
+<div class="card"><label class="check"><input name="tips" type="checkbox" checked><span><strong>Mostrar textos de ayuda</strong><small>Explicaciones breves debajo de las opciones.</small></span></label></div>
+</section>
+</form>
+</main>
+<footer><p id="state" class="state" role="status">Datos de ejemplo · Tu configuración real no se modifica.</p><div class="actions"><button type="button" class="quiet" id="reset">Restablecer</button><button type="button" id="close">Cerrar</button><button type="submit" form="settings" class="primary">Guardar ejemplo</button></div></footer>
+</div>
+<dialog id="folders" aria-labelledby="folder-title"><h2 id="folder-title">Elegir carpeta de ejemplo</h2><p>Estas rutas son ficticias. No se explora ni modifica tu equipo.</p><button type="button" data-folder="~/Documentos/LanCTL">Documentos / LanCTL</button><button type="button" data-folder="~/Proyectos/Red de casa">Proyectos / Red de casa</button><button type="button" id="cancel-folder">Cancelar</button></dialog>
+<script>
+const form=document.querySelector('#settings'),status=document.querySelector('#state'),tabs=[...document.querySelectorAll('[role=tab]')],folderDialog=document.querySelector('#folders');
+function selectTab(tab){for(const item of tabs){const active=item===tab;item.setAttribute('aria-selected',active);item.tabIndex=active?0:-1;document.getElementById(item.getAttribute('aria-controls')).hidden=!active;}}
+for(const tab of tabs){tab.onclick=()=>selectTab(tab);tab.onkeydown=event=>{let index=tabs.indexOf(tab);if(event.key==='ArrowRight')index=(index+1)%tabs.length;else if(event.key==='ArrowLeft')index=(index+tabs.length-1)%tabs.length;else if(event.key==='Home')index=0;else if(event.key==='End')index=tabs.length-1;else return;event.preventDefault();selectTab(tabs[index]);tabs[index].focus();};}
+function changed(){status.textContent='Cambios de ejemplo sin guardar';status.classList.add('changed');}
+form.addEventListener('input',changed);form.addEventListener('change',changed);
+form.elements.theme.onchange=()=>{document.documentElement.dataset.theme=form.elements.theme.value;};
+form.elements.density.onchange=()=>{document.querySelectorAll('.card').forEach(card=>card.style.padding=form.elements.density.value==='Compacta'?'14px':'');};
+form.elements.tips.onchange=()=>document.querySelectorAll('.field small').forEach(item=>item.hidden=!form.elements.tips.checked);
+form.onsubmit=event=>{event.preventDefault();status.textContent='Guardado simulado. No se ha escrito ningún archivo.';status.classList.remove('changed');};
+document.querySelector('#reset').onclick=()=>{form.reset();delete document.documentElement.dataset.theme;document.querySelectorAll('.card').forEach(card=>card.style.padding='');document.querySelectorAll('.field small').forEach(item=>item.hidden=false);status.textContent='Valores de ejemplo restablecidos.';status.classList.remove('changed');};
+document.querySelector('#browse').onclick=()=>folderDialog.showModal();
+for(const button of document.querySelectorAll('[data-folder]'))button.onclick=()=>{form.elements.folder.value=button.dataset.folder;folderDialog.close();changed();};
+document.querySelector('#cancel-folder').onclick=()=>folderDialog.close();
+document.querySelector('#close').onclick=()=>{if(window.pywebview?.api.close_preview)window.pywebview.api.close_preview();else{status.textContent='Puedes cerrar esta pestaña del navegador.';}};
+</script>
+</body></html>

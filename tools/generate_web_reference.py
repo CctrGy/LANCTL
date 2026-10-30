@@ -630,6 +630,13 @@ def generate_data() -> dict:
 
 
 def generate() -> str:
+    from lanctl.shared.i18n import language_context
+
+    with language_context("en"):
+        return _generate()
+
+
+def _generate() -> str:
     payload = json.dumps(generate_data(), ensure_ascii=False, indent=2, sort_keys=True)
     return f"// Generado por tools/generate_web_reference.py. No editar.\nwindow.LANCTL_REFERENCE = {payload};\n"
 

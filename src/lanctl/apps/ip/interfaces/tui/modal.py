@@ -50,6 +50,10 @@ class ModalState:
     max_width: int | None = None
     max_height: int | None = None
 
+    def __post_init__(self):
+        # Tab identities are navigation state, independent of their display language.
+        self.tabs = [getattr(label, "source_text", label) for label in self.tabs]
+
     @property
     def page(self) -> list[str]:
         if not self.pages:

@@ -2,7 +2,7 @@
 const $ = selector => document.querySelector(selector);
 // Application-owned confirmation: never delegate to browser-native prompts.
 let pendingConfirmation=null;
-function confirmAction(text,acceptLabel="Continuar"){
+function confirmAction(text,acceptLabel=window.LanctlI18n.t("LANCTL.UI.TEXT.CONTINUE")){
   if(pendingConfirmation)return Promise.resolve(false);
   const dialog=$("#confirmation");
   $("#confirmation-message").textContent=text;
@@ -20,12 +20,12 @@ let terminalTimer = null;
 let terminalReading = false;
 const listQueries={projects:"",plugins:""};
 const activity = [];
-const apps = [
-  ["lanip","LANIP","Inventario y diagnóstico","network"],
-  ["lanwire","LANWIRE","Cableado y topología","cable"],
-  ["lanrack","LANRACK","Salas y racks","server"],
-  ["lanaccess","LANACCESS","Credenciales y acceso","key"],
-  ["lanmon","LANMON","Monitorización y eventos","activity"]
+const apps = () => [
+  ["lanip","LANIP",window.LanctlI18n.t("LANCTL.UI.TEXT.INVENTORY_AND_DIAGNOSTICS"),"network"],
+  ["lanwire","LANWIRE",window.LanctlI18n.t("LANCTL.UI.TEXT.WIRING_AND_TOPOLOGY"),"cable"],
+  ["lanrack","LANRACK",window.LanctlI18n.t("LANCTL.UI.TEXT.ROOMS_AND_RACKS"),"server"],
+  ["lanaccess","LANACCESS",window.LanctlI18n.t("LANCTL.UI.TEXT.CREDENTIALS_AND_ACCESS"),"key"],
+  ["lanmon","LANMON",window.LanctlI18n.t("LANCTL.UI.TEXT.MONITORING_AND_EVENTS"),"activity"]
 ];
 // Local vector icons: no remote dependency or executable plugin markup.
 const icons = {
@@ -39,17 +39,17 @@ function icon(name){return `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[
 function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function message(text,error=false){$("#status").textContent=text;$("#status").classList.toggle("error",error);if(text){activity.push(new Date().toLocaleTimeString()+" · "+text);if(activity.length>100)activity.shift();}}
 async function call(method,...args){
-  if(!window.pywebview?.api)throw new Error("Abre esta interfaz con lanctl --gui.");
+  if(!window.pywebview?.api)throw new Error(window.LanctlI18n.t("LANCTL.UI.TEXT.OPEN_THIS_INTERFACE_WITH_LANCTL_GUI"));
   const response=await (window.pywebview.api.project_call&&state.projectActions?.includes(method)?window.pywebview.api.project_call(state.projectContext,method,args):window.pywebview.api[method](...args));
   if(!response.ok)throw Object.assign(new Error(response.error+(response.errorId?` (${response.errorId})`:"")),{errorDetails:response.errorDetails});
   return response;
 }
-function apply(payload){
+function apply(payload){if(payload.languageCatalog)window.LanctlI18n.setCatalog(payload.languageCatalog);
   Object.assign(state,payload);
-  const select=$("#project");select.replaceChildren(new Option("Sin proyecto",""));
+  const select=$("#project");select.replaceChildren(new Option(window.LanctlI18n.t("LANCTL.UI.TEXT.NO_PROJECT"),""));
   state.projects.forEach(p=>select.add(new Option(p.name,p.path)));select.value=state.activeProject||"";
   $("#version").textContent="v"+state.version;
-  $("#project-status").textContent=(state.activeProjectInfo?.name||"Sin proyecto")+(state.activeProject?" · VLF":"");
+  $("#project-status").textContent=(state.activeProjectInfo?.name||window.LanctlI18n.t("LANCTL.UI.TEXT.NO_PROJECT"))+(state.activeProject?" · VLF":"");
   $("#plugin-count").textContent=state.plugins.filter(p=>p.state==="ENABLED").length+" plugins";
 }
 async function refresh(){apply(await call("bootstrap"));render();}
@@ -60,39 +60,45 @@ function render(){
   host.classList.toggle("terminal-page",state.page==="terminal");
   host.classList.toggle("settings-page",state.page==="settings");
   host.classList.toggle("list-page",["projects","plugins"].includes(state.page));
-  if(state.page==="home")host.innerHTML='<div class="caption"><span>PROGRAMAS</span><span>Proyecto compartido · interfaces GUI</span></div><div class="launch-grid">'+apps.map(([id,name,title,i])=>`<div class="launch-card"><button class="launch" data-launch="${id}">${icon(i)}<span><strong>${name}</strong><small>${title}${state.sessions?.some(s=>s.launcher===id)?" · Abierto":""}</small></span></button><button class="launcher-settings" data-launcher-settings="${id}" title="Configuración de ${name}" aria-label="Configuración de ${name}">⚙</button></div>`).join("")+"</div>";
-  if(state.page==="projects")host.innerHTML='<div class="toolbar"><h1>Proyectos</h1><div class="row"><button data-action="open-project">Abrir VLF…</button><button data-action="save-project">Guardar</button><button data-action="new-project" class="primary">Nuevo proyecto</button></div></div><div class="stack">'+state.projects.map(p=>`<section class="panel"><div class="row"><h2>${esc(p.name)}</h2><button data-edit-project="${esc(p.path)}">Editar</button><button data-project="${esc(p.path)}" ${p.path===state.activeProject?"disabled":""}>${p.path===state.activeProject?"Activo":"Seleccionar"}</button></div><p>${esc(p.path)}</p></section>`).join("")+(!state.projects.length?'<p class="muted">Crea un proyecto o abre un archivo VLF existente.</p>':"")+"</div>";
-  if(state.page==="plugins")host.innerHTML='<div class="toolbar"><h1>Plugins</h1><button data-action="refresh">Actualizar</button></div><div class="stack">'+state.plugins.map(p=>`<section class="panel"><div class="row"><h2>${esc(p.name)}</h2><div class="row">${p.hasSettings?`<button data-plugin-config="${esc(p.id)}">⚙ Configurar</button>`:""}<button data-plugin-toggle="${esc(p.id)}" ${p.runtimeStatus?.restartRequired||p.runtimeStatus?.cleanupPending?"disabled":""}>${p.state==="ENABLED"?"Desactivar":"Activar"}</button></div></div><p>${esc(p.description)}</p><small class="muted">${esc(p.id)} · ${esc(p.version)} · ${esc(p.state)}</small>${p.error?`<p>${esc(p.error)}</p>`:""}${p.settingsError?`<p class="error">Configuración: ${esc(p.settingsError)}</p>`:""}</section>`).join("")+(!state.plugins.length?'<p class="muted">No hay plugins instalados. Usa el CLI para instalar paquetes LCP.</p>':"")+"</div>";
+  if(state.page==="home")host.innerHTML="<div class=\"caption\"><span><span data-i18n=\"LANCTL.UI.HEADING.APPLICATIONS\">PROGRAMAS</span></span><span><span data-i18n=\"LANCTL.UI.HTML.SHARED_PROJECT_GUI_INTERFACES\">Proyecto compartido · interfaces GUI</span></span></div><div class=\"launch-grid\">"+apps().map(([id,name,title,i])=>`<div class="launch-card"><button class="launch" data-launch="${id}">${icon(i)}<span><strong>${name}</strong><small>${esc(title)}${state.sessions?.some(s=>s.launcher===id)?window.LanctlI18n.html("LANCTL.UI.FRAGMENT.OPEN"):""}</small></span></button><button class="launcher-settings" data-launcher-settings="${id}" title="Configuración de ${name}" aria-label="Configuración de ${name}">⚙</button></div>`).join("")+"</div>";
+  if(state.page==="projects")host.innerHTML="<div class=\"toolbar\"><h1><span data-i18n=\"LANCTL.UI.TEXT.PROJECTS\">Proyectos</span></h1><div class=\"row\"><button data-action=\"project-directory\"><span data-i18n=\"LANCTL.UI.HTML.DEFAULT_FOLDER\">Carpeta predeterminada…</span></button><button data-action=\"open-project\"><span data-i18n=\"LANCTL.UI.HTML.OPEN_VLF\">Abrir VLF…</span></button><button data-action=\"save-project\"><span data-i18n=\"LANCTL.UI.TEXT.SAVE\">Guardar</span></button><button data-action=\"new-project\" class=\"primary\"><span data-i18n=\"LANCTL.UI.TEXT.NEW_PROJECT\">Nuevo proyecto</span></button></div></div><div class=\"stack\">"+state.projects.map(p=>`<section class="panel"><div class="row"><h2>${esc(p.name)}</h2><button data-edit-project="${esc(p.path)}">Editar</button><button data-project="${esc(p.path)}" ${p.path===state.activeProject?"disabled":""}>${p.path===state.activeProject?window.LanctlI18n.html("LANCTL.UI.TEXT.ACTIVE"):window.LanctlI18n.html("LANCTL.UI.TEXT.SELECT")}</button></div><p>${esc(p.path)}</p></section>`).join("")+(!state.projects.length?"<p class=\"muted\"><span data-i18n=\"LANCTL.UI.HTML.CREATE_A_PROJECT_OR_OPEN_AN_EXISTING_VLF_FILE\">Crea un proyecto o abre un archivo VLF existente.</span></p>":"")+"</div>";
+  if(state.page==="plugins")host.innerHTML="<div class=\"toolbar\"><h1>Plugins</h1><button data-action=\"refresh\"><span data-i18n=\"LANCTL.UI.TEXT.REFRESH\">Actualizar</span></button></div><div class=\"stack\">"+state.plugins.map(p=>`<section class="panel"><div class="row"><h2>${esc(p.name)}</h2><div class="row">${p.hasSettings?`<button data-plugin-config="${esc(p.id)}">⚙ Configurar</button>`:""}<button data-plugin-toggle="${esc(p.id)}" ${p.runtimeStatus?.restartRequired||p.runtimeStatus?.cleanupPending?"disabled":""}>${p.state==="ENABLED"?window.LanctlI18n.html("LANCTL.COMMON.ACTION.DISABLE"):window.LanctlI18n.html("LANCTL.COMMON.ACTION.ENABLE")}</button></div></div><p>${esc(p.description)}</p><small class="muted">${esc(p.id)} · ${esc(p.version)} · ${esc(p.state)}</small>${p.error?`<p>${esc(p.error)}</p>`:""}${p.settingsError?`<p class="error"><span data-i18n="LANCTL.UI.HTML.SETTINGS">Configuración:</span> ${esc(p.settingsError)}</p>`:""}</section>`).join("")+(!state.plugins.length?"<p class=\"muted\"><span data-i18n=\"LANCTL.UI.HTML.NO_PLUGINS_INSTALLED_USE_THE_CLI_TO_INSTALL_LCP_PACKAGES\">No hay plugins instalados. Usa el CLI para instalar paquetes LCP.</span></p>":"")+"</div>";
   if(["projects","plugins"].includes(state.page))prepareCollection(state.page);
-  if(state.page==="settings")host.innerHTML='<div class="toolbar"><h1>Configuración general</h1><div class="row"><button data-support="appearance">Apariencia</button><button data-support="updates">Buscar actualizaciones</button><button data-settings-scope="program" class="primary">Programa</button><button data-settings-scope="project">Proyecto activo</button></div></div><p class="muted">Todos los ajustes, agrupados por tema. Selecciona Programa o Proyecto activo.</p><div id="settings-catalog" class="collection-list"></div>';
-  if(state.page==="terminal")host.innerHTML='<div class="terminal"><header><strong>›_ LANCTL · CLI general</strong><span class="badge">Proceso local</span></header><pre id="terminal-output" role="log" aria-live="polite"></pre><form id="terminal-form"><label for="command">LANCTL&gt;</label><input id="command" autocomplete="off" spellcheck="false" aria-label="Entrada del CLI"><button>Enviar</button></form><small>Para sesiones SSH, contraseñas o TUI utiliza «CLI» en la barra inferior.</small></div>';
+  if(state.page==="settings")host.innerHTML="<div class=\"toolbar\"><h1><span data-i18n=\"LANCTL.UI.VIEW.GENERAL_SETTINGS\">Configuración general</span></h1><div class=\"row\"><button data-support=\"appearance\"><span data-i18n=\"LANCTL.UI.TEXT.APPEARANCE\">Apariencia</span></button><button data-support=\"updates\"><span data-i18n=\"LANCTL.UI.HTML.CHECK_FOR_UPDATES\">Buscar actualizaciones</span></button><button data-settings-scope=\"program\" class=\"primary\"><span data-i18n=\"LANCTL.UI.TEXT.PROGRAM\">Programa</span></button><button data-settings-scope=\"project\"><span data-i18n=\"LANCTL.UI.TEXT.ACTIVE_PROJECT\">Proyecto activo</span></button></div></div><p class=\"muted\"><span data-i18n=\"LANCTL.UI.HTML.ALL_SETTINGS_GROUPED_BY_TOPIC_SELECT_PROGRAM_OR_ACTIVE_PROJECT\">Todos los ajustes, agrupados por tema. Selecciona Programa o Proyecto activo.</span></p><div id=\"settings-catalog\" class=\"collection-list\"></div>";
+  if(state.page==="terminal")host.innerHTML="<div class=\"terminal\"><header><strong><span data-i18n=\"LANCTL.UI.HTML.LANCTL_GENERAL_CLI\">›_ LANCTL · CLI general</span></strong><button type=\"button\" id=\"terminal-latest\" disabled><span data-i18n=\"LANCTL.UI.HTML.GO_TO_BOTTOM\">Ir al final ↓</span></button><span class=\"badge\"><span data-i18n=\"LANCTL.UI.HTML.LOCAL_PROCESS\">Proceso local</span></span></header><pre id=\"terminal-output\" role=\"log\" aria-live=\"polite\" tabindex=\"0\" aria-label=\"Salida del CLI; usa las flechas para desplazarte\" data-i18n-aria-label=\"LANCTL.UI.HTML.CLI_OUTPUT_USE_ARROW_KEYS_TO_SCROLL\"></pre><form id=\"terminal-form\"><label for=\"command\">LANCTL&gt;</label><input id=\"command\" autocomplete=\"off\" spellcheck=\"false\" aria-label=\"Entrada del CLI\" data-i18n-aria-label=\"LANCTL.UI.HTML.CLI_INPUT\"><button><span data-i18n=\"LANCTL.UI.HTML.SEND\">Enviar</span></button></form><small><span data-i18n=\"LANCTL.UI.HTML.FOR_SSH_SESSIONS_PASSWORDS_OR_TUI_USE_CLI_IN_THE_BOTTOM_BAR\">Para sesiones SSH, contraseñas o TUI utiliza «CLI» en la barra inferior.</span></small></div>";
+  if(state.page==="terminal"){
+    const output=$("#terminal-output"),latest=$("#terminal-latest");
+    output.addEventListener("scroll",()=>{latest.disabled=terminalAtEnd(output);});
+    latest.addEventListener("click",()=>{output.scrollTop=output.scrollHeight;latest.disabled=true;});
+  }
   if(state.page==="settings")generalSettings(state.settingsScope||"program").catch(error=>message(error.message,true));
 }
 function prepareCollection(kind){
-  const host=$("#content"),list=host.querySelector(".stack");list.classList.add("collection-list");list.setAttribute("aria-label",kind==="projects"?"Lista de proyectos":"Lista de plugins");
+  const host=$("#content"),list=host.querySelector(".stack");list.classList.add("collection-list");list.setAttribute("aria-label",kind==="projects"?window.LanctlI18n.t("LANCTL.UI.VIEW.PROJECT_LIST"):window.LanctlI18n.t("LANCTL.UI.VIEW.PLUGIN_LIST"));
   const bar=document.createElement("div");bar.className="collection-search";
-  const label=document.createElement("label");label.textContent=kind==="projects"?"Buscar proyecto":"Buscar plugin";
-  const input=document.createElement("input");input.type="search";input.id="collection-search";input.placeholder="Buscar por nombre…";input.value=listQueries[kind];label.append(input);
+  const label=document.createElement("label");label.textContent=kind==="projects"?window.LanctlI18n.t("LANCTL.UI.VIEW.SEARCH_PROJECT"):window.LanctlI18n.t("LANCTL.UI.VIEW.SEARCH_PLUGIN");
+  const input=document.createElement("input");input.type="search";input.id="collection-search";input.placeholder=window.LanctlI18n.t("LANCTL.UI.VIEW.SEARCH_BY_NAME");input.value=listQueries[kind];label.append(input);
   const count=document.createElement("span");count.className="muted";count.id="collection-count";count.setAttribute("role","status");bar.append(label,count);list.before(bar);
   const cards=[...list.querySelectorAll(".panel")];
   if(kind==="plugins")cards.forEach((card,i)=>{
     const p=state.plugins[i];card.querySelector("small.muted")?.remove();
     const data=document.createElement("div");data.className="plugin-facts";
-    data.innerHTML=`<span>Versión <b>${esc(p.version||"—")}</b></span><span>Estado <b>${esc(p.state||"—")}</b></span><span>Autor <b>${esc(p.author||"No indicado")}</b></span>`;
+    data.innerHTML=`<span><span data-i18n="LANCTL.UI.VIEW.VERSION">Versión</span> <b>${esc(p.version||"—")}</b></span><span><span data-i18n="LANCTL.UI.TEXT.STATUS">Estado</span> <b>${esc(p.state||"—")}</b></span><span><span data-i18n="LANCTL.UI.TEXT.AUTHOR">Autor</span> <b>${esc(p.author||window.LanctlI18n.t("LANCTL.UI.VIEW.NOT_SPECIFIED"))}</b></span>`;
     const details=document.createElement("details");details.className="plugin-technical";
-    details.innerHTML=`<summary>Información técnica</summary><dl><dt>Identificador</dt><dd>${esc(p.id)}</dd><dt>Runtime</dt><dd>${esc(p.runtime||"No indicado")}</dd><dt>Compatibilidad LANCTL</dt><dd>${esc(p.minimumLanctl||"—")} → ${esc(p.maximumLanctl||"—")}</dd><dt>Capacidades</dt><dd>${esc((p.capabilities||[]).join(", ")||"Ninguna declarada")}</dd><dt>Permisos solicitados</dt><dd>${esc((p.permissions||[]).join(", ")||"Ninguno")}</dd><dt>Permisos concedidos</dt><dd>${esc((p.granted||[]).join(", ")||"Ninguno")}</dd><dt>Firma</dt><dd>${esc(p.signature||"No disponible")}</dd></dl>`;
+    details.innerHTML=`<summary><span data-i18n="LANCTL.UI.HTML.TECHNICAL_INFORMATION">Información técnica</span></summary><dl><dt><span data-i18n="LANCTL.UI.HTML.IDENTIFIER">Identificador</span></dt><dd>${esc(p.id)}</dd><dt>Runtime</dt><dd>${esc(p.runtime||window.LanctlI18n.t("LANCTL.UI.VIEW.NOT_SPECIFIED"))}</dd><dt><span data-i18n="LANCTL.UI.HTML.LANCTL_COMPATIBILITY">Compatibilidad LANCTL</span></dt><dd>${esc(p.minimumLanctl||"—")} → ${esc(p.maximumLanctl||"—")}</dd><dt><span data-i18n="LANCTL.UI.HTML.CAPABILITIES">Capacidades</span></dt><dd>${esc((p.capabilities||[]).join(", ")||window.LanctlI18n.t("LANCTL.UI.VIEW.NONE_DECLARED"))}</dd><dt><span data-i18n="LANCTL.UI.HTML.REQUESTED_PERMISSIONS">Permisos solicitados</span></dt><dd>${esc((p.permissions||[]).join(", ")||window.LanctlI18n.t("LANCTL.UI.TEXT.NONE"))}</dd><dt><span data-i18n="LANCTL.UI.HTML.GRANTED_PERMISSIONS">Permisos concedidos</span></dt><dd>${esc((p.granted||[]).join(", ")||window.LanctlI18n.t("LANCTL.UI.TEXT.NONE"))}</dd><dt><span data-i18n="LANCTL.UI.HTML.SIGNATURE">Firma</span></dt><dd>${esc(p.signature||window.LanctlI18n.t("LANCTL.UI.TEXT.UNAVAILABLE"))}</dd></dl>`;
     const runtime=p.runtimeStatus;
     if(runtime){
-      const access=document.createElement("span");access.textContent="Acceso al Core: "+(runtime.coreAccess?"Autorizado":"Sin acceso");data.append(access);
-      if(runtime.restartRequired||runtime.cleanupPending){const notice=document.createElement("p");notice.className="plugin-runtime-warning";notice.textContent=runtime.restartRequired?"El acceso al Core está revocado. El código cargado requiere reiniciar este proceso; los hilos nativos no se consideran detenidos.":"Acceso retirado. La limpieza del complemento sigue pendiente.";card.append(notice);}
+      const access=document.createElement("span");access.textContent=window.LanctlI18n.t("LANCTL.UI.FRAGMENT.CORE_ACCESS")+(runtime.coreAccess?window.LanctlI18n.t("LANCTL.UI.WORD.AUTHORIZED"):window.LanctlI18n.t("LANCTL.UI.VIEW.NO_ACCESS"));data.append(access);
+      if(runtime.restartRequired||runtime.cleanupPending){const notice=document.createElement("p");notice.className="plugin-runtime-warning";notice.textContent=runtime.restartRequired?window.LanctlI18n.t("LANCTL.UI.VIEW.CORE_ACCESS_IS_REVOKED_LOADED_CODE_REQUIRES_RESTARTING_THIS_PROCESS_NATIVE_THREADS_ARE_NOT_CONS"):window.LanctlI18n.t("LANCTL.UI.VIEW.ACCESS_REMOVED_PLUGIN_CLEANUP_IS_STILL_PENDING");card.append(notice);}
     }
     card.append(data,details);
   });
-  const empty=document.createElement("p");empty.className="collection-empty muted";empty.textContent="No hay resultados para esta búsqueda.";empty.hidden=true;list.append(empty);
-  function filter(){const query=input.value.trim().toLocaleLowerCase();listQueries[kind]=input.value;let shown=0;cards.forEach(card=>{card.hidden=!card.querySelector("h2").textContent.toLocaleLowerCase().includes(query);if(!card.hidden)shown++;});empty.hidden=shown>0||cards.length===0;count.textContent=shown+" de "+cards.length;list.scrollTop=0;}
+  const empty=document.createElement("p");empty.className="collection-empty muted";window.LanctlI18n.bindText(empty,"LANCTL.UI.VIEW.NO_RESULTS_FOR_THIS_SEARCH");empty.hidden=true;list.append(empty);
+  function filter(){const query=input.value.trim().toLocaleLowerCase();listQueries[kind]=input.value;let shown=0;cards.forEach(card=>{card.hidden=!card.querySelector("h2").textContent.toLocaleLowerCase().includes(query);if(!card.hidden)shown++;});empty.hidden=shown>0||cards.length===0;count.textContent=shown+window.LanctlI18n.t("LANCTL.UI.FRAGMENT.OF")+cards.length;list.scrollTop=0;}
   input.addEventListener("input",filter);filter();
 }
 async function navigate(page){
+  if(page==="settings"&&window.openSettingsWindow)return window.openSettingsWindow();
   if(page===state.page)return;
   if(terminalTimer){clearInterval(terminalTimer);terminalTimer=null;}
   state.page=page;message("");render();
@@ -102,9 +108,33 @@ async function navigate(page){
     $("#command").focus();
   }
 }
+function terminalAtEnd(host){return host.scrollHeight-host.clientHeight-host.scrollTop<=2;}
+function appendTerminalOutput(host,text){
+  if(!text)return; // Empty polls must preserve both selection and scroll position.
+  const follow=terminalAtEnd(host),top=host.scrollTop;
+  let node=host.firstChild;
+  if(!node){node=document.createTextNode("");host.append(node);}
+  node.appendData(text);
+  let removedHeight=0;
+  if(node.length>20000){
+    let cut=node.length-20000;
+    const newline=node.data.indexOf("\n",cut);
+    if(newline>=0&&newline<node.length-1)cut=newline+1;
+    // Measure the retained character before/after trimming, including wrapped
+    // lines. Work in content coordinates so browser scroll clamping is harmless.
+    const range=document.createRange();
+    range.setStart(node,cut);range.setEnd(node,cut+1);
+    const before=range.getBoundingClientRect().top+host.scrollTop;
+    node.deleteData(0,cut);
+    range.setStart(node,0);range.setEnd(node,1);
+    removedHeight=before-(range.getBoundingClientRect().top+host.scrollTop);
+  }
+  host.scrollTop=follow?host.scrollHeight:Math.max(0,top-removedHeight);
+  $("#terminal-latest").disabled=terminalAtEnd(host);
+}
 async function readTerminal(){
   if(terminalReading)return;terminalReading=true;
-  try{const payload=await call("terminal_output"),host=$("#terminal-output");if(host){host.textContent=(host.textContent+payload.text).slice(-20000);host.scrollTop=host.scrollHeight;if(!payload.running)message("Consola cerrada. Cambia de sección y vuelve a Terminal para reiniciarla.");}}
+  try{const payload=await call("terminal_output"),host=$("#terminal-output");if(host){appendTerminalOutput(host,payload.text);if(!payload.running)message(window.LanctlI18n.t("LANCTL.UI.VIEW.CONSOLE_CLOSED_CHANGE_SECTION_AND_RETURN_TO_TERMINAL_TO_RESTART_IT"));}}
   finally{terminalReading=false;}
 }
 function field(label,name,value,type="text"){
@@ -113,40 +143,59 @@ function field(label,name,value,type="text"){
   if(type==="checkbox"){node.className="check";input.checked=Boolean(value);}else input.value=value??"";
   node.append(input);return node;
 }
-function showForm(title,nodes,submit,label="Guardar"){
+function showForm(title,nodes,submit,label=window.LanctlI18n.t("LANCTL.UI.TEXT.SAVE")){
   $("#dialog-title").textContent=title;$("#fields").replaceChildren(...nodes);$("#form-error").textContent="";
   $("#submit").textContent=label;$("#submit").hidden=!submit;$("#dismiss").hidden=!submit;submitForm=submit;originalForm=JSON.stringify([...new FormData($("#form"))]);if(!$("#dialog").open)$("#dialog").showModal();
 }
-const metadataFields=[["name","Nombre"],["description","Descripción"],["author","Autor"],["lan","LAN"],["location","Ubicación"],["company","Empresa"],["responsible","Responsable"]];
+const metadataFields=()=>([["name",window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.NAME")],["description",window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.DESCRIPTION")],["author",window.LanctlI18n.t("LANCTL.UI.TEXT.AUTHOR")],["lan","LAN"],["location",window.LanctlI18n.t("LANCTL.UI.TEXT.LOCATION")],["company",window.LanctlI18n.t("LANCTL.UI.TEXT.COMPANY")],["responsible",window.LanctlI18n.t("LANCTL.UI.TEXT.RESPONSIBLE_PERSON")]]);
 async function preserveProject(){
   const {dirty}=await call("project_state");
   if(!dirty)return true;
-  if(!await confirmAction("Hay cambios pendientes en el proyecto activo. ¿Guardarlos antes de continuar?","Guardar y continuar"))return false;
+  if(!await confirmAction(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_ACTIVE_PROJECT_HAS_PENDING_CHANGES_SAVE_THEM_BEFORE_CONTINUING"),window.LanctlI18n.t("LANCTL.UI.VIEW.SAVE_AND_CONTINUE")))return false;
   const result=await call("save_project");message(result.message);return true;
 }
 async function editProject(path){
   const data=await call("project_metadata",path);
-  showForm("Editar proyecto",metadataFields.map(([key,label])=>field(label,key,data.values[key])),async values=>{
+  showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.EDIT_PROJECT"),metadataFields().map(([key,label])=>field(label,key,data.values[key])),async values=>{
     const result=await call("save_project_metadata",path,values,data.revision);apply(result);render();message(result.message);
   });
+}
+async function projectDirectory(){
+  const defaults=await call("project_defaults");
+  const path=document.createElement("p");path.className="project-directory-path";
+  const mode=document.createElement("p");
+  const note=document.createElement("p");window.LanctlI18n.bindText(note,"LANCTL.UI.VIEW.THIS_LOCATION_WILL_BE_USED_FOR_NEW_PROJECTS_EXISTING_FILES_AND_THE_OPEN_PROJECT_RETAIN_THEIR_PA");
+  function show(value){path.textContent=value.directory;mode.textContent=value.configuredDirectory?window.LanctlI18n.t("LANCTL.UI.VIEW.CUSTOM_FOLDER"):window.LanctlI18n.t("LANCTL.UI.VIEW.AUTOMATIC_LOCATION");}
+  show(defaults);
+  const choose=document.createElement("button");choose.type="button";window.LanctlI18n.bindText(choose,"LANCTL.UI.TEXT.CHOOSE_FOLDER");
+  const restore=document.createElement("button");restore.type="button";window.LanctlI18n.bindText(restore,"LANCTL.UI.VIEW.RESTORE_AUTOMATIC_LOCATION");
+  async function save(directory){
+    choose.disabled=restore.disabled=true;
+    try{show(await call("set_project_directory",directory));$("#form-error").textContent="";message(window.LanctlI18n.t("LANCTL.UI.VIEW.DEFAULT_FOLDER_SAVED"));}
+    catch(error){$("#form-error").textContent=error.message;}
+    finally{choose.disabled=restore.disabled=false;}
+  }
+  choose.onclick=async()=>{choose.disabled=restore.disabled=true;try{const result=await call("select_project_directory");if(result.path)await save(result.path);}catch(error){$("#form-error").textContent=error.message;}finally{choose.disabled=restore.disabled=false;}};
+  restore.onclick=()=>save(null);
+  showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.DEFAULT_PROJECT_FOLDER"),[mode,path,note,choose,restore],null);
 }
 async function newProject(){
   if(!await preserveProject())return;
   const defaults=await call("project_defaults");
   const directory={path:defaults.directory};
-  const name=field("Nombre del proyecto","name",""),location=field("Carpeta","directory",directory.path);
+  const name=field(window.LanctlI18n.t("LANCTL.UI.VIEW.PROJECT_NAME"),"name",""),location=field(window.LanctlI18n.t("LANCTL.UI.WORD.FOLDER"),"directory",directory.path);
   name.querySelector("input").required=true;location.querySelector("input").required=true;
-  const help=document.createElement("small");help.textContent="Se creará un archivo .vlf vacío en esta carpeta. Los archivos existentes no se sobrescriben.";
-  const browse=document.createElement("button");browse.type="button";browse.textContent="Elegir otra carpeta…";browse.onclick=async()=>{try{const folder=await call("select_project_directory");if(folder.path)location.querySelector("input").value=folder.path;}catch(error){$("#form-error").textContent=error.message;}};
-  showForm("Crear proyecto VLF",[name,location,browse,...metadataFields.slice(1).map(([key,label])=>field(label,key,key==="lan"?defaults.lan:"")),help],async values=>{
-    const metadata=Object.fromEntries(metadataFields.map(([key])=>[key,values[key]||""]));
+  const help=document.createElement("small");window.LanctlI18n.bindText(help,"LANCTL.UI.VIEW.AN_EMPTY_VLF_FILE_WILL_BE_CREATED_IN_THIS_FOLDER_EXISTING_FILES_ARE_NOT_OVERWRITTEN");
+  const browse=document.createElement("button");browse.type="button";window.LanctlI18n.bindText(browse,"LANCTL.UI.VIEW.CHOOSE_ANOTHER_FOLDER");browse.onclick=async()=>{try{const folder=await call("select_project_directory");if(folder.path)location.querySelector("input").value=folder.path;}catch(error){$("#form-error").textContent=error.message;}};
+  showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.CREATE_VLF_PROJECT"),[name,location,browse,...metadataFields().slice(1).map(([key,label])=>field(label,key,key==="lan"?defaults.lan:"")),help],async values=>{
+    const metadata=Object.fromEntries(metadataFields().map(([key])=>[key,values[key]||""]));
     const payload=await call("create_project",values.name,values.directory,metadata);apply(payload);await refresh();message(payload.message+" · "+payload.activeProject);
-  },"Crear archivo VLF");
+  },window.LanctlI18n.t("LANCTL.UI.VIEW.CREATE_VLF_FILE"));
 }
 async function configurePlugin(id){
   const p=state.plugins.find(p=>p.id===id),data=await call("plugin_settings",id),nodes=[];
-  const info=document.createElement("p");info.textContent=`${p.runtime} · Permisos: ${p.permissions.join(", ")||"ninguno"}. Concedidos: ${p.granted.join(", ")||"ninguno"}.`;nodes.push(info);
-  if(!data.fields.length){const hint=document.createElement("p");hint.className="muted";hint.textContent="Este plugin no declara opciones propias de configuración.";nodes.push(hint);}
+  const info=document.createElement("p");info.textContent= window.LanctlI18n.t("LANCTL.UI.WEB.PLUGIN_PERMISSIONS",{value0:(p.runtime),value1:(p.permissions.join(", ")||window.LanctlI18n.t("LANCTL.UI.VALUE.NONE")),value2:(p.granted.join(", ")||window.LanctlI18n.t("LANCTL.UI.VALUE.NONE"))});nodes.push(info);
+  if(!data.fields.length){const hint=document.createElement("p");hint.className="muted";window.LanctlI18n.bindText(hint,"LANCTL.UI.VIEW.THIS_PLUGIN_DOES_NOT_DECLARE_ITS_OWN_SETTINGS");nodes.push(hint);}
   for(const f of data.fields){
     let node;
     if(f.type==="select"){node=document.createElement("label");node.textContent=f.label||f.name;const select=document.createElement("select");select.name=f.name;f.choices.forEach(c=>select.add(new Option(c,c)));select.value=data.values[f.name];node.append(select);}
@@ -161,27 +210,27 @@ async function configurePlugin(id){
 async function togglePlugin(id){
   const p=state.plugins.find(p=>p.id===id);
   if(p.state==="ENABLED"){apply(await call("set_plugin_enabled",id,false));render();return;}
-  const info=document.createElement("p");info.textContent="Revisa los permisos solicitados antes de activar este complemento.";
+  const info=document.createElement("p");window.LanctlI18n.bindText(info,"LANCTL.UI.VIEW.REVIEW_REQUESTED_PERMISSIONS_BEFORE_ENABLING_THIS_PLUGIN");
   const nodes=[info,...p.permissions.map(permission=>field(permission,permission,p.granted.includes(permission),"checkbox"))];
   if(p.runtime==="trusted"&&!p.publisherTrusted){
     const help=document.createElement("p");
     if(!p.signature?.startsWith("VALID_ED25519:")){
-      help.textContent="Este paquete no tiene una firma válida. Solicita al editor un LCP firmado e instálalo antes de activarlo. Marcar permisos no autoriza un paquete sin firma.";
-      const install=document.createElement("button");install.type="button";install.className="primary";install.textContent="Instalar versión firmada…";
+      window.LanctlI18n.bindText(help,"LANCTL.UI.VIEW.THIS_PACKAGE_HAS_NO_VALID_SIGNATURE_ASK_THE_PUBLISHER_FOR_A_SIGNED_LCP_AND_INSTALL_IT_BEFORE_EN");
+      const install=document.createElement("button");install.type="button";install.className="primary";window.LanctlI18n.bindText(install,"LANCTL.UI.VIEW.INSTALL_SIGNED_VERSION");
       install.onclick=async()=>{install.disabled=true;try{const result=await call("install_signed_plugin",id);if(!result.cancelled){apply(result);await togglePlugin(id);}}catch(error){$("#form-error").textContent=error.message;}finally{install.disabled=false;}};
-      nodes.push(help,install);showForm("Activar "+p.name,nodes,null);return;
+      nodes.push(help,install);showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.ENABLE")+p.name,nodes,null);return;
     }
-    help.textContent="El paquete está firmado, pero su editor todavía no está autorizado. Comprueba esta huella con el editor antes de confiar: "+p.signature.slice(14);
-    const trust=document.createElement("button");trust.type="button";trust.textContent="Autorizar editor seleccionando su LCP firmado…";
+    help.textContent=window.LanctlI18n.t("LANCTL.UI.FRAGMENT.THE_PACKAGE_IS_SIGNED_BUT_ITS_PUBLISHER_IS_NOT_AUTHORIZED_YET_CHECK_THIS_FINGERPRINT_WITH_THE_PUBLISHER_BEFORE_TRUSTING_IT")+p.signature.slice(14);
+    const trust=document.createElement("button");trust.type="button";window.LanctlI18n.bindText(trust,"LANCTL.UI.VIEW.AUTHORIZE_PUBLISHER_BY_SELECTING_ITS_SIGNED_LCP");
     trust.onclick=async()=>{trust.disabled=true;try{const result=await call("trust_plugin_publisher",id);if(!result.cancelled){apply(result);await togglePlugin(id);}}catch(error){$("#form-error").textContent=error.message;}finally{trust.disabled=false;}};
-    nodes.push(help,trust);showForm("Autorizar editor de "+p.name,nodes,null);return;
+    nodes.push(help,trust);showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.AUTHORIZE_PUBLISHER_OF")+p.name,nodes,null);return;
   }
-  if(p.runtime==="trusted")nodes.push(field("Autorizar ejecución trusted (editor autorizado)","_trust",p.trusted,"checkbox"));
-  showForm("Activar "+p.name,nodes,async values=>{apply(await call("set_plugin_enabled",id,true,p.permissions.filter(x=>values[x]==="on"),values._trust==="on"));render();},"Activar plugin");
+  if(p.runtime==="trusted")nodes.push(field(window.LanctlI18n.t("LANCTL.UI.VIEW.AUTHORIZE_TRUSTED_EXECUTION_AUTHORIZED_PUBLISHER"),"_trust",p.trusted,"checkbox"));
+  showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.ENABLE")+p.name,nodes,async values=>{apply(await call("set_plugin_enabled",id,true,p.permissions.filter(x=>values[x]==="on"),values._trust==="on"));render();},window.LanctlI18n.t("LANCTL.UI.VIEW.ENABLE_PLUGIN"));
 }
 async function editSettings(){
   const payload=await call("get_settings");
-  showForm("Configuración general",payload.fields.map(f=>{
+  showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.GENERAL_SETTINGS"),payload.fields.map(f=>{
     if(!f.choices)return field(f.label,f.key,f.value);
     const label=document.createElement("label");label.textContent=f.label;
     const select=document.createElement("select");select.name=f.key;f.choices.forEach(c=>select.add(new Option(c,c)));select.value=f.value;label.append(select);return label;
@@ -189,14 +238,15 @@ async function editSettings(){
 }
 $("#form").addEventListener("submit",async e=>{e.preventDefault();if(!submitForm)return;$("#submit").disabled=true;try{await submitForm(Object.fromEntries(new FormData(e.target)));$("#dialog").close();}catch(error){$("#form-error").textContent=error.message;}finally{$("#submit").disabled=false;}});
 async function dismissForm(){
-  if(submitForm&&originalForm!==JSON.stringify([...new FormData($("#form"))])&&!await confirmAction("Hay cambios sin guardar. ¿Descartarlos?","Descartar cambios"))return;
+  if(submitForm&&originalForm!==JSON.stringify([...new FormData($("#form"))])&&!await confirmAction(window.LanctlI18n.t("LANCTL.UI.TEXT.THERE_ARE_UNSAVED_CHANGES_DISCARD_THEM"),window.LanctlI18n.t("LANCTL.UI.TEXT.DISCARD_CHANGES")))return;
   $("#dialog").close();
 }
 async function suiteClose(){
   try{
-    if($("#dialog").open&&submitForm&&originalForm!==JSON.stringify([...new FormData($("#form"))])&&!await confirmAction("Hay cambios sin guardar en el formulario. ¿Descartarlos y cerrar?","Descartar y cerrar"))return;
+    if(window.confirmSettingsClose&&!await window.confirmSettingsClose())return;
+    if($("#dialog").open&&submitForm&&originalForm!==JSON.stringify([...new FormData($("#form"))])&&!await confirmAction(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_FORM_HAS_UNSAVED_CHANGES_DISCARD_THEM_AND_CLOSE"),window.LanctlI18n.t("LANCTL.UI.TEXT.DISCARD_AND_CLOSE")))return;
     if(!await preserveProject())return;
-    const result=await call("request_close");if(!result.closed)message("No se pudo cerrar la ventana.",true);
+    const result=await call("request_close");if(!result.closed)message(window.LanctlI18n.t("LANCTL.UI.VIEW.COULD_NOT_CLOSE_THE_WINDOW"),true);
   }catch(error){message(error.message,true);}
 }
 $("#close-dialog").onclick=$("#dismiss").onclick=dismissForm;
@@ -214,10 +264,11 @@ document.addEventListener("click",async e=>{
     if(b.dataset.pluginConfig)return await configurePlugin(b.dataset.pluginConfig);
     if(b.dataset.pluginToggle)return await togglePlugin(b.dataset.pluginToggle);
     if(b.id==="external-cli")return message((await call("open_cli")).message);
-    if(b.id==="activity"){const log=document.createElement("div");log.className="stack";for(const text of activity.slice(-20)){const line=document.createElement("p");line.textContent=text;log.append(line);}if(!activity.length)log.textContent="Sin operaciones registradas en esta sesión.";showForm("Actividad de sesión",[log],null);return;}
+    if(b.id==="activity"){const log=document.createElement("div");log.className="stack";for(const text of activity.slice(-20)){const line=document.createElement("p");line.textContent=text;log.append(line);}if(!activity.length)window.LanctlI18n.bindText(log,"LANCTL.UI.VIEW.NO_OPERATIONS_RECORDED_IN_THIS_SESSION");showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.SESSION_ACTIVITY"),[log],null);return;}
     if(b.id==="system-info"){
-      const dl=document.createElement("dl");for(const [label,value] of [["Versión",state.version],["Sistema",state.system],["Arquitectura",state.architecture],["Proyecto",state.activeProject||"Sin proyecto"],["Interfaz","GUI local · pywebview"],["Archivos","Proyectos VLF · plugins LCP"]]){const dt=document.createElement("dt"),dd=document.createElement("dd");dt.textContent=label;dd.textContent=value;dl.append(dt,dd);}showForm("Información del sistema",[dl],null);return;
+      const dl=document.createElement("dl");for(const [label,value] of [[window.LanctlI18n.t("LANCTL.UI.VIEW.VERSION"),state.version],[window.LanctlI18n.t("LANCTL.UI.TEXT.SYSTEM"),state.system],[window.LanctlI18n.t("LANCTL.UI.WORD.ARCHITECTURE"),state.architecture],[window.LanctlI18n.t("LANCTL.UI.TEXT.PROJECT"),state.activeProject||window.LanctlI18n.t("LANCTL.UI.TEXT.NO_PROJECT")],[window.LanctlI18n.t("LANCTL.UI.WORD.INTERFACE"),window.LanctlI18n.t("LANCTL.UI.VIEW.LOCAL_GUI_PYWEBVIEW")],[window.LanctlI18n.t("LANCTL.UI.WORD.FILES"),window.LanctlI18n.t("LANCTL.UI.VIEW.VLF_PROJECTS_LCP_PLUGINS")]]){const dt=document.createElement("dt"),dd=document.createElement("dd");dt.textContent=label;dd.textContent=value;dl.append(dt,dd);}showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.SYSTEM_INFORMATION"),[dl],null);return;
     }
+    if(b.dataset.action==="project-directory")await projectDirectory();
     if(b.dataset.action==="new-project")await newProject();
     if(b.dataset.action==="refresh")await refresh();
     if(b.dataset.action==="save-project"){const result=await call("save_project");message(result.message);}
@@ -245,8 +296,8 @@ setInterval(async()=>{
   runtimeReading=true;
   try{
     const result=await call("runtime_status"),old=state.sessions||[],next=result.sessions;
-    for(const session of next.filter(s=>s.mode==="gui"&&!old.some(p=>p.id===s.id)))message(session.launcher.toUpperCase()+" · GUI abierta");
-    for(const session of old.filter(s=>s.mode==="gui"&&!next.some(p=>p.id===s.id)))message(session.launcher.toUpperCase()+" · GUI cerrada o desconectada");
+    for(const session of next.filter(s=>s.mode==="gui"&&!old.some(p=>p.id===s.id)))message(session.launcher.toUpperCase()+window.LanctlI18n.t("LANCTL.UI.FRAGMENT.GUI_OPEN"));
+    for(const session of old.filter(s=>s.mode==="gui"&&!next.some(p=>p.id===s.id)))message(session.launcher.toUpperCase()+window.LanctlI18n.t("LANCTL.UI.FRAGMENT.GUI_CLOSED_OR_DISCONNECTED"));
     const changed=JSON.stringify(old.map(s=>s.id))!==JSON.stringify(next.map(s=>s.id));
     const pluginsChanged=result.plugins&&JSON.stringify(state.plugins)!==JSON.stringify(result.plugins);
     if(result.plugins)state.plugins=result.plugins;
@@ -262,10 +313,10 @@ $("#confirmation").addEventListener("cancel",e=>{e.preventDefault();finishConfir
 
 function settingsEditor(entry,save,title){
   const note=document.createElement("p");
-  note.textContent=entry.readOnly||"Los cambios se comparten con las demás interfaces y se validan antes de guardarse.";
+  note.textContent=entry.readOnly||window.LanctlI18n.t("LANCTL.UI.VIEW.CHANGES_ARE_SHARED_WITH_OTHER_INTERFACES_AND_VALIDATED_BEFORE_SAVING");
   const complex=entry.value===null||typeof entry.value==="object";
   const type=typeof entry.value==="boolean"?"checkbox":typeof entry.value==="number"?"number":"text";
-  const input=field(complex?"Valor JSON":"Valor","value",complex?JSON.stringify(entry.value,null,2):entry.value,type);
+  const input=field(complex?window.LanctlI18n.t("LANCTL.UI.VIEW.JSON_VALUE"):window.LanctlI18n.t("LANCTL.UI.TEXT.VALUE"),"value",complex?JSON.stringify(entry.value,null,2):entry.value,type);
   if(type==="number")input.querySelector("input").step="any";
   if(complex){const area=document.createElement("textarea");area.name="value";area.rows=8;area.value=JSON.stringify(entry.value,null,2);input.querySelector("input").replaceWith(area);}
   if(entry.readOnly)input.querySelector("input,textarea").disabled=true;
@@ -276,13 +327,13 @@ function settingsEditor(entry,save,title){
 }
 function settingsList(payload,edit){
   const wrapper=document.createElement("div");wrapper.className="settings-browser";
-  const search=document.createElement("input");search.type="search";search.placeholder="Buscar una opción…";search.setAttribute("aria-label","Buscar configuración");wrapper.append(search);
+  const search=document.createElement("input");search.type="search";search.placeholder=window.LanctlI18n.t("LANCTL.UI.TEXT.SEARCH_FOR_AN_OPTION");search.setAttribute("aria-label",window.LanctlI18n.t("LANCTL.UI.TEXT.SEARCH_SETTINGS"));wrapper.append(search);
   const sections=[];
   for(const category of [...new Set(payload.entries.map(e=>e.category))]){
     const section=document.createElement("details"),title=document.createElement("summary");section.open=true;title.textContent=payload.categories[category]||category;section.append(title);
     const buttons=[];
     for(const entry of payload.entries.filter(e=>e.category===category)){
-      const b=document.createElement("button");b.type="button";b.className="setting-link";b.textContent=entry.path+(entry.readOnly?" · Solo lectura":"");b.onclick=()=>edit(entry);section.append(b);buttons.push(b);
+      const b=document.createElement("button");b.type="button";b.className="setting-link";b.textContent=entry.path+(entry.readOnly?window.LanctlI18n.t("LANCTL.UI.FRAGMENT.READ_ONLY"):"");b.onclick=()=>edit(entry);section.append(b);buttons.push(b);
     }wrapper.append(section);sections.push([section,buttons]);
   }
   search.oninput=()=>{for(const [section,buttons] of sections){for(const b of buttons)b.hidden=!b.textContent.toLocaleLowerCase().includes(search.value.toLocaleLowerCase());section.hidden=buttons.every(b=>b.hidden);}};
@@ -294,11 +345,12 @@ async function generalSettings(scope){
   if(state.page!=="settings")return;
   $("#settings-catalog").replaceChildren(settingsList(payload,entry=>settingsEditor(entry,async value=>{
     message((await call("save_catalog_setting",scope,entry.path,value)).message);await generalSettings(scope);
-  },scope==="program"?"LANCTL":"Proyecto")));
+  },scope==="program"?"LANCTL":window.LanctlI18n.t("LANCTL.UI.TEXT.PROJECT"))));
   document.querySelectorAll("[data-settings-scope]").forEach(b=>b.classList.toggle("primary",b.dataset.settingsScope===scope));
 }
 async function launcherSettings(launcher){
+  if(window.openSettingsWindow)return window.openSettingsWindow("program",launcher);
   const payload=await call("launcher_settings",launcher);
-  const intro=document.createElement("p");intro.className="muted";intro.textContent=["lanwire","lanrack"].includes(launcher)?"Opciones compartidas de proyectos y almacenamiento.":"Opciones del launcher agrupadas por tema.";
-  showForm("Configuración de "+launcher.toUpperCase(),[intro,settingsList(payload,entry=>settingsEditor(entry,async value=>message((await call("save_launcher_setting",launcher,entry.path,value)).message),launcher.toUpperCase()))],null);
+  const intro=document.createElement("p");intro.className="muted";intro.textContent=["lanwire","lanrack"].includes(launcher)?window.LanctlI18n.t("LANCTL.UI.VIEW.SHARED_PROJECT_AND_STORAGE_OPTIONS"):window.LanctlI18n.t("LANCTL.UI.VIEW.LAUNCHER_OPTIONS_GROUPED_BY_TOPIC");
+  showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.SETTINGS_FOR")+launcher.toUpperCase(),[intro,settingsList(payload,entry=>settingsEditor(entry,async value=>message((await call("save_launcher_setting",launcher,entry.path,value)).message),launcher.toUpperCase()))],null);
 }

@@ -1,8 +1,8 @@
 # LANCTL — GUI experimental
 
 > **PROTOTIPO EXPERIMENTAL — NO ES UNA VERSIÓN ESTABLE.**
-> Rama `experimental-gui`, versión **0.3.4-alpha.1**. Para pruebas de la GUI en
-> Windows x64: [descargas e instrucciones](docs/RELEASE-0.3.4-alpha.1.md).
+> Rama `experimental-gui`, versión **0.3.4-alpha.2**. Para pruebas de la GUI en
+> Windows x64: [descargas e instrucciones](docs/RELEASE-0.3.4-alpha.2.md).
 > La versión estable sigue disponible en [Releases](https://github.com/CctrGy/LANCTL/releases/latest).
 
 Interfaces de los seis launchers: [CLI y TUI](docs/LAUNCHER-INTERFACES.md).
@@ -24,8 +24,8 @@ La [LANCTL Reference](reference/index.html) ofrece un índice web con búsqueda,
 sintaxis, opciones y ejemplos de todos los launchers y comandos, además de
 proyectos VLF, plugins LCP y el catálogo de documentación.
 
-> Versión de esta rama: **0.3.4-alpha.1**, GUI experimental, no estable.
-> Consulta las [notas de prueba](docs/RELEASE-0.3.4-alpha.1.md).
+> Versión de esta rama: **0.3.4-alpha.2**, GUI experimental, no estable.
+> Consulta las [notas de prueba](docs/RELEASE-0.3.4-alpha.2.md).
 > Conserva copias de seguridad; no utilices el programa como única fuente de inventario.
 
 ### Cambios de 0.3.3
@@ -421,11 +421,11 @@ plan sin ejecutar). Consulta [repositoryTerminal](repositoryTerminal/README.md)
 para requisitos y ejemplos. No cambia la versión ni realiza Git/push.
 
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.4-alpha.1
+.\scripts\build-windows.ps1 -Version 0.3.4-alpha.2
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.4-alpha.1
+./scripts/build-linux.sh 0.3.4-alpha.2
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.
@@ -485,3 +485,62 @@ Si LANCTL te resulta útil, puedes seguir y apoyar su desarrollo en
 Configuración CLI completa, agrupada por programa y proyecto: [guía de ajustes](docs/CLI-SETTINGS.md).
 
 Interfaces gráficas de LANWIRE, LANRACK, LANACCESS y LANMON: [uso y funciones](docs/LAUNCHER-GUI.md).
+
+### Cierre de emergencia en Linux
+
+Desde este checkout, `./finish.sh` cierra las instancias LANCTL del usuario
+actual y sus procesos secundarios, incluidas las ventanas Qt. Necesita
+Python 3.10 o posterior y Linux con soporte pidfd (kernel 5.3 o posterior).
+Envía SIGTERM, espera dos segundos y fuerza SIGKILL en los procesos restantes.
+Puede perder cambios sin guardar. No requiere las dependencias de LANCTL.
+
+```sh
+./finish.sh --dry-run  # Ver qué procesos se cerrarían
+./finish.sh            # Cerrar todas las instancias del usuario
+```
+
+Para disponer también de `finish` y `finish.sh` desde cualquier directorio,
+ejecuta desde la raíz del checkout:
+
+```sh
+mkdir -p "$HOME/.local/bin"
+printf '#!/bin/sh\nexec "%s/finish.sh" "$@"\n' "$PWD" > "$HOME/.local/bin/finish"
+chmod +x "$HOME/.local/bin/finish"
+ln -s "$HOME/.local/bin/finish" "$HOME/.local/bin/finish.sh"
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+El comando afecta también a otras copias de LANCTL del mismo usuario.
+Los procesos ejecutados por otros usuarios o como servicios de root quedan
+fuera de su alcance. Si mueves el checkout, vuelve a crear el lanzador personal.
+
+### Lanzador de desarrollo en Linux
+
+`./run.sh --gui` (o `run --gui` si has creado el comando personal) abre la GUI
+en un proceso independiente, sin ocupar la terminal de origen ni abrir otra.
+Requiere una sesión gráfica y `setsid`. El lanzador no genera `run.log`:
+LANCTL conserva sus propios registros. La salida estándar y de error de este
+arranque gráfico se descarta.
+
+`run --tui`, `run --cli`, `run lanip --tui` y la ejecución sin argumentos
+utilizan la misma terminal desde la que se invocan. La ayuda, versión y
+comandos puntuales también conservan su salida en esa terminal.
+Para ver directamente la salida de la GUI durante una depuración, utiliza
+`run --foreground --gui`.
+
+### Completado de `run` en Bash
+
+El archivo `packaging/clink/lanctl.lua` corresponde a Clink en Windows.
+En Bash/Linux se puede cargar el completado nativo desde la raíz del checkout:
+
+```bash
+source "$PWD/packaging/bash/run.bash"
+```
+
+Para cargarlo en futuras terminales, añade esa misma instrucción a `~/.bashrc`
+con la ruta absoluta del checkout. Permite completar `run`, `run.sh` y
+`./run.sh` con Tab, incluidos launchers, subcomandos, opciones y valores
+con alternativas declaradas. Por ejemplo: `run lanip scan --p<Tab>` completa
+`--ports`. Si no hay candidatos, se conserva el completado habitual de archivos.
+El árbol se consulta en los parsers de la versión actual sin ejecutar comandos.
+Los alias `-help`, `-version` y `--foreground` pertenecen al lanzador local.

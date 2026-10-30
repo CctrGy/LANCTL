@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from lanctl.apps.ip.domain.models import normalize_cnf
 from lanctl.apps.ip.interfaces.cli.main import build_parser
 from lanctl.apps.ip.interfaces.tui.main import LanctlTui
@@ -57,3 +59,17 @@ class FixedCnfTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@pytest.fixture(autouse=True)
+def spanish_regression_labels(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from lanctl.shared import i18n
+
+    manager = i18n.LanguageManager(tmp_path / "test-languages")
+    manager.initialize("en")
+    manager.install(Path(__file__).resolve().parents[1] / "bundled/languages/spanish.lang")
+    monkeypatch.setattr(i18n, "_MANAGER", manager)
+    with i18n.language_context("es"):
+        yield

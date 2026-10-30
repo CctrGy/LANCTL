@@ -194,7 +194,7 @@ def run_global_cli(input_fn: Callable[[str], str] = input) -> int:
             print_error(str(error))
             continue
         if len(commands) > 1 and not bool(load_config().get("cliCommandChaining", True)):
-            print_error("el encadenamiento de comandos está desactivado en SETTINGS/AVANZADO")
+            print_error(t("LANCTL.UI.PROMPT.COMMAND_CHAINING_IS_DISABLED_IN_SETTINGS_ADVANCED"))
             continue
         for command_text in commands:
             should_exit, selection = _run_global_command(

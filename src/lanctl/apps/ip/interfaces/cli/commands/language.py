@@ -19,21 +19,19 @@ def register_language_command(commands: argparse._SubParsersAction) -> None:
         language_handler=_list
     )
     use = actions.add_parser("use", help=t("LANCTL.LANGUAGE.ACTION.USE"))
-    use.add_argument("language", help="Language code or name, for example en or Español.")
+    use.add_argument("language", help=t("LANCTL.LANGUAGE.ARGUMENT.CODE"))
     use.set_defaults(language_handler=_use)
     info = actions.add_parser("info", help=t("LANCTL.LANGUAGE.ACTION.INFO"))
-    info.add_argument(
-        "language", nargs="?", help="Language code or name; active language by default."
-    )
+    info.add_argument("language", nargs="?", help=t("LANCTL.LANGUAGE.ARGUMENT.OPTIONAL_CODE"))
     info.set_defaults(language_handler=_info)
     install = actions.add_parser("install", help=t("LANCTL.LANGUAGE.ACTION.INSTALL"))
-    install.add_argument("file", help="Language catalog with .lang extension.")
+    install.add_argument("file", help=t("LANCTL.LANGUAGE.ARGUMENT.CATALOG"))
     install.set_defaults(language_handler=_install)
     validate = actions.add_parser("validate", help=t("LANCTL.LANGUAGE.ACTION.VALIDATE"))
-    validate.add_argument("file", help="Language catalog with .lang extension.")
+    validate.add_argument("file", help=t("LANCTL.LANGUAGE.ARGUMENT.CATALOG"))
     validate.set_defaults(language_handler=_validate)
     export = actions.add_parser("export", help=t("LANCTL.LANGUAGE.ACTION.EXPORT"))
-    export.add_argument("file", help="Destination .lang file.")
+    export.add_argument("file", help=t("LANCTL.LANGUAGE.ARGUMENT.DESTINATION"))
     export.set_defaults(language_handler=_export)
     command.set_defaults(handler=lambda args: args.language_handler(args))
 
@@ -62,7 +60,7 @@ def _use(args) -> int:
     catalog = manager.select(code)
     update_config(lambda config: config.update(language=catalog.code))
     ok(t("LANCTL.LANGUAGE.STATUS.SELECTED"), f"{catalog.native_name} [{catalog.code}]")
-    print("Restart LANCTL to apply the language to every interface component.")
+    print(t("LANCTL.LANGUAGE.STATUS.RESTART"))
     return 0
 
 

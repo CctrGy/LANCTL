@@ -38,28 +38,29 @@ from lanctl.core.device_retention import (
     normalize_retention_target,
 )
 from lanctl.core.output import normalize_columns
+from lanctl.shared.i18n import t, translate_label
 
 
 def register_settings_command(commands: argparse._SubParsersAction) -> None:
     command = commands.add_parser(
         "settings",
-        help="Consulta o modifica la configuración persistente de LANCTL.",
+        help=t("LANCTL.UI.HELP.QUERY_OR_CHANGE_LANCTL_S_PERSISTENT_CONFIGURATION"),
     )
     command.add_argument(
         "--startup-interface",
         choices=("cli", "tui", "gui"),
-        help="Interfaz preferida al abrir LANCTL sin argumentos.",
+        help=t("LANCTL.UI.HELP.PREFERRED_INTERFACE_WHEN_OPENING_LANCTL_WITHOUT_ARGUMENTS"),
     )
     command.add_argument(
         "--close-gui-on-launch",
         choices=("on", "off"),
-        help="Cierra la GUI principal cuando el launcher solicitado esté disponible.",
+        help=t("LANCTL.UI.HELP.CLOSE_THE_MAIN_GUI_WHEN_THE_REQUESTED_LAUNCHER_IS_AVAILABLE"),
     )
     command.add_argument(
         "-range",
         dest="network_range",
         metavar="CIDR",
-        help="Rango LAN predeterminado, por ejemplo 192.168.1.1/24.",
+        help=t("LANCTL.UI.HELP.DEFAULT_LAN_RANGE_FOR_EXAMPLE_192_168_1_1_24"),
     )
     command.add_argument(
         "-list-fields",
@@ -67,91 +68,104 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         "-list",
         nargs="+",
         metavar="CAMPO",
-        help="Columnas mostradas por list, separadas por espacios o comas.",
+        help=t("LANCTL.UI.HELP.COLUMNS_DISPLAYED_BY_LIST_SEPARATED_BY_SPACES_OR_COMMAS"),
     )
     command.add_argument(
         "-dhcp-range",
         "--dhcp-range",
         "-dhcp",
         metavar="INICIO-FIN",
-        help=("Rango DHCP manual. Usa 'off' para dejarlo sin configurar."),
+        help=(t("LANCTL.UI.HELP.MANUAL_DHCP_RANGE_USE_OFF_TO_LEAVE_IT_UNCONFIGURED")),
     )
     command.add_argument(
         "-credentials",
         "--credentials",
         metavar="ARCHIVO",
-        help="Ruta del almacén de credenciales cifradas.",
+        help=t("LANCTL.UI.HELP.PATH_TO_THE_ENCRYPTED_CREDENTIAL_STORE"),
     )
     command.add_argument(
         "-discovery",
         "--discovery",
         choices=("icmp", "arp", "hybrid"),
-        help="Método predeterminado utilizado por list.",
+        help=t("LANCTL.UI.HELP.DEFAULT_METHOD_USED_BY_LIST"),
     )
     command.add_argument(
         "--scan-profile",
         choices=tuple(SCAN_PROFILES),
-        help="Perfil predeterminado de list: fast, normal o accurate.",
+        help=t("LANCTL.UI.HELP.DEFAULT_LIST_PROFILE_FAST_NORMAL_OR_ACCURATE"),
     )
     command.add_argument(
-        "--progress", choices=("on", "off"), help="Activa o desactiva el progreso interactivo."
+        "--progress",
+        choices=("on", "off"),
+        help=t("LANCTL.UI.HELP.ENABLE_OR_DISABLE_INTERACTIVE_PROGRESS"),
     )
     command.add_argument(
         "--service-identification",
         choices=("on", "off"),
-        help="Activa o desactiva el reconocimiento de servicios en scan.",
+        help=t("LANCTL.UI.HELP.ENABLE_OR_DISABLE_SERVICE_RECOGNITION_IN_SCAN"),
     )
     command.add_argument(
         "--disconnected-retention",
         choices=RETENTION_MODES,
-        help="Persistencia de desconectados: permanent, session o forget.",
+        help=t("LANCTL.UI.HELP.DISCONNECTED_DEVICE_PERSISTENCE_PERMANENT_SESSION_OR_FORGET"),
     )
     command.add_argument(
         "--disconnected-target",
         choices=RETENTION_TARGETS,
-        help="Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).",
+        help=t("LANCTL.UI.HELP.APPLY_RETENTION_ONLY_TO_CNF_X_UNCONFIRMED_OR_TO_ALL_ALL"),
     )
     command.add_argument(
         "--disconnected-scope",
         choices=RETENTION_SCOPES,
-        help="Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).",
+        help=t("LANCTL.UI.HELP.APPLY_THE_RULE_TO_THE_ENTIRE_LAN_ALL_OR_ONLY_THE_DHCP_RANGE_DHCP"),
     )
-    command.add_argument("--workers", type=int, help="Concurrencia predeterminada de los escaneos.")
+    command.add_argument("--workers", type=int, help=t("LANCTL.UI.HELP.DEFAULT_SCAN_CONCURRENCY"))
     command.add_argument(
-        "--timeout", type=float, help="Timeout predeterminado por operación de red."
+        "--timeout", type=float, help=t("LANCTL.UI.HELP.DEFAULT_TIMEOUT_PER_NETWORK_OPERATION")
     )
     command.add_argument(
         "--scan-order",
         choices=SCAN_ORDERS,
-        help="Orden predeterminado de sondeo: ascending, descending o random.",
+        help=t("LANCTL.UI.HELP.DEFAULT_PROBE_ORDER_ASCENDING_DESCENDING_OR_RANDOM"),
     )
-    command.add_argument("--max-hosts", type=int, help="Máximo de hosts autorizado por escaneo.")
-    command.add_argument("--database", metavar="ARCHIVO", help="Ruta del inventario de elementos.")
+    command.add_argument(
+        "--max-hosts", type=int, help=t("LANCTL.UI.HELP.MAXIMUM_HOSTS_AUTHORIZED_PER_SCAN")
+    )
+    command.add_argument(
+        "--database", metavar="ARCHIVO", help=t("LANCTL.UI.HELP.PATH_TO_THE_ELEMENT_INVENTORY")
+    )
     command.add_argument(
         "--physical-database",
         metavar="ARCHIVO",
-        help="Ruta de la base física SQLite administrada exclusivamente por LANWIRE.",
+        help=t(
+            "LANCTL.UI.HELP.PATH_TO_THE_PHYSICAL_SQLITE_DATABASE_MANAGED_EXCLUSIVELY_BY_LANWIRE"
+        ),
     )
-    command.add_argument("--groups", metavar="ARCHIVO", help="Ruta de la base de grupos.")
-    command.add_argument("--log", metavar="DIRECTORIO", help="Directorio de registros.")
+    command.add_argument(
+        "--groups", metavar="ARCHIVO", help=t("LANCTL.UI.HELP.PATH_TO_THE_GROUP_DATABASE")
+    )
+    command.add_argument("--log", metavar="DIRECTORIO", help=t("LANCTL.UI.HELP.LOG_DIRECTORY"))
     command.add_argument(
         "--error-log-level",
         type=int,
         metavar="1-59",
-        help="Nivel mínimo de ErrorEvent escrito en el log (1 incluye diagnóstico detallado).",
+        help=t(
+            "LANCTL.UI.HELP.MINIMUM_ERROREVENT_LEVEL_WRITTEN_TO_THE_LOG_1_INCLUDES_DETAILED_DIAGNOSTICS"
+        ),
     )
     command.add_argument(
         "--projects-directory",
         metavar="DIRECTORIO",
-        help="Carpeta predeterminada para nombres de proyecto VLF relativos.",
+        help=t("LANCTL.UI.HELP.DEFAULT_FOLDER_FOR_RELATIVE_VLF_PROJECT_NAMES"),
     )
     command.add_argument(
         "-save-mode",
         "--save-mode",
         metavar="MODO",
         help=(
-            "Política de guardado VLF. Usa 'list' para consultar las opciones integradas "
-            "y las aportadas por plugins."
+            t(
+                "LANCTL.UI.HELP.VLF_SAVE_POLICY_USE_LIST_TO_QUERY_BUILT_IN_AND_PLUGIN_PROVIDED_OPTIONS"
+            )
         ),
     )
     command.add_argument(
@@ -159,84 +173,92 @@ def register_settings_command(commands: argparse._SubParsersAction) -> None:
         "--save-interval",
         type=float,
         metavar="MINUTOS",
-        help="Intervalo de automatic.timeToSave en minutos (mínimo 0.1).",
+        help=t("LANCTL.UI.HELP.INTERVAL_FOR_AUTOMATIC_TIMETOSAVE_IN_MINUTES_MINIMUM_0_1"),
     )
     command.add_argument(
         "--cli-exit-save-prompt",
         choices=("on", "off"),
-        help="Consulta si se guarda al terminar cada comando individual de consola.",
+        help=t("LANCTL.UI.HELP.ASK_WHETHER_TO_SAVE_AFTER_EACH_INDIVIDUAL_CONSOLE_COMMAND"),
     )
     command.add_argument(
         "--cli-command-chaining",
         choices=("on", "off"),
-        help="Permite encadenar órdenes con ; dentro de la CLI interactiva.",
+        help=t("LANCTL.UI.HELP.ALLOW_COMMAND_CHAINING_WITH_IN_THE_INTERACTIVE_CLI"),
     )
     command.add_argument(
         "-log-cleanup",
         "--log-cleanup",
         choices=("on", "off"),
-        help="Activa o desactiva la limpieza automática de logs antiguos.",
+        help=t("LANCTL.UI.HELP.ENABLE_OR_DISABLE_AUTOMATIC_CLEANUP_OF_OLD_LOGS"),
     )
     command.add_argument(
         "-log-retention-days",
         "--log-retention-days",
         type=int,
         metavar="DÍAS",
-        help="Días durante los que se conservan los archivos de log.",
+        help=t("LANCTL.UI.HELP.NUMBER_OF_DAYS_TO_RETAIN_LOG_FILES"),
     )
     command.add_argument(
-        "--remote-access", choices=("on", "off"), help="Activa el acceso SSH restringido."
+        "--remote-access",
+        choices=("on", "off"),
+        help=t("LANCTL.UI.HELP.ENABLE_RESTRICTED_SSH_ACCESS"),
     )
-    command.add_argument("--remote-bind", metavar="IP", help="IPv4 local de escucha SSH.")
-    command.add_argument("--remote-cidr", metavar="CIDR", help="Red de origen autorizada.")
-    command.add_argument("--remote-port", type=int, help="Puerto del servidor SSH remoto.")
+    command.add_argument(
+        "--remote-bind", metavar="IP", help=t("LANCTL.UI.HELP.LOCAL_IPV4_ADDRESS_FOR_SSH_LISTENING")
+    )
+    command.add_argument(
+        "--remote-cidr", metavar="CIDR", help=t("LANCTL.UI.HELP.AUTHORIZED_SOURCE_NETWORK")
+    )
+    command.add_argument("--remote-port", type=int, help=t("LANCTL.UI.HELP.REMOTE_SSH_SERVER_PORT"))
     command.add_argument(
         "--remote-password-auth",
         choices=("on", "off"),
-        help="Permite o bloquea autenticación SSH mediante contraseña.",
+        help=t("LANCTL.UI.HELP.ALLOW_OR_BLOCK_SSH_PASSWORD_AUTHENTICATION"),
     )
     command.add_argument(
         "--remote-backend",
         choices=("service", "user"),
-        help="Ejecuta el backend como servicio persistente o proceso de usuario.",
+        help=t("LANCTL.UI.HELP.RUN_THE_BACKEND_AS_A_PERSISTENT_SERVICE_OR_USER_PROCESS"),
     )
     command.add_argument(
         "--remote-forced-view",
         choices=("off", "gui", "tui", "plugins", "projects", "settings"),
-        help="Vista predeterminada para root forced-view.",
+        help=t("LANCTL.UI.HELP.DEFAULT_VIEW_FOR_ROOT_FORCED_VIEW"),
     )
     command.add_argument(
         "--tui-key",
         action="append",
         metavar="ACCIÓN=TECLA",
-        help="Asigna una tecla a una acción del TUI. Puede repetirse.",
+        help=t("LANCTL.UI.HELP.ASSIGN_A_KEY_TO_A_TUI_ACTION_MAY_BE_REPEATED"),
     )
     command.add_argument(
         "--tui-layout",
         choices=PANEL_LAYOUTS,
-        help="Coloca el CLI arriba (cli.top) o abajo (cli.bottom).",
+        help=t("LANCTL.UI.HELP.PLACE_THE_CLI_AT_THE_TOP_CLI_TOP_OR_BOTTOM_CLI_BOTTOM"),
     )
     command.add_argument(
         "--tui-cli-percent",
         metavar="15-75",
-        help="Porcentaje vertical reservado al CLI; ListElement conserva al menos 25%%.",
+        help=t(
+            "LANCTL.UI.HELP.VERTICAL_PERCENTAGE_RESERVED_FOR_CLI_LISTELEMENT_RETAINS_AT_LEAST_25"
+        ),
     )
     command.add_argument(
         "--tui-column",
         action="append",
         metavar="COLUMNA=TAMAÑO",
-        help="Peso de columna (GROUP=15%%); IP=15ch y MAC=17ch son fijas.",
+        help=t("LANCTL.UI.HELP.COLUMN_WEIGHT_GROUP_15_IP_15CH_AND_MAC_17CH_ARE_FIXED"),
     )
     command.add_argument(
         "--tui-footer-buttons",
         metavar="ACCIONES",
-        help="Acciones visibles en la barra inferior, separadas por comas; usa all para todas.",
+        help=t("LANCTL.UI.HELP.VISIBLE_BOTTOM_BAR_ACTIONS_COMMA_SEPARATED_USE_ALL_FOR_ALL_ACTIONS"),
     )
     command.add_argument(
         "--tui-footer-button",
         action="append",
         metavar="ACCIÓN=on|off",
-        help="Muestra u oculta una acción concreta de la barra inferior. Puede repetirse.",
+        help=t("LANCTL.UI.HELP.SHOW_OR_HIDE_A_SPECIFIC_BOTTOM_BAR_ACTION_MAY_BE_REPEATED"),
     )
     from .settings_menu import dispatch_settings, register_catalog_options
 
@@ -375,10 +397,17 @@ def _run_settings(args: argparse.Namespace) -> int:
     changes: list[str] = []
     if getattr(args, "startup_interface", None) is not None:
         config["startupInterface"] = args.startup_interface
-        changes.append(f"Interfaz de inicio: {args.startup_interface}")
+        changes.append(
+            t("LANCTL.UI.MESSAGE.STARTUP_INTERFACE_VALUE", value0=f"{args.startup_interface}")
+        )
     if getattr(args, "close_gui_on_launch", None) is not None:
         config["closeGuiOnLaunch"] = args.close_gui_on_launch == "on"
-        changes.append(f"Cerrar GUI al abrir launcher: {args.close_gui_on_launch}")
+        changes.append(
+            t(
+                "LANCTL.UI.DETAIL.CLOSE_GUI_WHEN_OPENING_A_LAUNCHER_VALUE",
+                value0=f"{args.close_gui_on_launch}",
+            )
+        )
     if args.save_mode is not None:
         from lanctl.core.projects.save_policy import available_save_modes, normalize_save_mode
 
@@ -389,22 +418,31 @@ def _run_settings(args: argparse.Namespace) -> int:
                     triggers = "close?"
                 print(
                     f"{definition.mode:<28} {triggers:<20} "
-                    f"{definition.owner} {definition.description}"
+                    f"{definition.owner} {translate_label(definition.description)}"
                 )
             return 0
         config["projectSaveMode"] = normalize_save_mode(args.save_mode)
-        changes.append(f"SaveMode: {config['projectSaveMode']}")
+        changes.append(t("LANCTL.UI.DETAIL.SAVEMODE_VALUE", value0=f"{config['projectSaveMode']}"))
     if args.save_interval is not None:
         if args.save_interval < 0.1:
             raise ValueError("save-interval debe ser de al menos 0.1 minutos")
         config["projectSaveIntervalMinutes"] = args.save_interval
-        changes.append(f"Intervalo de guardado: {args.save_interval:g} minutos")
+        changes.append(
+            t("LANCTL.UI.MESSAGE.SAVE_INTERVAL_VALUE_MINUTES", value0=f"{args.save_interval:g}")
+        )
     if args.cli_exit_save_prompt is not None:
         config["cliPromptSaveOnCommandExit"] = args.cli_exit_save_prompt == "on"
-        changes.append(f"Consulta de guardado al terminar comando: {args.cli_exit_save_prompt}")
+        changes.append(
+            t(
+                "LANCTL.UI.MESSAGE.ASK_TO_SAVE_AFTER_COMMAND_VALUE",
+                value0=f"{args.cli_exit_save_prompt}",
+            )
+        )
     if args.cli_command_chaining is not None:
         config["cliCommandChaining"] = args.cli_command_chaining == "on"
-        changes.append(f"Comandos encadenados en CLI: {args.cli_command_chaining}")
+        changes.append(
+            t("LANCTL.UI.MESSAGE.CHAINED_CLI_COMMANDS_VALUE", value0=f"{args.cli_command_chaining}")
+        )
     if args.network_range is not None:
         try:
             network = ipaddress.ip_network(args.network_range, strict=False)
@@ -413,65 +451,91 @@ def _run_settings(args: argparse.Namespace) -> int:
         if not isinstance(network, ipaddress.IPv4Network):
             raise ValueError("el rango de red debe ser IPv4")
         config["range"] = args.network_range
-        changes.append(f"Rango: {args.network_range}")
+        changes.append(t("LANCTL.UI.DETAIL.RANGE_VALUE", value0=f"{args.network_range}"))
     if args.list_fields is not None:
         config["listColumns"] = normalize_columns(args.list_fields)
-        changes.append(f"Columnas list: {', '.join(config['listColumns'])}")
+        changes.append(
+            t("LANCTL.UI.MESSAGE.LIST_COLUMNS_VALUE", value0=f"{', '.join(config['listColumns'])}")
+        )
     if args.dhcp_range is not None:
         config["dhcpRange"] = normalize_dhcp_range(args.dhcp_range)
         shown = config["dhcpRange"] or "sin configurar"
-        changes.append(f"Rango DHCP: {shown}")
+        changes.append(t("LANCTL.UI.DETAIL.DHCP_RANGE_VALUE", value0=f"{shown}"))
     if args.credentials is not None:
         path = args.credentials.strip()
         if not path:
             raise ValueError("la ruta de credenciales no puede estar vacía")
         config["credentials"] = path
-        changes.append(f"Credenciales: {path}")
+        changes.append(t("LANCTL.UI.DETAIL.CREDENTIALS_VALUE", value0=f"{path}"))
     if args.discovery is not None:
         config["discovery"] = args.discovery
-        changes.append(f"Descubrimiento: {args.discovery}")
+        changes.append(t("LANCTL.UI.DETAIL.DISCOVERY_VALUE", value0=f"{args.discovery}"))
     if args.scan_profile is not None:
         config["scanProfile"] = args.scan_profile
-        changes.append(f"Perfil de escaneo: {args.scan_profile}")
+        changes.append(t("LANCTL.UI.MESSAGE.SCAN_PROFILE_VALUE", value0=f"{args.scan_profile}"))
     if args.progress is not None:
         config["progress"] = args.progress == "on"
-        changes.append(f"Progreso: {args.progress}")
+        changes.append(t("LANCTL.UI.DETAIL.PROGRESS_VALUE", value0=f"{args.progress}"))
     if args.service_identification is not None:
         config["serviceIdentification"] = args.service_identification == "on"
-        changes.append(f"Identificación de servicios: {args.service_identification}")
+        changes.append(
+            t(
+                "LANCTL.UI.MESSAGE.SERVICE_IDENTIFICATION_VALUE",
+                value0=f"{args.service_identification}",
+            )
+        )
     if args.disconnected_retention is not None:
         config["disconnectedRetention"] = normalize_retention_mode(args.disconnected_retention)
-        changes.append(f"Retención de desconectados: {config['disconnectedRetention']}")
+        changes.append(
+            t(
+                "LANCTL.UI.MESSAGE.DISCONNECTED_RETENTION_VALUE",
+                value0=f"{config['disconnectedRetention']}",
+            )
+        )
     if args.disconnected_target is not None:
         config["disconnectedRetentionTarget"] = normalize_retention_target(args.disconnected_target)
-        changes.append(f"Objetivo de retención: {config['disconnectedRetentionTarget']}")
+        changes.append(
+            t(
+                "LANCTL.UI.MESSAGE.RETENTION_TARGET_VALUE",
+                value0=f"{config['disconnectedRetentionTarget']}",
+            )
+        )
     if args.disconnected_scope is not None:
         config["disconnectedRetentionScope"] = normalize_retention_scope(args.disconnected_scope)
-        changes.append(f"Alcance de retención: {config['disconnectedRetentionScope']}")
+        changes.append(
+            t(
+                "LANCTL.UI.MESSAGE.RETENTION_RANGE_VALUE",
+                value0=f"{config['disconnectedRetentionScope']}",
+            )
+        )
     if args.workers is not None:
         if args.workers < 1:
             raise ValueError("workers debe ser mayor que cero")
         config["workers"] = args.workers
-        changes.append(f"Workers: {args.workers}")
+        changes.append(t("LANCTL.UI.DETAIL.WORKERS_VALUE", value0=f"{args.workers}"))
     if args.timeout is not None:
         if args.timeout <= 0:
             raise ValueError("timeout debe ser mayor que cero")
         config["timeout"] = args.timeout
-        changes.append(f"Timeout: {args.timeout}")
+        changes.append(t("LANCTL.UI.DETAIL.TIMEOUT_VALUE", value0=f"{args.timeout}"))
     if args.scan_order is not None:
         config["scanOrder"] = args.scan_order
-        changes.append(f"Orden de escaneo: {args.scan_order}")
+        changes.append(t("LANCTL.UI.MESSAGE.SCAN_ORDER_VALUE", value0=f"{args.scan_order}"))
     if args.max_hosts is not None:
         if args.max_hosts < 1:
             raise ValueError("max-hosts debe ser mayor que cero")
         config["maxHosts"] = args.max_hosts
-        changes.append(f"Máximo de hosts: {args.max_hosts}")
+        changes.append(t("LANCTL.UI.MESSAGE.MAXIMUM_HOSTS_VALUE", value0=f"{args.max_hosts}"))
     for argument, key, label in (
-        (args.database, "database", "Base de elementos"),
-        (args.physical_database, "physicalDatabase", "Base física LANWIRE"),
-        (args.groups, "groups", "Base de grupos"),
-        (args.log, "log", "Directorio de logs"),
-        (args.projects_directory, "projectsDirectory", "Directorio de proyectos"),
+        (args.database, "database", t("LANCTL.UI.SCREEN.ELEMENT_DATABASE")),
+        (
+            args.physical_database,
+            "physicalDatabase",
+            t("LANCTL.UI.SCREEN.LANWIRE_PHYSICAL_DATABASE"),
+        ),
+        (args.groups, "groups", t("LANCTL.UI.SCREEN.GROUP_DATABASE")),
+        (args.log, "log", t("LANCTL.UI.SCREEN.LOG_DIRECTORY")),
+        (args.projects_directory, "projectsDirectory", t("LANCTL.UI.TEXT.PROJECT_DIRECTORY")),
     ):
         if argument is not None:
             value = argument.strip()
@@ -485,17 +549,24 @@ def _run_settings(args: argparse.Namespace) -> int:
     if args.log_cleanup is not None:
         config["logCleanupEnabled"] = args.log_cleanup == "on"
         state = "activada" if config["logCleanupEnabled"] else "desactivada"
-        changes.append(f"Limpieza automática de logs: {state}")
+        changes.append(t("LANCTL.UI.MESSAGE.AUTOMATIC_LOG_CLEANUP_VALUE", value0=f"{state}"))
     if args.log_retention_days is not None:
         if args.log_retention_days < 1:
             raise ValueError("la retención de logs debe ser de al menos 1 día")
         config["logRetentionDays"] = args.log_retention_days
-        changes.append(f"Retención de logs: {args.log_retention_days} días")
+        changes.append(
+            t("LANCTL.UI.MESSAGE.LOG_RETENTION_VALUE_DAYS", value0=f"{args.log_retention_days}")
+        )
     if args.error_log_level is not None:
         if not 1 <= args.error_log_level <= 59:
             raise ValueError("error-log-level debe estar entre 1 y 59")
         config["errorLogLevel"] = args.error_log_level
-        changes.append(f"Nivel mínimo de errores en log: {args.error_log_level}")
+        changes.append(
+            t(
+                "LANCTL.UI.MESSAGE.MINIMUM_LOGGED_ERROR_LEVEL_VALUE",
+                value0=f"{args.error_log_level}",
+            )
+        )
 
     remote_values = {
         "remoteAccessEnabled": args.remote_access == "on" if args.remote_access else None,
@@ -552,10 +623,14 @@ def _run_settings(args: argparse.Namespace) -> int:
 
     if args.tui_layout is not None:
         config["tuiPanelLayout"] = normalize_panel_layout(args.tui_layout)
-        changes.append(f"Distribución TUI: {config['tuiPanelLayout']}")
+        changes.append(
+            t("LANCTL.UI.MESSAGE.TUI_LAYOUT_VALUE", value0=f"{config['tuiPanelLayout']}")
+        )
     if args.tui_cli_percent is not None:
         config["tuiCliHeightPercent"] = normalize_cli_percent(args.tui_cli_percent)
-        changes.append(f"Altura del CLI: {config['tuiCliHeightPercent']}%")
+        changes.append(
+            t("LANCTL.UI.MESSAGE.CLI_HEIGHT_VALUE", value0=f"{config['tuiCliHeightPercent']}")
+        )
     if args.tui_column:
         columns = normalize_column_specs(config.get("tuiColumnWidths"))
         canonical = {name.casefold(): name for name in DEFAULT_COLUMN_SPECS}
@@ -568,7 +643,7 @@ def _run_settings(args: argparse.Namespace) -> int:
                 raise ValueError(f"tui-column debe usar COLUMNA=TAMAÑO; columnas: {choices}")
             columns[name] = normalize_column_spec(name, raw_value)
         config["tuiColumnWidths"] = columns
-        changes.append("Proporciones de columnas TUI actualizadas")
+        changes.append(t("LANCTL.UI.PROMPT.TUI_COLUMN_PROPORTIONS_UPDATED"))
 
     if args.tui_footer_buttons is not None:
         requested = [part.strip() for part in args.tui_footer_buttons.split(",")]
@@ -585,7 +660,7 @@ def _run_settings(args: argparse.Namespace) -> int:
                 f"opciones: {', '.join(FOOTER_ACTIONS)}"
             )
         config["tuiFooterButtons"] = normalize_footer_actions(requested)
-        changes.append("Botones visibles del TUI actualizados")
+        changes.append(t("LANCTL.UI.PROMPT.VISIBLE_TUI_BUTTONS_UPDATED"))
 
     if args.tui_footer_button:
         visible = normalize_footer_actions(config.get("tuiFooterButtons"))
@@ -604,7 +679,7 @@ def _run_settings(args: argparse.Namespace) -> int:
             elif state == "off" and action in visible:
                 visible.remove(action)
         config["tuiFooterButtons"] = [action for action in FOOTER_ACTIONS if action in visible]
-        changes.append("Visibilidad de botones del TUI actualizada")
+        changes.append(t("LANCTL.UI.PROMPT.TUI_BUTTON_VISIBILITY_UPDATED"))
 
     config = _prepare_legacy_changes(original, config, context)
     if remote_changed:
@@ -614,7 +689,10 @@ def _run_settings(args: argparse.Namespace) -> int:
             path = save_config(config)
     else:
         path = save_config(config)
-    ok("CONFIGURADO", "\n".join((*changes, f"Archivo: {path}")))
+    ok(
+        t("LANCTL.UI.STATUS.CONFIGURED"),
+        "\n".join((*changes, t("LANCTL.UI.DETAIL.FILE_VALUE", value0=f"{path}"))),
+    )
     return 0
 
 

@@ -7,51 +7,69 @@ import sys
 from datetime import date, datetime, timezone
 
 from lanctl.core.history import HistoryService
+from lanctl.shared.i18n import t
 
 
 def register_history_command(commands: argparse._SubParsersAction) -> None:
     command = commands.add_parser(
-        "history", help="Consulta eventos estructurados del proyecto VLF activo."
+        "history", help=t("LANCTL.UI.HELP.QUERY_STRUCTURED_EVENTS_FROM_THE_ACTIVE_VLF_PROJECT")
     )
     command.add_argument(
-        "selector", nargs="?", help="DeviceId, alias, nombre, MAC, IP actual o histórica."
+        "selector",
+        nargs="?",
+        help=t("LANCTL.UI.HELP.DEVICEID_ALIAS_NAME_MAC_CURRENT_OR_HISTORICAL_IP"),
     )
     command.add_argument(
-        "--all", action="store_true", help="Incluye eventos generales de toda la LAN."
+        "--all",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.INCLUDE_GENERAL_EVENTS_FROM_THE_ENTIRE_LAN"),
     )
     command.add_argument(
         "--commands",
         action="store_true",
-        help="En CLI interactiva muestra los comandos de la sesión.",
+        help=t("LANCTL.UI.HELP.IN_THE_INTERACTIVE_CLI_SHOW_SESSION_COMMANDS"),
     )
     command.add_argument(
-        "--today", action="store_true", help="Limita la consulta al día local actual."
+        "--today",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.LIMIT_THE_QUERY_TO_THE_CURRENT_LOCAL_DAY"),
     )
     command.add_argument(
         "--from",
         dest="date_from",
         type=date.fromisoformat,
         metavar="FECHA",
-        help="Fecha inicial YYYY-MM-DD.",
+        help=t("LANCTL.UI.HELP.START_DATE_YYYY_MM_DD"),
     )
     command.add_argument(
         "--to",
         dest="date_to",
         type=date.fromisoformat,
         metavar="FECHA",
-        help="Fecha final YYYY-MM-DD.",
+        help=t("LANCTL.UI.HELP.END_DATE_YYYY_MM_DD"),
     )
     command.add_argument(
-        "--type", dest="types", action="append", default=[], help="Tipo canónico; se puede repetir."
+        "--type",
+        dest="types",
+        action="append",
+        default=[],
+        help=t("LANCTL.UI.HELP.CANONICAL_TYPE_MAY_BE_REPEATED"),
     )
-    command.add_argument("--source", help="Filtra por origen.")
-    command.add_argument("--result", help="Filtra por resultado.")
-    command.add_argument("--errors", action="store_true", help="Muestra únicamente errores.")
-    command.add_argument("--search", help="Busca texto seguro.")
-    command.add_argument("--limit", type=int, default=100, help="Máximo de eventos (1..10000).")
-    command.add_argument("--reverse", action="store_true", help="Orden descendente.")
+    command.add_argument("--source", help=t("LANCTL.UI.HELP.FILTER_BY_SOURCE"))
+    command.add_argument("--result", help=t("LANCTL.UI.HELP.FILTER_BY_RESULT"))
+    command.add_argument("--errors", action="store_true", help=t("LANCTL.UI.HELP.SHOW_ERRORS_ONLY"))
+    command.add_argument("--search", help=t("LANCTL.UI.HELP.SEARCH_SAFE_TEXT"))
     command.add_argument(
-        "--format", choices=("table", "json", "csv"), default="table", help="Formato de salida."
+        "--limit", type=int, default=100, help=t("LANCTL.UI.HELP.MAXIMUM_NUMBER_OF_EVENTS_1_10000")
+    )
+    command.add_argument(
+        "--reverse", action="store_true", help=t("LANCTL.UI.HELP.DESCENDING_ORDER")
+    )
+    command.add_argument(
+        "--format",
+        choices=("table", "json", "csv"),
+        default="table",
+        help=t("LANCTL.UI.HELP.OUTPUT_FORMAT"),
     )
     command.set_defaults(handler=run_history)
 
@@ -93,8 +111,8 @@ def run_history(args: argparse.Namespace) -> int:
                 )
             )
         return 0
-    print(f"HISTORIAL — {args.selector or 'LAN'}")
-    print("FECHA | ELEMENTO | EVENTO | RESULTADO | RESUMEN")
+    print(t("LANCTL.UI.SUMMARY.HISTORY_VALUE", value0=f"{args.selector or 'LAN'}"))
+    print(t("LANCTL.UI.STATUS.DATE_ELEMENT_EVENT_RESULT_SUMMARY"))
     for e in rows:
         print(
             f"{e.timestamp} | {e.device.label if e.device else '-'} | {e.type} | {e.result} | {e.summary}"

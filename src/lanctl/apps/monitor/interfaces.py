@@ -9,6 +9,7 @@ from rich.table import Table
 
 from lanctl.apps.monitor.event_view import read_events
 from lanctl.core.config import load_config
+from lanctl.shared.i18n import t
 
 
 def event_console(*, project=None, tui=False):
@@ -31,8 +32,13 @@ def _loop(project, screen):
             size = max(1, shutil.get_terminal_size((100, 30)).lines - 10)
             pages = max(1, (len(rows) + size - 1) // size)
             page = min(page, pages - 1)
-            table = Table(title="LANMON · Eventos del programa y proyecto", expand=True)
-            for title in ("Origen", "Archivo", "Nivel", "Evento"):
+            table = Table(title=t("LANCTL.UI.TEXT.LANMON_PROGRAM_AND_PROJECT_EVENTS"), expand=True)
+            for title in (
+                t("LANCTL.UI.TEXT.SOURCE"),
+                t("LANCTL.UI.TEXT.FILE"),
+                t("LANCTL.UI.TEXT.LEVEL"),
+                t("LANCTL.UI.TEXT.EVENT"),
+            ):
                 table.add_column(title, no_wrap=True)
             for row in list(reversed(rows))[page * size : (page + 1) * size]:
                 from rich.text import Text
@@ -43,12 +49,12 @@ def _loop(project, screen):
             screen.draw(
                 Group(
                     table,
-                    f"Página {page + 1}/{pages} · N/B páginas | R recargar | P programa | J proyecto | A ambos | level 1-59 | Q salir",
+                    t("LANCTL.MONITOR.VIEW.PAGE", page=page + 1, pages=pages),
                 )
             )
         else:
             print(json.dumps(rows, ensure_ascii=False, indent=2))
-            print("R recargar | P programa | J proyecto | A ambos | level 1-59 | Q salir")
+            print(t("LANCTL.UI.TEXT.R_RELOAD_P_PROGRAM_J_PROJECT_A_BOTH_LEVEL_1_59_Q_QUIT"))
         try:
             command = input("LANMON> ").strip().casefold()
         except (EOFError, KeyboardInterrupt):
@@ -64,4 +70,4 @@ def _loop(project, screen):
             if value.isdecimal() and 1 <= int(value) <= 59:
                 minimum = int(value)
             else:
-                print("Nivel válido: 1-59")
+                print(t("LANCTL.UI.TEXT.VALID_LEVEL_1_59"))

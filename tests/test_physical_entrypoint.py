@@ -6,6 +6,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from lanctl import __version__
 from lanctl.apps.wire.cli.main import build_parser, main
 from lanctl.apps.wire.idf.database import DEFAULT_DATABASE_PATH
@@ -82,3 +84,17 @@ class PhysicalEntrypointTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@pytest.fixture(autouse=True)
+def spanish_regression_labels(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from lanctl.shared import i18n
+
+    manager = i18n.LanguageManager(tmp_path / "test-languages")
+    manager.initialize("en")
+    manager.install(Path(__file__).resolve().parents[1] / "bundled/languages/spanish.lang")
+    monkeypatch.setattr(i18n, "_MANAGER", manager)
+    with i18n.language_context("es"):
+        yield

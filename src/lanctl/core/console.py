@@ -17,7 +17,9 @@ COLORS = {"ok": Fore.GREEN, "pending": Fore.YELLOW, "error": Fore.RED}
 def status(label: str, message: str, kind: str = "ok", *, log: bool = True) -> None:
     """Imprime estados consistentes; usa color solo en terminales compatibles."""
     if log:
-        write_log(f"[{label}] {message}")
+        write_log(
+            f"[{getattr(label, 'canonical_text', label)}] {getattr(message, 'canonical_text', message)}"
+        )
     stream = sys.stderr
     plain_prefix = f"[{label}]"
     prefix = f"{COLORS[kind]}{plain_prefix}{Style.RESET_ALL}" if stream.isatty() else plain_prefix

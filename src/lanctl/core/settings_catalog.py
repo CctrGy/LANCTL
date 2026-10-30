@@ -11,6 +11,7 @@ from lanctl.core.config import (
     DOCUMENT_DEFAULTS,
     canonical_config,
 )
+from lanctl.shared.i18n import t
 
 CATEGORIES = {
     "storage": "Almacenamiento y credenciales",
@@ -213,3 +214,28 @@ def set_program_value(path, value):
     from lanctl.core.settings_policy import SettingsContext
 
     return save_program_changes({path: value}, SettingsContext("direct"))
+
+
+_CATEGORY_KEYS = {
+    "storage": "LANCTL.UI.TEXT.STORAGE_AND_CREDENTIALS",
+    "logging": "LANCTL.UI.TEXT.LOGS_AND_DIAGNOSTICS",
+    "projects": "LANCTL.UI.TEXT.PROJECTS_SAVING_AND_WORKSPACE",
+    "localization": "LANCTL.UI.TEXT.LANGUAGE_AND_TRANSLATIONS",
+    "cli": "LANCTL.UI.TEXT.CLI_CONSOLE",
+    "network": "LANCTL.UI.TEXT.NETWORK_DHCP_DNS_AND_TR_064",
+    "ip": "LANCTL.UI.TEXT.LANIP_DISCOVERY_AND_INVENTORY",
+    "tui": "LANCTL.UI.TEXT.TUI_LAYOUT_COLUMNS_AND_KEYBOARD",
+    "access": "LANCTL.UI.TEXT.LANACCESS_AND_REMOTE_ACCESS",
+    "monitor": "LANCTL.UI.TEXT.LANMON_RUNTIME_INTERVALS_AND_RETENTION",
+    "schemaVersion": "LANCTL.UI.TEXT.FORMAT_INFORMATION",
+    "startup": "LANCTL.UI.TEXT.LANCTL_STARTUP_AND_WINDOWS",
+    "gui": "LANCTL.UI.TEXT.APPEARANCE_AND_GUI",
+}
+
+
+def category_labels():
+    """Localized display labels; category IDs and ordering stay canonical."""
+    return {
+        key: t(_CATEGORY_KEYS[key]) if key in _CATEGORY_KEYS else label
+        for key, label in CATEGORIES.items()
+    }

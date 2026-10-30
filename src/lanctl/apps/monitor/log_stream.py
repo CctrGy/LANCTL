@@ -13,6 +13,7 @@ from pathlib import Path
 from lanctl.apps.monitor.event_view import _date, _rows
 from lanctl.core.config import load_config
 from lanctl.core.paths import application_path
+from lanctl.shared.i18n import t
 
 
 class LogFollower:
@@ -93,7 +94,13 @@ def follow_logs(*, limit=100, minimum=1):
         raise ValueError("limit debe estar entre 1-1000 y level entre 1-59")
     directory = application_path(load_config()["programLog"])
     follower = LogFollower(directory, limit)
-    print(f"LANCTL · Log unificado · {directory}\nCtrl+C para cerrar el seguimiento.", flush=True)
+    print(
+        t(
+            "LANCTL.UI.SUMMARY.LANCTL_UNIFIED_LOG_VALUE_CTRL_C_TO_STOP_FOLLOWING",
+            value0=f"{directory}",
+        ),
+        flush=True,
+    )
     try:
         while True:
             for row in follower.poll():

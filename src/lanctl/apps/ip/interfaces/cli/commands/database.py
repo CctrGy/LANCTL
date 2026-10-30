@@ -14,31 +14,49 @@ from lanctl.core.persistence import (
     restore_backup,
     verify_export,
 )
+from lanctl.shared.i18n import t
 
 
 def register_database_command(commands: argparse._SubParsersAction) -> None:
-    command = commands.add_parser("database", aliases=("db",), help="Diagnostica y exporta datos.")
+    command = commands.add_parser(
+        "database", aliases=("db",), help=t("LANCTL.UI.HELP.DIAGNOSE_AND_EXPORT_DATA")
+    )
     actions = command.add_mutually_exclusive_group(required=True)
     actions.add_argument(
-        "--diagnose", action="store_true", help="Valida los almacenes configurados."
+        "--diagnose", action="store_true", help=t("LANCTL.UI.HELP.VALIDATE_CONFIGURED_STORES")
     )
     actions.add_argument(
-        "--export", metavar="ARCHIVO.zip", help="Exporta datos con hashes verificables."
+        "--export",
+        metavar="ARCHIVO.zip",
+        help=t("LANCTL.UI.HELP.EXPORT_DATA_WITH_VERIFIABLE_HASHES"),
     )
     actions.add_argument(
-        "--verify", metavar="ARCHIVO.zip", help="Verifica una exportación sin importarla."
+        "--verify",
+        metavar="ARCHIVO.zip",
+        help=t("LANCTL.UI.HELP.VERIFY_AN_EXPORT_WITHOUT_IMPORTING_IT"),
     )
     actions.add_argument(
-        "--import", dest="import_file", metavar="ARCHIVO.zip", help="Importa datos verificados."
+        "--import",
+        dest="import_file",
+        metavar="ARCHIVO.zip",
+        help=t("LANCTL.UI.HELP.IMPORT_VERIFIED_DATA"),
     )
     actions.add_argument(
-        "--restore", metavar="ARCHIVO.bak", help="Restaura un backup validado del almacén."
+        "--restore",
+        metavar="ARCHIVO.bak",
+        help=t("LANCTL.UI.HELP.RESTORE_A_VALIDATED_STORE_BACKUP"),
     )
     command.add_argument(
-        "--target", choices=("database", "groups", "physical"), help="Almacén que se restaura."
+        "--target",
+        choices=("database", "groups", "physical"),
+        help=t("LANCTL.UI.HELP.STORE_TO_RESTORE"),
     )
-    command.add_argument("--yes", action="store_true", help="Confirma la sustitución de datos.")
-    command.add_argument("--json", action="store_true", help="Emite el diagnóstico como JSON.")
+    command.add_argument(
+        "--yes", action="store_true", help=t("LANCTL.UI.HELP.CONFIRM_DATA_REPLACEMENT")
+    )
+    command.add_argument(
+        "--json", action="store_true", help=t("LANCTL.UI.HELP.OUTPUT_DIAGNOSTICS_AS_JSON")
+    )
     command.set_defaults(handler=run_database)
 
 
@@ -62,7 +80,7 @@ def run_database(args: argparse.Namespace) -> int:
         if not args.yes:
             raise ValueError("database --import requiere --yes y una copia externa confirmada")
         imported = import_storage(args.import_file, data_root())
-        print(f"Importados y verificados: {len(imported)} archivos")
+        print(t("LANCTL.UI.MESSAGE.IMPORTED_AND_VERIFIED_VALUE_FILES", value0=f"{len(imported)}"))
         return 0
     if args.restore:
         if not args.yes or not args.target:
@@ -73,7 +91,7 @@ def run_database(args: argparse.Namespace) -> int:
         ]
         target = application_path(config[key])
         restore_backup(target, args.restore)
-        print(f"Restaurado y validado: {target}")
+        print(t("LANCTL.UI.MESSAGE.RESTORED_AND_VALIDATED_VALUE", value0=f"{target}"))
         return 0
     checks = diagnose_storage(_configured_paths())
     if args.json:

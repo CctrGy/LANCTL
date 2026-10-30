@@ -7,6 +7,7 @@ from lanctl.core.console import ok
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.group_database import GroupDatabase
 from lanctl.core.output import write_records
+from lanctl.shared.i18n import t
 
 FIELDS = ("ip", "cnf", "name", "description", "alias", "idf", "group", "protocol")
 DELETE_ACTIONS = ("delete", "del", "remove")
@@ -16,57 +17,76 @@ def register_element_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
     command = commands.add_parser(
         "element",
-        help="Edita uno o varios campos de un elemento identificado por IP, MAC o alias.",
+        help=t(
+            "LANCTL.UI.HELP.EDIT_ONE_OR_MORE_FIELDS_OF_AN_ELEMENT_IDENTIFIED_BY_IP_MAC_OR_ALIAS"
+        ),
     )
-    command.add_argument("selector", nargs="?", help="IP, MAC o alias.")
+    command.add_argument("selector", nargs="?", help=t("LANCTL.UI.HELP.IP_MAC_OR_ALIAS"))
     command.add_argument(
         "action",
         nargs="?",
         choices=("edit", *FIELDS, *DELETE_ACTIONS),
-        help="Campo o acción que se quiere editar.",
+        help=t("LANCTL.UI.HELP.FIELD_OR_ACTION_TO_EDIT"),
     )
-    command.add_argument("values", nargs="*", help="Nuevo valor.")
+    command.add_argument("values", nargs="*", help=t("LANCTL.UI.HELP.NEW_VALUE"))
     command.add_argument(
         "-add",
         metavar="MAC",
-        help="Añade un elemento nuevo utilizando su dirección MAC.",
+        help=t("LANCTL.UI.HELP.ADD_A_NEW_ELEMENT_USING_ITS_MAC_ADDRESS"),
     )
     command.add_argument(
-        "-name", "--name", dest="new_name", help="Asigna NAME al elemento indicado."
+        "-name",
+        "--name",
+        dest="new_name",
+        help=t("LANCTL.UI.HELP.ASSIGN_NAME_TO_THE_SPECIFIED_ELEMENT"),
     )
-    command.add_argument("-ip", "--ip", dest="new_ip", help="Asigna una dirección IPv4.")
     command.add_argument(
-        "-alias", "--alias", dest="new_alias", help="Asigna ALIAS al elemento indicado."
+        "-ip", "--ip", dest="new_ip", help=t("LANCTL.UI.HELP.ASSIGN_AN_IPV4_ADDRESS")
+    )
+    command.add_argument(
+        "-alias",
+        "--alias",
+        dest="new_alias",
+        help=t("LANCTL.UI.HELP.ASSIGN_ALIAS_TO_THE_SPECIFIED_ELEMENT"),
     )
     command.add_argument(
         "-description",
         "--description",
         dest="new_description",
-        help="Asigna DESCRIPTION al elemento indicado.",
+        help=t("LANCTL.UI.HELP.ASSIGN_DESCRIPTION_TO_THE_SPECIFIED_ELEMENT"),
     )
-    command.add_argument("-cnf", "--cnf", dest="new_cnf", help="Asigna el estado CNF.")
     command.add_argument(
-        "-idf", "--idf", dest="new_idf", help="Asigna un IDF único (2-5 letras y 2-5 dígitos)."
+        "-cnf", "--cnf", dest="new_cnf", help=t("LANCTL.UI.HELP.ASSIGN_THE_CNF_STATE")
     )
-    command.add_argument("-group", "--group", dest="new_group", help="Añade el elemento al grupo.")
     command.add_argument(
-        "-protocol", "--protocol", dest="new_protocol", help="Activa un protocolo."
+        "-idf",
+        "--idf",
+        dest="new_idf",
+        help=t("LANCTL.UI.HELP.ASSIGN_A_UNIQUE_IDF_2_5_LETTERS_AND_2_5_DIGITS"),
+    )
+    command.add_argument(
+        "-group", "--group", dest="new_group", help=t("LANCTL.UI.HELP.ADD_THE_ELEMENT_TO_THE_GROUP")
+    )
+    command.add_argument(
+        "-protocol", "--protocol", dest="new_protocol", help=t("LANCTL.UI.HELP.ENABLE_A_PROTOCOL")
     )
     command.add_argument(
         "-delete",
         "--delete",
         dest="delete_requested",
         action="store_true",
-        help="Elimina completamente el elemento indicado.",
+        help=t("LANCTL.UI.HELP.COMPLETELY_DELETE_THE_SPECIFIED_ELEMENT"),
     )
     command.add_argument(
-        "--database", default=config["database"], help="Archivo JSON de elementos."
+        "--database", default=config["database"], help=t("LANCTL.UI.HELP.ELEMENT_JSON_FILE")
     )
-    command.add_argument("--groups", default=config["groups"], help="Archivo JSON de grupos.")
+    command.add_argument(
+        "--groups", default=config["groups"], help=t("LANCTL.UI.HELP.GROUP_JSON_FILE")
+    )
     command.add_argument(
         "--yes",
         action="store_true",
-        help="Elimina sin solicitar confirmación.",
+        help=t("LANCTL.UI.HELP.DELETE_WITHOUT_REQUESTING_CONFIRMATION"),
     )
     command.set_defaults(handler=run_element)
 
@@ -97,8 +117,8 @@ def run_element(args: argparse.Namespace) -> int:
             idf=args.new_idf or "",
         )
         ok(
-            "ANADIDO",
-            f"{device.mac} | {device.alias or device.name or 'sin etiqueta'}",
+            t("LANCTL.UI.STATUS.ADDED"),
+            f"{device.mac} | {device.alias or device.name or t('LANCTL.UI.VALUE.UNLABELED')}",
         )
         return 0
 
@@ -140,7 +160,7 @@ def run_element(args: argparse.Namespace) -> int:
             else:
                 changes.append(f"{field} = {getattr(updated, field)}")
         ok(
-            "ACTUALIZADO",
+            t("LANCTL.UI.STATUS.UPDATED"),
             f"{updated.alias or updated.ip} | " + " | ".join(changes),
         )
         return 0
@@ -172,14 +192,23 @@ def run_element(args: argparse.Namespace) -> int:
         device = database.resolve(args.selector)
         label = device.alias or device.name or device.ip
         if not args.yes:
-            answer = input(f"Eliminar completamente {label} ({device.mac})? [s/N]: ")
+            answer = input(
+                t(
+                    "LANCTL.UI.MESSAGE.COMPLETELY_DELETE_VALUE_VALUE_S_N",
+                    value0=f"{label}",
+                    value1=f"{device.mac}",
+                )
+            )
             if answer.strip().casefold() not in ("s", "si", "sí", "y", "yes"):
-                ok("CANCELADO", "No se ha eliminado ningún elemento.")
+                ok(t("LANCTL.UI.STATUS.CANCELLED"), t("LANCTL.UI.PROMPT.NO_ELEMENTS_WERE_DELETED"))
                 return 1
         deleted = GroupDatabase(args.groups, database).delete_device(args.selector)
         ok(
-            "ELIMINADO",
-            f"{deleted.mac} | retirado de la base y de todos los grupos",
+            t("LANCTL.UI.STATUS.DELETED_D7B7F127"),
+            t(
+                "LANCTL.UI.SUMMARY.VALUE_REMOVED_FROM_THE_DATABASE_AND_ALL_GROUPS",
+                value0=f"{deleted.mac}",
+            ),
         )
         return 0
 
@@ -198,18 +227,18 @@ def run_element(args: argparse.Namespace) -> int:
         raise ValueError(f"campo no editable: {field}")
     if field == "group":
         group, device = GroupDatabase(args.groups, database).add(value, args.selector)
-        ok("ACTUALIZADO", f"{device.alias or device.ip} -> {group.name}")
+        ok(t("LANCTL.UI.STATUS.UPDATED"), f"{device.alias or device.ip} -> {group.name}")
     elif field == "protocol":
         parts = value.split()
         protocol = parts[-1]
         enabled = not (len(parts) > 1 and parts[0].casefold() in ("del", "delete", "remove"))
         device = database.set_protocol(args.selector, protocol, enabled)
         ok(
-            "ACTUALIZADO",
+            t("LANCTL.UI.STATUS.UPDATED"),
             f"{device.alias or device.ip} | protocols = {', '.join(device.protocols) or '-'}",
         )
     else:
         device = database.edit_device(args.selector, field, value)
         shown = getattr(device, field)
-        ok("ACTUALIZADO", f"{device.alias or device.ip} | {field} = {shown}")
+        ok(t("LANCTL.UI.STATUS.UPDATED"), f"{device.alias or device.ip} | {field} = {shown}")
     return 0

@@ -1,3 +1,6 @@
 * text=auto eol=lf
 *.bat text eol=crlf
 *.cmd text eol=crlf
+
+# P100 CSV snapshots are byte-hashed: retain original line endings.
+docs/P100-*.csv -text whitespace=cr-at-eol

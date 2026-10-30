@@ -9,6 +9,7 @@ from lanctl.core.credentials import CredentialStore
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.plugin_storage import PluginStorage
 from lanctl.core.plugins.smb_runtime import SMBError, SMBService
+from lanctl.shared.i18n import t
 
 ACTIONS = (
     "scan",
@@ -26,56 +27,75 @@ ACTIONS = (
 
 def register_smb_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
-    command = commands.add_parser("smb", help="Descubre y abre recursos SMB de Windows.")
+    command = commands.add_parser(
+        "smb", help=t("LANCTL.UI.HELP.DISCOVER_AND_OPEN_WINDOWS_SMB_RESOURCES")
+    )
     command.add_argument(
-        "name", nargs="?", help="Servidor/dispositivo (sin acción equivale a info)."
+        "name", nargs="?", help=t("LANCTL.UI.HELP.SERVER_DEVICE_NO_ACTION_DEFAULTS_TO_INFO")
     )
     command.add_argument(
         "action",
         nargs="?",
-        help="scan, info, shares, open, printers, workgroups, connect, disconnect, status o printer.",
+        help=t(
+            "LANCTL.UI.HELP.SCAN_INFO_SHARES_OPEN_PRINTERS_WORKGROUPS_CONNECT_DISCONNECT_STATUS_OR_PRINTER"
+        ),
     )
-    command.add_argument("resource", nargs="?", help="Carpeta o impresora compartida.")
+    command.add_argument("resource", nargs="?", help=t("LANCTL.UI.HELP.SHARED_FOLDER_OR_PRINTER"))
     command.add_argument(
         "resource_action",
         nargs="?",
         choices=("open", "queue", "connect"),
-        help="Acción sobre la impresora.",
+        help=t("LANCTL.UI.HELP.PRINTER_ACTION"),
     )
     command.add_argument(
-        "--network", action="store_true", help="Examina todo el inventario LANCTL."
+        "--network",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.EXAMINE_THE_ENTIRE_LANCTL_INVENTORY"),
     )
-    command.add_argument("--group", help="Limita el escaneo a un grupo LANCTL.")
+    command.add_argument("--group", help=t("LANCTL.UI.HELP.LIMIT_THE_SCAN_TO_A_LANCTL_GROUP"))
     command.add_argument(
-        "--timeout", type=float, default=config["timeout"], help="Tiempo máximo del probe TCP."
+        "--timeout",
+        type=float,
+        default=config["timeout"],
+        help=t("LANCTL.UI.HELP.TCP_PROBE_TIMEOUT"),
     )
     command.add_argument(
         "--workers",
         type=int,
         default=min(32, int(config["workers"])),
-        help="Número máximo de probes concurrentes.",
+        help=t("LANCTL.UI.HELP.MAXIMUM_NUMBER_OF_CONCURRENT_PROBES"),
     )
     command.add_argument(
-        "--anonymous", action="store_true", help="No carga credenciales asociadas."
+        "--anonymous",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.DO_NOT_LOAD_ASSOCIATED_CREDENTIALS"),
     )
     command.add_argument(
         "--include-system",
         action="store_true",
-        help="Incluye recursos administrativos y especiales.",
+        help=t("LANCTL.UI.HELP.INCLUDE_ADMINISTRATIVE_AND_SPECIAL_RESOURCES"),
     )
     command.add_argument(
-        "--dry-run", action="store_true", help="Muestra el plan sin autenticar, abrir ni mutar."
-    )
-    command.add_argument("--yes", action="store_true", help="Confirma una conexión de impresora.")
-    command.add_argument("--json", action="store_true", help="Emite JSON estructurado.")
-    command.add_argument(
-        "--database", default=config["database"], help="Archivo JSON del inventario."
+        "--dry-run",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.SHOW_THE_PLAN_WITHOUT_AUTHENTICATING_OPENING_OR_CHANGING_ANYTHING"),
     )
     command.add_argument(
-        "--store", default=config["credentials"], help="Almacén DPAPI de credenciales."
+        "--yes", action="store_true", help=t("LANCTL.UI.HELP.CONFIRM_A_PRINTER_CONNECTION")
     )
     command.add_argument(
-        "--storage", default=config["smbStorage"], help="Directorio de observaciones de plugins."
+        "--json", action="store_true", help=t("LANCTL.UI.HELP.OUTPUT_STRUCTURED_JSON")
+    )
+    command.add_argument(
+        "--database", default=config["database"], help=t("LANCTL.UI.HELP.INVENTORY_JSON_FILE")
+    )
+    command.add_argument(
+        "--store", default=config["credentials"], help=t("LANCTL.UI.HELP.DPAPI_CREDENTIAL_STORE")
+    )
+    command.add_argument(
+        "--storage",
+        default=config["smbStorage"],
+        help=t("LANCTL.UI.HELP.PLUGIN_OBSERVATIONS_DIRECTORY"),
     )
     command.set_defaults(handler=run_smb)
 

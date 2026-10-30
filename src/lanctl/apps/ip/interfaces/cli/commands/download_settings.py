@@ -10,13 +10,14 @@ from lanctl.core.credentials import CredentialStore
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.file_transaction import transactional_file
 from lanctl.core.tr064 import Tr064Client
+from lanctl.shared.i18n import t
 
 
 def _add_download_arguments(command: argparse.ArgumentParser, *, gateway: bool) -> None:
     config = load_config()
     if gateway:
         command.add_argument(
-            "gateway", nargs="?", default="GATEWAY", help="IP, MAC o alias del router."
+            "gateway", nargs="?", default="GATEWAY", help=t("LANCTL.UI.HELP.ROUTER_IP_MAC_OR_ALIAS")
         )
     else:
         command.set_defaults(gateway="GATEWAY")
@@ -24,23 +25,23 @@ def _add_download_arguments(command: argparse.ArgumentParser, *, gateway: bool) 
         "--port",
         type=int,
         default=int(config.get("tr064Port", 49000)),
-        help="Puerto TR-064 del router.",
+        help=t("LANCTL.UI.HELP.ROUTER_TR_064_PORT"),
     )
     command.add_argument(
         "--timeout",
         type=float,
         default=5.0,
-        help="Tiempo máximo de espera en segundos.",
+        help=t("LANCTL.UI.HELP.MAXIMUM_TIMEOUT_IN_SECONDS"),
     )
     command.add_argument(
         "--database",
         default=config["database"],
-        help="Archivo JSON de elementos.",
+        help=t("LANCTL.UI.HELP.ELEMENT_JSON_FILE"),
     )
     command.add_argument(
         "--store",
         default=config["credentials"],
-        help="Almacén cifrado de credenciales.",
+        help=t("LANCTL.UI.TEXT.ENCRYPTED_CREDENTIAL_STORE"),
     )
     command.set_defaults(handler=run_download_settings)
 
@@ -49,14 +50,14 @@ def register_gateway_command(commands: argparse._SubParsersAction) -> None:
     gateway = commands.add_parser(
         "GATEWAY",
         aliases=["gateway"],
-        help="Consulta y configura el gateway mediante TR-064.",
+        help=t("LANCTL.UI.HELP.QUERY_AND_CONFIGURE_THE_GATEWAY_THROUGH_TR_064"),
     )
     actions = gateway.add_subparsers(dest="gateway_action", metavar="ACCIÓN")
     actions.required = True
     download = actions.add_parser(
         "downloadSettings",
         aliases=["downloadsettings", "download-settings"],
-        help="Descarga las opciones LAN y DHCP interesantes para configuración.",
+        help=t("LANCTL.UI.HELP.DOWNLOAD_RELEVANT_LAN_AND_DHCP_SETTINGS_FOR_CONFIGURATION"),
     )
     _add_download_arguments(download, gateway=False)
 
@@ -66,7 +67,7 @@ def register_download_settings_command(commands: argparse._SubParsersAction) -> 
     command = commands.add_parser(
         "downloadSettings",
         aliases=["downloadsettings", "download-settings"],
-        help="Alias heredado de «GATEWAY downloadSettings».",
+        help=t("LANCTL.UI.HELP.LEGACY_ALIAS_FOR_GATEWAY_DOWNLOADSETTINGS"),
     )
     _add_download_arguments(command, gateway=True)
 
@@ -142,13 +143,13 @@ def run_download_settings(args: argparse.Namespace) -> int:
     path = save_config(config)
     dhcp = downloaded["dhcpRange"] or "desactivado/no publicado"
     ok(
-        "DESCARGADO",
+        t("LANCTL.UI.STATUS.DOWNLOADED"),
         "\n".join(
             (
-                f"Red LAN: {downloaded['range']}",
-                f"Gateway: {downloaded['gateway']}",
+                t("LANCTL.UI.DETAIL.LAN_NETWORK_VALUE", value0=f"{downloaded['range']}"),
+                t("LANCTL.UI.DETAIL.GATEWAY_VALUE", value0=f"{downloaded['gateway']}"),
                 f"DHCP: {dhcp}",
-                f"Archivo: {path}",
+                t("LANCTL.UI.DETAIL.FILE_VALUE", value0=f"{path}"),
             )
         ),
     )

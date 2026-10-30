@@ -15,17 +15,20 @@ from lanctl.apps.access.models import PERMISSIONS, ROLE_PERMISSIONS
 from lanctl.apps.access.service import AccessService
 from lanctl.core.config import load_config
 from lanctl.core.paths import application_path
+from lanctl.shared.i18n import t
 
 
 def register_access_command(commands):
     config = load_config()
     command = commands.add_parser(
-        "access", help="Configura acceso remoto LAN seguro por SSH y HTTPS."
+        "access", help=t("LANCTL.UI.HELP.CONFIGURE_SECURE_LAN_REMOTE_ACCESS_THROUGH_SSH_AND_HTTPS")
     )
     command.add_argument(
         "words",
         nargs="*",
-        help="init, status, enable, disable, configure, user, role, session, web o certificate.",
+        help=t(
+            "LANCTL.UI.HELP.INIT_STATUS_ENABLE_DISABLE_CONFIGURE_USER_ROLE_SESSION_WEB_OR_CERTIFICATE"
+        ),
     )
     command.add_argument("--bind")
     command.add_argument("--cidr")
@@ -44,13 +47,15 @@ def register_access_command(commands):
         "--scope",
         choices=("user", "service"),
         default="user",
-        help="Separa credenciales del usuario y del servicio permanente.",
+        help=t("LANCTL.UI.HELP.SEPARATE_USER_CREDENTIALS_FROM_THE_PERSISTENT_SERVICE_CREDENTIALS"),
     )
     command.add_argument(
-        "--config", default=config["accessConfig"], help="Configuración remota separada."
+        "--config",
+        default=config["accessConfig"],
+        help=t("LANCTL.UI.HELP.SEPARATE_REMOTE_CONFIGURATION"),
     )
     command.add_argument(
-        "--users", default=config["accessUsers"], help="Almacén de usuarios remotos."
+        "--users", default=config["accessUsers"], help=t("LANCTL.UI.HELP.REMOTE_USER_STORE")
     )
     command.set_defaults(handler=run_access)
     for item in command._actions:
@@ -119,7 +124,7 @@ def run_access(args):
             if verb == "list"
             else _public_session(service.auth.revoke(words[2]))
             if verb == "revoke"
-            else (_ for _ in ()).throw(ValueError("acción de sesión no válida"))
+            else (_ for _ in ()).throw(ValueError(t("LANCTL.UI.PROMPT.INVALID_SESSION_ACTION")))
         )
     elif action == "web" and len(words) > 2 and words[1].casefold() == "pair":
         payload = {
@@ -273,8 +278,8 @@ def _user(service, args, words):
     if verb == "add":
         password = None
         if args.password_auth == "on":
-            password = getpass.getpass("Contraseña remota: ")
-            confirmation = getpass.getpass("Repite la contraseña remota: ")
+            password = getpass.getpass(t("LANCTL.UI.PROMPT.REMOTE_PASSWORD"))
+            confirmation = getpass.getpass(t("LANCTL.UI.PROMPT.REPEAT_REMOTE_PASSWORD"))
             if password != confirmation:
                 raise ValueError("las contraseñas no coinciden")
         keys = [Path(path).read_text(encoding="utf-8").strip() for path in args.ssh_key]
@@ -299,8 +304,8 @@ def _user(service, args, words):
         service._audit("access.user.roles.updated", user, "success")
         return {"updated": user.userId, "roles": user.roles}
     if verb == "rotate-password":
-        password = getpass.getpass("Nueva contraseña remota: ")
-        confirmation = getpass.getpass("Repite la contraseña remota: ")
+        password = getpass.getpass(t("LANCTL.UI.PROMPT.NEW_REMOTE_PASSWORD"))
+        confirmation = getpass.getpass(t("LANCTL.UI.PROMPT.REPEAT_REMOTE_PASSWORD"))
         if password != confirmation:
             raise ValueError("las contraseñas no coinciden")
         from lanctl.apps.access.auth import hash_password
@@ -370,19 +375,21 @@ def _setup_wizard(service):
     config["https"]["enabled"] = False
     service.save_config(config)
     try:
-        print("ACCESO REMOTO LANCTL (SSH/HTTPS permanecen apagados hasta la confirmación final)")
-        bind = input("IPv4 de la interfaz LAN: ").strip()
-        cidr = input("CIDR permitido (ej. 192.168.1.0/24): ").strip()
-        ssh_port = int(input("Puerto SSH [2222]: ").strip() or "2222")
-        https_port = int(input("Puerto HTTPS [8443]: ").strip() or "8443")
+        print(
+            t("LANCTL.UI.PROMPT.LANCTL_REMOTE_ACCESS_SSH_HTTPS_REMAIN_OFF_UNTIL_FINAL_CONFIRMATION")
+        )
+        bind = input(t("LANCTL.UI.PRESENTATION.LAN_INTERFACE_IPV4")).strip()
+        cidr = input(t("LANCTL.UI.PRESENTATION.ALLOWED_CIDR")).strip()
+        ssh_port = int(input(t("LANCTL.UI.PRESENTATION.SSH_PORT")).strip() or "2222")
+        https_port = int(input(t("LANCTL.UI.PRESENTATION.HTTPS_PORT")).strip() or "8443")
         service.configure("ssh", bind=bind, cidr=cidr, port=ssh_port, password_authentication=False)
         service.configure("https", bind=bind, cidr=cidr, port=https_port)
-        username = input("Cuenta administradora: ").strip()
-        public_key_path = input("Clave pública SSH (ruta, opcional): ").strip()
+        username = input(t("LANCTL.UI.PROMPT.ADMINISTRATOR_ACCOUNT")).strip()
+        public_key_path = input(t("LANCTL.UI.PROMPT.SSH_PUBLIC_KEY_PATH_OPTIONAL")).strip()
         keys = (
             [Path(public_key_path).read_text(encoding="utf-8").strip()] if public_key_path else []
         )
-        use_web = input("¿Crear autenticador web? [s/N]: ").strip().casefold() in {
+        use_web = input(t("LANCTL.UI.STATUS.CREATE_WEB_AUTHENTICATOR_S_N")).strip().casefold() in {
             "s",
             "si",
             "sí",
@@ -391,8 +398,8 @@ def _setup_wizard(service):
         }
         password = None
         if use_web:
-            password = getpass.getpass("Contraseña remota: ")
-            confirmation = getpass.getpass("Repite la contraseña remota: ")
+            password = getpass.getpass(t("LANCTL.UI.PROMPT.REMOTE_PASSWORD"))
+            confirmation = getpass.getpass(t("LANCTL.UI.PROMPT.REPEAT_REMOTE_PASSWORD"))
             if password != confirmation:
                 raise ValueError("las contraseñas no coinciden")
         created_user = service.auth.add_user(username, ["administrator"], password, keys)
@@ -406,14 +413,14 @@ def _setup_wizard(service):
         config["ssh"]["hostKey"] = host_key
         config["https"].update({"certificate": certificate, "privateKey": private_key})
         service.save_config(config)
-        enable_ssh = input("¿Activar SSH restringido? [s/N]: ").strip().casefold() in {
+        enable_ssh = input(t("LANCTL.UI.STATUS.ENABLE_RESTRICTED_SSH_S_N")).strip().casefold() in {
             "s",
             "si",
             "sí",
             "y",
             "yes",
         }
-        enable_https = input("¿Activar HTTPS? [s/N]: ").strip().casefold() in {
+        enable_https = input(t("LANCTL.UI.STATUS.ENABLE_HTTPS_S_N")).strip().casefold() in {
             "s",
             "si",
             "sí",
@@ -421,10 +428,10 @@ def _setup_wizard(service):
             "yes",
         }
         manage_firewall = input(
-            "¿Crear reglas de firewall limitadas al CIDR? [s/N]: "
+            t("LANCTL.UI.STATUS.CREATE_FIREWALL_RULES_RESTRICTED_TO_THE_CIDR_S_N")
         ).strip().casefold() in {"s", "si", "sí", "y", "yes"}
         if input(
-            "¿Confirmas el bind/CIDR y la activación indicada? [s/N]: "
+            t("LANCTL.UI.STATUS.CONFIRM_THE_BIND_CIDR_AND_THE_SPECIFIED_ACTIVATION_S_N")
         ).strip().casefold() not in {"s", "si", "sí", "y", "yes"}:
             raise PermissionError("configuración cancelada")
         if enable_ssh:

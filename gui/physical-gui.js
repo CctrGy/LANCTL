@@ -8,7 +8,7 @@ let physicalRegions = [],
   physicalLabelBounds = [];
 const physicalViews = new Map(),
   physicalSignatures = new Map();
-wireNames["rack.summary"] = "Armario rack";
+wireNames["rack.summary"] = window.LanctlI18n.t("LANCTL.UI.VIEW.RACK_CABINET");
 wirePositionKey = function () {
   return (
     "lanwire.layout.v2." +
@@ -69,7 +69,7 @@ function physicalCpdOf(rack) {
   return state.records.find((r) => r.id === rack)?.data?.location?.cpd || "";
 }
 function physicalRoomName(id) {
-  return state.cpds?.find((c) => c.id === id)?.name || "Sin CPD";
+  return state.cpds?.find((c) => c.id === id)?.name || window.LanctlI18n.t("LANCTL.UI.VIEW.NO_DATA_CENTER");
 }
 function physicalSize(n) {
   if (n.physicalSize) return n.physicalSize;
@@ -276,10 +276,10 @@ wireLayout = function (nodes) {
       data: {},
       label:
         physicalLevel === "outside"
-          ? state.cpds?.find((c) => c.id === id)?.name || "Sin CPD"
+          ? state.cpds?.find((c) => c.id === id)?.name || window.LanctlI18n.t("LANCTL.UI.VIEW.NO_DATA_CENTER")
           : id
-            ? (id.includes("::environment") ? "Entorno de " + id.split("::")[0] : id.includes("::tray:") ? "Bandeja " + id.split("::tray:")[1] : id === "::review" ? "Ubicaciones pendientes de revisión" : labelOf(state.records.find((r) => r.id === id) || { id }))
-            : "Equipos sin rack",
+            ? (id.includes("::environment") ? window.LanctlI18n.t("LANCTL.UI.FRAGMENT.ENVIRONMENT_FOR") + id.split("::")[0] : id.includes("::tray:") ? window.LanctlI18n.t("LANCTL.UI.FRAGMENT.TRAY") + id.split("::tray:")[1] : id === "::review" ? window.LanctlI18n.t("LANCTL.UI.VIEW.LOCATIONS_PENDING_REVIEW") : labelOf(state.records.find((r) => r.id === id) || { id }))
+            : window.LanctlI18n.t("LANCTL.UI.VIEW.EQUIPMENT_WITHOUT_A_RACK"),
     });
   }
   const nodeGroups = new Map(nodes.map((n) => [n.id, groupOfNode(n)]));
@@ -497,7 +497,7 @@ wireRenderTopology = function (rows) {
   const toolbar = $(".wire-navigation");
   const controls = document.createElement("div");
   controls.className = "physical-levels";
-  controls.innerHTML = `<button data-level="inside" class="${physicalLevel === "inside" ? "active" : ""}">Interior de racks</button><button data-level="outside" class="${physicalLevel === "outside" ? "active" : ""}">Vista general de racks</button><label>CPD <select id="physical-cpd"><option value="">Todos los CPD</option><option value="none">Sin CPD</option>${(state.cpds || []).map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("")}</select></label><label>Rack <select id="physical-rack"><option value="">Todos los racks</option><option value="none">Sin rack</option>${state.records
+  controls.innerHTML = `<button data-level="inside" class="${physicalLevel === "inside" ? "active" : ""}">Interior de racks</button><button data-level="outside" class="${physicalLevel === "outside" ? "active" : ""}">Vista general de racks</button><label>CPD <select id="physical-cpd"><option value="" data-i18n="LANCTL.UI.HTML.ALL_DATA_CENTERS">Todos los CPD</option><option value="none" data-i18n="LANCTL.UI.VIEW.NO_DATA_CENTER">Sin CPD</option>${(state.cpds || []).map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("")}</select></label><label>Rack <select id="physical-rack"><option value="" data-i18n="LANCTL.UI.HTML.ALL_RACKS">Todos los racks</option><option value="none" data-i18n="LANCTL.UI.TEXT.NO_RACK">Sin rack</option>${state.records
     .filter((r) => r.data.type === "rack")
     .map((r) => `<option value="${esc(r.id)}">${esc(labelOf(r))}</option>`)
     .join(
@@ -512,7 +512,7 @@ wireRenderTopology = function (rows) {
   });
   function updateLabels() {
     const visible = wirePrefs.cableLabels ?? wirePrefs.labels;
-    labels.textContent = visible ? "Ocultar nombres de cables" : "Mostrar nombres de cables";
+    labels.textContent = visible ? window.LanctlI18n.t("LANCTL.UI.TEXT.HIDE_CABLE_NAMES") : window.LanctlI18n.t("LANCTL.UI.TEXT.SHOW_CABLE_NAMES");
     labels.setAttribute("aria-pressed", String(Boolean(visible)));
   }
   labels.id = "wire-cable-labels";
@@ -691,13 +691,13 @@ wirePaint = function () {
       const medium = media.join(" / ");
       const text =
         bundle.length > 1
-          ? `${bundle.length} cables · ${medium}`
+          ?  window.LanctlI18n.t("LANCTL.UI.WEB.CABLE_BUNDLE",{value0:(bundle.length),value1:(medium)})
           : `${labelOf(actual)} · ${actual.id} · ${medium}`;
-      const full = `${text} · ${first.device} ${first.port} ↔ ${second ? second.device + " " + second.port : "Sin conectar"}`;
+      const full = `${text} · ${first.device} ${first.port} ↔ ${second ? second.device + " " + second.port : window.LanctlI18n.html("LANCTL.UI.TEXT.NOT_CONNECTED")}`;
       const caption =
         camera.z < 0.65
           ? bundle.length > 1
-            ? bundle.length + " cables"
+            ? bundle.length + window.LanctlI18n.t("LANCTL.UI.FRAGMENT.CABLES")
             : actual.id
           : text;
       const short = caption.length > 48 ? caption.slice(0, 45) + "…" : caption;
@@ -763,7 +763,7 @@ wirePaint = function () {
           }),
         );
       }
-      showForm("Cables entre racks", [section]);
+      showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.CABLES_BETWEEN_RACKS"), [section]);
     } else {
       const r = state.records.find((r) => r.id === el.dataset.cable);
       if (r) fullDetails(r);
@@ -781,15 +781,15 @@ function rackMetric(r) {
         : [],
     ),
   );
-  return `${used.size} / ${r.units} U ocupadas · ${r.occupants.length} equipos`;
+  return  window.LanctlI18n.t("LANCTL.UI.WEB.RACK_OCCUPANCY",{value0:(used.size),value1:(r.units),value2:(r.occupants.length)});
 }
 function rackRoomForm(room) {
   showForm(
-    room ? "Editar CPD" : "Nuevo CPD",
+    room ? window.LanctlI18n.t("LANCTL.UI.VIEW.EDIT_DATA_CENTER") : window.LanctlI18n.t("LANCTL.UI.VIEW.NEW_DATA_CENTER"),
     [
-      field("Nombre", "name", room?.name),
-      field("Descripción", "description", room?.description, "textarea"),
-      field("Ubicación", "location", room?.location),
+      field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.NAME"), "name", room?.name),
+      field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.DESCRIPTION"), "description", room?.description, "textarea"),
+      field(window.LanctlI18n.t("LANCTL.UI.TEXT.LOCATION"), "location", room?.location),
     ],
     async (values) => {
       await call(
@@ -803,10 +803,10 @@ function rackRoomForm(room) {
 }
 function rackAssign(r) {
   showForm(
-    "CPD de " + r.name,
+    window.LanctlI18n.t("LANCTL.UI.FRAGMENT.DATA_CENTER_FOR") + r.name,
     [
-      field("Sala CPD", "id", r.location?.cpd || "", "text", [
-        ["", "Sin CPD"],
+      field(window.LanctlI18n.t("LANCTL.UI.VIEW.DATA_CENTER_ROOM"), "id", r.location?.cpd || "", "text", [
+        ["", window.LanctlI18n.t("LANCTL.UI.VIEW.NO_DATA_CENTER")],
         ...(state.cpds || []).map((c) => [c.id, c.name]),
       ]),
     ],
@@ -819,14 +819,14 @@ function rackAssign(r) {
 }
 function rackDeleteRoom(room) {
   showForm(
-    "Eliminar CPD · " + room.name,
+    window.LanctlI18n.t("LANCTL.UI.FRAGMENT.DELETE_DATA_CENTER") + room.name,
     [
       Object.assign(document.createElement("p"), {
         textContent:
-          "Los armarios, sus equipos y cables se conservarán. Elige dónde dejar los armarios de esta sala.",
+          window.LanctlI18n.t("LANCTL.UI.VIEW.CABINETS_EQUIPMENT_AND_CABLES_WILL_BE_PRESERVED_CHOOSE_WHERE_TO_PLACE_THIS_ROOM_S_CABINETS"),
       }),
-      field("Trasladar armarios a", "target", "", "text", [
-        ["", "Sin CPD"],
+      field(window.LanctlI18n.t("LANCTL.UI.VIEW.MOVE_CABINETS_TO"), "target", "", "text", [
+        ["", window.LanctlI18n.t("LANCTL.UI.VIEW.NO_DATA_CENTER")],
         ...state.cpds
           .filter((c) => c.id !== room.id)
           .map((c) => [c.id, c.name]),
@@ -847,10 +847,10 @@ function rackShowDetails(r) {
       textContent: r.name + " · " + r.id,
     }),
     Object.assign(document.createElement("p"), {
-      textContent: r.description || "Sin descripción",
+      textContent: r.description || window.LanctlI18n.t("LANCTL.UI.VIEW.NO_DESCRIPTION"),
     }),
     Object.assign(document.createElement("p"), { textContent: rackMetric(r) }),
-    wireAction("Cambiar CPD", () => {
+    wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.CHANGE_DATA_CENTER"), () => {
       $("#detail").close();
       rackAssign(r);
     }),
@@ -867,15 +867,15 @@ function rackShowDetails(r) {
   json.readOnly = true;
   json.rows = 16;
   json.value = JSON.stringify(r, null, 2);
-  showForm("Rack · " + r.name, [
+  showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.RACK") + r.name, [
     wireTabs([
-      ["Resumen", general],
-      ["Equipos", [items]],
+      [window.LanctlI18n.t("LANCTL.UI.TEXT.SUMMARY"), general],
+      [window.LanctlI18n.t("LANCTL.UI.TEXT.EQUIPMENT"), [items]],
       [
         "JSON",
         [
           json,
-          wireAction("Copiar JSON", async () => {
+          wireAction(window.LanctlI18n.t("LANCTL.UI.TEXT.COPY_JSON"), async () => {
             try {
               await navigator.clipboard.writeText(json.value);
             } catch {
@@ -897,11 +897,10 @@ render = function () {
   const query = $("#search").value.toLocaleLowerCase().trim(),
     filter = $("#filter").value;
   if (filter !== rackCpd) rackCpd = filter;
-  $("#title").textContent = "Salas CPD y armarios rack";
-  $("#subtitle").textContent =
-    "Organización física compartida con LANWIRE · equipos y conexiones conservados";
+  window.LanctlI18n.bindText($("#title"),"LANCTL.UI.VIEW.DATA_CENTER_ROOMS_AND_RACK_CABINETS");
+  window.LanctlI18n.bindText($("#subtitle"),"LANCTL.UI.VIEW.PHYSICAL_ORGANIZATION_SHARED_WITH_LANWIRE_EQUIPMENT_AND_CONNECTIONS_PRESERVED");
   $("#filter").innerHTML =
-    '<option value="">Todos los CPD</option><option value="none">Sin CPD</option>' +
+    "<option value=\"\" data-i18n=\"LANCTL.UI.HTML.ALL_DATA_CENTERS\">Todos los CPD</option><option value=\"none\" data-i18n=\"LANCTL.UI.VIEW.NO_DATA_CENTER\">Sin CPD</option>" +
     (state.cpds || [])
       .map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`)
       .join("");
@@ -924,12 +923,12 @@ render = function () {
     : rows[0]?.id || null;
   const chosen = rows.find((r) => r.id === selected);
   $("#count").textContent =
-    rows.length + " de " + state.records.length + " racks";
-  $("#selection").textContent = chosen?.name || "Sin selección";
+    rows.length + window.LanctlI18n.t("LANCTL.UI.FRAGMENT.OF") + state.records.length + window.LanctlI18n.t("LANCTL.UI.FRAGMENT.RACKS");
+  $("#selection").textContent = chosen?.name || window.LanctlI18n.t("LANCTL.UI.TEXT.NO_SELECTION");
   $("#views").innerHTML = [
-    ["rooms", "Vista de salas"],
-    ["list", "Lista"],
-    ["rack", "Detalle del rack"],
+    ["rooms", window.LanctlI18n.t("LANCTL.UI.VIEW.ROOM_VIEW")],
+    ["list", window.LanctlI18n.t("LANCTL.UI.TEXT.LIST")],
+    ["rack", window.LanctlI18n.t("LANCTL.UI.VIEW.RACK_DETAILS")],
   ]
     .map(
       ([key, name]) =>
@@ -937,11 +936,11 @@ render = function () {
     )
     .join("");
   $("#tools").innerHTML =
-    button("Actualizar", "refresh") +
-    '<button id="rack-new-room" class="primary">Nuevo CPD</button>';
+    button(window.LanctlI18n.t("LANCTL.UI.TEXT.REFRESH"), "refresh") +
+    "<button id=\"rack-new-room\" class=\"primary\"><span data-i18n=\"LANCTL.UI.VIEW.NEW_DATA_CENTER\">Nuevo CPD</span></button>";
   $("#rack-new-room").onclick = () => rackRoomForm();
   $("#commands").innerHTML = chosen
-    ? '<button id="rack-data">Ver datos</button><button id="rack-assign">Cambiar CPD</button>'
+    ? "<button id=\"rack-data\"><span data-i18n=\"LANCTL.UI.HTML.VIEW_DATA\">Ver datos</span></button><button id=\"rack-assign\"><span data-i18n=\"LANCTL.UI.VIEW.CHANGE_DATA_CENTER\">Cambiar CPD</span></button>"
     : "";
   if (chosen) {
     $("#rack-data").onclick = () => rackShowDetails(chosen);
@@ -949,7 +948,7 @@ render = function () {
   }
   if (rackMode === "list") {
     $("#canvas").innerHTML = table(
-      ["ARMARIO", "ID", "CPD", "CAPACIDAD / OCUPACIÓN"],
+      [window.LanctlI18n.t("LANCTL.UI.FRAGMENT.CABINET"), "ID", "CPD", "CAPACIDAD / OCUPACIÓN"],
       rows,
       (r) => [r.name, r.id, roomName(r.location?.cpd), rackMetric(r)],
     );
@@ -965,13 +964,13 @@ render = function () {
       ),
     );
     $("#canvas").innerHTML =
-      `<div class="rack-detail-layout"><section class="rack-detail-header"><nav class="row" aria-label="Vista del rack"><button id="rack-back">Volver a la sala</button></nav><div class="rack-summary"><h2>${esc(chosen.name)}</h2><p>${esc(roomName(chosen.location?.cpd))} · ${esc(rackMetric(chosen))}</p></div></section><section class="rack-elevation" aria-label="Unidades del rack">${Array.from(
+      `<div class="rack-detail-layout"><section class="rack-detail-header"><nav class="row" aria-label="Vista del rack" data-i18n-aria-label="LANCTL.UI.HTML.RACK_VIEW"><button id="rack-back"><span data-i18n="LANCTL.UI.TEXT.BACK_TO_ROOM">Volver a la sala</span></button></nav><div class="rack-summary"><h2>${esc(chosen.name)}</h2><p>${esc(roomName(chosen.location?.cpd))} · ${esc(rackMetric(chosen))}</p></div></section><section class="rack-elevation" aria-label="Unidades del rack" data-i18n-aria-label="LANCTL.UI.HTML.RACK_UNITS">${Array.from(
         { length: chosen.units },
         (_, i) => chosen.units - i,
       )
         .map((u) => {
           const o = occupancy.get(u);
-          return `<button ${o ? `data-rack-occupant="${esc(o.id)}"` : "disabled"} class="${o ? "occupied" : ""}"><span>${u} U</span> ${esc(o?.name || o?.id || "Libre")}</button>`;
+          return `<button ${o ? `data-rack-occupant="${esc(o.id)}"` : "disabled"} class="${o ? "occupied" : ""}"><span>${u} U</span> ${esc(o?.name || o?.id || window.LanctlI18n.t("LANCTL.UI.HTML.FREE"))}</button>`;
         })
         .join("")}</section></div>`;
     $("#rack-back").onclick = () => {
@@ -1001,8 +1000,8 @@ render = function () {
       ...rooms,
       {
         id: "",
-        name: "Sin CPD",
-        description: "Armarios pendientes de asignación",
+        name: window.LanctlI18n.t("LANCTL.UI.VIEW.NO_DATA_CENTER"),
+        description: window.LanctlI18n.t("LANCTL.UI.VIEW.CABINETS_PENDING_ASSIGNMENT"),
       },
     ].filter(
       (c) => !rackCpd || (rackCpd === "none" ? !c.id : c.id === rackCpd),
@@ -1013,7 +1012,7 @@ render = function () {
         .map((c) => {
           const racks = rows.filter((r) => (r.location?.cpd || "") === c.id);
           if (!c.id && !racks.length) return "";
-          return `<section class="panel cpd-room"><div class="row"><h2>${esc(c.name)}</h2>${c.id ? `<button data-cpd-edit="${esc(c.id)}">Editar CPD</button><button data-cpd-delete="${esc(c.id)}">Eliminar CPD</button>` : ""}</div><p>${esc(c.description || "")}</p><p>${esc(c.location || "")} · ${racks.length} armarios · ${racks.reduce((s, r) => s + r.units, 0)} U totales</p><div class="cpd-racks">${racks.map((r) => `<button data-rack-open="${esc(r.id)}" class="rack-cabinet"><strong>${esc(r.name)}</strong><small>${esc(r.id)} · ${esc(rackMetric(r))}</small><span aria-hidden="true">▤<br>▤<br>▤</span></button>`).join("") || '<p class="muted">CPD vacío. Usa «Cambiar CPD» en un rack para asignarlo.</p>'}</div></section>`;
+          return `<section class="panel cpd-room"><div class="row"><h2>${esc(c.name)}</h2>${c.id ? `<button data-cpd-edit="${esc(c.id)}">Editar CPD</button><button data-cpd-delete="${esc(c.id)}">Eliminar CPD</button>` : ""}</div><p>${esc(c.description || "")}</p><p>${esc(c.location || "")} · ${racks.length} armarios · ${racks.reduce((s, r) => s + r.units, 0)} U totales</p><div class="cpd-racks">${racks.map((r) => `<button data-rack-open="${esc(r.id)}" class="rack-cabinet"><strong>${esc(r.name)}</strong><small>${esc(r.id)} · ${esc(rackMetric(r))}</small><span aria-hidden="true">▤<br>▤<br>▤</span></button>`).join("") || "<p class=\"muted\"><span data-i18n=\"LANCTL.UI.HTML.EMPTY_DATA_CENTER_USE_CHANGE_DATA_CENTER_ON_A_RACK_TO_ASSIGN_IT\">CPD vacío. Usa «Cambiar CPD» en un rack para asignarlo.</span></p>"}</div></section>`;
         })
         .join("") +
       "</div>";
@@ -1089,11 +1088,11 @@ function rackOccupantDetails(r) {
   const data = r.data || {};
   const summary = document.createElement("dl");
   for (const [name, value] of [
-    ["Nombre", r.name || r.id],
-    ["Identificador", r.id],
-    ["Tipo", wireName(r.type)],
-    ["Unidad", r.unit || "Sin asignar"],
-    ["Descripción", r.description || "—"],
+    [window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.NAME"), r.name || r.id],
+    [window.LanctlI18n.t("LANCTL.UI.HTML.IDENTIFIER"), r.id],
+    [window.LanctlI18n.t("LANCTL.UI.TEXT.TYPE"), wireName(r.type)],
+    [window.LanctlI18n.t("LANCTL.UI.WORD.UNIT"), r.unit || window.LanctlI18n.t("LANCTL.UI.VIEW.UNASSIGNED")],
+    [window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.DESCRIPTION"), r.description || "—"],
   ]) {
     const dt = document.createElement("dt"),
       dd = document.createElement("dd");
@@ -1108,15 +1107,15 @@ function rackOccupantDetails(r) {
       id + " · " + wireName(p.kind) + " · " + (p.connector || "");
     ports.append(line);
   }
-  if (!ports.childNodes.length) ports.textContent = "Sin puertos registrados";
+  if (!ports.childNodes.length) window.LanctlI18n.bindText(ports,"LANCTL.UI.VIEW.NO_PORTS_RECORDED");
   const json = document.createElement("textarea");
   json.readOnly = true;
   json.rows = 16;
   json.value = JSON.stringify(r, null, 2);
-  showForm("Equipo · " + (r.name || r.id), [
+  showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.DEVICE_05DBAF67") + (r.name || r.id), [
     wireTabs([
-      ["Resumen", [summary]],
-      ["Puertos", [ports]],
+      [window.LanctlI18n.t("LANCTL.UI.TEXT.SUMMARY"), [summary]],
+      [window.LanctlI18n.t("LANCTL.UI.TEXT.PORTS"), [ports]],
       ["JSON", [json]],
     ]),
   ]);

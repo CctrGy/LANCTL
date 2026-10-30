@@ -13,7 +13,12 @@ def test_standard_monitor_selection_and_independent_interactive_binary():
         for line in source.splitlines()
         if line.startswith("Name: monitor;") and "Types:" in line
     )
-    assert "Servicio de monitorización en segundo plano (LANMON)" in component
+    messages = (Path(__file__).resolve().parents[1] / "packaging/inno/messages.iss").read_text(
+        encoding="utf-8"
+    )
+    assert 'Description: "{cm:Monitor}"' in component
+    assert "es.Monitor=Servicio de monitorización en segundo plano (LANMON)" in messages
+    assert "en.Monitor=Background monitoring service (LANMON)" in messages
     assert set(re.search(r"Types: ([^;]+)", component).group(1).split()) == {
         "standard",
         "monitor",
@@ -32,4 +37,5 @@ def test_standard_monitor_selection_and_independent_interactive_binary():
         if 'Parameters: "monitor service install --yes"' in line
     )
     assert "Components: monitor" in install
-    assert "desmarcar el servicio no elimina LANMON" in source
+    assert "desmarcar el servicio no elimina LANMON" in messages
+    assert "CustomMessage('MonitorExplanation')" in source

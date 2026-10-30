@@ -680,28 +680,52 @@ class LanScanner:
             return False
 
     def _read_arp_table(self) -> dict[str, str]:
-        try:
-            result = subprocess.run(
-                (
-                    ["ip", "-4", "neigh", "show", "dev", self.interface["name"]]
-                    if self.interface and platform.system() != "Windows"
-                    else [
-                        "arp",
-                        "-a",
-                        *(["-N", self.interface["address"]] if self.interface else []),
-                    ]
-                ),
-                capture_output=True,
-                text=True,
-                errors="replace",
-                timeout=10,
-                check=False,
-            )
-        except (OSError, subprocess.TimeoutExpired) as error:
-            raise OSError("no se pudo consultar la tabla ARP del sistema") from error
+        from lanctl.core.errors import errors
+
+        if platform.system() == "Windows":
+            commands = [
+                ["arp", "-a", *(["-N", self.interface["address"]] if self.interface else [])]
+            ]
+        else:
+            commands = [
+                [
+                    "ip",
+                    "-4",
+                    "neigh",
+                    "show",
+                    *(["dev", self.interface["name"]] if self.interface else []),
+                ]
+            ]
+            # Preserve the selected adapter when querying neighbours.
+            if not self.interface:
+                commands.append(["arp", "-a"])
+        output = ""
+        for command in commands:
+            try:
+                result = subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    errors="replace",
+                    timeout=10,
+                    check=False,
+                )
+                if result.returncode != 0:
+                    raise OSError(f"{command[0]} terminó con código {result.returncode}")
+            except (OSError, subprocess.TimeoutExpired) as error:
+                errors.from_exception(
+                    error,
+                    origin="LANCTL.Scanner.ARPTable",
+                    code="SCANNER.ARP_TABLE.UNAVAILABLE",
+                    level=14,
+                    print_output=False,
+                )
+                continue
+            output = result.stdout
+            break
 
         entries: dict[str, str] = {}
-        for line in result.stdout.splitlines():
+        for line in output.splitlines():
             ip_match = re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", line)
             mac_match = re.search(MAC_PATTERN, line)
             if not ip_match or not mac_match:

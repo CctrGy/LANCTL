@@ -9,6 +9,7 @@ from lanctl.apps.monitor.commands import register_monitor_command
 from lanctl.bootstrap.lanctl import configure_utf8_stdio
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.core.session import coordinated_launcher
+from lanctl.shared.i18n import initialize_language, t
 
 
 class _StandaloneCommand:
@@ -22,35 +23,47 @@ class _StandaloneCommand:
 def build_parser() -> LANCTLArgumentParser:
     parser = LANCTLArgumentParser(
         prog="LANMON",
-        description="Monitorización, eventos e incidencias de la suite LANCTL.",
+        description=t("LANCTL.UI.TEXT.MONITORING_EVENTS_AND_INCIDENTS_FOR_THE_LANCTL_SUITE"),
     )
     parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
-        help="Muestra la versión común de la suite y termina.",
+        help=t("LANCTL.UI.TEXT.SHOW_THE_COMMON_SUITE_VERSION_AND_EXIT"),
     )
     register_monitor_command(_StandaloneCommand(parser))
     for action in parser._actions:
         if action.dest == "words":
             action.help = "logs, events, status, attach, detach, once, session, incidents, service o foreground."
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--gui", action="store_true", help="Abre la interfaz gráfica de escritorio.")
-    mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola de comandos.")
     mode.add_argument(
-        "--tui", "-tui", action="store_true", help="Abre el visor tabular de eventos."
+        "--gui", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_DESKTOP_GRAPHICAL_INTERFACE")
+    )
+    mode.add_argument(
+        "--cli", "-cli", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_COMMAND_CONSOLE")
+    )
+    mode.add_argument(
+        "--tui", "-tui", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_TABULAR_EVENT_VIEWER")
     )
     parser.add_argument(
-        "--source", choices=("all", "program", "project"), default="all", help="Origen para logs."
+        "--source",
+        choices=("all", "program", "project"),
+        default="all",
+        help=t("LANCTL.UI.TEXT.LOG_SOURCE"),
     )
-    parser.add_argument("--limit", type=int, default=100, help="Máximo de eventos (1-1000).")
+    parser.add_argument(
+        "--limit", type=int, default=100, help=t("LANCTL.UI.TEXT.MAXIMUM_NUMBER_OF_EVENTS_1_1000")
+    )
     parser.add_argument(
         "--window",
         action="store_true",
-        help="Abre logs en otra terminal y sigue el registro común.",
+        help=t("LANCTL.UI.TEXT.OPEN_LOGS_IN_ANOTHER_TERMINAL_AND_FOLLOW_THE_COMMON_LOG"),
     )
     parser.add_argument(
-        "--level", type=int, default=1, help="Nivel mínimo (1-59); conserva líneas sin nivel."
+        "--level",
+        type=int,
+        default=1,
+        help=t("LANCTL.UI.TEXT.MINIMUM_LEVEL_1_59_PRESERVE_LINES_WITHOUT_A_LEVEL"),
     )
     return parser
 
@@ -128,6 +141,7 @@ def _main(argv: list[str] | None = None) -> int:
 
 @coordinated_launcher("lanmon")
 def main(argv: list[str] | None = None) -> int:
+    initialize_language()
     from lanctl.core.errors import errors
 
     try:

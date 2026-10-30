@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from lanctl.apps.ip.domain.models import Device
+from lanctl.shared.i18n import t
 
 TerminalHandler = Callable[[Device, dict[str, str], dict[str, Any]], int]
 
@@ -25,14 +26,14 @@ def _ssh_terminal(device: Device, credential: dict[str, str], config: dict[str, 
         else bool(profile.host_key_algorithms or profile.kex_algorithms)
     )
     if legacy:
-        print("[ADVERTENCIA] LEGACY SSH limitado a este dispositivo")
+        print(t("LANCTL.UI.PRESENTATION.LEGACY_SSH_WARNING"))
     adapter = device.protocol_options.get("ssh", {}).get("terminalAdapter")
     if adapter == "esp32_rack_monitor":
-        print("Consola ESP32 del gestor/monitor del rack")
-        print("Comandos principales: info, sens read, fan all read, lan show, help")
+        print(t("LANCTL.UI.PRESENTATION.RACK_ESP32_CONSOLE"))
+        print(t("LANCTL.UI.PROMPT.MAIN_COMMANDS_INFO_SENS_READ_FAN_ALL_READ_LAN_SHOW_HELP"))
     if native:
         return open_interactive(device.ip, credential["username"], profile)
-    print("Capa de color LANCTL activa | usa --native para OpenSSH directo")
+    print(t("LANCTL.UI.PROMPT.LANCTL_COLOR_LAYER_ACTIVE_USE_NATIVE_FOR_DIRECT_OPENSSH"))
     return open_colored_interactive(
         device.ip,
         credential["username"],

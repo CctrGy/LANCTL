@@ -33,6 +33,7 @@ from lanctl.core.projects import (
 )
 from lanctl.core.resources import bundled_path
 from lanctl.shared.assets.icons import get_icon_manager
+from lanctl.shared.i18n import initialize_language, t, translate_specification
 
 
 @dataclass(frozen=True)
@@ -106,6 +107,7 @@ class GuiApi:
             ensure_active_project_workspace()
             return {
                 "version": __version__,
+                "languageCatalog": initialize_language().presentation_payload(),
                 "theme": resolve_theme(get_plugin_manager().extensions.list("theme")),
                 **self._projects_payload(),
                 "icons": self._icons_payload(),
@@ -178,21 +180,29 @@ class GuiApi:
         monitor = {
             "id": "lanctl.monitor",
             "owner": "LANCTL",
-            "title": "Monitor LAN",
+            "title": t("LANCTL.UI.EXTENSION.LAN_MONITOR"),
             "location": "main",
             "order": 150,
             "dataProvider": "LANCTL.Monitor.List",
             "layout": "resource-browser",
             "columns": [
-                {"field": "device_id", "label": "Dispositivo", "type": "device"},
-                {"field": "presence", "label": "Presencia", "type": "status"},
-                {"field": "health", "label": "Salud", "type": "status"},
-                {"field": "latency_ms", "label": "Latencia", "type": "text"},
-                {"field": "updated_at", "label": "Último cambio", "type": "date"},
+                {
+                    "field": "device_id",
+                    "label": t("LANCTL.UI.TEXT.DEVICE_1C555EB7"),
+                    "type": "device",
+                },
+                {"field": "presence", "label": t("LANCTL.UI.EXTENSION.PRESENCE"), "type": "status"},
+                {"field": "health", "label": t("LANCTL.UI.EXTENSION.HEALTH"), "type": "status"},
+                {"field": "latency_ms", "label": t("LANCTL.UI.TEXT.LATENCY"), "type": "text"},
+                {
+                    "field": "updated_at",
+                    "label": t("LANCTL.UI.EXTENSION.LAST_CHANGE"),
+                    "type": "date",
+                },
             ],
             "emptyState": {
-                "title": "Sin datos de monitorización",
-                "description": "Inicia una sesión para observar el estado de la red.",
+                "title": t("LANCTL.UI.EXTENSION.NO_MONITORING_DATA"),
+                "description": t("LANCTL.UI.EXTENSION.START_A_SESSION_TO_OBSERVE_NETWORK_STATE"),
             },
             "actions": [],
         }
@@ -202,9 +212,9 @@ class GuiApi:
                 {
                     "id": x.extension_id,
                     "owner": x.owner,
-                    **x.specification,
+                    **translate_specification(x.specification),
                     "actions": [
-                        {"id": a.extension_id, **a.specification}
+                        {"id": a.extension_id, **translate_specification(a.specification)}
                         for a in actions
                         if a.owner == x.owner
                     ],
@@ -290,7 +300,7 @@ class GuiApi:
             return {
                 **self._inventory_payload(),
                 "deletedId": deleted.device_id,
-                "message": f"Elemento eliminado: {label}",
+                "message": t("LANCTL.UI.MESSAGE.ELEMENT_DELETED_VALUE", value0=f"{label}"),
             }
 
         return self._respond(operation)
@@ -401,7 +411,10 @@ class GuiApi:
             return {
                 **self._projects_payload(),
                 **self._inventory_payload(),
-                "message": f"Proyecto cargado: {info.get('name') or resolved.stem}",
+                "message": t(
+                    "LANCTL.UI.MESSAGE.PROJECT_LOADED_VALUE",
+                    value0=f"{info.get('name') or resolved.stem}",
+                ),
             }
 
         return self._respond(operation)
@@ -416,7 +429,9 @@ class GuiApi:
             return {
                 **self._projects_payload(),
                 **self._inventory_payload(),
-                "message": f"Proyecto guardado: {Path(result.path).stem}",
+                "message": t(
+                    "LANCTL.UI.MESSAGE.PROJECT_SAVED_VALUE", value0=f"{Path(result.path).stem}"
+                ),
             }
 
         return self._respond(operation)
@@ -426,14 +441,16 @@ class GuiApi:
             clean = str(name).strip()
             if not clean or len(clean) > 80:
                 raise ValueError("indica un nombre de proyecto válido")
-            filename = re.sub(r"[^A-Za-z0-9._ -]+", "", clean).strip(" .") or "Proyecto"
+            filename = re.sub(r"[^A-Za-z0-9._ -]+", "", clean).strip(" .") or t(
+                "LANCTL.UI.TEXT.PROJECT"
+            )
             destination = Path(directory).expanduser() / filename if directory else Path(filename)
             result = create_project(destination, name=clean)
             activate_project_workspace(result["path"])
             return {
                 **self._projects_payload(),
                 **self._inventory_payload(),
-                "message": f"Proyecto creado: {clean}",
+                "message": t("LANCTL.UI.MESSAGE.PROJECT_CREATED_VALUE", value0=f"{clean}"),
             }
 
         return self._respond(operation)
@@ -475,7 +492,13 @@ class GuiApi:
                     ["ssh", "-p", str(selected_port), device.ip],
                     creationflags=flags,
                 )
-                return {"message": f"Terminal SSH abierta para {device.ip}:{selected_port}"}
+                return {
+                    "message": t(
+                        "LANCTL.UI.DETAIL.SSH_TERMINAL_OPENED_FOR_VALUE_VALUE",
+                        value0=f"{device.ip}",
+                        value1=f"{selected_port}",
+                    )
+                }
             config = load_config()
             run_open(
                 argparse.Namespace(
@@ -535,9 +558,11 @@ class GuiApi:
             device = self._database().resolve(selector)
             name = device.alias or device.name or selector
             message = (
-                f"{name} está disponible"
+                t("LANCTL.UI.MESSAGE.VALUE_IS_AVAILABLE", value0=f"{name}")
                 if payload["status"] == "online"
-                else payload.get("error", {}).get("message", f"Señal de encendido enviada a {name}")
+                else payload.get("error", {}).get(
+                    "message", t("LANCTL.UI.MESSAGE.WAKE_SIGNAL_SENT_TO_VALUE", value0=f"{name}")
+                )
             )
             return {"result": payload, "message": message}
 
@@ -665,7 +690,9 @@ class GuiApi:
             "mqtts": "MQTTS · Mensajería IoT segura",
         }
         clean = str(service or "unknown").casefold()
-        return labels.get(clean, clean.upper() if clean != "unknown" else "Servicio desconocido")
+        return labels.get(
+            clean, clean.upper() if clean != "unknown" else t("LANCTL.UI.PROMPT.UNKNOWN_SERVICE")
+        )
 
     @staticmethod
     def _database() -> DeviceDatabase:

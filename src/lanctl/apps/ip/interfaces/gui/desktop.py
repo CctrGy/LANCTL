@@ -23,6 +23,7 @@ from lanctl.core.projects import (
 )
 from lanctl.core.projects.save_policy import workspace_is_dirty
 from lanctl.core.resources import bundled_path
+from lanctl.shared.i18n import t
 
 
 class DesktopProgress(ScanProgress):
@@ -101,7 +102,26 @@ class DesktopApi(GuiSupportMixin, GuiApi):
         return result
 
     def _inventory_payload(self, query=""):
+        from lanctl.shared.i18n import t
+
         payload = super()._inventory_payload(query)
+        payload["manualDeviceLabels"] = {
+            key: t(f"LANCTL.INVENTORY.MANUAL.{key}")
+            for key in (
+                "TITLE",
+                "SEARCH",
+                "ADD",
+                "CANCEL",
+                "NAME",
+                "ALIAS",
+                "IDF",
+                "IP",
+                "MAC",
+                "DESCRIPTION",
+                "STALE",
+                "FAILED",
+            )
+        }
         payload["projectActions"] = self._project_actions()
         payload["groupCatalog"] = [
             {"name": group.name, "description": group.description, "editable": group.editable}
@@ -114,6 +134,10 @@ class DesktopApi(GuiSupportMixin, GuiApi):
 
     def sync_project(self, query=""):
         return self._respond(lambda: {**self._projects_payload(), **self._inventory_payload(query)})
+
+    def project_selection(self):
+        """Read shared selection without loading inventory or requiring the old context."""
+        return self._respond(lambda: {"projectContext": project_identity(load_config())})
 
     @staticmethod
     def _editable_snapshot(device):
@@ -146,6 +170,35 @@ class DesktopApi(GuiSupportMixin, GuiApi):
         from lanctl.core.inventory_editing import edit_revision
 
         return edit_revision(device)
+
+    def create_device(self, values):
+        def operation():
+            from lanctl.core.projects.save_policy import SaveTrigger, save_active_project
+            from lanctl.shared.i18n import t
+
+            allowed = {"name", "alias", "description", "ip", "mac", "idf"}
+            if not isinstance(values, dict) or set(values) - allowed:
+                raise ValueError("Campos de alta de elemento no válidos")
+            if any(not isinstance(value, str) for value in values.values()):
+                raise ValueError("Los datos del elemento deben ser texto")
+            fields = {key: value.strip() for key, value in values.items()}
+            fields["ip"] = fields.get("ip") or "-"
+            database = self._database()
+            # The UI can know a more recent successful probe than the saved timestamp.
+            if fields["ip"] != "-" and any(
+                item.ip == fields["ip"] and self._activity.get(item.device_id, False)
+                for item in database.load()
+            ):
+                raise ValueError("La IP ya pertenece a un elemento activo")
+            device = database.add_manual_device(**fields)
+            save_active_project(SaveTrigger.CHANGE)
+            return {
+                **self._inventory_payload(),
+                "createdId": device.device_id,
+                "message": t("LANCTL.INVENTORY.MANUAL.CREATED"),
+            }
+
+        return self._respond(operation)
 
     def update_device(self, selector, values, expected_revision=None):
         def operation():
@@ -201,7 +254,10 @@ class DesktopApi(GuiSupportMixin, GuiApi):
 
             self._groups(load_config(), self._database()).create(str(name).strip(), description)
             save_active_project(SaveTrigger.CHANGE)
-            return {**self._inventory_payload(), "message": f"Grupo creado: {name}"}
+            return {
+                **self._inventory_payload(),
+                "message": t("LANCTL.UI.MESSAGE.GROUP_CREATED_VALUE", value0=f"{name}"),
+            }
 
         return self._respond(operation)
 
@@ -365,7 +421,7 @@ class DesktopApi(GuiSupportMixin, GuiApi):
             return {
                 **self._projects_payload(),
                 **self._inventory_payload(),
-                "message": f"Proyecto cargado: {resolved.stem}",
+                "message": t("LANCTL.UI.MESSAGE.PROJECT_LOADED_VALUE", value0=f"{resolved.stem}"),
             }
 
         return self._respond(operation)
@@ -416,7 +472,7 @@ class DesktopApi(GuiSupportMixin, GuiApi):
             return {
                 **self._projects_payload(),
                 **self._inventory_payload(),
-                "message": f"Proyecto vacío creado: {clean}",
+                "message": t("LANCTL.UI.MESSAGE.EMPTY_PROJECT_CREATED_VALUE", value0=f"{clean}"),
             }
 
         return self._respond(operation)
@@ -564,7 +620,7 @@ class DesktopApi(GuiSupportMixin, GuiApi):
             if not isinstance(values, dict) or set(values) - options:
                 raise ValueError("Configuración gráfica no válida.")
             save_form_values(values, SettingsContext("gui", launcher=self._settings_launcher))
-            return {"message": "Configuración guardada correctamente"}
+            return {"message": t("LANCTL.UI.TEXT.SETTINGS_SAVED_SUCCESSFULLY")}
 
         return self._respond(operation)
 
@@ -600,7 +656,7 @@ def run_gui():
         raise RuntimeError('Instala la interfaz gráfica con: pip install -e ".[gui]"') from error
     api = DesktopApi()
     window = webview.create_window(
-        "LANIP · Inventario de red",
+        t("LANCTL.UI.PROMPT.LANIP_NETWORK_INVENTORY"),
         bundled_path("gui/index.html").as_uri(),
         js_api=api,
         width=1280,

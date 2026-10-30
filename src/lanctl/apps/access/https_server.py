@@ -221,7 +221,14 @@ class HttpsAccessServer:
                 if not self._source():
                     return self._send(403, {"error": "source outside managed LAN"})
                 path = urlsplit(self.path).path
-                if path in {"/", "/index.html", "/app.js", "/styles.css"}:
+                if path in {
+                    "/",
+                    "/index.html",
+                    "/app.js",
+                    "/styles.css",
+                    "/i18n.js",
+                    "/i18n-defaults.js",
+                }:
                     filename = "index.html" if path in {"/", "/index.html"} else path[1:]
                     return self._send_file(parent.static_directory / filename)
                 try:

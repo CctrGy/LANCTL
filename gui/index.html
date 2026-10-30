@@ -11,126 +11,127 @@
 <body>
 <div class="app-shell" data-component-id="lanctl.app-shell">
   <header class="topbar" data-component-id="lanctl.topbar">
-    <div class="brand"><svg class="launcher-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="5" rx="1"/><rect x="2" y="17" width="7" height="5" rx="1"/><rect x="15" y="17" width="7" height="5" rx="1"/><path d="M12 7v5M5.5 17v-5h13v5"/></svg><div><strong>LAN<span>IP</span></strong><small>NETWORK INVENTORY</small></div></div>
-    <div class="project"><span>Proyecto</span><select id="project-select" aria-label="Proyecto activo"><option value="">Sin proyecto</option></select><button id="project-open" title="Seleccionar un archivo VLF">Abrir…</button><button id="project-new" title="Crear proyecto y elegir ubicación">＋</button><button id="project-save" title="Guardar proyecto">Guardar</button></div>
-    <button id="new-group">＋ Nuevo grupo</button><button id="desktop-settings">Configuración</button>
-    <div class="connection"><span>● Sesión local</span></div>
+    <div class="brand"><svg class="launcher-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="5" rx="1"/><rect x="2" y="17" width="7" height="5" rx="1"/><rect x="15" y="17" width="7" height="5" rx="1"/><path d="M12 7v5M5.5 17v-5h13v5"/></svg><div><strong>LAN<span>IP</span></strong><small><span data-i18n="LANCTL.UI.HEADING.NETWORK_INVENTORY">NETWORK INVENTORY</span></small></div></div>
+    <div class="project"><span><span data-i18n="LANCTL.UI.TEXT.PROJECT">Proyecto</span></span><select id="project-select" aria-label="Proyecto activo" data-i18n-aria-label="LANCTL.UI.TEXT.ACTIVE_PROJECT"><option value="" data-i18n="LANCTL.UI.TEXT.NO_PROJECT">Sin proyecto</option></select><button id="project-open" title="Seleccionar un archivo VLF" data-i18n-title="LANCTL.UI.HTML.SELECT_A_VLF_FILE"><span data-i18n="LANCTL.UI.TEXT.OPEN_FD53BB6A">Abrir…</span></button><button id="project-new" title="Crear proyecto y elegir ubicación" data-i18n-title="LANCTL.UI.HTML.CREATE_PROJECT_AND_CHOOSE_LOCATION">＋</button><button id="project-save" title="Guardar proyecto" data-i18n-title="LANCTL.UI.TEXT.SAVE_PROJECT"><span data-i18n="LANCTL.UI.TEXT.SAVE">Guardar</span></button></div>
+    <button id="desktop-settings"><span data-i18n="LANCTL.UI.TEXT.SETTINGS">Configuración</span></button>
+    <div class="connection"><span><span data-i18n="LANCTL.UI.HTML.LOCAL_SESSION">● Sesión local</span></span></div>
   </header>
 
-  <nav class="main-navigation"><button class="active" data-panel="devices">Volver al inventario</button><span id="plugin-navigation"></span><button data-panel="activity">Historial</button></nav>
+  <nav class="main-navigation"><button class="active" data-panel="devices"><span data-i18n="LANCTL.UI.TEXT.BACK_TO_INVENTORY">Volver al inventario</span></button><span id="plugin-navigation"></span><button data-panel="activity"><span data-i18n="LANCTL.UI.TEXT.HISTORY">Historial</span></button></nav>
   <main id="devices-panel" class="content" data-component-id="lanctl.content">
     <section class="commandbar">
-      <div class="scan-controls" role="group" aria-label="Escaneo y actualización">
-      <button id="scan-network" class="primary" data-component-id="lanctl.primary-action">↻ Escanear red</button>
-      <select id="scan-profile" aria-label="Perfil de escaneo"><option value="fast">Rápido</option><option value="normal" selected>Normal</option><option value="accurate">Preciso</option></select>
-      <button id="cancel-scan" hidden>Cancelar escaneo</button>
-      <button id="refresh-devices" data-component-id="lanctl.secondary-action" title="Actualizar la vista sin escanear">Actualizar</button>
+      <div class="scan-controls" role="group" aria-label="Escaneo y actualización" data-i18n-aria-label="LANCTL.UI.HTML.SCAN_AND_REFRESH">
+      <button id="scan-network" class="primary" data-component-id="lanctl.primary-action"><span data-i18n="LANCTL.UI.TEXT.SCAN_NETWORK">↻ Escanear red</span></button>
+      <select id="scan-profile" aria-label="Perfil de escaneo" data-i18n-aria-label="LANCTL.UI.TEXT.SCAN_PROFILE"><option value="fast" data-i18n="LANCTL.UI.TEXT.FAST">Rápido</option><option value="normal" selected data-i18n="LANCTL.UI.TEXT.NORMAL">Normal</option><option value="accurate" data-i18n="LANCTL.UI.TEXT.PRECISE">Preciso</option></select>
+      <button id="cancel-scan" hidden><span data-i18n="LANCTL.UI.TEXT.CANCEL_SCAN">Cancelar escaneo</span></button>
+      <button id="refresh-devices" data-component-id="lanctl.secondary-action" title="Actualizar la vista sin escanear" data-i18n-title="LANCTL.UI.HTML.REFRESH_VIEW_WITHOUT_SCANNING"><span data-i18n="LANCTL.UI.TEXT.REFRESH">Actualizar</span></button>
       </div>
-      <label class="search"><span aria-hidden="true">⌕</span><input id="device-search" aria-label="Buscar dispositivos" placeholder="Buscar por IP, MAC, nombre o fabricante…"><kbd>Ctrl K</kbd></label>
-      <div class="filter-controls" role="group" aria-label="Filtros de inventario">
-      <span class="control-caption">FILTRAR</span>
-      <select id="state-filter" aria-label="Filtrar estado"><option value="all">Todos</option><option value="active">Activos</option><option value="inactive">No detectados</option></select>
-      <select id="group-filter" aria-label="Filtrar grupo"><option value="">Todos los grupos</option></select>
-      <details id="advanced-filters"><summary>Más filtros</summary><div><label>Fabricante<select id="vendor-filter"><option value="">Todos</option></select></label><label>Protocolo<select id="protocol-filter"><option value="">Todos</option></select></label><label>Confirmación<select id="cnf-filter"><option value="">Todas</option><option>O</option><option>X</option><option>S</option><option>F</option><option>-</option></select></label><label>Agrupación<select id="membership-filter"><option value="">Todos</option><option value="grouped">Con grupo</option><option value="ungrouped">Sin grupo</option></select></label><button id="clear-filters" type="button">Limpiar filtros</button></div></details>
+      <div class="search"><span aria-hidden="true">⌕</span><input id="device-search" aria-label="Buscar dispositivos" placeholder="Buscar por IP, MAC, nombre o fabricante…" data-i18n-placeholder="LANCTL.UI.HTML.SEARCH_BY_IP_MAC_NAME_OR_MANUFACTURER" data-i18n-aria-label="LANCTL.UI.HTML.SEARCH_DEVICES"><kbd>Ctrl K</kbd><button id="search-device" type="button"><span data-i18n="LANCTL.INVENTORY.MANUAL.SEARCH">Buscar</span></button><button id="create-device" type="button"><span data-i18n="LANCTL.UI.TEXT.ADD_DEVICE">＋ Añadir elemento</span></button></div>
+      <div class="filter-controls" role="group" aria-label="Filtros de inventario" data-i18n-aria-label="LANCTL.UI.HTML.INVENTORY_FILTERS">
+      <span class="control-caption"><span data-i18n="LANCTL.UI.TEXT.FILTER">FILTRAR</span></span>
+      <select id="state-filter" aria-label="Filtrar estado" data-i18n-aria-label="LANCTL.UI.HTML.FILTER_STATE"><option value="all" data-i18n="LANCTL.UI.TEXT.ALL">Todos</option><option value="active" data-i18n="LANCTL.UI.TEXT.ACTIVE_DEVICES">Activos</option><option value="inactive" data-i18n="LANCTL.UI.TEXT.UNDETECTED">No detectados</option></select>
+      <select id="group-filter" aria-label="Filtrar grupo" data-i18n-aria-label="LANCTL.UI.HTML.FILTER_GROUP"><option value="" data-i18n="LANCTL.UI.TEXT.ALL_GROUPS">Todos los grupos</option></select>
+      <details id="advanced-filters"><summary><span data-i18n="LANCTL.UI.TEXT.MORE_FILTERS">Más filtros</span></summary><div><label><span data-i18n="LANCTL.UI.TEXT.MANUFACTURER">Fabricante</span><select id="vendor-filter"><option value="" data-i18n="LANCTL.UI.TEXT.ALL">Todos</option></select></label><label><span data-i18n="LANCTL.UI.TEXT.PROTOCOL">Protocolo</span><select id="protocol-filter"><option value="" data-i18n="LANCTL.UI.TEXT.ALL">Todos</option></select></label><label><span data-i18n="LANCTL.UI.TEXT.CONFIRMATION">Confirmación</span><select id="cnf-filter"><option value="" data-i18n="LANCTL.UI.TEXT.ALL_AFF4D19D">Todas</option><option>O</option><option>X</option><option>S</option><option>F</option><option data-i18n="LANCTL.COMMON.VALUE.NONE">-</option></select></label><label><span data-i18n="LANCTL.UI.TEXT.GROUPING">Agrupación</span><select id="membership-filter"><option value="" data-i18n="LANCTL.UI.TEXT.ALL">Todos</option><option value="grouped" data-i18n="LANCTL.UI.TEXT.GROUPED">Con grupo</option><option value="ungrouped" data-i18n="LANCTL.UI.TEXT.UNGROUPED">Sin grupo</option></select></label><button id="clear-filters" type="button"><span data-i18n="LANCTL.UI.TEXT.CLEAR_FILTERS">Limpiar filtros</span></button></div></details>
       </div>
-      <div class="list-controls" role="group" aria-label="Vista y edición">
-      <label class="view-picker">Vista <select id="inventory-view"><option value="essential">Esencial</option><option value="complete">Completa</option><option value="custom">Personalizada</option></select></label>
-      <details class="column-menu"><summary>Columnas</summary><div id="column-options"></div></details>
-      <button id="undo-edit" title="Deshacer última edición (Ctrl+Z)" aria-label="Deshacer edición" disabled>↶</button>
-      <button id="redo-edit" title="Rehacer última edición (Ctrl+Y)" aria-label="Rehacer edición" disabled>↷</button>
+      <div class="list-controls" role="group" aria-label="Vista y edición" data-i18n-aria-label="LANCTL.UI.HTML.VIEW_AND_EDIT">
+      <label class="view-picker"><span data-i18n="LANCTL.UI.TEXT.VIEW">Vista</span> <select id="inventory-view"><option value="essential" data-i18n="LANCTL.UI.TEXT.ESSENTIAL">Esencial</option><option value="complete" data-i18n="LANCTL.UI.TEXT.FULL">Completa</option><option value="custom" data-i18n="LANCTL.UI.TEXT.CUSTOM">Personalizada</option></select></label>
+      <details class="column-menu"><summary><span data-i18n="LANCTL.UI.TEXT.COLUMNS">Columnas</span></summary><div id="column-options"></div></details>
+      <button id="undo-edit" title="Deshacer última edición (Ctrl+Z)" aria-label="Deshacer edición" disabled data-i18n-title="LANCTL.UI.HTML.UNDO_LAST_EDIT_CTRL_Z" data-i18n-aria-label="LANCTL.UI.HTML.UNDO_EDIT">↶</button>
+      <button id="redo-edit" title="Rehacer última edición (Ctrl+Y)" aria-label="Rehacer edición" disabled data-i18n-title="LANCTL.UI.HTML.REDO_LAST_EDIT_CTRL_Y" data-i18n-aria-label="LANCTL.UI.HTML.REDO_EDIT">↷</button>
       </div>
     </section>
 
     <section class="table-panel" data-component-id="lanctl.device-table">
       <div class="table-title">
-        <div><h1>Inventario de red</h1><p id="status-message" role="status" aria-live="polite">Cargando inventario del núcleo de LANCTL…</p><progress id="scan-progress" hidden max="100" value="0"></progress></div>
-        <div class="summary" data-component-id="lanctl.status-cards"><span><b id="metric-total">0</b> equipos</span><span class="healthy"><b id="metric-active">0</b> activos</span><span class="warning-text"><b id="metric-alerts">0</b> sin respuesta</span><span><b id="metric-switches">0</b> switches</span></div>
+        <div><h1><span data-i18n="LANCTL.UI.TEXT.NETWORK_INVENTORY">Inventario de red</span></h1><p id="status-message" role="status" aria-live="polite"><span data-i18n="LANCTL.UI.TEXT.LOADING_INVENTORY_FROM_THE_LANCTL_CORE">Cargando inventario del núcleo de LANCTL…</span></p><progress id="scan-progress" hidden max="100" value="0"></progress></div>
+        <div class="summary" data-component-id="lanctl.status-cards"><span><b id="metric-total">0</b> <span data-i18n="LANCTL.UI.TEXT.DEVICES_86882F3F">equipos</span></span><span class="healthy"><b id="metric-active">0</b> <span data-i18n="LANCTL.UI.TEXT.ACTIVE_25BAAA01">activos</span></span><span class="warning-text"><b id="metric-alerts">0</b> <span data-i18n="LANCTL.UI.TEXT.NOT_RESPONDING">sin respuesta</span></span><span><b id="metric-switches">0</b> switches</span></div>
       </div>
-      <div class="table-scroll" tabindex="0" aria-label="Lista de dispositivos; desplazamiento horizontal disponible">
-        <table aria-label="Inventario de dispositivos">
+      <div class="table-scroll" tabindex="0" aria-label="Lista de dispositivos; desplazamiento horizontal disponible" data-i18n-aria-label="LANCTL.UI.HTML.DEVICE_LIST_HORIZONTAL_SCROLLING_AVAILABLE">
+        <table aria-label="Inventario de dispositivos" data-i18n-aria-label="LANCTL.UI.HTML.DEVICE_INVENTORY">
           <thead><tr>
-            <th class="state-column" data-column="state">Estado</th><th data-column="icon">Tipo</th><th data-column="ip">IP</th><th data-column="latency">ms</th><th data-column="cnf">CNF</th>
-            <th data-column="alias">Alias</th><th data-column="mac">MAC</th><th data-column="name">Nombre</th><th data-column="vendor">Fabricante</th>
-            <th data-column="group">Grupo</th><th data-column="protocols">Protocolos</th><th data-column="description">Descripción</th><th data-column="lastSeen">Última detección</th>
+            <th class="state-column" data-column="state"><span data-i18n="LANCTL.UI.TEXT.STATUS">Estado</span></th><th data-column="icon"><span data-i18n="LANCTL.UI.TEXT.TYPE">Tipo</span></th><th data-column="ip">IP</th><th data-column="latency">ms</th><th data-column="cnf">CNF</th>
+            <th data-column="alias"><span data-i18n="LANCTL.INVENTORY.MANUAL.ALIAS">Alias</span></th><th data-column="mac">MAC</th><th data-column="name"><span data-i18n="LANCTL.INVENTORY.MANUAL.NAME">Nombre</span></th><th data-column="vendor"><span data-i18n="LANCTL.UI.TEXT.MANUFACTURER">Fabricante</span></th>
+            <th data-column="group"><span data-i18n="LANCTL.UI.TEXT.GROUP">Grupo</span></th><th data-column="protocols"><span data-i18n="LANCTL.UI.TEXT.PROTOCOLS">Protocolos</span></th><th data-column="description"><span data-i18n="LANCTL.INVENTORY.MANUAL.DESCRIPTION">Descripción</span></th><th data-column="lastSeen"><span data-i18n="LANCTL.UI.TEXT.LAST_SEEN">Última detección</span></th>
           </tr></thead>
           <tbody id="device-rows"></tbody>
         </table>
-        <div id="empty-devices" class="empty-state">No hay elementos registrados. Pulsa «Escanear red» para comenzar.</div>
+        <div id="empty-devices" class="empty-state"><span data-i18n="LANCTL.UI.TEXT.NO_DEVICES_RECORDED_CLICK_SCAN_NETWORK_TO_BEGIN">No hay elementos registrados. Pulsa «Escanear red» para comenzar.</span></div>
       </div>
     </section>
 
     <section class="inspector" data-component-id="lanctl.device-inspector">
+      <div class="inventory-actions" role="group" aria-label="Grupos del inventario" data-i18n-aria-label="LANCTL.UI.HTML.INVENTORY_GROUPS"><button id="new-group" type="button"><span data-i18n="LANCTL.UI.TEXT.NEW_GROUP_122B3AAC">＋ Nuevo grupo</span></button></div>
       <div class="selected-identity">
         <img id="selected-icon" class="selected-icon" alt=""><i id="selected-status"></i>
-        <div><small>Elemento seleccionado</small><h2 id="selected-title">Ninguno</h2><p id="selected-kind">Selecciona una fila del inventario</p></div>
+        <div><small><span data-i18n="LANCTL.UI.TEXT.SELECTED_ELEMENT">Elemento seleccionado</span></small><h2 id="selected-title"><span data-i18n="LANCTL.UI.TEXT.NONE">Ninguno</span></h2><p id="selected-kind"><span data-i18n="LANCTL.UI.TEXT.SELECT_AN_INVENTORY_ROW">Selecciona una fila del inventario</span></p></div>
       </div>
       <dl class="technical-details">
-        <div><dt>IP</dt><dd id="selected-ip">-</dd></div>
-        <div><dt>MAC</dt><dd id="selected-mac">-</dd></div>
-        <div><dt>Fabricante</dt><dd id="selected-vendor">-</dd></div>
-        <div><dt>Protocolos</dt><dd id="selected-protocols">-</dd></div>
+        <div><dt>IP</dt><dd id="selected-ip"><span data-i18n="LANCTL.COMMON.VALUE.NONE">-</span></dd></div>
+        <div><dt>MAC</dt><dd id="selected-mac"><span data-i18n="LANCTL.COMMON.VALUE.NONE">-</span></dd></div>
+        <div><dt><span data-i18n="LANCTL.UI.TEXT.MANUFACTURER">Fabricante</span></dt><dd id="selected-vendor"><span data-i18n="LANCTL.COMMON.VALUE.NONE">-</span></dd></div>
+        <div><dt><span data-i18n="LANCTL.UI.TEXT.PROTOCOLS">Protocolos</span></dt><dd id="selected-protocols"><span data-i18n="LANCTL.COMMON.VALUE.NONE">-</span></dd></div>
       </dl>
-      <details class="inspector-section"><summary>Editar identificación</summary>
+      <details class="inspector-section"><summary><span data-i18n="LANCTL.UI.TEXT.EDIT_IDENTIFICATION">Editar identificación</span></summary>
       <div class="editable-fields">
-        <label>Tipo<select id="edit-icon" class="field"></select></label>
-        <label>Alias<input id="edit-alias" class="field" maxlength="80"></label>
-        <label>Nombre<input id="edit-name" class="field" maxlength="80"></label>
-        <label>Confirmación<select id="edit-cnf" class="field"><option>O</option><option>X</option><option>S</option><option>F</option><option>-</option></select></label>
-        <label class="description-field">Descripción<input id="edit-description" class="field" maxlength="1000"></label>
+        <label><span data-i18n="LANCTL.UI.TEXT.TYPE">Tipo</span><select id="edit-icon" class="field"></select></label>
+        <label><span data-i18n="LANCTL.INVENTORY.MANUAL.ALIAS">Alias</span><input id="edit-alias" class="field" maxlength="80"></label>
+        <label><span data-i18n="LANCTL.INVENTORY.MANUAL.NAME">Nombre</span><input id="edit-name" class="field" maxlength="80"></label>
+        <label><span data-i18n="LANCTL.UI.TEXT.CONFIRMATION">Confirmación</span><select id="edit-cnf" class="field"><option>O</option><option>X</option><option>S</option><option>F</option><option data-i18n="LANCTL.COMMON.VALUE.NONE">-</option></select></label>
+        <label class="description-field"><span data-i18n="LANCTL.INVENTORY.MANUAL.DESCRIPTION">Descripción</span><input id="edit-description" class="field" maxlength="1000"></label>
       </div>
-      <div class="editor-actions"><button id="save-device" class="primary" data-component-id="lanctl.secondary-action">Guardar cambios</button><button id="device-groups">Grupos</button></div>
+      <div class="editor-actions"><button id="save-device" class="primary" data-component-id="lanctl.secondary-action"><span data-i18n="LANCTL.UI.TEXT.SAVE_CHANGES">Guardar cambios</span></button><button id="device-groups"><span data-i18n="LANCTL.UI.TEXT.GROUPS">Grupos</span></button></div>
       </details>
-      <div class="inspector-section"><h3>Acceso al equipo</h3>
+      <div class="inspector-section"><h3><span data-i18n="LANCTL.UI.TEXT.DEVICE_ACCESS">Acceso al equipo</span></h3>
       <div class="element-actions">
-        <button id="open-device" data-component-id="lanctl.secondary-action">Abrir conexión</button>
-        <button id="open-terminal" data-component-id="lanctl.primary-action">›_ Terminal</button>
-        <button id="show-shares" data-component-id="lanctl.secondary-action">Recursos compartidos</button>
-        <button id="wake-device" data-component-id="lanctl.secondary-action" disabled>Encender · WOL</button>
+        <button id="open-device" data-component-id="lanctl.secondary-action"><span data-i18n="LANCTL.UI.TEXT.OPEN_CONNECTION">Abrir conexión</span></button>
+        <button id="open-terminal" data-component-id="lanctl.primary-action"><span data-i18n="LANCTL.UI.HTML.TERMINAL">›_ Terminal</span></button>
+        <button id="show-shares" data-component-id="lanctl.secondary-action"><span data-i18n="LANCTL.UI.TEXT.SHARED_RESOURCES">Recursos compartidos</span></button>
+        <button id="wake-device" data-component-id="lanctl.secondary-action" disabled><span data-i18n="LANCTL.UI.TEXT.WAKE_WOL">Encender · WOL</span></button>
       </div>
       </div>
-      <div class="inspector-section"><h3>Diagnóstico y servicios</h3><div class="element-actions"><button id="diagnose-device" data-component-id="lanctl.secondary-action">Diagnosticar</button><button id="show-details" data-component-id="lanctl.secondary-action">Ver detalles</button></div></div>
+      <div class="inspector-section"><h3><span data-i18n="LANCTL.UI.TEXT.DIAGNOSTICS_AND_SERVICES">Diagnóstico y servicios</span></h3><div class="element-actions"><button id="diagnose-device" data-component-id="lanctl.secondary-action"><span data-i18n="LANCTL.UI.TEXT.DIAGNOSE">Diagnosticar</span></button><button id="show-details" data-component-id="lanctl.secondary-action"><span data-i18n="LANCTL.UI.TEXT.VIEW_DETAILS">Ver detalles</span></button></div></div>
       <pre id="diagnostic-output" hidden></pre>
-      <button class="danger contract-only" data-component-id="lanctl.danger-action" disabled aria-hidden="true">Eliminar dispositivo</button>
+      <button class="danger contract-only" data-component-id="lanctl.danger-action" disabled aria-hidden="true"><span data-i18n="LANCTL.UI.TEXT.DELETE_DEVICE">Eliminar dispositivo</span></button>
     </section>
   </main>
-  <main id="plugin-panel" class="plugin-panel" hidden><section class="plugin-toolbar"><div><h1 id="plugin-title">Recursos compartidos</h1><p id="plugin-description"></p></div><div id="plugin-toolbar-actions"></div></section><section id="plugin-metrics" class="plugin-metrics"></section><section class="plugin-browser"><div class="plugin-table"><input id="plugin-search" placeholder="Buscar servidor, carpeta, impresora o grupo de trabajo"><table><thead><tr id="plugin-head"></tr></thead><tbody id="plugin-rows"></tbody></table><div id="plugin-empty" class="empty-state"></div></div><aside id="plugin-detail"><h2>Selecciona un recurso</h2></aside></section></main>
-  <main id="activity-panel" class="plugin-panel" hidden><section class="activity-card"><div class="activity-toolbar"><div><h1>Historial del proyecto</h1><p>Cambios y eventos registrados en el proyecto activo</p></div><button id="activity-refresh">Actualizar</button></div><div class="table-scroll"><table class="activity-table"><thead><tr><th>Fecha</th><th>Elemento</th><th>Evento</th><th>Resultado</th><th>Resumen</th></tr></thead><tbody id="activity-rows"></tbody></table><div id="activity-empty" class="empty-state">No hay eventos registrados.</div></div></section></main>
+  <main id="plugin-panel" class="plugin-panel" hidden><section class="plugin-toolbar"><div><h1 id="plugin-title"><span data-i18n="LANCTL.UI.TEXT.SHARED_RESOURCES">Recursos compartidos</span></h1><p id="plugin-description"></p></div><div id="plugin-toolbar-actions"></div></section><section id="plugin-metrics" class="plugin-metrics"></section><section class="plugin-browser"><div class="plugin-table"><input id="plugin-search" placeholder="Buscar servidor, carpeta, impresora o grupo de trabajo" data-i18n-placeholder="LANCTL.UI.HTML.SEARCH_SERVER_FOLDER_PRINTER_OR_WORKGROUP"><table><thead><tr id="plugin-head"></tr></thead><tbody id="plugin-rows"></tbody></table><div id="plugin-empty" class="empty-state"></div></div><aside id="plugin-detail"><h2><span data-i18n="LANCTL.UI.TEXT.SELECT_A_RESOURCE">Selecciona un recurso</span></h2></aside></section></main>
+  <main id="activity-panel" class="plugin-panel" hidden><section class="activity-card"><div class="activity-toolbar"><div><h1><span data-i18n="LANCTL.UI.TEXT.PROJECT_HISTORY">Historial del proyecto</span></h1><p><span data-i18n="LANCTL.UI.TEXT.CHANGES_AND_EVENTS_RECORDED_IN_THE_ACTIVE_PROJECT">Cambios y eventos registrados en el proyecto activo</span></p></div><button id="activity-refresh"><span data-i18n="LANCTL.UI.TEXT.REFRESH">Actualizar</span></button></div><div class="table-scroll"><table class="activity-table"><thead><tr><th><span data-i18n="LANCTL.UI.TEXT.DATE">Fecha</span></th><th><span data-i18n="LANCTL.UI.TEXT.ELEMENT">Elemento</span></th><th><span data-i18n="LANCTL.UI.TEXT.EVENT">Evento</span></th><th><span data-i18n="LANCTL.UI.TEXT.RESULT">Resultado</span></th><th><span data-i18n="LANCTL.UI.TEXT.SUMMARY">Resumen</span></th></tr></thead><tbody id="activity-rows"></tbody></table><div id="activity-empty" class="empty-state"><span data-i18n="LANCTL.UI.TEXT.NO_EVENTS_RECORDED">No hay eventos registrados.</span></div></div></section></main>
 
-  <footer class="statusbar"><span><span class="footer-dot">●</span> LANIP · LANCTL <b id="app-version">—</b> <button id="lanctl-gui">LANCTL</button><button id="lanip-cli">›_ CLI</button><details id="panel-menu"><summary>Paneles</summary><div id="panel-menu-items"></div></details></span><span>Inventario lógico · Ctrl K buscar · Ctrl S guardar</span><span>Proyecto: <b id="footer-project">Sin proyecto</b></span><span id="row-count">0 filas</span></footer>
+  <footer class="statusbar"><span><span class="footer-dot">●</span> LANIP · LANCTL <b id="app-version">—</b> <button id="lanctl-gui">LANCTL</button><button id="lanip-cli">›_ CLI</button><details id="panel-menu"><summary><span data-i18n="LANCTL.UI.TEXT.PANELS">Paneles</span></summary><div id="panel-menu-items"></div></details></span><span><span data-i18n="LANCTL.UI.TEXT.LOGICAL_INVENTORY_CTRL_K_SEARCH_CTRL_S_SAVE">Inventario lógico · Ctrl K buscar · Ctrl S guardar</span></span><span><span data-i18n="LANCTL.UI.TEXT.PROJECT_97E205E8">Proyecto:</span> <b id="footer-project"><span data-i18n="LANCTL.UI.TEXT.NO_PROJECT">Sin proyecto</span></b></span><span id="row-count"><span data-i18n="LANCTL.UI.HTML.ZERO_ROWS">0 filas</span></span></footer>
 </div>
 <div id="device-context-menu" class="context-menu" role="menu" hidden>
-  <button type="button" role="menuitem" data-context-action="select">Seleccionar</button>
-  <button type="button" role="menuitem" data-context-action="details">Ver detalles</button>
-  <button type="button" role="menuitem" data-context-action="reload">Recargar inventario</button>
-  <button type="button" role="menuitem" data-context-action="diagnose">Diagnosticar</button>
+  <button type="button" role="menuitem" data-context-action="select"><span data-i18n="LANCTL.UI.TEXT.SELECT">Seleccionar</span></button>
+  <button type="button" role="menuitem" data-context-action="details"><span data-i18n="LANCTL.UI.TEXT.VIEW_DETAILS">Ver detalles</span></button>
+  <button type="button" role="menuitem" data-context-action="reload"><span data-i18n="LANCTL.UI.TEXT.RELOAD_INVENTORY">Recargar inventario</span></button>
+  <button type="button" role="menuitem" data-context-action="diagnose"><span data-i18n="LANCTL.UI.TEXT.DIAGNOSE">Diagnosticar</span></button>
   <div class="context-separator" role="separator"></div>
-  <button type="button" role="menuitem" data-context-action="open" class="local-only">Abrir conexión</button>
-  <button type="button" role="menuitem" data-context-action="terminal" class="local-only">Abrir terminal</button>
-  <button type="button" role="menuitem" data-context-action="wake">Encender por WOL</button>
+  <button type="button" role="menuitem" data-context-action="open" class="local-only"><span data-i18n="LANCTL.UI.TEXT.OPEN_CONNECTION">Abrir conexión</span></button>
+  <button type="button" role="menuitem" data-context-action="terminal" class="local-only"><span data-i18n="LANCTL.UI.TEXT.OPEN_TERMINAL">Abrir terminal</span></button>
+  <button type="button" role="menuitem" data-context-action="wake"><span data-i18n="LANCTL.UI.TEXT.WAKE_VIA_WOL">Encender por WOL</span></button>
   <div class="context-separator" role="separator"></div>
-  <button type="button" role="menuitem" data-context-action="delete" class="danger-item">Eliminar elemento…</button>
+  <button type="button" role="menuitem" data-context-action="delete" class="danger-item"><span data-i18n="LANCTL.UI.TEXT.DELETE_ELEMENT">Eliminar elemento…</span></button>
 </div>
 <dialog id="device-details" aria-labelledby="details-title">
   <div class="details-header">
-    <div><small>Detalle completo del elemento</small><h2 id="details-title">Elemento</h2></div>
-    <button id="close-details" aria-label="Cerrar">×</button>
+    <div><small><span data-i18n="LANCTL.UI.TEXT.FULL_ELEMENT_DETAILS">Detalle completo del elemento</span></small><h2 id="details-title"><span data-i18n="LANCTL.UI.TEXT.ELEMENT">Elemento</span></h2></div>
+    <button id="close-details" aria-label="Cerrar" data-i18n-aria-label="LANCTL.UI.TEXT.CLOSE">×</button>
   </div>
-  <div id="details-loading" class="details-loading">Inspeccionando servicios y puertos…</div>
-  <nav class="device-tabs" role="tablist" aria-label="Datos del elemento"><button id="tab-overview" role="tab" aria-selected="true" aria-controls="pane-overview" data-device-tab="overview">Resumen</button><button id="tab-edit" role="tab" aria-selected="false" aria-controls="pane-edit" data-device-tab="edit">Editar</button><button id="tab-groups" role="tab" aria-selected="false" aria-controls="pane-groups" data-device-tab="groups">Grupos</button><button id="tab-ports" role="tab" aria-selected="false" aria-controls="pane-ports" data-device-tab="ports">Puertos y servicios</button><button id="tab-record" role="tab" aria-selected="false" aria-controls="pane-record" data-device-tab="record">Registro completo</button></nav>
+  <div id="details-loading" class="details-loading"><span data-i18n="LANCTL.UI.TEXT.INSPECTING_SERVICES_AND_PORTS">Inspeccionando servicios y puertos…</span></div>
+  <nav class="device-tabs" role="tablist" aria-label="Datos del elemento" data-i18n-aria-label="LANCTL.UI.TEXT.DEVICE_DETAILS"><button id="tab-overview" role="tab" aria-selected="true" aria-controls="pane-overview" data-device-tab="overview"><span data-i18n="LANCTL.UI.TEXT.SUMMARY">Resumen</span></button><button id="tab-edit" role="tab" aria-selected="false" aria-controls="pane-edit" data-device-tab="edit"><span data-i18n="LANCTL.UI.TEXT.EDIT">Editar</span></button><button id="tab-groups" role="tab" aria-selected="false" aria-controls="pane-groups" data-device-tab="groups"><span data-i18n="LANCTL.UI.TEXT.GROUPS">Grupos</span></button><button id="tab-ports" role="tab" aria-selected="false" aria-controls="pane-ports" data-device-tab="ports"><span data-i18n="LANCTL.UI.TEXT.PORTS_AND_SERVICES">Puertos y servicios</span></button><button id="tab-record" role="tab" aria-selected="false" aria-controls="pane-record" data-device-tab="record"><span data-i18n="LANCTL.UI.TEXT.FULL_RECORD">Registro completo</span></button></nav>
   <div id="details-content" hidden>
     <dl id="details-fields" class="details-fields"></dl>
     <section class="services-section">
-      <div><h3>Puertos y utilidades</h3><p>Los puertos se muestran con el servicio detectado y su utilidad.</p></div>
+      <div><h3><span data-i18n="LANCTL.UI.TEXT.PORTS_AND_TOOLS">Puertos y utilidades</span></h3><p><span data-i18n="LANCTL.UI.TEXT.PORTS_ARE_SHOWN_WITH_THEIR_DETECTED_SERVICE_AND_PURPOSE">Los puertos se muestran con el servicio detectado y su utilidad.</span></p></div>
       <div id="details-services" class="service-list"></div>
     </section>
   </div>
   <p id="record-message" role="status" aria-live="polite"></p>
 </dialog>
-<script src="app-dialogs.js"></script>
+<script src="i18n-defaults.js"></script><script src="i18n.js"></script><script src="app-dialogs.js"></script>
 <script src="app.js"></script>
-<dialog id="desktop-dialog"><form id="desktop-form"><h2 id="desktop-dialog-title"></h2><div id="desktop-fields"></div><p id="desktop-error" role="alert"></p><div class="dialog-actions"><button type="button" id="desktop-dismiss">Cancelar</button><button type="submit" class="primary">Aceptar</button></div></form></dialog>
-<dialog id="save-dialog"><h2>Cambios pendientes</h2><p>El proyecto tiene modificaciones sin guardar.</p><div class="dialog-actions"><button data-decision="cancel">Cancelar</button><button data-decision="discard">Descartar</button><button data-decision="save" class="primary">Guardar</button></div></dialog>
-<aside id="event-tray" aria-label="Eventos de sesión"><details><summary>Eventos de sesión</summary><ol id="session-events"></ol></details></aside>
+<dialog id="desktop-dialog"><form id="desktop-form"><h2 id="desktop-dialog-title"></h2><div id="desktop-fields"></div><p id="desktop-error" role="alert"></p><div class="dialog-actions"><button type="button" id="desktop-dismiss"><span data-i18n="LANCTL.INVENTORY.MANUAL.CANCEL">Cancelar</span></button><button type="submit" class="primary"><span data-i18n="LANCTL.UI.TEXT.ACCEPT">Aceptar</span></button></div></form></dialog>
+<dialog id="save-dialog"><h2><span data-i18n="LANCTL.UI.TEXT.PENDING_CHANGES">Cambios pendientes</span></h2><p><span data-i18n="LANCTL.UI.TEXT.THE_PROJECT_HAS_UNSAVED_CHANGES">El proyecto tiene modificaciones sin guardar.</span></p><div class="dialog-actions"><button data-decision="cancel"><span data-i18n="LANCTL.INVENTORY.MANUAL.CANCEL">Cancelar</span></button><button data-decision="discard"><span data-i18n="LANCTL.UI.TEXT.DISCARD">Descartar</span></button><button data-decision="save" class="primary"><span data-i18n="LANCTL.UI.TEXT.SAVE">Guardar</span></button></div></dialog>
+<aside id="event-tray" aria-label="Eventos de sesión" data-i18n-aria-label="LANCTL.UI.TEXT.SESSION_EVENTS"><details><summary><span data-i18n="LANCTL.UI.TEXT.SESSION_EVENTS">Eventos de sesión</span></summary><ol id="session-events"></ol></details></aside>
 <script src="desktop.js"></script>
 <script src="lanip.js"></script>
 <script src="device-sheet.js"></script>

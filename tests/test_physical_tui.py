@@ -6,6 +6,8 @@ from itertools import pairwise
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from lanctl.apps.wire.cli.commands import CommandProcessor
 from lanctl.apps.wire.idf.database import IDFDatabaseManager
 from lanctl.apps.wire.idf.sample_topology import seed_sample_topology
@@ -25,6 +27,7 @@ from lanctl.apps.wire.tui.renderer import (
     modal_footer,
     separator_line,
 )
+from lanctl.shared.i18n import t
 
 
 class TuiFoundationTests(unittest.TestCase):
@@ -407,7 +410,7 @@ class TuiFoundationTests(unittest.TestCase):
         tui.handle_key("F1")
         title, body = tui._utility_modal_content()
         self.assertEqual(title, "HELP")
-        self.assertIn("Comandos", body.plain)
+        self.assertIn(t("LANCTL.UI.TEXT.COMMANDS"), body.plain)
         self.assertIn("idf list", body.plain)
         tui.handle_key("DOWN")
         tui.handle_key("DOWN")
@@ -1086,3 +1089,19 @@ class TuiFoundationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# Existing interaction and layout cases were specified against Spanish labels.
+# Separate test_language_presentation cases exercise both languages explicitly.
+
+
+@pytest.fixture(autouse=True)
+def spanish_presentation_labels(tmp_path, monkeypatch):
+    from lanctl.shared import i18n
+
+    manager = i18n.LanguageManager(tmp_path / "test-languages")
+    manager.initialize("en")
+    manager.install(Path(__file__).resolve().parents[1] / "bundled/languages/spanish.lang")
+    monkeypatch.setattr(i18n, "_MANAGER", manager)
+    with i18n.language_context("es"):
+        yield

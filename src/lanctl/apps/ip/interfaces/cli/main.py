@@ -14,6 +14,7 @@ from lanctl.core.errors import LanctlError
 from lanctl.core.log_cleanup import run_automatic_log_cleanup
 from lanctl.core.logger import write_log
 from lanctl.core.session import coordinated_launcher
+from lanctl.shared.i18n import t
 
 # El registro usa nombres importables para que `lanctl --version` no cargue
 # drivers de red, GUI, SSH y plugins antes de saber qué modo se ha solicitado.
@@ -108,7 +109,6 @@ def build_parser(
     include_plugin_commands: bool = False, *, program_name: str = "LANCTL"
 ) -> argparse.ArgumentParser:
     from lanctl.core.parser import LANCTLArgumentParser
-    from lanctl.shared.i18n import t
 
     parser = LANCTLArgumentParser(
         prog=program_name,
@@ -118,25 +118,31 @@ def build_parser(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
-        help="Muestra la versión y termina.",
+        help=t("LANCTL.UI.TEXT.SHOW_THE_VERSION_AND_EXIT"),
     )
     detail = parser.add_mutually_exclusive_group()
     detail.add_argument(
-        "--quiet", action="store_true", help="Omite la salida correcta; conserva errores."
+        "--quiet",
+        action="store_true",
+        help=t("LANCTL.UI.TEXT.SUPPRESS_SUCCESSFUL_OUTPUT_PRESERVE_ERRORS"),
     )
     detail.add_argument(
-        "--verbose", action="store_true", help="Añade diagnóstico de ejecución a stderr."
+        "--verbose",
+        action="store_true",
+        help=t("LANCTL.UI.TEXT.ADD_EXECUTION_DIAGNOSTICS_TO_STDERR"),
     )
 
     parser.add_argument(
         "--gui",
         action="store_true",
-        help="Abre la interfaz gráfica de LANIP.",
+        help=t("LANCTL.UI.TEXT.OPEN_THE_LANIP_GRAPHICAL_INTERFACE"),
     )
     parser.add_argument(
         "--first-scan",
         action="store_true",
-        help="Solicita confirmación del primer escaneo al abrir la GUI; no escanea automáticamente.",
+        help=t(
+            "LANCTL.UI.TEXT.REQUEST_FIRST_SCAN_CONFIRMATION_WHEN_OPENING_THE_GUI_DO_NOT_SCAN_AUTOMATICALLY"
+        ),
     )
     parser.add_argument(
         "--cli",
@@ -154,8 +160,10 @@ def build_parser(
         choices=("inventory", "plugins", "projects", "settings"),
         metavar="VENTANA",
         help=(
-            f"{t('LANCTL.CORE.APP.TUI_HELP')} "
-            "Puede abrir directamente PLUGINS, PROJECTS o SETTINGS."
+            t(
+                "LANCTL.UI.MESSAGE.VALUE_CAN_OPEN_PLUGINS_PROJECTS_OR_SETTINGS_DIRECTLY",
+                value0=f"{t('LANCTL.CORE.APP.TUI_HELP')}",
+            )
         ),
     )
     parser.add_argument(
@@ -163,7 +171,7 @@ def build_parser(
         "--project",
         dest="startup_project",
         metavar="ARCHIVO.vlf",
-        help=("Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un comando."),
+        help=(t("LANCTL.UI.TEXT.SELECT_A_VLF_PROJECT_BEFORE_OPENING_THE_TUI_OR_RUNNING_A_COMMAND")),
     )
     commands = parser.add_subparsers(dest="command", metavar="COMANDO")
     register_commands(commands, include_plugin_commands)

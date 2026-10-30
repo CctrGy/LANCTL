@@ -12,6 +12,7 @@ from lanctl.apps.wire.idf.sample_topology import seed_sample_topology
 from lanctl.apps.wire.log import write_exception
 from lanctl.apps.wire.topology import NEW_IDF_PROFILES, build_new_idf_data
 from lanctl.core.projects.physical_mutations import PhysicalSaveError, physical_mutation
+from lanctl.shared.i18n import t
 
 
 @dataclass(frozen=True)
@@ -35,7 +36,7 @@ class CommandProcessor:
 
             parts = split_command_line(command)
         except ValueError as error:
-            return CommandResult((f"Error de sintaxis: {error}",))
+            return CommandResult((t("LANCTL.UI.MESSAGE.SYNTAX_ERROR_VALUE", value0=f"{error}"),))
         return self.execute_parts(parts, selected_id=selected_id)
 
     def execute_parts(self, parts: list[str], *, selected_id: str | None = None) -> CommandResult:
@@ -47,7 +48,9 @@ class CommandProcessor:
                 result = replace(result, refresh=True)
             return result
         except PhysicalSaveError as error:
-            return CommandResult((f"Error: {error}",), refresh=True)
+            return CommandResult(
+                (t("LANCTL.UI.DETAIL.ERROR_VALUE", value0=f"{error}"),), refresh=True
+            )
 
     def _execute_parts(self, parts, *, selected_id=None):
         if not parts:
@@ -65,7 +68,10 @@ class CommandProcessor:
             if action == "seed":
                 created = seed_sample_topology(self.database)
                 message = (
-                    f"Topología inicial creada: {len(created)} elementos"
+                    t(
+                        "LANCTL.UI.MESSAGE.INITIAL_TOPOLOGY_CREATED_VALUE_ELEMENTS",
+                        value0=f"{len(created)}",
+                    )
                     if created
                     else "La topología inicial ya estaba cargada."
                 )
@@ -82,9 +88,9 @@ class CommandProcessor:
                     for record in records
                 )
                 empty = (
-                    f"No hay elementos con grupo {group}."
+                    t("LANCTL.UI.MESSAGE.NO_ELEMENTS_IN_GROUP_VALUE", value0=f"{group}")
                     if group
-                    else f"No hay elementos con prefijo {prefix}."
+                    else t("LANCTL.UI.MESSAGE.NO_ELEMENTS_WITH_PREFIX_VALUE", value0=f"{prefix}")
                     if prefix
                     else "La base de datos IDF está vacía."
                 )
@@ -92,7 +98,7 @@ class CommandProcessor:
             if action == "show" and len(parts) in (1, 2):
                 identifier = parts[1] if len(parts) == 2 else selected_id
                 if not identifier:
-                    return CommandResult(("No hay ningún elemento seleccionado.",))
+                    return CommandResult((t("LANCTL.CLI.ERROR.NO_SELECTION"),))
                 record = self.database.get(identifier)
                 return CommandResult(
                     (json.dumps(record, indent=2, ensure_ascii=False),)
@@ -112,15 +118,28 @@ class CommandProcessor:
                     self.database.create(parts[1], number_width=number_width) for _ in range(amount)
                 ]
                 names = ", ".join(record["id"] for record in records)
-                message = f"Creado {names}" if amount == 1 else f"Creados {names}"
+                message = (
+                    t("LANCTL.UI.DETAIL.CREATED_VALUE", value0=f"{names}")
+                    if amount == 1
+                    else t("LANCTL.UI.DETAIL.CREATED_VALUE_BF79A28C", value0=f"{names}")
+                )
                 return CommandResult((message,), refresh=True)
             if action == "reserve" and len(parts) >= 2:
                 record = self.database.add(parts[1], self._parse_data(parts[2:]))
-                return CommandResult((f"Reservado {record['id']}",), refresh=True)
+                return CommandResult(
+                    (t("LANCTL.UI.DETAIL.RESERVED_VALUE", value0=f"{record['id']}"),), refresh=True
+                )
             if action in ("delete", "del") and len(parts) == 2:
                 record = self.database.delete(parts[1])
-                return CommandResult((f"Eliminado {record['id']}",), refresh=True)
-            return CommandResult((f"Comando desconocido: {' '.join(parts)}", "Escribe 'help'."))
+                return CommandResult(
+                    (t("LANCTL.UI.DETAIL.DELETED_VALUE", value0=f"{record['id']}"),), refresh=True
+                )
+            return CommandResult(
+                (
+                    t("LANCTL.UI.MESSAGE.UNKNOWN_COMMAND_VALUE", value0=f"{' '.join(parts)}"),
+                    "Escribe 'help'.",
+                )
+            )
         except (KeyError, TypeError, ValueError, OverflowError) as error:
             code = (
                 "LANWIRE_ELEMENT_COMMAND_FAILED"
@@ -133,7 +152,15 @@ class CommandProcessor:
                 code=code,
                 context={"action": action},
             )
-            return CommandResult((f"Error [{reported.code}]: {reported.text}",))
+            return CommandResult(
+                (
+                    t(
+                        "LANCTL.UI.DETAIL.ERROR_VALUE_VALUE",
+                        value0=f"{reported.code}",
+                        value1=f"{reported.text}",
+                    ),
+                )
+            )
 
     @staticmethod
     def _parse_data(parts: list[str]) -> dict[str, str]:
@@ -175,7 +202,9 @@ class CommandProcessor:
                         "usa: idf delete IDF; para un prefijo usa prefix delete LETRAS"
                     )
                 record = self.database.delete(code)
-                return CommandResult((f"Eliminado {record['id']}",), refresh=True)
+                return CommandResult(
+                    (t("LANCTL.UI.DETAIL.DELETED_VALUE", value0=f"{record['id']}"),), refresh=True
+                )
             if is_record:
                 if len(parts) < 3:
                     raise ValueError("usa: idf edit IDF CAMPO=VALOR [...]")
@@ -198,7 +227,11 @@ class CommandProcessor:
             )
             return CommandResult(
                 (
-                    f"Prefijo {updated['prefix']} actualizado a {updated.get('type_profile', 'sin perfil')}",
+                    t(
+                        "LANCTL.UI.MESSAGE.PREFIX_VALUE_UPDATED_TO_VALUE",
+                        value0=f"{updated['prefix']}",
+                        value1=f"{updated.get('type_profile', 'sin perfil')}",
+                    ),
                 ),
                 refresh=True,
             )
@@ -213,7 +246,8 @@ class CommandProcessor:
                     for record in records
                 )
                 return CommandResult(
-                    lines or (f"No hay elementos con prefijo {prefix}.",),
+                    lines
+                    or (t("LANCTL.UI.MESSAGE.NO_ELEMENTS_WITH_PREFIX_VALUE", value0=f"{prefix}"),),
                     list_prefix=prefix,
                 )
             definitions = {item["prefix"]: item for item in self.database.prefixes()}
@@ -226,7 +260,7 @@ class CommandProcessor:
                 f"{counts.get(prefix, 0)} IDF"
                 for prefix in sorted(definitions.keys() | counts.keys())
             )
-            return CommandResult(lines or ("No hay prefijos IDF.",))
+            return CommandResult(lines or (t("LANCTL.UI.PROMPT.NO_IDF_PREFIXES"),))
         if len(parts) < 2 or parts[0].casefold() not in {"new", "add"}:
             raise ValueError("usa: idf types|list|show|new|add|edit|delete [argumentos]")
         operation = parts[0].casefold()
@@ -244,7 +278,13 @@ class CommandProcessor:
                 description=values.get("-description", ""),
             )
             return CommandResult(
-                (f"Prefijo {definition['prefix']} definido como {definition['type_profile']}",),
+                (
+                    t(
+                        "LANCTL.UI.MESSAGE.PREFIX_VALUE_DEFINED_AS_VALUE",
+                        value0=f"{definition['prefix']}",
+                        value1=f"{definition['type_profile']}",
+                    ),
+                ),
                 refresh=True,
             )
         if "-" not in code:
@@ -264,7 +304,16 @@ class CommandProcessor:
         if values.get("-name", "").strip():
             data["name"] = values["-name"].strip()
         record = self.database.add(code, data)
-        return CommandResult((f"Creado {record['id']} ({data['subtype']})",), refresh=True)
+        return CommandResult(
+            (
+                t(
+                    "LANCTL.UI.DETAIL.CREATED_VALUE_VALUE",
+                    value0=f"{record['id']}",
+                    value1=f"{data['subtype']}",
+                ),
+            ),
+            refresh=True,
+        )
 
     @staticmethod
     def _idf_options(parts: list[str]) -> dict[str, str]:
@@ -318,7 +367,16 @@ class CommandProcessor:
             changed.append(field.label)
 
         self.database.update(record["id"], data)
-        return CommandResult((f"Actualizado {record['id']}: {', '.join(changed)}",), refresh=True)
+        return CommandResult(
+            (
+                t(
+                    "LANCTL.UI.DETAIL.UPDATED_VALUE_VALUE",
+                    value0=f"{record['id']}",
+                    value1=f"{', '.join(changed)}",
+                ),
+            ),
+            refresh=True,
+        )
 
     @staticmethod
     def _element_field_label(supplied: str, data: dict) -> tuple[str, str | None]:
@@ -401,25 +459,39 @@ class CommandProcessor:
                 f"{item['prefix']:<4} {item['name']:<20} {item['description']}"
                 for item in definitions
             )
-            return CommandResult(lines or ("No hay prefijos definidos.",))
+            return CommandResult(lines or (t("LANCTL.UI.PROMPT.NO_PREFIXES_DEFINED"),))
         if parts[0].casefold() == "show" and len(parts) == 2:
             definition = self.database.get_prefix(parts[1])
             return CommandResult(
                 (json.dumps(definition, indent=2, ensure_ascii=False),)
                 if definition
-                else (f"Prefijo no definido: {parts[1].upper()}",)
+                else (t("LANCTL.UI.MESSAGE.UNDEFINED_PREFIX_VALUE", value0=f"{parts[1].upper()}"),)
             )
         if parts[0].casefold() == "set" and len(parts) in (3, 4):
             definition = self.database.define_prefix(
                 parts[1], parts[2], parts[3] if len(parts) == 4 else ""
             )
             return CommandResult(
-                (f"Prefijo {definition['prefix']} definido como {definition['name']}",),
+                (
+                    t(
+                        "LANCTL.UI.MESSAGE.PREFIX_VALUE_DEFINED_AS_VALUE",
+                        value0=f"{definition['prefix']}",
+                        value1=f"{definition['name']}",
+                    ),
+                ),
                 refresh=True,
             )
         if parts[0].casefold() in ("delete", "del") and len(parts) == 2:
             definition = self.database.delete_prefix(parts[1])
-            return CommandResult((f"Definición eliminada: {definition['prefix']}",), refresh=True)
+            return CommandResult(
+                (
+                    t(
+                        "LANCTL.UI.MESSAGE.DEFINITION_DELETED_VALUE",
+                        value0=f"{definition['prefix']}",
+                    ),
+                ),
+                refresh=True,
+            )
         raise ValueError(
             'usa: prefix list | show LETRAS | set LETRAS "NOMBRE" "DESCRIPCIÓN" | delete LETRAS'
         )

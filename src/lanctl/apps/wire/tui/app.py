@@ -50,6 +50,7 @@ from lanctl.core.layout import terminal_columns, terminal_rows
 from lanctl.core.project_context import project_identity
 from lanctl.core.projects.console_session import physical_console_session
 from lanctl.core.projects.physical_mutations import PhysicalSaveError, physical_edit
+from lanctl.shared.i18n import t
 
 ENTER_SCREEN = "\x1b[?1049h\x1b[?7l\x1b[2J\x1b[H"
 LEAVE_SCREEN = "\x1b[?25h\x1b[?7h\x1b[?1049l"
@@ -417,9 +418,14 @@ class LanwireTui:
             if detail_record and not self.utility_modal
             else None,
             upper_title=(
-                f"LANWIRE TUI {__version__} ─ ListElement [{('WIRE' if self.list_kind == 'wires' else self.list_kind.upper())} · "
-                f"{self.list_group or self.list_prefix or 'all'}] "
-                f"{self.selected_index + 1 if self.records else 0}/{len(self.records)}"
+                t(
+                    "LANCTL.UI.DETAIL.LANWIRE_TUI_VALUE_LISTELEMENT_VALUE_VALUE_VALUE_VALUE",
+                    value0=f"{__version__}",
+                    value1=f"{('WIRE' if self.list_kind == 'wires' else self.list_kind.upper())}",
+                    value2=f"{self.list_group or self.list_prefix or 'all'}",
+                    value3=f"{(self.selected_index + 1 if self.records else 0)}",
+                    value4=f"{len(self.records)}",
+                )
             ),
             panel_layout=self.settings["panelLayout"],
         )
@@ -439,29 +445,29 @@ class LanwireTui:
             )
         if modal == "plugins":
             return "PLUGINS", Text(
-                "  LANWIRE no carga plugins LCP.\n\n"
-                "  El editor físico usa únicamente su base IDF local para que\n"
-                "  la topología y sus conexiones sigan siendo deterministas."
+                t(
+                    "LANCTL.UI.BLOCK.LANWIRE_DOES_NOT_LOAD_LCP_PLUGINS_THE_PHYSICAL_EDITOR_USES_ONLY_ITS_LOCAL_IDF_DATABASE_SO_THAT_"
+                )
             )
         if modal == "project":
             return "ESPACIO FÍSICO", Text(
-                "  BASE IDF ACTIVA\n\n"
-                f"  {self.database.path}\n\n"
-                "  Los cambios de topología se guardan de forma atómica al\n"
-                "  confirmar cada edición. LANWIRE no muestra proyectos, redes\n"
-                "  ni preferencias de otros launchers en esta ventana."
+                t(
+                    "LANCTL.UI.MESSAGE.ACTIVE_IDF_DATABASE_VALUE_TOPOLOGY_CHANGES_ARE_SAVED_ATOMICALLY_WHEN_EACH_EDIT_IS_CONFIRMED_LAN",
+                    value0=f"{self.database.path}",
+                )
             )
         if modal == "history":
-            lines = self.messages[-12:] or ["(No hay comandos en esta sesión.)"]
+            lines = self.messages[-12:] or [
+                t("LANCTL.UI.SCREEN.NO_COMMANDS_IN_THIS_SESSION_3F59847C")
+            ]
             return "HISTORIAL", Text("\n".join(f"  {line}" for line in lines))
         if modal == "delete":
-            identifier = self.delete_confirmation_id or "(sin selección)"
+            identifier = self.delete_confirmation_id or t("LANCTL.UI.SCREEN.NO_SELECTION")
             return "ELIMINAR ELEMENTO", Text(
-                f"  Vas a eliminar {identifier}.\n\n"
-                "  Se desconectarán sus extremos de cable y se eliminarán\n"
-                "  referencias de rack asociadas. Los cables permanecerán\n"
-                "  como extremos libres.\n\n"
-                "  Enter confirmar   Esc cancelar",
+                t(
+                    "LANCTL.UI.MESSAGE.YOU_WILL_DELETE_VALUE_ITS_CABLE_ENDPOINTS_WILL_BE_DISCONNECTED_AND_ASSOCIATED_RACK_REFERENCES_R",
+                    value0=f"{identifier}",
+                ),
                 style="bright_white",
             )
         if modal == "graph":
@@ -469,12 +475,24 @@ class LanwireTui:
 
         draft = self.settings_draft or self.settings
         rows = (
-            ("Posición del CLI", draft["panelLayout"], "cli.top / cli.bottom"),
-            ("Altura del panel CLI", f"{draft['cliHeight']} líneas", "8 a 18"),
-            ("Densidad de tabla", draft["tableDensity"], "compact / comfortable"),
-            ("Mostrar descripciones", "ON" if draft["showDescriptions"] else "OFF", "tabla"),
-            ("Mostrar grupos", "ON" if draft["showGroups"] else "OFF", "tabla"),
-            ("Confirmar salida", "ON" if draft["confirmExit"] else "OFF", "Ctrl+Q / Esc"),
+            (t("LANCTL.UI.SCREEN.CLI_POSITION"), draft["panelLayout"], "cli.top / cli.bottom"),
+            (
+                t("LANCTL.UI.SCREEN.CLI_PANEL_HEIGHT"),
+                t("LANCTL.UI.MESSAGE.VALUE_LINES", value0=f"{draft['cliHeight']}"),
+                "8 a 18",
+            ),
+            (t("LANCTL.UI.SCREEN.TABLE_DENSITY"), draft["tableDensity"], "compact / comfortable"),
+            (
+                t("LANCTL.UI.SCREEN.SHOW_DESCRIPTIONS"),
+                "ON" if draft["showDescriptions"] else "OFF",
+                "tabla",
+            ),
+            (t("LANCTL.UI.SCREEN.SHOW_GROUPS"), "ON" if draft["showGroups"] else "OFF", "tabla"),
+            (
+                t("LANCTL.UI.SCREEN.CONFIRM_EXIT"),
+                "ON" if draft["confirmExit"] else "OFF",
+                "Ctrl+Q / Esc",
+            ),
             ("Columna IDF", f"{draft['columnWidths']['idf']} ch", "6 a 60"),
             ("Columna TYPE", f"{draft['columnWidths']['type']} ch", "6 a 60"),
             ("Columna NAME", f"{draft['columnWidths']['name']} ch", "6 a 60"),
@@ -493,9 +511,7 @@ class LanwireTui:
             text.append(f"  {label:<29} {value:<21} {scope}", style=style)
             if index < len(rows) - 1:
                 text.append("\n")
-        text.append(
-            "\n\n  ↑/↓ seleccionar   ←/→ cambiar   Ctrl+S guardar   Esc cerrar", style="dim"
-        )
+        text.append(t("LANCTL.UI.BLOCK.SELECT_CHANGE_CTRL_S_SAVE_ESC_CLOSE"), style="dim")
         return "SETTINGS", text
 
     @staticmethod
@@ -621,11 +637,14 @@ class LanwireTui:
             self.messages.clear()
         elif result.view_id:
             self.messages.append(
-                f"Visualizando {result.view_id}. Pulsa Esc para volver a la lista."
+                t(
+                    "LANCTL.UI.MESSAGE.VIEWING_VALUE_PRESS_ESC_TO_RETURN_TO_THE_LIST",
+                    value0=f"{result.view_id}",
+                )
             )
         elif command.split()[0].casefold() in ("list", "ls"):
             label = f"@{result.list_group}" if result.list_group else result.list_prefix or "todos"
-            self.messages.append(f"Lista activa: {label}")
+            self.messages.append(t("LANCTL.UI.MESSAGE.ACTIVE_LIST_VALUE", value0=f"{label}"))
         else:
             for block in result.lines:
                 self.messages.extend(block.splitlines() or [""])
@@ -666,7 +685,7 @@ class LanwireTui:
                 self._handle_key(key)
         except PhysicalSaveError as error:
             self.reload()
-            self.messages.append(f"Error: {error}")
+            self.messages.append(t("LANCTL.UI.DETAIL.ERROR_VALUE", value0=f"{error}"))
 
     def _sync_project(self, path):
         from lanctl.core.config import load_config
@@ -693,7 +712,9 @@ class LanwireTui:
         self.navigation_stack.clear()
         self.records = []
         self.reload()
-        self.messages.append("Proyecto actualizado. Se cerró la edición anterior sin aplicarla.")
+        self.messages.append(
+            t("LANCTL.UI.SCREEN.PROJECT_UPDATED_PREVIOUS_EDITING_CLOSED_WITHOUT_APPLYING_IT")
+        )
         return True
 
     def _handle_key(self, key):
@@ -710,7 +731,9 @@ class LanwireTui:
                     self.action_option_index,
                 )
             ):
-                self.messages.append("Termina o cancela la edición antes de seguir la conexión.")
+                self.messages.append(
+                    t("LANCTL.UI.SCREEN.FINISH_OR_CANCEL_EDITING_BEFORE_FOLLOWING_THE_CONNECTION")
+                )
             else:
                 self._follow_connection()
             return
@@ -838,7 +861,7 @@ class LanwireTui:
             self._open_utility("history")
         elif key == "CTRL_S":
             save_settings(self.settings)
-            self.messages.append("Preferencias de LANWIRE guardadas.")
+            self.messages.append(t("LANCTL.UI.SCREEN.LANWIRE_PREFERENCES_SAVED"))
         elif key == "CTRL_C":
             self._copy_selected(as_json=False)
         elif key == "CTRL_J":
@@ -865,7 +888,10 @@ class LanwireTui:
             self.tree_scroll = 0
             self.reload()
             self.messages.append(
-                f"Vista de {('WIRE' if self.list_kind == 'wires' else self.list_kind.upper())} activa."
+                t(
+                    "LANCTL.UI.MESSAGE.VALUE_VIEW_ACTIVE",
+                    value0=f"{('WIRE' if self.list_kind == 'wires' else self.list_kind.upper())}",
+                )
             )
         elif key == "DELETE" and not self.view_id and not self.command and self.selected_id:
             self.delete_confirmation_id = self.selected_id
@@ -1002,9 +1028,16 @@ class LanwireTui:
                     self.selected_index = 0
                     self.tree_scroll = 0
                     self.reload()
-                    self.messages.append(f"Eliminado {identifier}; enlaces físicos limpiados.")
+                    self.messages.append(
+                        t(
+                            "LANCTL.UI.MESSAGE.DELETED_VALUE_PHYSICAL_LINKS_CLEARED",
+                            value0=f"{identifier}",
+                        )
+                    )
                 except KeyError:
-                    self.messages.append(f"No existe {identifier}.")
+                    self.messages.append(
+                        t("LANCTL.UI.MESSAGE.VALUE_DOES_NOT_EXIST", value0=f"{identifier}")
+                    )
                 finally:
                     self.delete_confirmation_id = None
                     self.utility_modal = None
@@ -1063,14 +1096,14 @@ class LanwireTui:
             assert self.settings_draft is not None
             self.settings = deepcopy(self.settings_draft)
             save_settings(self.settings)
-            self.messages.append("Configuración local de LANWIRE guardada.")
+            self.messages.append(t("LANCTL.UI.SCREEN.LOCAL_LANWIRE_SETTINGS_SAVED"))
 
     def _copy_selected(self, *, as_json: bool) -> None:
         record = self._modal_record() or next(
             (item for item in self.all_records if item["id"] == self.selected_id), None
         )
         if record is None:
-            self.messages.append("No hay un elemento seleccionado para copiar.")
+            self.messages.append(t("LANCTL.UI.SCREEN.NO_ELEMENT_SELECTED_TO_COPY_231A18AC"))
             return
         payload = json.dumps(record, ensure_ascii=False, indent=2) if as_json else record["id"]
         self.clipboard_text = payload
@@ -1097,7 +1130,7 @@ class LanwireTui:
         choice = self.menu_selection
         if choice in (0, 1):
             if choice == 1 and context is None:
-                self.messages.append("Selecciona primero un puerto.")
+                self.messages.append(t("LANCTL.UI.SCREEN.SELECT_A_PORT_FIRST"))
                 return
             self.editor_scope = "general" if choice == 0 else "port"
             self.modal_focus = "editor"
@@ -1110,12 +1143,14 @@ class LanwireTui:
             self._open_utility("delete")
             return
         if context is None:
-            self.messages.append("Selecciona primero un puerto.")
+            self.messages.append(t("LANCTL.UI.SCREEN.SELECT_A_PORT_FIRST"))
             return
         _record, _port, wire_id = context
         if choice == 2:
             if wire_id:
-                self.messages.append("El puerto ya tiene cable. Usa Editar o Desconectar cable.")
+                self.messages.append(
+                    t("LANCTL.UI.SCREEN.THE_PORT_ALREADY_HAS_A_CABLE_USE_EDIT_OR_DISCONNECT_CABLE")
+                )
                 return
             self.modal_focus = "actions"
             self.action_selection = 0
@@ -1209,7 +1244,7 @@ class LanwireTui:
             self.action_selection = 0
             return
         context = self._selected_connector()
-        actions = connector_actions(context[2]) if context else ["Sin acciones"]
+        actions = connector_actions(context[2]) if context else [t("LANCTL.UI.SCREEN.NO_ACTIONS")]
         self.action_selection = max(0, min(len(actions) - 1, self.action_selection + delta))
 
     def _execute_connector_action(self) -> None:
@@ -1238,7 +1273,9 @@ class LanwireTui:
         if self.action_buffer is None:
             available = self._available_cables(record, port)
             if not available:
-                self.messages.append("No hay cables libres y compatibles para este puerto.")
+                self.messages.append(
+                    t("LANCTL.UI.SCREEN.NO_AVAILABLE_COMPATIBLE_CABLES_FOR_THIS_PORT")
+                )
             self.action_option_index = 0
             self.action_filter = ""
             return
@@ -1252,7 +1289,13 @@ class LanwireTui:
             self.action_selection = 0
             self.modal_focus = "menu"
         except (KeyError, TypeError, ValueError) as error:
-            self.messages.append(f"No se pudo {action.casefold()}: {error}")
+            self.messages.append(
+                t(
+                    "LANCTL.UI.MESSAGE.COULD_NOT_VALUE_VALUE",
+                    value0=f"{action.casefold()}",
+                    value1=f"{error}",
+                )
+            )
 
     def _available_cables(self, record: dict, port: str) -> tuple[str, ...]:
         """Solo ofrece cables con un extremo libre y medio compatible."""
@@ -1312,7 +1355,13 @@ class LanwireTui:
                 ]
             self.database.update(wire["id"], data)
             self.reload()
-            self.messages.append(f"Desconectado el lado {self.modal_endpoint + 1} de {wire['id']}")
+            self.messages.append(
+                t(
+                    "LANCTL.UI.MESSAGE.DISCONNECTED_SIDE_VALUE_OF_VALUE",
+                    value0=f"{self.modal_endpoint + 1}",
+                    value1=f"{wire['id']}",
+                )
+            )
             self.action_buffer = None
             return
         if self.action_buffer is None:
@@ -1321,7 +1370,9 @@ class LanwireTui:
                 self.action_option_index = 0
                 self.action_filter = ""
             else:
-                self.messages.append("No hay puertos libres y compatibles para este cable.")
+                self.messages.append(
+                    t("LANCTL.UI.SCREEN.NO_AVAILABLE_COMPATIBLE_PORTS_FOR_THIS_CABLE")
+                )
             return
         destination = self.action_buffer.strip().upper()
         try:
@@ -1347,10 +1398,16 @@ class LanwireTui:
             data["endpoints"] = endpoints
             self.database.update(wire["id"], data)
             self.reload()
-            self.messages.append(f"Conectado {wire['id']} a {destination}")
+            self.messages.append(
+                t(
+                    "LANCTL.UI.MESSAGE.CONNECTED_VALUE_TO_VALUE",
+                    value0=f"{wire['id']}",
+                    value1=f"{destination}",
+                )
+            )
             self.action_buffer = None
         except (ValueError, TypeError) as error:
-            self.messages.append(f"No se pudo conectar: {error}")
+            self.messages.append(t("LANCTL.UI.MESSAGE.COULD_NOT_CONNECT_VALUE", value0=f"{error}"))
 
     @physical_edit
     def _connect_selected_port(self, record: dict, port: str, wire_id: str) -> None:
@@ -1371,7 +1428,14 @@ class LanwireTui:
         data["endpoints"] = endpoints
         self.database.update(wire_id, data)
         self.reload()
-        self.messages.append(f"Conectado {wire_id} a {record['id']}.{port}")
+        self.messages.append(
+            t(
+                "LANCTL.UI.MESSAGE.CONNECTED_VALUE_TO_VALUE_VALUE",
+                value0=f"{wire_id}",
+                value1=f"{record['id']}",
+                value2=f"{port}",
+            )
+        )
 
     @physical_edit
     def _move_selected_connection(
@@ -1400,7 +1464,14 @@ class LanwireTui:
         selectable = selectable_ports(record)
         self.modal_selection = selectable.index(target_port)
         self.messages.append(
-            f"Movido {wire_id}: {record['id']}.{port} -> {record['id']}.{target_port}"
+            t(
+                "LANCTL.UI.DETAIL.MOVED_VALUE_VALUE_VALUE_VALUE_VALUE",
+                value0=f"{wire_id}",
+                value1=f"{record['id']}",
+                value2=f"{port}",
+                value3=f"{record['id']}",
+                value4=f"{target_port}",
+            )
         )
 
     @physical_edit
@@ -1415,7 +1486,7 @@ class LanwireTui:
         field = fields[self.editor_selection]
         if field.label == "Eliminar puerto":
             if self.editor_buffer is None:
-                self.editor_buffer = "Pulsa Enter otra vez para eliminar"
+                self.editor_buffer = t("LANCTL.UI.SCREEN.PRESS_ENTER_AGAIN_TO_DELETE")
             else:
                 self._delete_selected_port()
             return
@@ -1438,7 +1509,14 @@ class LanwireTui:
                 self.editor_buffer = None
                 self._modal_size_key = None
                 self._modal_size_locked = None
-                self.messages.append(f"Actualizado {record['id']}.{port}: {field.path[-1]}")
+                self.messages.append(
+                    t(
+                        "LANCTL.UI.DETAIL.UPDATED_VALUE_VALUE_VALUE",
+                        value0=f"{record['id']}",
+                        value1=f"{port}",
+                        value2=f"{field.path[-1]}",
+                    )
+                )
             except (KeyError, OSError, RuntimeError, TypeError, ValueError) as error:
                 reported = write_exception(
                     error,
@@ -1447,7 +1525,13 @@ class LanwireTui:
                     context={"idf": record["id"], "port": field.path[1], "field": field.path[-1]},
                 )
                 self.editor_buffer = None
-                self.messages.append(f"Error [{reported.code}] editando puerto: {reported.text}")
+                self.messages.append(
+                    t(
+                        "LANCTL.UI.DETAIL.ERROR_VALUE_EDITING_PORT_VALUE",
+                        value0=f"{reported.code}",
+                        value1=f"{reported.text}",
+                    )
+                )
             return
         try:
             data = deepcopy(record.get("data") or {})
@@ -1467,7 +1551,13 @@ class LanwireTui:
             self.editor_buffer = None
             self._modal_size_key = None
             self._modal_size_locked = None
-            self.messages.append(f"Actualizado {record['id']}: {field.label}")
+            self.messages.append(
+                t(
+                    "LANCTL.UI.DETAIL.UPDATED_VALUE_VALUE",
+                    value0=f"{record['id']}",
+                    value1=f"{field.label}",
+                )
+            )
         except (KeyError, OSError, OverflowError, RuntimeError, TypeError, ValueError) as error:
             code = (
                 "LANWIRE_PORT_COUNT_UPDATE_FAILED"
@@ -1481,20 +1571,32 @@ class LanwireTui:
                 context={"idf": record["id"], "field": field.label},
             )
             self.editor_buffer = None
-            self.messages.append(f"Error [{reported.code}] editando {field.label}: {reported.text}")
+            self.messages.append(
+                t(
+                    "LANCTL.UI.DETAIL.ERROR_VALUE_EDITING_VALUE_VALUE",
+                    value0=f"{reported.code}",
+                    value1=f"{field.label}",
+                    value2=f"{reported.text}",
+                )
+            )
 
     @physical_edit
     def _delete_selected_port(self) -> None:
         context = self._selected_connector()
         if context is None:
             self.editor_buffer = None
-            self.messages.append("Selecciona primero un puerto para eliminar.")
+            self.messages.append(t("LANCTL.UI.SCREEN.SELECT_A_PORT_TO_DELETE_FIRST"))
             return
         record, port, connected_wire = context
         if connected_wire:
             self.editor_buffer = None
             self.messages.append(
-                f"Desconecta {connected_wire} antes de eliminar {record['id']}.{port}."
+                t(
+                    "LANCTL.UI.MESSAGE.DISCONNECT_VALUE_BEFORE_DELETING_VALUE_VALUE",
+                    value0=f"{connected_wire}",
+                    value1=f"{record['id']}",
+                    value2=f"{port}",
+                )
             )
             return
         data = deepcopy(record.get("data") or {})
@@ -1515,7 +1617,14 @@ class LanwireTui:
                 context={"idf": record["id"], "port": port},
             )
             self.editor_buffer = None
-            self.messages.append(f"Error [{reported.code}] eliminando {port}: {reported.text}")
+            self.messages.append(
+                t(
+                    "LANCTL.UI.DETAIL.ERROR_VALUE_DELETING_VALUE_VALUE",
+                    value0=f"{reported.code}",
+                    value1=f"{port}",
+                    value2=f"{reported.text}",
+                )
+            )
             return
         self.modal_selection = min(
             self.modal_selection, len(selectable_ports(self._modal_record())) - 1
@@ -1525,7 +1634,13 @@ class LanwireTui:
         self.editor_buffer = None
         self._modal_size_key = None
         self._modal_size_locked = None
-        self.messages.append(f"Eliminado puerto {record['id']}.{port}.")
+        self.messages.append(
+            t(
+                "LANCTL.UI.MESSAGE.DELETED_PORT_VALUE_VALUE",
+                value0=f"{record['id']}",
+                value1=f"{port}",
+            )
+        )
 
     def _move_modal_selection(self, delta: int) -> None:
         record = self._modal_record()
@@ -1565,7 +1680,7 @@ class LanwireTui:
             return
         if ports:
             if self.modal_selection < 0:
-                self.messages.append("Selecciona un puerto para seguir su conexión.")
+                self.messages.append(t("LANCTL.UI.SCREEN.SELECT_A_PORT_TO_FOLLOW_ITS_CONNECTION"))
                 return
             port = ports[min(self.modal_selection, len(ports) - 1)]
             wire_id = wire_for_port(record, self.all_records, port)
@@ -1596,7 +1711,7 @@ class LanwireTui:
             endpoints = cable_sides(record)
             endpoint = endpoints[min(self.modal_endpoint, 1)]
             if endpoint is None:
-                self.messages.append("Este extremo del cable está libre.")
+                self.messages.append(t("LANCTL.UI.SCREEN.THIS_CABLE_ENDPOINT_IS_FREE"))
                 return
             target = next(
                 (item for item in self.all_records if item["id"] == endpoint["device"]), None
@@ -1640,7 +1755,14 @@ class LanwireTui:
         self.reload()
         self._modal_size_key = None
         self._modal_size_locked = None
-        self.messages.append(f"Desconectado {wire_id} de {record['id']}.{port}")
+        self.messages.append(
+            t(
+                "LANCTL.UI.MESSAGE.DISCONNECTED_VALUE_FROM_VALUE_VALUE",
+                value0=f"{wire_id}",
+                value1=f"{record['id']}",
+                value2=f"{port}",
+            )
+        )
 
     def _navigate_back(self) -> None:
         if not self.navigation_stack:

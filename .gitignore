@@ -1,4 +1,7 @@
 # Python
+# Instrucciones locales del agente
+AGENTS.md
+
 __pycache__/
 *.py[cod]
 *.pyo

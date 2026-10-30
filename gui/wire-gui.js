@@ -1,40 +1,40 @@
 /* LANWIRE workspace: independent list and interactive topology, real RPC operations. */
 const wireBase = { render, refresh, records, fullDetails, settings, wireEdit };
-const wireNames = {
-  "device.switch": "Switch de red",
-  "device.router": "Router",
-  "device.pc": "Ordenador",
-  "device.server": "Servidor",
-  "device.outlet": "Toma de red",
-  "device.panel": "Panel de conexiones",
-  panel: "Panel de conexiones",
-  wire: "Cable",
-  rack: "Rack",
-  "external.supply": "Suministro del proveedor",
-  "wire.copper": "Cable de cobre",
-  "wire.fiber": "Cable de fibra",
-  "wire.dac": "Cable DAC",
-  element: "Elemento",
-  "device.gateway": "Puerta de enlace",
-  "device.workstation": "Estación de trabajo",
+const wireNames = ()=>({
+  "device.switch": window.LanctlI18n.t("LANCTL.UI.VIEW.NETWORK_SWITCH"),
+  "device.router": window.LanctlI18n.t("LANCTL.UI.WORD.ROUTER"),
+  "device.pc": window.LanctlI18n.t("LANCTL.UI.WORD.COMPUTER"),
+  "device.server": window.LanctlI18n.t("LANCTL.UI.EXTENSION.SERVER"),
+  "device.outlet": window.LanctlI18n.t("LANCTL.UI.VIEW.NETWORK_OUTLET"),
+  "device.panel": window.LanctlI18n.t("LANCTL.UI.VIEW.PATCH_PANEL"),
+  panel: window.LanctlI18n.t("LANCTL.UI.VIEW.PATCH_PANEL"),
+  wire: window.LanctlI18n.t("LANCTL.UI.WORD.CABLE"),
+  rack: window.LanctlI18n.t("LANCTL.UI.WORD.RACK"),
+  "external.supply": window.LanctlI18n.t("LANCTL.UI.VIEW.PROVIDER_SUPPLY"),
+  "wire.copper": window.LanctlI18n.t("LANCTL.UI.TEXT.COPPER_CABLE"),
+  "wire.fiber": window.LanctlI18n.t("LANCTL.UI.TEXT.FIBER_CABLE"),
+  "wire.dac": window.LanctlI18n.t("LANCTL.UI.VIEW.DAC_CABLE"),
+  element: window.LanctlI18n.t("LANCTL.UI.TEXT.ELEMENT"),
+  "device.gateway": window.LanctlI18n.t("LANCTL.UI.TEXT.GATEWAY"),
+  "device.workstation": window.LanctlI18n.t("LANCTL.UI.VIEW.WORKSTATION"),
   "connection.rj45": "RJ45",
-  "connection.fiber": "Fibra óptica",
+  "connection.fiber": window.LanctlI18n.t("LANCTL.UI.VIEW.OPTICAL_FIBER"),
   "connection.dac": "DAC",
-  "connection.unknown": "Sin especificar",
-};
+  "connection.unknown": window.LanctlI18n.t("LANCTL.UI.VIEW.UNSPECIFIED"),
+});
 function wireName(v) {
   return (
-    wireNames[v] ||
-    String(v || "Elemento")
+    wireNames()[v] ||
+    String(v || window.LanctlI18n.t("LANCTL.UI.TEXT.ELEMENT"))
       .replace(/^device\./, "")
       .replace(/[._]/g, " ")
   );
 }
-const wireModes = [
-  ["wired", "Cable"],
+const wireModes = ()=>([
+  ["wired", window.LanctlI18n.t("LANCTL.UI.WORD.CABLE")],
   ["wifi", "Wi-Fi"],
-  ["mixed", "Cable y Wi-Fi"],
-];
+  ["mixed", window.LanctlI18n.t("LANCTL.UI.VIEW.WIRED_AND_WI_FI")],
+]);
 function wireReadPrefs() {
   try {
     const saved = JSON.parse(
@@ -192,11 +192,11 @@ refresh = async function () {
     document.body.classList.add("wire-app");
     const more = document.createElement("button");
     more.id = "wire-filters";
-    more.textContent = "Filtros";
+    window.LanctlI18n.bindText(more,"LANCTL.UI.WORD.FILTERS");
     more.onclick = wireFilters;
     $("#filter").after(more);
     const clear = document.createElement("button");
-    clear.textContent = "Limpiar";
+    window.LanctlI18n.bindText(clear,"LANCTL.UI.WORD.CLEAR");
     clear.onclick = wireClearFilters;
     more.after(clear);
     const active = document.createElement("span");
@@ -205,16 +205,16 @@ refresh = async function () {
   }
   $("#wire-active-filters").textContent =
     Object.values(wireFilter).filter(Boolean).length +
-    " filtros adicionales · Almacén físico compartido";
+    window.LanctlI18n.t("LANCTL.UI.FRAGMENT.ADDITIONAL_FILTERS_SHARED_PHYSICAL_STORE");
 };
 renderWire = function (rows, r) {
   if (!wireInitialized) wireLoadPositions();
   if (view === "list") {
     const cols = {
-      id: ["Identificador", (x) => x.id],
-      type: ["Tipo", (x) => wireName(x.data.type)],
+      id: [window.LanctlI18n.t("LANCTL.UI.HTML.IDENTIFIER"), (x) => x.id],
+      type: [window.LanctlI18n.t("LANCTL.UI.TEXT.TYPE"), (x) => wireName(x.data.type)],
       connections: [
-        "Conexiones",
+        window.LanctlI18n.t("LANCTL.UI.TEXT.CONNECTIONS"),
         (x) =>
           x.data.type === "wire"
             ? (x.data.endpoints || [])
@@ -225,29 +225,29 @@ renderWire = function (rows, r) {
                 .join(", "),
       ],
       rack: [
-        "Rack / unidad",
+        window.LanctlI18n.t("LANCTL.UI.VIEW.RACK_UNIT"),
         (x) =>
           physicalPlacementLabel(x),
       ],
       mode: [
-        "Conexión",
+        window.LanctlI18n.t("LANCTL.UI.TEXT.CONNECTION"),
         (x) =>
-          wireModes.find(
+          wireModes().find(
             (m) => m[0] === (x.data.connectionMode || "wired"),
           )?.[1],
       ],
-      alias: ["Alias", (x) => x.data.alias],
+      alias: [window.LanctlI18n.t("LANCTL.UI.WORD.ALIAS"), (x) => x.data.alias],
       group: [
-        "Grupos",
+        window.LanctlI18n.t("LANCTL.UI.TEXT.GROUPS"),
         (x) => (x.filterGroups || x.data.groups || []).join(", "),
       ],
     };
     const visible = wirePrefs.columns.filter((k) => cols[k]);
     $("#canvas").innerHTML =
-      '<div class="wire-list-tools"><button id="wire-columns">Columnas</button><label>Ordenar <select id="wire-sort"><option value="name">Nombre</option><option value="id">Identificador</option><option value="type">Tipo</option></select></label><button id="wire-direction">' +
-      (wireSort.direction === 1 ? "Ascendente ↑" : "Descendente ↓") +
+      "<div class=\"wire-list-tools\"><button id=\"wire-columns\"><span data-i18n=\"LANCTL.UI.TEXT.COLUMNS\">Columnas</span></button><label><span data-i18n=\"LANCTL.UI.HTML.SORT\">Ordenar</span> <select id=\"wire-sort\"><option value=\"name\" data-i18n=\"LANCTL.INVENTORY.MANUAL.NAME\">Nombre</option><option value=\"id\" data-i18n=\"LANCTL.UI.HTML.IDENTIFIER\">Identificador</option><option value=\"type\" data-i18n=\"LANCTL.UI.TEXT.TYPE\">Tipo</option></select></label><button id=\"wire-direction\">" +
+      (wireSort.direction === 1 ? window.LanctlI18n.html("LANCTL.UI.FRAGMENT.ASCENDING") : window.LanctlI18n.html("LANCTL.UI.FRAGMENT.DESCENDING")) +
       "</button></div>" +
-      table(["Elemento", ...visible.map((k) => cols[k][0])], rows, (x) => [
+      table([window.LanctlI18n.t("LANCTL.UI.TEXT.ELEMENT"), ...visible.map((k) => cols[k][0])], rows, (x) => [
         labelOf(x),
         ...visible.map((k) => cols[k][1](x)),
       ]);
@@ -290,47 +290,47 @@ function wireClearFilters() {
 }
 function wireFilters() {
   const opts = (key, label, values) =>
-    field(label, key, wireFilter[key], "text", [["", "Todos"], ...values]);
+    field(label, key, wireFilter[key], "text", [["", window.LanctlI18n.t("LANCTL.UI.TEXT.ALL")], ...values]);
   const unique = (values) =>
     [...new Set(values.filter(Boolean))].map((v) => [v, v]);
   showForm(
-    "Filtros de elementos",
+    window.LanctlI18n.t("LANCTL.UI.VIEW.ELEMENT_FILTERS"),
     [
-      opts("kind", "Mostrar", [
-        ["elements", "Equipos e infraestructura"],
-        ["wires", "Cables"],
+      opts("kind", window.LanctlI18n.t("LANCTL.UI.WORD.SHOW"), [
+        ["elements", window.LanctlI18n.t("LANCTL.UI.VIEW.EQUIPMENT_AND_INFRASTRUCTURE")],
+        ["wires", window.LanctlI18n.t("LANCTL.UI.TEXT.CABLES")],
       ]),
-      opts("prefix", "Prefijo", unique(state.records.map((r) => r.prefix))),
+      opts("prefix", window.LanctlI18n.t("LANCTL.UI.WORD.PREFIX"), unique(state.records.map((r) => r.prefix))),
       opts(
         "group",
-        "Grupo",
+        window.LanctlI18n.t("LANCTL.UI.TEXT.GROUP"),
         unique(
           state.records.flatMap((r) => r.filterGroups || r.data.groups || []),
         ).map(([v]) => [
           v,
           {
-            WIRE: "Cables",
-            SWITCHS: "Equipos de distribución",
-            PC: "Ordenadores y servidores",
+            WIRE: window.LanctlI18n.t("LANCTL.UI.TEXT.CABLES"),
+            SWITCHS: window.LanctlI18n.t("LANCTL.UI.VIEW.DISTRIBUTION_EQUIPMENT"),
+            PC: window.LanctlI18n.t("LANCTL.UI.VIEW.COMPUTERS_AND_SERVERS"),
           }[v] || v,
         ]),
       ),
       opts(
         "rack",
-        "Rack",
+        window.LanctlI18n.t("LANCTL.UI.WORD.RACK"),
         state.records
           .filter((r) => r.data.type === "rack")
           .map((r) => [r.id, labelOf(r)]),
       ),
-      opts("mode", "Tipo de conexión", wireModes),
-      opts("status", "Disponibilidad", [
-        ["connected", "Conectados"],
-        ["disconnected", "Sin conectar"],
-        ["free", "Con puertos libres"],
+      opts("mode", window.LanctlI18n.t("LANCTL.UI.VIEW.CONNECTION_TYPE"), wireModes()),
+      opts("status", window.LanctlI18n.t("LANCTL.UI.WORD.AVAILABILITY"), [
+        ["connected", window.LanctlI18n.t("LANCTL.UI.WORD.CONNECTED")],
+        ["disconnected", window.LanctlI18n.t("LANCTL.UI.TEXT.NOT_CONNECTED")],
+        ["free", window.LanctlI18n.t("LANCTL.UI.VIEW.WITH_FREE_PORTS")],
       ]),
-      opts("medium", "Medio", [
-        ["wire.copper", "Cobre"],
-        ["wire.fiber", "Fibra"],
+      opts("medium", window.LanctlI18n.t("LANCTL.UI.WORD.MEDIUM"), [
+        ["wire.copper", window.LanctlI18n.t("LANCTL.UI.WORD.COPPER")],
+        ["wire.fiber", window.LanctlI18n.t("LANCTL.UI.WORD.FIBER")],
         ["wire.dac", "DAC"],
       ]),
     ],
@@ -341,23 +341,22 @@ function wireFilters() {
 }
 function wireColumns() {
   const note = document.createElement("p");
-  note.textContent =
-    "Identificador, Tipo, Conexiones, Rack, Conexión, Alias y Grupos.";
+  window.LanctlI18n.bindText(note,"LANCTL.UI.VIEW.IDENTIFIER_TYPE_CONNECTIONS_RACK_CONNECTION_ALIAS_AND_GROUPS");
   const box = document.createElement("div");
   for (const [key, label] of [
-    ["id", "Identificador"],
-    ["type", "Tipo"],
-    ["connections", "Conexiones"],
-    ["rack", "Rack"],
-    ["mode", "Conexión"],
-    ["alias", "Alias"],
-    ["group", "Grupos"],
+    ["id", window.LanctlI18n.t("LANCTL.UI.HTML.IDENTIFIER")],
+    ["type", window.LanctlI18n.t("LANCTL.UI.TEXT.TYPE")],
+    ["connections", window.LanctlI18n.t("LANCTL.UI.TEXT.CONNECTIONS")],
+    ["rack", window.LanctlI18n.t("LANCTL.UI.WORD.RACK")],
+    ["mode", window.LanctlI18n.t("LANCTL.UI.TEXT.CONNECTION")],
+    ["alias", window.LanctlI18n.t("LANCTL.UI.WORD.ALIAS")],
+    ["group", window.LanctlI18n.t("LANCTL.UI.TEXT.GROUPS")],
   ]) {
     const f = field(label, key, "", "checkbox");
     f.querySelector("input").checked = wirePrefs.columns.includes(key);
     box.append(f);
   }
-  showForm("Columnas de la lista", [note, box], async (v) => {
+  showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.LIST_COLUMNS"), [note, box], async (v) => {
     wirePrefs.columns = Object.keys(v);
     wireStore();
   });
@@ -368,7 +367,7 @@ function wireEdges() {
     .map((w) => {
       const ends = [
         ...(w.data.source
-          ? [{ device: w.data.source, port: "Proveedor" }]
+          ? [{ device: w.data.source, port: window.LanctlI18n.t("LANCTL.UI.WORD.PROVIDER") }]
           : []),
         ...(w.data.endpoints || []),
       ];
@@ -470,7 +469,7 @@ function wireRenderTopology(rows) {
     ),
   };
   $("#canvas").innerHTML =
-    '<section class="wire-topology"><div class="wire-navigation"><button data-nav="back" title="Vista anterior">←</button><button data-nav="forward" title="Vista siguiente">→</button><button data-nav="out" aria-label="Alejar">−</button><button id="wire-zoom" data-nav="reset">100 %</button><button data-nav="in" aria-label="Acercar">+</button><button data-nav="fit">Ver todo</button><button data-nav="center">Centrar selección</button><button data-nav="focus">Ver conexiones</button><label>Niveles <select id="wire-depth"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></label><button data-nav="all">Topología completa</button><button data-nav="layout">Reorganizar</button><button data-nav="mini">Minimapa</button></div><div id="wire-board" tabindex="0" aria-label="Lienzo de topología. Arrastra el fondo para desplazarte; usa la rueda para ampliar."><div id="wire-world"><svg id="wire-lines"></svg>' +
+    "<section class=\"wire-topology\"><div class=\"wire-navigation\"><button data-nav=\"back\" title=\"Vista anterior\" data-i18n-title=\"LANCTL.UI.HTML.PREVIOUS_VIEW\">←</button><button data-nav=\"forward\" title=\"Vista siguiente\" data-i18n-title=\"LANCTL.UI.HTML.NEXT_VIEW\">→</button><button data-nav=\"out\" aria-label=\"Alejar\" data-i18n-aria-label=\"LANCTL.UI.HTML.ZOOM_OUT\">−</button><button id=\"wire-zoom\" data-nav=\"reset\">100 %</button><button data-nav=\"in\" aria-label=\"Acercar\" data-i18n-aria-label=\"LANCTL.UI.HTML.ZOOM_IN\">+</button><button data-nav=\"fit\"><span data-i18n=\"LANCTL.UI.HTML.VIEW_ALL\">Ver todo</span></button><button data-nav=\"center\"><span data-i18n=\"LANCTL.UI.HTML.CENTER_SELECTION\">Centrar selección</span></button><button data-nav=\"focus\"><span data-i18n=\"LANCTL.UI.VIEW.VIEW_CONNECTIONS\">Ver conexiones</span></button><label><span data-i18n=\"LANCTL.UI.HTML.LEVELS\">Niveles</span> <select id=\"wire-depth\"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></label><button data-nav=\"all\"><span data-i18n=\"LANCTL.UI.HTML.COMPLETE_TOPOLOGY\">Topología completa</span></button><button data-nav=\"layout\"><span data-i18n=\"LANCTL.UI.HTML.REORGANIZE\">Reorganizar</span></button><button data-nav=\"mini\"><span data-i18n=\"LANCTL.UI.HTML.MINIMAP\">Minimapa</span></button></div><div id=\"wire-board\" tabindex=\"0\" aria-label=\"Lienzo de topología. Arrastra el fondo para desplazarte; usa la rueda para ampliar.\" data-i18n-aria-label=\"LANCTL.UI.HTML.TOPOLOGY_CANVAS_DRAG_THE_BACKGROUND_TO_PAN_USE_THE_WHEEL_TO_ZOOM\"><div id=\"wire-world\"><svg id=\"wire-lines\"></svg>" +
     nodes
       .map(
         (n) =>
@@ -484,8 +483,8 @@ function wireRenderTopology(rows) {
             .join("")}</span></button>`,
       )
       .join("") +
-    '</div><svg id="wire-minimap" aria-label="Minimapa"></svg><div class="wire-hint">Arrastrar: mover · Rueda: zoom · Doble clic: detalles · Clic derecho: acciones' +
-    (wireFocus ? " · Enfoque: " + esc(wireFocus) : "") +
+    "</div><svg id=\"wire-minimap\" aria-label=\"Minimapa\" data-i18n-aria-label=\"LANCTL.UI.HTML.MINIMAP\"></svg><div class=\"wire-hint\"><span data-i18n=\"LANCTL.UI.HTML.DRAG_MOVE_WHEEL_ZOOM_DOUBLE_CLICK_DETAILS_RIGHT_CLICK_ACTIONS\">Arrastrar: mover · Rueda: zoom · Doble clic: detalles · Clic derecho: acciones</span>" +
+    (wireFocus ? window.LanctlI18n.html("LANCTL.UI.FRAGMENT.FOCUS") + esc(wireFocus) : "") +
     "</div></div></section>";
   $("#wire-depth").value = wirePrefs.depth;
   $("#wire-depth").onchange = (e) => {
@@ -528,7 +527,7 @@ function wireRenderTopology(rows) {
         "ArrowUp",
         "ArrowDown",
         "+",
-        "-",
+        window.LanctlI18n.t("LANCTL.COMMON.VALUE.NONE"),
         "Home",
       ].includes(e.key)
     )
@@ -568,7 +567,7 @@ function wirePaint() {
         b = visible.has(e.b?.device)
           ? wireAnchor(e.b)
           : { x: a.x + 220, y: a.y + 120 };
-      return `<g data-cable="${esc(e.wire.id)}" class="${near.has(e.wire.id) ? "highlight" : ""}"><path d="M${a.x} ${a.y} C${a.x} ${(a.y + b.y) / 2},${b.x} ${(a.y + b.y) / 2},${b.x} ${b.y}"/><text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2}">${wirePrefs.labels ? esc(e.wire.id + " · " + e.a.port + " ↔ " + (e.b?.port || "Sin conectar")) : ""}</text></g>`;
+      return `<g data-cable="${esc(e.wire.id)}" class="${near.has(e.wire.id) ? "highlight" : ""}"><path d="M${a.x} ${a.y} C${a.x} ${(a.y + b.y) / 2},${b.x} ${(a.y + b.y) / 2},${b.x} ${b.y}"/><text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2}">${wirePrefs.labels ? esc(e.wire.id + " · " + e.a.port + " ↔ " + (e.b?.port || window.LanctlI18n.t("LANCTL.UI.TEXT.NOT_CONNECTED"))) : ""}</text></g>`;
     })
     .join("");
   $("#wire-lines").onclick = (e) => {
@@ -658,7 +657,7 @@ function wireCenter() {
       };
   }
   if (!p || !el) {
-    message("Selecciona un equipo visible para centrarlo.");
+    message(window.LanctlI18n.t("LANCTL.UI.VIEW.SELECT_A_VISIBLE_DEVICE_TO_CENTER_IT"));
     return;
   }
   camera.x = el.clientWidth / 2 - (p.x + 95) * camera.z;
@@ -804,10 +803,10 @@ function wirePointer(e) {
 function wireContext(r) {
   const box = document.createElement("div");
   for (const [label, fn] of [
-    ["Ver y editar datos", () => fullDetails(r)],
-    ["Centrar", () => wireCenterFromDetails(r)],
+    [window.LanctlI18n.t("LANCTL.UI.TEXT.VIEW_AND_EDIT_DATA"), () => fullDetails(r)],
+    [window.LanctlI18n.t("LANCTL.UI.WORD.CENTER"), () => wireCenterFromDetails(r)],
     [
-      "Ver conexiones",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.VIEW_CONNECTIONS"),
       () => {
         wireFocus = r.id;
         view = "map";
@@ -816,7 +815,7 @@ function wireContext(r) {
       },
     ],
     [
-      "Contraer esta rama",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.COLLAPSE_THIS_BRANCH"),
       () => {
         for (const id of wireNeighborhood(r.id, Number(wirePrefs.depth)))
           if (id !== r.id) wireHidden.add(id);
@@ -824,7 +823,7 @@ function wireContext(r) {
       },
     ],
     [
-      "Expandir ramas",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.EXPAND_BRANCHES"),
       () => {
         wireHidden.clear();
         wirePrefs.depth = Math.min(10, Number(wirePrefs.depth) + 1);
@@ -842,7 +841,7 @@ function wireContext(r) {
     };
     box.append(b);
   }
-  showForm("Acciones · " + labelOf(r), [box]);
+  showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.ACTIONS") + labelOf(r), [box]);
 }
 async function wireCenterFromDetails(r) {
   await dismiss();
@@ -855,7 +854,7 @@ async function wireCenterFromDetails(r) {
   if (
     filtered &&
     !(await appDecision(
-      "Los filtros ocultan este elemento. ¿Limpiarlos para mostrarlo?",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.FILTERS_HIDE_THIS_ELEMENT_CLEAR_THEM_TO_SHOW_IT"),
     ))
   )
     return;
@@ -919,15 +918,15 @@ fullDetails = function (r) {
   identity.textContent = r.id + " · " + wireName(d.type);
   const general = [
     identity,
-    field("Nombre", "name", d.name),
-    field("Alias", "alias", d.alias),
-    field("Descripción", "description", d.description, "textarea"),
+    field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.NAME"), "name", d.name),
+    field(window.LanctlI18n.t("LANCTL.UI.WORD.ALIAS"), "alias", d.alias),
+    field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.DESCRIPTION"), "description", d.description, "textarea"),
     field(
-      "Conexión",
+      window.LanctlI18n.t("LANCTL.UI.TEXT.CONNECTION"),
       "connectionMode",
       d.connectionMode || "wired",
       "text",
-      wireModes,
+      wireModes(),
     ),
   ];
   const location = physicalLocationFields(r);
@@ -945,33 +944,33 @@ fullDetails = function (r) {
       " · " +
       (wireConnections(r).find((w) =>
         w.data.endpoints.some((e) => e.device === r.id && e.port === p),
-      )?.id || "Libre");
+      )?.id || window.LanctlI18n.t("LANCTL.UI.HTML.FREE"));
     row.append(
       text,
-      field("Medio", "port_kind_" + p, value.kind || "wire.copper", "text", [
-        ["wire.copper", "Cobre"],
-        ["wire.fiber", "Fibra"],
+      field(window.LanctlI18n.t("LANCTL.UI.WORD.MEDIUM"), "port_kind_" + p, value.kind || "wire.copper", "text", [
+        ["wire.copper", window.LanctlI18n.t("LANCTL.UI.WORD.COPPER")],
+        ["wire.fiber", window.LanctlI18n.t("LANCTL.UI.WORD.FIBER")],
         ["wire.dac", "DAC"],
         ["connection.rj45", "RJ45"],
-        ["connection.fiber", "Fibra óptica"],
-        ["connection.dac", "DAC (conector)"],
-        ["connection.unknown", "Sin especificar"],
+        ["connection.fiber", window.LanctlI18n.t("LANCTL.UI.VIEW.OPTICAL_FIBER")],
+        ["connection.dac", window.LanctlI18n.t("LANCTL.UI.VIEW.DAC_CONNECTOR")],
+        ["connection.unknown", window.LanctlI18n.t("LANCTL.UI.VIEW.UNSPECIFIED")],
       ]),
       field("PoE", "port_poe_" + p, String(!!value.poe), "text", [
-        ["false", "No"],
-        ["true", "Sí"],
+        ["false", window.LanctlI18n.t("LANCTL.UI.TEXT.NO")],
+        ["true", window.LanctlI18n.t("LANCTL.UI.TEXT.YES")],
       ]),
-      wireAction("Editar puerto", () =>
+      wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.EDIT_PORT"), () =>
         wireOpenAfterSave(() => wirePort(r, p)),
       ),
-      wireAction("Conexiones", () =>
+      wireAction(window.LanctlI18n.t("LANCTL.UI.TEXT.CONNECTIONS"), () =>
         wireOpenAfterSave(() => wirePortConnections(r, p)),
       ),
     );
     ports.append(row);
   }
   if (!ports.childNodes.length)
-    ports.textContent = "Este elemento no tiene puertos.";
+    window.LanctlI18n.bindText(ports,"LANCTL.UI.VIEW.THIS_ELEMENT_HAS_NO_PORTS");
   const connections = document.createElement("div");
   for (const w of d.type === "wire" ? [r] : wireConnections(r)) {
     const p = document.createElement("p");
@@ -983,38 +982,38 @@ fullDetails = function (r) {
         .join(" ↔ ");
     connections.append(
       p,
-      wireAction("Editar conexión", () =>
+      wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.EDIT_CONNECTION"), () =>
         wireOpenAfterSave(() => wireConnect(w)),
       ),
     );
   }
   if (!connections.childNodes.length)
-    connections.textContent = "Sin conexiones almacenadas.";
+    window.LanctlI18n.bindText(connections,"LANCTL.UI.VIEW.NO_STORED_CONNECTIONS");
   const technical = document.createElement("dl");
   const technicalFields = [
     field(
-      "Grupos (separados por comas)",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.GROUPS_COMMA_SEPARATED"),
       "groups",
       (d.groups || []).join(", "),
     ),
-    field("Dirección IP", "ip", d.ip),
+    field(window.LanctlI18n.t("LANCTL.UI.TEXT.IP_ADDRESS"), "ip", d.ip),
     field(
-      "Velocidades (separadas por comas)",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.SPEEDS_COMMA_SEPARATED"),
       "speeds",
       (d.speeds || []).join(", "),
     ),
   ];
   if (d.type === "wire")
     technicalFields.push(
-      field("Medio del cable", "kind", d.kind || "wire.copper", "text", [
-        ["wire.copper", "Cobre"],
-        ["wire.fiber", "Fibra"],
+      field(window.LanctlI18n.t("LANCTL.UI.VIEW.CABLE_MEDIUM"), "kind", d.kind || "wire.copper", "text", [
+        ["wire.copper", window.LanctlI18n.t("LANCTL.UI.WORD.COPPER")],
+        ["wire.fiber", window.LanctlI18n.t("LANCTL.UI.WORD.FIBER")],
         ["wire.dac", "DAC"],
       ]),
     );
   if (d.type === "rack") technicalFields.push(
-    field("Altura del rack (4–52 U)", "units", d.units ?? d.size_units, "number"),
-    field("Ancho de montaje (pulgadas)", "widthInches", d.rackDimensions?.widthInches || "", "text", [["", "Seleccionar"], [10, "10″"], [19, "19″"], [21, "21″"], [23, "23″"]]),
+    field(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.RACK_HEIGHT_4_52_U"), "units", d.units ?? d.size_units, "number"),
+    field(window.LanctlI18n.t("LANCTL.UI.VIEW.MOUNTING_WIDTH_INCHES"), "widthInches", d.rackDimensions?.widthInches || "", "text", [["", window.LanctlI18n.t("LANCTL.UI.TEXT.SELECT")], [10, "10″"], [19, "19″"], [21, "21″"], [23, "23″"]]),
   );
   for (const [k, v] of Object.entries({
     ...d,
@@ -1043,31 +1042,31 @@ fullDetails = function (r) {
   raw.readOnly = true;
   raw.rows = 15;
   raw.value = JSON.stringify(r, null, 2);
-  raw.setAttribute("aria-label", "Registro JSON");
-  const copy = wireAction("Copiar JSON", async () => {
+  raw.setAttribute("aria-label", window.LanctlI18n.t("LANCTL.UI.VIEW.JSON_RECORD"));
+  const copy = wireAction(window.LanctlI18n.t("LANCTL.UI.TEXT.COPY_JSON"), async () => {
     try {
       await navigator.clipboard.writeText(raw.value);
-      message("JSON copiado");
+      message(window.LanctlI18n.t("LANCTL.UI.VIEW.JSON_COPIED"));
     } catch {
       raw.focus();
       raw.select();
       if (!document.execCommand("copy"))
-        throw Error("Selecciona el texto y pulsa Ctrl+C.");
+        throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.SELECT_THE_TEXT_AND_PRESS_CTRL_C"));
     }
   });
-  const center = wireAction("Centrar en Topología", () =>
+  const center = wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.CENTER_IN_TOPOLOGY"), () =>
     wireCenterFromDetails(r),
   );
   showForm(
-    "Detalle · " + labelOf(r),
+    window.LanctlI18n.t("LANCTL.UI.FRAGMENT.DETAILS") + labelOf(r),
     [
       ...(state.launcher === "lanwire" ? [center] : []),
       wireTabs([
-        ["General", general],
-        ["Ubicación", location],
-        ["Puertos", [ports]],
-        ["Conexiones", [connections]],
-        ["Datos técnicos", [...technicalFields, technical]],
+        [window.LanctlI18n.t("LANCTL.UI.TEXT.GENERAL"), general],
+        [window.LanctlI18n.t("LANCTL.UI.TEXT.LOCATION"), location],
+        [window.LanctlI18n.t("LANCTL.UI.TEXT.PORTS"), [ports]],
+        [window.LanctlI18n.t("LANCTL.UI.TEXT.CONNECTIONS"), [connections]],
+        [window.LanctlI18n.t("LANCTL.UI.VIEW.TECHNICAL_DATA"), [...technicalFields, technical]],
         ["JSON", [copy, raw]],
       ]),
     ],
@@ -1105,9 +1104,9 @@ wireEdit = function (r) {
 async function wireOpenAfterSave(fn) {
   if (formOriginal !== JSON.stringify([...new FormData($("#detail-form"))])) {
     message(
-      "Guarda o cancela los cambios antes de editar puertos o conexiones.",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.SAVE_OR_CANCEL_CHANGES_BEFORE_EDITING_PORTS_OR_CONNECTIONS"),
     );
-    $("#detail-error").textContent = "Guarda primero los cambios del elemento.";
+    window.LanctlI18n.bindText($("#detail-error"),"LANCTL.UI.VIEW.SAVE_ELEMENT_CHANGES_FIRST");
     return;
   }
   await dismiss();
@@ -1118,20 +1117,20 @@ wirePort = function (r, p) {
   p = p || ports[0];
   const fields = [
     field(
-      "Puerto",
+      window.LanctlI18n.t("LANCTL.UI.TEXT.PORT"),
       "port",
       p,
       "text",
       ports.map((x) => [x, x]),
     ),
-    field("Nombre nuevo", "name", p),
-    field("Posición", "position", ports.indexOf(p) + 1, "number"),
+    field(window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_NAME"), "name", p),
+    field(window.LanctlI18n.t("LANCTL.UI.TEXT.POSITION"), "position", ports.indexOf(p) + 1, "number"),
   ];
   fields[0].querySelector("select").onchange = (e) => {
     fields[1].querySelector("input").value = e.target.value;
     fields[2].querySelector("input").value = ports.indexOf(e.target.value) + 1;
   };
-  showForm("Renombrar o reordenar puerto", fields, (v) =>
+  showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.RENAME_OR_REORDER_PORT"), fields, (v) =>
     call("wire_port", r.id, r.revision, v.port, v.name, Number(v.position)),
   );
 };
@@ -1147,10 +1146,10 @@ function wirePortConnections(r, p) {
     (w) => w.data.type === "wire" && (w.data.endpoints || []).length < 2,
   );
   showForm(
-    "Conectar puerto · " + r.id + " · " + p,
+    window.LanctlI18n.t("LANCTL.UI.FRAGMENT.CONNECT_PORT") + r.id + " · " + p,
     [
       field(
-        "Cable disponible",
+        window.LanctlI18n.t("LANCTL.UI.VIEW.AVAILABLE_CABLE"),
         "wire",
         cables[0]?.id || "",
         "text",
@@ -1159,7 +1158,7 @@ function wirePortConnections(r, p) {
     ],
     async (v) => {
       const w = physicalInventory().find((x) => x.id === v.wire);
-      if (!w) throw Error("Crea primero un cable con un extremo libre.");
+      if (!w) throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.CREATE_A_CABLE_WITH_A_FREE_ENDPOINT_FIRST"));
       await call("wire_connect", w.id, w.revision, [
         ...(w.data.endpoints || []),
         { device: r.id, port: p },
@@ -1170,16 +1169,16 @@ function wirePortConnections(r, p) {
 async function wireProjects() {
   const payload = await call("projects");
   showForm(
-    "Cambiar proyecto",
+    window.LanctlI18n.t("LANCTL.UI.VIEW.CHANGE_PROJECT"),
     [
       field(
-        "Proyecto",
+        window.LanctlI18n.t("LANCTL.UI.TEXT.PROJECT"),
         "project",
         state.project,
         "text",
         payload.projects.map((p) => [p.path, p.name]),
       ),
-      wireAction("Abrir archivo VLF…", async () => {
+      wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.OPEN_VLF_FILE"), async () => {
         const result = await call("select_project_file");
         if (result.path)
           $("#detail-fields select").add(
@@ -1188,18 +1187,18 @@ async function wireProjects() {
       }),
       Object.assign(document.createElement("p"), {
         textContent:
-          "El proyecto define el contexto de la suite. Los elementos físicos de LANWIRE pertenecen al almacén compartido indicado en la barra inferior.",
+          window.LanctlI18n.t("LANCTL.UI.VIEW.THE_PROJECT_DEFINES_THE_SUITE_CONTEXT_PHYSICAL_LANWIRE_ELEMENTS_BELONG_TO_THE_SHARED_STORE_SHOW"),
       }),
     ],
     async (v) => {
-      if (!v.project) throw Error("Selecciona un proyecto.");
+      if (!v.project) throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.SELECT_A_PROJECT"));
       if ((await call("project_state")).dirty) {
         if (
           !(await appDecision(
-            "Hay cambios pendientes. ¿Guardarlos antes de cambiar de proyecto?",
+            window.LanctlI18n.t("LANCTL.UI.VIEW.THERE_ARE_PENDING_CHANGES_SAVE_THEM_BEFORE_SWITCHING_PROJECTS"),
           ))
         )
-          throw Error("Cambio cancelado; se conserva el proyecto actual.");
+          throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.CHANGE_CANCELLED_THE_CURRENT_PROJECT_IS_PRESERVED"));
         await call("save_project");
       }
       await call("use_project", v.project);
@@ -1211,49 +1210,49 @@ async function wireProjects() {
 }
 function wireTechnicalName(path) {
   const names = {
-    type: "Tipo",
-    subtype: "Variante",
-    kind: "Medio",
-    groups: "Grupos",
-    ip: "Dirección IP",
-    speeds: "Velocidades",
-    units: "Altura en unidades",
-    connectionMode: "Tipo de conexión",
-    created_at: "Fecha de creación",
-    updated_at: "Última modificación",
-    portCount: "Número de puertos",
-    portNaming: "Nombres de puertos",
-    portTemplate: "Plantilla de puertos",
-    lanipDevice: "Equipo vinculado en LANIP",
-    schemaVersion: "Versión de formato",
-    active: "Activo",
-    directory: "Carpeta",
-    database: "Base de datos",
-    devices: "Equipos",
-    groups: "Grupos",
-    physical: "Inventario físico",
-    saveMode: "Modo de guardado",
-    saveIntervalMinutes: "Intervalo de guardado (minutos)",
-    networkDatabase: "Inventario de red",
-    networkGroups: "Grupos de red",
-    databaseLog: "Registro de base de datos",
-    credentials: "Almacén de credenciales",
-    iconsDirectory: "Carpeta de iconos",
-    workspace: "Espacio de trabajo",
-    project: "Proyecto",
-    projectId: "Identificador del proyecto",
-    contentHash: "Huella de contenido",
-    metadata: "Metadatos",
-    monitor: "Monitor",
-    monitoring: "Monitorización",
-    runtime: "Ejecución",
-    incidents: "Incidencias",
-    lock: "Bloqueo",
-    profiles: "Perfiles",
-    assignments: "Asignaciones",
-    databases: "Bases de datos",
-    storage: "Almacenamiento",
-    projects: "Proyecto",
+    type: window.LanctlI18n.t("LANCTL.UI.TEXT.TYPE"),
+    subtype: window.LanctlI18n.t("LANCTL.UI.WORD.VARIANT"),
+    kind: window.LanctlI18n.t("LANCTL.UI.WORD.MEDIUM"),
+    groups: window.LanctlI18n.t("LANCTL.UI.TEXT.GROUPS"),
+    ip: window.LanctlI18n.t("LANCTL.UI.TEXT.IP_ADDRESS"),
+    speeds: window.LanctlI18n.t("LANCTL.UI.WORD.SPEEDS"),
+    units: window.LanctlI18n.t("LANCTL.UI.VIEW.HEIGHT_IN_UNITS"),
+    connectionMode: window.LanctlI18n.t("LANCTL.UI.VIEW.CONNECTION_TYPE"),
+    created_at: window.LanctlI18n.t("LANCTL.UI.VIEW.CREATION_DATE"),
+    updated_at: window.LanctlI18n.t("LANCTL.UI.VIEW.LAST_MODIFICATION"),
+    portCount: window.LanctlI18n.t("LANCTL.UI.VIEW.NUMBER_OF_PORTS"),
+    portNaming: window.LanctlI18n.t("LANCTL.UI.VIEW.PORT_NAMES"),
+    portTemplate: window.LanctlI18n.t("LANCTL.UI.VIEW.PORT_TEMPLATE"),
+    lanipDevice: window.LanctlI18n.t("LANCTL.UI.VIEW.LINKED_LANIP_DEVICE"),
+    schemaVersion: window.LanctlI18n.t("LANCTL.UI.VIEW.FORMAT_VERSION"),
+    active: window.LanctlI18n.t("LANCTL.UI.TEXT.ACTIVE"),
+    directory: window.LanctlI18n.t("LANCTL.UI.WORD.FOLDER"),
+    database: window.LanctlI18n.t("LANCTL.UI.VIEW.DATABASE"),
+    devices: window.LanctlI18n.t("LANCTL.UI.TEXT.EQUIPMENT"),
+    groups: window.LanctlI18n.t("LANCTL.UI.TEXT.GROUPS"),
+    physical: window.LanctlI18n.t("LANCTL.UI.VIEW.PHYSICAL_INVENTORY"),
+    saveMode: window.LanctlI18n.t("LANCTL.UI.TEXT.SAVE_MODE"),
+    saveIntervalMinutes: window.LanctlI18n.t("LANCTL.UI.TEXT.SAVE_INTERVAL_MINUTES"),
+    networkDatabase: window.LanctlI18n.t("LANCTL.UI.TEXT.NETWORK_INVENTORY"),
+    networkGroups: window.LanctlI18n.t("LANCTL.UI.VIEW.NETWORK_GROUPS"),
+    databaseLog: window.LanctlI18n.t("LANCTL.UI.VIEW.DATABASE_LOG"),
+    credentials: window.LanctlI18n.t("LANCTL.UI.VIEW.CREDENTIAL_STORE"),
+    iconsDirectory: window.LanctlI18n.t("LANCTL.UI.VIEW.ICON_FOLDER"),
+    workspace: window.LanctlI18n.t("LANCTL.UI.VIEW.WORKSPACE"),
+    project: window.LanctlI18n.t("LANCTL.UI.TEXT.PROJECT"),
+    projectId: window.LanctlI18n.t("LANCTL.UI.VIEW.PROJECT_IDENTIFIER"),
+    contentHash: window.LanctlI18n.t("LANCTL.UI.VIEW.CONTENT_FINGERPRINT"),
+    metadata: window.LanctlI18n.t("LANCTL.UI.WORD.METADATA"),
+    monitor: window.LanctlI18n.t("LANCTL.UI.WORD.MONITOR"),
+    monitoring: window.LanctlI18n.t("LANCTL.UI.VIEW.MONITORING_67BC1FA5"),
+    runtime: window.LanctlI18n.t("LANCTL.UI.VIEW.RUNTIME"),
+    incidents: window.LanctlI18n.t("LANCTL.UI.TEXT.INCIDENTS"),
+    lock: window.LanctlI18n.t("LANCTL.UI.WORD.LOCK"),
+    profiles: window.LanctlI18n.t("LANCTL.UI.WORD.PROFILES"),
+    assignments: window.LanctlI18n.t("LANCTL.UI.WORD.ASSIGNMENTS"),
+    databases: window.LanctlI18n.t("LANCTL.UI.VIEW.DATABASES"),
+    storage: window.LanctlI18n.t("LANCTL.UI.WORD.STORAGE"),
+    projects: window.LanctlI18n.t("LANCTL.UI.TEXT.PROJECT"),
   };
   return path
     .split(".")
@@ -1267,75 +1266,75 @@ settings = async function () {
   if (state.launcher !== "lanwire") return wireBase.settings();
   const payload = await call("settings");
   const general = [
-      field("Vista inicial", "pref_view", wirePrefs.view, "text", [
-        ["map", "Topología"],
-        ["list", "Lista"],
+      field(window.LanctlI18n.t("LANCTL.UI.VIEW.INITIAL_VIEW"), "pref_view", wirePrefs.view, "text", [
+        ["map", window.LanctlI18n.t("LANCTL.UI.TEXT.TOPOLOGY")],
+        ["list", window.LanctlI18n.t("LANCTL.UI.TEXT.LIST")],
       ]),
     ],
     list = [
-      field("Ordenar por", "pref_sort", wireSort.key, "text", [
-        ["name", "Nombre"],
-        ["id", "Identificador"],
-        ["type", "Tipo"],
+      field(window.LanctlI18n.t("LANCTL.UI.VIEW.SORT_BY"), "pref_sort", wireSort.key, "text", [
+        ["name", window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.NAME")],
+        ["id", window.LanctlI18n.t("LANCTL.UI.HTML.IDENTIFIER")],
+        ["type", window.LanctlI18n.t("LANCTL.UI.TEXT.TYPE")],
       ]),
     ],
     topology = [
       field(
-        "Mostrar nombres y etiquetas",
+        window.LanctlI18n.t("LANCTL.UI.VIEW.SHOW_NAMES_AND_LABELS"),
         "pref_labels",
         String(wirePrefs.labels),
         "text",
         [
-          ["true", "Sí"],
-          ["false", "No"],
+          ["true", window.LanctlI18n.t("LANCTL.UI.TEXT.YES")],
+          ["false", window.LanctlI18n.t("LANCTL.UI.TEXT.NO")],
         ],
       ),
       field(
-        "Mostrar enlaces Wi-Fi",
+        window.LanctlI18n.t("LANCTL.UI.VIEW.SHOW_WI_FI_LINKS"),
         "pref_showWifi",
         String(!!wirePrefs.showWifi),
         "text",
         [
-          ["false", "No"],
-          ["true", "Sí"],
+          ["false", window.LanctlI18n.t("LANCTL.UI.TEXT.NO")],
+          ["true", window.LanctlI18n.t("LANCTL.UI.TEXT.YES")],
         ],
       ),
       field(
-        "Mostrar minimapa",
+        window.LanctlI18n.t("LANCTL.UI.VIEW.SHOW_MINIMAP"),
         "pref_minimap",
         String(wirePrefs.minimap),
         "text",
         [
-          ["true", "Sí"],
-          ["false", "No"],
+          ["true", window.LanctlI18n.t("LANCTL.UI.TEXT.YES")],
+          ["false", window.LanctlI18n.t("LANCTL.UI.TEXT.NO")],
         ],
       ),
-      field("Niveles de conexiones", "pref_depth", wirePrefs.depth, "number"),
+      field(window.LanctlI18n.t("LANCTL.UI.VIEW.CONNECTION_LEVELS"), "pref_depth", wirePrefs.depth, "number"),
     ];
   const connectionsSettings = [
     field(
-      "Conexión predeterminada de elementos nuevos",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.DEFAULT_CONNECTION_FOR_NEW_ELEMENTS"),
       "pref_connectionMode",
       wirePrefs.connectionMode || "wired",
       "text",
-      wireModes,
+      wireModes(),
     ),
     field(
-      "Mostrar puertos en el lienzo",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.SHOW_PORTS_ON_CANVAS"),
       "pref_showPorts",
       String(wirePrefs.showPorts !== false),
       "text",
       [
-        ["true", "Sí"],
-        ["false", "No"],
+        ["true", window.LanctlI18n.t("LANCTL.UI.TEXT.YES")],
+        ["false", window.LanctlI18n.t("LANCTL.UI.TEXT.NO")],
       ],
     ),
   ];
   const sections = [
-      ["General", general],
-      ["Puertos y conexiones", connectionsSettings],
-      ["Lista y búsqueda", list],
-      ["Topología", topology],
+      [window.LanctlI18n.t("LANCTL.UI.TEXT.GENERAL"), general],
+      [window.LanctlI18n.t("LANCTL.UI.VIEW.PORTS_AND_CONNECTIONS"), connectionsSettings],
+      [window.LanctlI18n.t("LANCTL.UI.VIEW.LIST_AND_SEARCH"), list],
+      [window.LanctlI18n.t("LANCTL.UI.TEXT.TOPOLOGY"), topology],
     ],
     entries = new Map();
   for (const category of ["storage", "projects", "logging"]) {
@@ -1350,8 +1349,8 @@ settings = async function () {
         object ? "textarea" : typeof e.value === "number" ? "number" : "text",
         boolean
           ? [
-              ["true", "Activado"],
-              ["false", "Desactivado"],
+              ["true", window.LanctlI18n.t("LANCTL.UI.TEXT.ENABLED")],
+              ["false", window.LanctlI18n.t("LANCTL.UI.TEXT.DISABLED")],
             ]
           : null,
       );
@@ -1360,11 +1359,11 @@ settings = async function () {
       const note = document.createElement("small");
       note.textContent =
         e.readOnly ||
-        "Ajuste compartido de la suite. Las rutas se aplican al volver a abrir la interfaz.";
+        window.LanctlI18n.t("LANCTL.UI.VIEW.SHARED_SUITE_SETTING_PATHS_APPLY_WHEN_REOPENING_THE_INTERFACE");
       f.append(note);
       if (!e.readOnly && /directory$/i.test(e.path)) {
         f.append(
-          wireAction("Elegir carpeta…", async () => {
+          wireAction(window.LanctlI18n.t("LANCTL.UI.TEXT.CHOOSE_FOLDER"), async () => {
             const selected = await call("select_project_directory");
             if (selected.path) input.value = selected.path;
           }),
@@ -1375,14 +1374,14 @@ settings = async function () {
     }
     sections.push([
       category === "storage"
-        ? "Almacenamiento"
+        ? window.LanctlI18n.t("LANCTL.UI.WORD.STORAGE")
         : category === "projects"
-          ? "Proyecto"
-          : "Avanzado",
+          ? window.LanctlI18n.t("LANCTL.UI.TEXT.PROJECT")
+          : window.LanctlI18n.t("LANCTL.UI.TEXT.ADVANCED"),
       nodes,
     ]);
   }
-  const search = field("Buscar configuración", "settings_search");
+  const search = field(window.LanctlI18n.t("LANCTL.UI.TEXT.SEARCH_SETTINGS"), "settings_search");
   const tabs = wireTabs(sections);
   search.querySelector("input").oninput = (e) => {
     const q = e.target.value.toLocaleLowerCase();
@@ -1394,7 +1393,7 @@ settings = async function () {
       );
     });
   };
-  const reset = wireAction("Restaurar preferencias visuales", () => {
+  const reset = wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.RESTORE_VISUAL_PREFERENCES"), () => {
     for (const [name, val] of Object.entries({
       pref_view: "map",
       pref_sort: "name",
@@ -1408,12 +1407,12 @@ settings = async function () {
       tabs.querySelector(`[name="${name}"]`).value = val;
   });
   showForm(
-    "Configuración de LANWIRE",
+    window.LanctlI18n.t("LANCTL.UI.VIEW.LANWIRE_SETTINGS"),
     [search, reset, tabs],
     async (values) => {
       const depth = Number(values.pref_depth);
       if (!Number.isInteger(depth) || depth < 1 || depth > 10)
-        throw Error("Los niveles deben estar entre 1 y 10.");
+        throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.LEVELS_MUST_BE_BETWEEN_1_AND_10"));
       for (const [key, e] of entries) {
         if (e.readOnly || !(key in values)) continue;
         const raw = values[key],
@@ -1461,44 +1460,44 @@ new ResizeObserver(() => {
 }).observe($("#canvas"));
 wireNew = function (initialKind = "switch.24ports") {
   const choices = [
-    ["switch.5ports", "Switch · 5 puertos", "SW"],
-    ["switch.12ports", "Switch · 12 puertos", "SW"],
-    ["switch.24ports", "Switch · 24 puertos", "SW"],
-    ["switch.48ports", "Switch · 48 puertos", "SW"],
-    ["router.gateway", "Router", "RT"],
-    ["pc.1port", "Ordenador · 1 puerto", "PC"],
-    ["pc.2ports", "Ordenador · 2 puertos", "PC"],
-    ["server.2ports", "Servidor · 2 puertos", "SR"],
-    ["tray", "Bandeja para dispositivos", "TR"],
+    ["switch.5ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SWITCH_5_PORTS"), "SW"],
+    ["switch.12ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SWITCH_12_PORTS"), "SW"],
+    ["switch.24ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SWITCH_24_PORTS"), "SW"],
+    ["switch.48ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SWITCH_48_PORTS"), "SW"],
+    ["router.gateway", window.LanctlI18n.t("LANCTL.UI.WORD.ROUTER"), "RT"],
+    ["pc.1port", window.LanctlI18n.t("LANCTL.UI.VIEW.COMPUTER_1_PORT"), "PC"],
+    ["pc.2ports", window.LanctlI18n.t("LANCTL.UI.VIEW.COMPUTER_2_PORTS"), "PC"],
+    ["server.2ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SERVER_2_PORTS"), "SR"],
+    ["tray", window.LanctlI18n.t("LANCTL.UI.VIEW.DEVICE_TRAY"), "TR"],
     ["router.otg", "OTG", "OT"],
-    ["panel", "Panel de conexiones · 24 puertos", "PN"],
-    ["outlet", "Toma de red · pared y habitación", "PX"],
-    ["wire.copper", "Cable de cobre", "WL"],
-    ["wire.fiber", "Cable de fibra", "FB"],
-    ["wire.dac", "Cable DAC", "WL"],
-    ["rack", "Rack", "RK"],
+    ["panel", window.LanctlI18n.t("LANCTL.UI.VIEW.PATCH_PANEL_24_PORTS"), "PN"],
+    ["outlet", window.LanctlI18n.t("LANCTL.UI.VIEW.NETWORK_OUTLET_WALL_AND_ROOM"), "PX"],
+    ["wire.copper", window.LanctlI18n.t("LANCTL.UI.TEXT.COPPER_CABLE"), "WL"],
+    ["wire.fiber", window.LanctlI18n.t("LANCTL.UI.TEXT.FIBER_CABLE"), "FB"],
+    ["wire.dac", window.LanctlI18n.t("LANCTL.UI.VIEW.DAC_CABLE"), "WL"],
+    ["rack", window.LanctlI18n.t("LANCTL.UI.WORD.RACK"), "RK"],
   ];
   const fields = [
     field(
-      "Tipo",
+      window.LanctlI18n.t("LANCTL.UI.TEXT.TYPE"),
       "kind",
       initialKind,
       "text",
       choices.map(([v, l]) => [v, l]),
     ),
-    field("Prefijo del identificador", "prefix", "SW"),
-    field("Nombre", "name"),
-    field("Alias", "alias"),
-    field("Descripción", "description", "", "textarea"),
+    field(window.LanctlI18n.t("LANCTL.UI.VIEW.IDENTIFIER_PREFIX"), "prefix", "SW"),
+    field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.NAME"), "name"),
+    field(window.LanctlI18n.t("LANCTL.UI.WORD.ALIAS"), "alias"),
+    field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.DESCRIPTION"), "description", "", "textarea"),
     field(
-      "Tipo de conexión",
+      window.LanctlI18n.t("LANCTL.UI.VIEW.CONNECTION_TYPE"),
       "connectionMode",
       wirePrefs.connectionMode || "wired",
       "text",
-      wireModes,
+      wireModes(),
     ),
-    field("Altura del rack (unidades)", "units", 42, "number"),
-    field("Ancho de montaje (pulgadas)", "widthInches", 19, "text", [
+    field(window.LanctlI18n.t("LANCTL.UI.VIEW.RACK_HEIGHT_UNITS"), "units", 42, "number"),
+    field(window.LanctlI18n.t("LANCTL.UI.VIEW.MOUNTING_WIDTH_INCHES"), "widthInches", 19, "text", [
       [10, "10″"],
       [19, "19″"],
       [21, "21″"],
@@ -1507,8 +1506,8 @@ wireNew = function (initialKind = "switch.24ports") {
   ];
   const heightField = fields.at(-2), widthField = fields.at(-1);
   const height = heightField.querySelector("input");
-  const endpoints = [["", "Sin conectar"], ...physicalInventory().flatMap(r => Object.keys(r.data.ports || {}).map(port => [JSON.stringify({device: r.id, port}), `${r.data.name || r.id} · ${port}`]))];
-  const endFields = [field("Extremo A", "endpointA", "", "text", endpoints), field("Extremo B", "endpointB", "", "text", endpoints)];
+  const endpoints = [["", window.LanctlI18n.t("LANCTL.UI.TEXT.NOT_CONNECTED")], ...physicalInventory().flatMap(r => Object.keys(r.data.ports || {}).map(port => [JSON.stringify({device: r.id, port}), `${r.data.name || r.id} · ${port}`]))];
+  const endFields = [field(window.LanctlI18n.t("LANCTL.UI.VIEW.ENDPOINT_A"), "endpointA", "", "text", endpoints), field(window.LanctlI18n.t("LANCTL.UI.VIEW.ENDPOINT_B"), "endpointB", "", "text", endpoints)];
   fields.push(...endFields);
   height.min = 4;
   height.max = 52;
@@ -1527,7 +1526,7 @@ wireNew = function (initialKind = "switch.24ports") {
   };
   fields[0].querySelector("select").onchange = change;
   change();
-  showForm(initialKind.startsWith("wire.") ? "Nuevo cable" : initialKind === "rack" ? "Nuevo rack" : "Nuevo elemento físico", fields, async (values) => {
+  showForm(initialKind.startsWith("wire.") ? window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_CABLE") : initialKind === "rack" ? window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_RACK") : window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_PHYSICAL_ELEMENT"), fields, async (values) => {
     const { units, widthInches, endpointA, endpointB, ...data } = values;
     const result = await call("wire_create", {
       ...data,
@@ -1553,7 +1552,7 @@ function wireResizeColumns() {
     if (saved) th.style.width = saved + "px";
     const grip = document.createElement("span");
     grip.className = "wire-column-grip";
-    grip.title = "Arrastrar para cambiar la anchura";
+    grip.title = window.LanctlI18n.t("LANCTL.UI.VIEW.DRAG_TO_CHANGE_WIDTH");
     th.append(grip);
     grip.onpointerdown = (e) => {
       e.preventDefault();

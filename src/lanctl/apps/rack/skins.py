@@ -9,6 +9,7 @@ from lanctl.apps.wire.xfile import update_json
 from lanctl.core.physical_placement import appearance as appearance
 from lanctl.core.physical_placement import span as span
 from lanctl.core.physical_placement import validate_location as validate_location
+from lanctl.shared.i18n import t
 
 
 def profiles():
@@ -71,7 +72,7 @@ def profiles():
             }
         )
     for kind, name, heights in [
-        ("server", "Servidor", (1, 2, 4)),
+        ("server", t("LANCTL.UI.EXTENSION.SERVER"), (1, 2, 4)),
         ("ups", "SAI / UPS", (2, 3, 4)),
         ("router", "Router / cortafuegos", (1,)),
         ("shelf", "Bandeja", (1, 2)),

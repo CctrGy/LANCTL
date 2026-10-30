@@ -304,3 +304,14 @@
     text-align: left;
   }
 }
+
+.report-preview-toolbar:not([hidden]) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Long dated session labels must fit narrow windows. */
+.monitor-filters label{min-width:0;max-width:100%}
+.monitor-filters select,.report-dialog [name="reportSession"]{min-width:0;max-width:100%}

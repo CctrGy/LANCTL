@@ -86,3 +86,17 @@ class ActivityStore:
             )
             result = [{"schemaVersion": 1, **dict(row)} for row in rows]
             return list(reversed(result)) if latest else result
+
+    def session_metadata(self) -> list[dict]:
+        """Earliest retained record per owned session; never an inferred start."""
+        if not self.path.exists():
+            return []
+        with self._connection() as db:
+            return [
+                dict(row)
+                for row in db.execute(
+                    "SELECT session AS id, MIN(created) AS firstRecord FROM activity "
+                    "WHERE owner=? GROUP BY session",
+                    (self.owner,),
+                )
+            ]

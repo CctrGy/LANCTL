@@ -149,3 +149,47 @@ Los plugins sin firma ofrecen «Instalar versión firmada…». Se comprueban la
 firma y el ID antes de instalar; autorizar al editor y conceder permisos siguen
 siendo pasos explícitos posteriores. No se genera confianza ni se firman
 paquetes automáticamente. Una versión firmada debe proceder del editor.
+
+## Ventana de configuración con pestañas
+
+El botón **Configuración** abre una subventana modal sobre la pantalla actual
+de LANCTL. Carga el catálogo completo de preferencias admitidas por la GUI,
+con búsqueda global y pestañas General, Apariencia, Proyectos, Red, LANIP,
+Acceso remoto, LANMON, Registros, Plugins, Idioma y Wake on LAN. No expone rutas
+internas ni convierte preferencias exclusivas de CLI/TUI en opciones GUI.
+
+Los controles dependen del tipo: texto, números, casillas, desplegables de
+opciones registradas y listas con un valor por línea. Las opciones anulables
+incluyen «Usar valor automático». Las estructuras complejas conservan un
+editor JSON identificado como avanzado; la clave técnica se muestra siempre
+debajo del control y permite seleccionar su texto. La carpeta de proyectos incorpora selector nativo.
+
+Los cambios del programa permanecen en borrador entre pestañas. **Guardar
+cambios** valida y aplica un lote mediante el servicio compartido, sin guardar
+una parte si otro valor resulta inválido. Cerrar o cambiar de ámbito pide
+confirmación si quedan cambios. Un error mantiene el formulario para corregirlo.
+
+**Proyecto activo** muestra el catálogo del proyecto con el mismo diseño;
+cada campo dispone de **Guardar este ajuste**, conservando las transacciones
+individuales existentes de VLF. Las operaciones quedan vinculadas al contexto
+de proyecto al abrir la ventana: si otra aplicación cambia de proyecto, se
+rechaza un guardado obsoleto. Los engranajes de los launchers en Inicio también
+usan esta ventana, con las preferencias admitidas por cada launcher.
+
+El buscador recibe el foco al abrir Settings y muestra un aviso si no encuentra
+opciones. Las pestañas admiten flechas izquierda/derecha y Home/End. El pie de
+guardado permanece visible en ventanas estrechas y los errores conservan texto
+legible con los temas claros y oscuros.
+
+## Seguimiento del proyecto en LANIP
+
+LANIP carga el proyecto seleccionado en LANCTL al abrirse y sigue los cambios
+con ambas ventanas abiertas. Además de las notificaciones, comprueba la
+identidad compartida cada cinco segundos cuando está libre y al recuperar
+el foco. Nombre, contexto e inventario se actualizan juntos, sin exigir volver
+a seleccionar el VLF dentro de LANIP.
+
+Una edición pendiente, un formulario abierto o un escaneo aplazan el refresco.
+Al terminarlos se aplica la selección vigente; las operaciones de un formulario
+antiguo conservan su contexto y se rechazan si el proyecto cambió. La consulta
+de selección no abre de nuevo el VLF ni guarda o descarta cambios.

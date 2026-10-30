@@ -8,6 +8,7 @@ from colorama import Fore, Style
 from lanctl.core.config import load_config
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.plugins.manager import get_plugin_manager
+from lanctl.shared.i18n import t, translate_specification
 
 SAFE_ACTIONS = {"inventory.summary", "function.call"}
 
@@ -15,7 +16,7 @@ SAFE_ACTIONS = {"inventory.summary", "function.call"}
 def register_declarative_commands(commands: argparse._SubParsersAction) -> None:
     occupied = {str(name).casefold() for name in commands.choices}
     for extension in get_plugin_manager().extensions.list("command"):
-        spec = extension.specification
+        spec = translate_specification(extension.specification)
         name = str(spec.get("name", "")).strip().casefold()
         aliases = [str(value).strip().casefold() for value in spec.get("aliases", [])]
         action = str(spec.get("action", "")).casefold()
@@ -29,7 +30,7 @@ def register_declarative_commands(commands: argparse._SubParsersAction) -> None:
             parser.add_argument(
                 "plugin_arguments",
                 nargs=argparse.REMAINDER,
-                help="Argumentos gestionados por el complemento.",
+                help=t("LANCTL.UI.HELP.ARGUMENTS_MANAGED_BY_THE_PLUGIN"),
             )
         parser.set_defaults(handler=_run, plugin_extension=extension, plugin_action=action)
         occupied.update([name, *aliases])
@@ -67,14 +68,27 @@ def _inventory_summary() -> int:
     protocols = Counter(protocol for device in devices for protocol in device.protocols)
     with_ip = sum(device.ip not in ("", "-") for device in devices)
     with_mac = sum(bool(device.mac) for device in devices)
-    print(f"{Style.BRIGHT}{Fore.CYAN}NETWORK INVENTORY SUMMARY{Style.RESET_ALL}")
-    print(f" Devices       : {len(devices)}")
-    print(f" With IP / MAC : {with_ip} / {with_mac}")
+    print(
+        t(
+            "LANCTL.UI.SUMMARY.VALUEVALUENETWORK_INVENTORY_SUMMARYVALUE",
+            value0=f"{Style.BRIGHT}",
+            value1=f"{Fore.CYAN}",
+            value2=f"{Style.RESET_ALL}",
+        )
+    )
+    print(t("LANCTL.UI.SUMMARY.DEVICES_VALUE", value0=f"{len(devices)}"))
+    print(t("LANCTL.UI.SUMMARY.WITH_IP_MAC_VALUE_VALUE", value0=f"{with_ip}", value1=f"{with_mac}"))
     print(f" CNF O/X/S/-/F : {cnf['O']} / {cnf['X']} / {cnf['S']} / {cnf['-']} / {cnf['F']}")
     print(
-        f" Groups        : {', '.join(f'{key}={value}' for key, value in groups.most_common()) or '-'}"
+        t(
+            "LANCTL.UI.SUMMARY.GROUPS_VALUE",
+            value0=f"{', '.join((f'{key}={value}' for key, value in groups.most_common())) or '-'}",
+        )
     )
     print(
-        f" Protocols     : {', '.join(f'{key}={value}' for key, value in protocols.most_common()) or '-'}"
+        t(
+            "LANCTL.UI.SUMMARY.PROTOCOLS_VALUE",
+            value0=f"{', '.join((f'{key}={value}' for key, value in protocols.most_common())) or '-'}",
+        )
     )
     return 0

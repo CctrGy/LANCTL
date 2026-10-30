@@ -4,6 +4,8 @@ import os
 import sys
 from threading import Lock
 
+from lanctl.shared.i18n import t
+
 
 class ScanProgress:
     """Progreso compacto; queda silencioso cuando stdout no es interactivo."""
@@ -94,9 +96,14 @@ class ScanProgress:
         width = 24
         filled = round(width * ratio)
         bar = "█" * filled + "─" * (width - filled)
-        line = (
-            f"Search:    [{bar}] {ratio:>6.1%} {self.current}/{self.total}  "
-            f"[founds: {len(self._found_keys)}/{self.found_total}]"
+        line = t(
+            "LANCTL.UI.DETAIL.SEARCH_VALUE_VALUE_VALUE_VALUE_FOUND_VALUE_VALUE",
+            value0=f"{bar}",
+            value1=f"{ratio:>6.1%}",
+            value2=f"{self.current}",
+            value3=f"{self.total}",
+            value4=f"{len(self._found_keys)}",
+            value5=f"{self.found_total}",
         )
         self._visible_width = max(self._visible_width, len(line))
         self.stream.write("\r" + line.ljust(self._visible_width))

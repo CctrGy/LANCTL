@@ -7,6 +7,7 @@ from lanctl.apps.ip.interfaces.cli.commands.call import public_device
 from lanctl.core.config import load_config
 from lanctl.core.database import DeviceDatabase
 from lanctl.core.output import write_records
+from lanctl.shared.i18n import t
 
 SEARCH_COLUMNS = (
     "ip",
@@ -26,16 +27,16 @@ def register_search_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
     command = commands.add_parser(
         "search",
-        help="Busca dispositivos por alias, nombre, IP o MAC.",
+        help=t("LANCTL.UI.HELP.SEARCH_DEVICES_BY_ALIAS_NAME_IP_OR_MAC"),
     )
-    command.add_argument("selector", help="Alias, nombre, IP o MAC exactos.")
+    command.add_argument("selector", help=t("LANCTL.UI.HELP.EXACT_ALIAS_NAME_IP_OR_MAC"))
     command.add_argument(
         "--json",
         action="store_true",
-        help="Devuelve el registro completo como JSON para scripts.",
+        help=t("LANCTL.UI.HELP.RETURN_THE_COMPLETE_RECORD_AS_JSON_FOR_SCRIPTS"),
     )
     command.add_argument(
-        "--database", default=config["database"], help="Archivo JSON de elementos."
+        "--database", default=config["database"], help=t("LANCTL.UI.HELP.ELEMENT_JSON_FILE")
     )
     command.set_defaults(handler=run_search)
 

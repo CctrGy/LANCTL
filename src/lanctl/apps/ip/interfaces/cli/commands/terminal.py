@@ -7,6 +7,7 @@ from lanctl.apps.ip.infrastructure.terminals import available_terminals, open_te
 from lanctl.core.config import load_config
 from lanctl.core.credentials import CredentialStore
 from lanctl.core.database import DeviceDatabase
+from lanctl.shared.i18n import t
 
 
 def register_terminal_command(commands: argparse._SubParsersAction) -> None:
@@ -14,20 +15,24 @@ def register_terminal_command(commands: argparse._SubParsersAction) -> None:
     command = commands.add_parser(
         "terminal",
         aliases=["cli"],
-        help="Abre la terminal propia de un elemento según su protocolo.",
+        help=t("LANCTL.UI.HELP.OPEN_AN_ELEMENT_S_TERMINAL_ACCORDING_TO_ITS_PROTOCOL"),
     )
-    command.add_argument("selector", help="IP, MAC o alias del elemento.")
-    command.add_argument("-p", "--protocol", help="Protocolo si hay varias terminales.")
+    command.add_argument("selector", help=t("LANCTL.UI.HELP.ELEMENT_IP_MAC_OR_ALIAS"))
+    command.add_argument(
+        "-p", "--protocol", help=t("LANCTL.UI.HELP.PROTOCOL_WHEN_MULTIPLE_TERMINALS_ARE_AVAILABLE")
+    )
     command.add_argument(
         "--native",
         action="store_true",
-        help="Usa el cliente SSH nativo sin la capa de color de LANCTL.",
+        help=t("LANCTL.UI.HELP.USE_THE_NATIVE_SSH_CLIENT_WITHOUT_LANCTL_S_COLOR_LAYER"),
     )
     command.add_argument(
-        "--database", default=config["database"], help="Archivo JSON de elementos."
+        "--database", default=config["database"], help=t("LANCTL.UI.HELP.ELEMENT_JSON_FILE")
     )
     command.add_argument(
-        "--store", default=config["credentials"], help="Almacén cifrado de credenciales."
+        "--store",
+        default=config["credentials"],
+        help=t("LANCTL.UI.TEXT.ENCRYPTED_CREDENTIAL_STORE"),
     )
     command.set_defaults(handler=run_terminal)
 

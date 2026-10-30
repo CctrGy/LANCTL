@@ -1,6 +1,6 @@
 #define MyAppName "LANCTL GUI experimental (NO ESTABLE)"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.3.4-alpha.1"
+  #define MyAppVersion "0.3.4-alpha.2"
 #endif
 #ifndef BuildRoot
   #define BuildRoot "..\..\dist"
@@ -8,7 +8,7 @@
 
 [Setup]
 AppId={{784B812A-7D24-493D-96DE-A62522792841}
-AppName={#MyAppName}
+AppName={cm:AppName}
 AppVersion={#MyAppVersion}
 DefaultDirName={autopf}\LANCTL
 DefaultGroupName=LANCTL
@@ -24,23 +24,32 @@ UninstallDisplayIcon={app}\LANCTL.exe
 ChangesEnvironment=yes
 SetupLogging=yes
 WizardSizePercent=130,140
+ShowLanguageDialog=yes
+UsePreviousLanguage=yes
+UsePreviousTasks=yes
+
+[Languages]
+Name: en; MessagesFile: "compiler:Default.isl"
+Name: es; MessagesFile: "compiler:Languages\Spanish.isl"
+
+#include "messages.iss"
 
 [Types]
-Name: standard; Description: "Standard"
-Name: monitor; Description: "Monitor node"
-Name: custom; Description: "Custom"; Flags: iscustom
+Name: standard; Description: "{cm:TypeStandard}"
+Name: monitor; Description: "{cm:TypeMonitor}"
+Name: custom; Description: "{cm:TypeCustom}"; Flags: iscustom
 
 [Components]
 Name: core; Description: "LANCTL application"; Types: standard monitor custom; Flags: fixed
 Name: path; Description: "Add LANCTL to system PATH"; Types: standard monitor custom
-Name: monitor; Description: "Servicio de monitorización en segundo plano (LANMON)"; Types: standard monitor custom
-Name: plugins; Description: "Plugins opcionales (todos, ninguno o selección individual)"; Types: standard monitor custom
-Name: plugins\example; Description: "Ejemplo: resumen de inventario"; Types: standard monitor custom
-Name: plugins\vendor; Description: "Fabricantes MAC (requiere firma autorizada para activar)"; Types: standard monitor custom
-Name: plugins\mdns; Description: "Descubrimiento mDNS/SSDP (requiere firma autorizada para activar)"; Types: standard monitor custom
-Name: plugins\smb; Description: "Descubrimiento Windows/SMB (requiere firma autorizada para activar)"; Types: standard monitor custom
-Name: plugins\wol; Description: "Wake-on-LAN (requiere firma autorizada para activar)"; Types: standard monitor custom
-Name: plugins\lab; Description: "Emulador de red"; Types: standard monitor custom
+Name: monitor; Description: "{cm:Monitor}"; Types: standard monitor custom
+Name: plugins; Description: "{cm:Plugins}"; Types: standard monitor custom
+Name: plugins\example; Description: "{cm:Example}"; Types: standard monitor custom
+Name: plugins\vendor; Description: "{cm:Vendor}"; Types: standard monitor custom
+Name: plugins\mdns; Description: "{cm:Mdns}"; Types: standard monitor custom
+Name: plugins\smb; Description: "{cm:Smb}"; Types: standard monitor custom
+Name: plugins\wol; Description: "{cm:Wol}"; Types: standard monitor custom
+Name: plugins\lab; Description: "{cm:Lab}"; Types: standard monitor custom
 
 [Dirs]
 ; La raíz también hereda permisos de modificación para que cualquier estado
@@ -87,21 +96,22 @@ Name: "{group}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; W
 Name: "{group}\LANCTL CLI"; Filename: "{app}\LANCTL.exe"; Parameters: "--cli"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
 Name: "{group}\LANIP"; Filename: "{app}\lanip.exe"; Parameters: "--tui"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
 Name: "{group}\LANIP GUI"; Filename: "{app}\lanctl-window.exe"; Parameters: "lanip"; WorkingDir: "{app}"; Tasks: ipgui; IconFilename: "{app}\lanip.exe"
-Name: "{group}\LANWIRE Physical"; Filename: "{app}\lanwire.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
-Name: "{group}\LANMON Monitor"; Filename: "{app}\lanmon.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
-Name: "{group}\LANMON Events"; Filename: "{app}\lanmon.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: eventviewer; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
-Name: "{group}\LANACCESS Administrator (UAC)"; Filename: "{app}\LANCTL.exe"; Parameters: "--admin lanaccess --tui"; WorkingDir: "{app}"; Tasks: accessadmin; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
-Name: "{group}\LANRACK Viewer"; Filename: "{app}\lanrack.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
-Name: "{group}\LANACCESS Credentials"; Filename: "{app}\lanaccess.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANWIRE {cm:Physical}"; Filename: "{app}\lanwire.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANMON {cm:MonitorShortcut}"; Filename: "{app}\lanmon.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANMON {cm:MonitorEvents}"; Filename: "{app}\lanmon.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: eventviewer; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANACCESS {cm:Administrator}"; Filename: "{app}\LANCTL.exe"; Parameters: "--admin lanaccess --tui"; WorkingDir: "{app}"; Tasks: accessadmin; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANRACK {cm:Viewer}"; Filename: "{app}\lanrack.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
+Name: "{group}\LANACCESS {cm:Credentials}"; Filename: "{app}\lanaccess.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
 Name: "{autodesktop}\LANCTL TUI"; Filename: "{app}\LANCTL.exe"; Parameters: "--tui"; WorkingDir: "{app}"; Tasks: desktopicon; IconFilename: "{app}\assets\launcher-icons\terminal.ico"
 
 [Tasks]
-Name: ipgui; Description: "Crear acceso directo a la interfaz gráfica de LANIP (requiere WebView2)"; Flags: unchecked
-Name: desktopicon; Description: "Crear acceso directo de LANCTL TUI en el escritorio"; Flags: unchecked
-Name: eventviewer; Description: "Crear acceso directo al visor de eventos LANMON"; Flags: unchecked
-Name: accessadmin; Description: "Crear acceso LANACCESS administrativo (solicita UAC al abrir; no eleva el resto de programas)"; Flags: unchecked
-Name: remoteaccount; Description: "Crear la primera cuenta de acceso remoto del servicio LANACCESS (no activa SSH ni HTTPS)"; Flags: checkedonce
-Name: firstscan; Description: "Al abrir LANIP al finalizar, preparar el primer escaneo con confirmación del rango (rutas del sistema)"; Flags: unchecked
+Name: clink; Description: "{cm:Clink}"; GroupDescription: "{cm:ClinkHelp}"
+Name: ipgui; Description: "{cm:IpGui}"; Flags: unchecked
+Name: desktopicon; Description: "{cm:Desktop}"; Flags: unchecked
+Name: eventviewer; Description: "{cm:EventViewer}"; Flags: unchecked
+Name: accessadmin; Description: "{cm:AccessAdmin}"; Flags: unchecked
+Name: remoteaccount; Description: "{cm:RemoteAccount}"; Flags: checkedonce
+Name: firstscan; Description: "{cm:FirstScan}"; Flags: unchecked
 
 [Registry]
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: NeedsAddPath('{app}'); Components: path
@@ -109,13 +119,14 @@ Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environmen
 [Run]
 ; Corta la herencia users-modify de la raíz para credenciales y código de plugins.
 Filename: "{sys}\icacls.exe"; Parameters: """{commonappdata}\LANCTL\access"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"""; Flags: runhidden waituntilterminated
-Filename: "{sys}\icacls.exe"; Parameters: """{commonappdata}\LANCTL\plugins"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"""; Flags: runhidden waituntilterminated
-Filename: "{app}\lanaccess.exe"; Parameters: "remote-setup"; Tasks: remoteaccount; Flags: runhidden waituntilterminated skipifsilent; StatusMsg: "Preparando la cuenta inicial de acceso remoto del servicio LANACCESS..."
-Filename: "{app}\LANCTL.exe"; Parameters: "setup-defaults --theme {code:GetInitialTheme} --plugins {code:GetPluginSelection}"; Flags: runhidden waituntilterminated; StatusMsg: "Preparando preferencias y plugins sin activarlos; conservando elecciones existentes..."
-Filename: "{app}\LANCTL.exe"; Parameters: "completions install"; Flags: runhidden waituntilterminated runasoriginaluser; StatusMsg: "Registrando el completado Clink del usuario, si está disponible..."
-Filename: "{app}\LANCTL.exe"; Parameters: "monitor service install --yes"; Components: monitor; Flags: runhidden waituntilterminated; StatusMsg: "Instalando el servicio permanente LANCTL Monitor..."
-Filename: "{app}\lanaccess.exe"; Parameters: "--tui"; Description: "Abrir LANACCESS para gestionar credenciales de dispositivos del inventario"; Flags: postinstall unchecked skipifsilent runasoriginaluser
-Filename: "{app}\LANCTL.exe"; Parameters: "{code:GetLanipArguments}"; Description: "Abrir LANIP (y preparar la confirmación del primer escaneo si se seleccionó)"; Flags: postinstall unchecked skipifsilent runasoriginaluser runhidden
+Filename: "{sys}\icacls.exe"; Parameters: """{commonappdata}\LANCTL\plugins"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"""; Flags: runhidden waituntilterminated; AfterInstall: ConfigureInitialPreferences
+Filename: "{app}\lanaccess.exe"; Parameters: "remote-setup"; Tasks: remoteaccount; Flags: runhidden waituntilterminated skipifsilent; StatusMsg: "{cm:RemoteStatus}"
+Filename: "{app}\LANCTL.exe"; Parameters: "completions install"; Tasks: clink; Flags: runhidden waituntilterminated runasoriginaluser; StatusMsg: "{cm:ClinkStatus}"
+Filename: "{app}\LANCTL.exe"; Parameters: "monitor service install --yes"; Components: monitor; Flags: runhidden waituntilterminated; StatusMsg: "{cm:MonitorStatus}"
+Filename: "{app}\lanaccess.exe"; Parameters: "--tui"; Description: "{cm:OpenAccess}"; Flags: postinstall unchecked skipifsilent runasoriginaluser
+Filename: "{app}\LANCTL.exe"; Parameters: "{code:GetLanipArguments}"; Description: "{cm:OpenIp}"; Flags: postinstall unchecked skipifsilent runasoriginaluser runhidden
+
+Filename: "{app}\LANCTL.exe"; Parameters: "completions uninstall"; Check: not WizardIsTaskSelected('clink'); Flags: runhidden waituntilterminated runasoriginaluser; StatusMsg: "{cm:ClinkRemoveStatus}"
 
 [UninstallRun]
 Filename: "{app}\LANCTL.exe"; Parameters: "completions uninstall"; Flags: runhidden waituntilterminated; RunOnceId: "LANCTLClinkCurrentUser"
@@ -126,6 +137,19 @@ var
   ThemePage: TInputOptionWizardPage;
   ThemePreview: TBitmapImage;
   MonitorExplanation: TNewStaticText;
+  ProgramLanguagePage: TWizardPage;
+  ProgramLanguageCombo: TNewComboBox;
+  ProgramLanguageCodes: TStringList;
+  ChangeProgramLanguage: TNewCheckBox;
+  ProgramLanguageHelp: TNewStaticText;
+
+#include "program-languages.iss"
+
+function GetProgramLanguage(Param: String): String;
+begin
+  Result := ProgramLanguageCodes[ProgramLanguageCombo.ItemIndex];
+end;
+
 
 function GetInitialTheme(Param: String): String;
 begin
@@ -144,27 +168,41 @@ begin
 end;
 
 procedure InitializeWizard;
+var Requested, Previous, ChangeRequested, Tasks: String;
+  Index: Integer;
+  TaskOverride: Boolean;
 begin
+  { Older versions always attempted Clink registration. Preserve that default
+    on the first migration, unless the command line explicitly chooses tasks. }
+  TaskOverride := False;
+  for Index := 1 to ParamCount do
+    if (Pos('/tasks=', Lowercase(ParamStr(Index))) = 1) or
+       (Pos('/mergetasks=', Lowercase(ParamStr(Index))) = 1) then TaskOverride := True;
+  if (GetPreviousData('ClinkChoiceVersion', '') = '') and not TaskOverride then begin
+    Tasks := WizardSelectedTasks(False);
+    if Tasks <> '' then Tasks := Tasks + ',';
+    WizardSelectTasks(Tasks + 'clink');
+  end;
   MonitorExplanation := TNewStaticText.Create(WizardForm);
   MonitorExplanation.Parent := WizardForm.ComponentsList.Parent;
   MonitorExplanation.AutoSize := False;
   MonitorExplanation.WordWrap := True;
   MonitorExplanation.Width := WizardForm.ComponentsList.Width;
-  MonitorExplanation.Caption := 'LANMON puede ejecutar las comprobaciones de monitorización configuradas como servicio de Windows, sin mantener abierta la GUI ni una terminal. Es opcional: desmarcar el servicio no elimina LANMON ni impide usarlo de forma interactiva.';
+  MonitorExplanation.Caption := CustomMessage('MonitorExplanation');
   MonitorExplanation.AdjustHeight;
   WizardForm.ComponentsList.Height := WizardForm.ComponentsList.Height -
     MonitorExplanation.Height - ScaleY(8);
   MonitorExplanation.Left := WizardForm.ComponentsList.Left;
   MonitorExplanation.Top := WizardForm.ComponentsList.Top +
     WizardForm.ComponentsList.Height + ScaleY(8);
-  ThemePage := CreateInputOptionPage(wpSelectComponents, 'Apariencia inicial',
-    'Elige un tema para el primer inicio',
-    'Las actualizaciones conservan el tema y los plugins elegidos previamente. El tema base siempre se incluye.', True, False);
-  ThemePage.Add('Grafito');
-  ThemePage.Add('Azul noche');
-  ThemePage.Add('Bosque');
-  ThemePage.Add('Violeta');
-  ThemePage.Add('Claro');
+  ThemePage := CreateInputOptionPage(wpSelectComponents, CustomMessage('ThemeTitle'),
+    CustomMessage('ThemeSubtitle'),
+    CustomMessage('ThemeHelp'), True, False);
+  ThemePage.Add(CustomMessage('Graphite'));
+  ThemePage.Add(CustomMessage('Midnight'));
+  ThemePage.Add(CustomMessage('Forest'));
+  ThemePage.Add(CustomMessage('Violet'));
+  ThemePage.Add(CustomMessage('Light'));
   ThemePage.SelectedValueIndex := 0;
   ThemePage.CheckListBox.SetBounds(0, ScaleY(50), ScaleX(110), ScaleY(170));
   ThemePage.CheckListBox.OnClickCheck := @UpdateThemePreview;
@@ -179,6 +217,54 @@ begin
     (ThemePage.SurfaceWidth - ScaleX(120)) * 5 div 8);
   ThemePreview.Stretch := True;
   UpdateThemePreview(nil);
+  ProgramLanguagePage := CreateCustomPage(ThemePage.ID,
+    CustomMessage('ProgramLanguageTitle'), CustomMessage('ProgramLanguageSubtitle'));
+  ProgramLanguageHelp := TNewStaticText.Create(WizardForm);
+  ProgramLanguageHelp.Parent := ProgramLanguagePage.Surface;
+  ProgramLanguageHelp.WordWrap := True;
+  ProgramLanguageHelp.AutoSize := False;
+  ProgramLanguageHelp.Width := ProgramLanguagePage.SurfaceWidth;
+  ProgramLanguageHelp.Caption := CustomMessage('ProgramLanguageHelp');
+  ProgramLanguageHelp.AdjustHeight;
+  ProgramLanguageCombo := TNewComboBox.Create(WizardForm);
+  ProgramLanguageCombo.Parent := ProgramLanguagePage.Surface;
+  ProgramLanguageCombo.Style := csDropDownList;
+  ProgramLanguageCombo.SetBounds(0, ProgramLanguageHelp.Height + ScaleY(20),
+    ProgramLanguagePage.SurfaceWidth, ScaleY(28));
+  ProgramLanguageCodes := TStringList.Create;
+  AddProgramLanguages;
+  Requested := ExpandConstant('{param:PROGRAMLANG|}');
+  Previous := GetPreviousData('ProgramLanguage', '');
+  if Requested <> '' then begin
+    Index := ProgramLanguageCodes.IndexOf(Lowercase(Requested));
+    if Index < 0 then RaiseException(CustomMessage('InvalidLanguage'));
+  end else begin
+    Index := ProgramLanguageCodes.IndexOf(Previous);
+    if Index < 0 then Index := ProgramLanguageCodes.IndexOf(ActiveLanguage);
+    if Index < 0 then begin
+      Index := ProgramLanguageCodes.IndexOf('en');
+      ProgramLanguageHelp.Caption := CustomMessage('ProgramLanguageHelp') + #13#10 +
+        CustomMessage('LanguageFallback');
+      ProgramLanguageHelp.AdjustHeight;
+      ProgramLanguageCombo.Top := ProgramLanguageHelp.Height + ScaleY(20);
+    end;
+  end;
+  ProgramLanguageCombo.ItemIndex := Index;
+  ChangeProgramLanguage := TNewCheckBox.Create(WizardForm);
+  ChangeProgramLanguage.Parent := ProgramLanguagePage.Surface;
+  ChangeProgramLanguage.SetBounds(0, ProgramLanguageCombo.Top + ScaleY(50),
+    ProgramLanguagePage.SurfaceWidth, ScaleY(50));
+  ChangeProgramLanguage.Caption := CustomMessage('ChangeLanguage');
+  ChangeRequested := ExpandConstant('{param:CHANGEPROGRAMLANG|0}');
+  if (ChangeRequested <> '0') and (ChangeRequested <> '1') then
+    RaiseException(CustomMessage('InvalidChangeLanguage'));
+  ChangeProgramLanguage.Checked := ChangeRequested = '1';
+end;
+
+procedure RegisterPreviousData(PreviousDataKey: Integer);
+begin
+  SetPreviousData(PreviousDataKey, 'ProgramLanguage', GetProgramLanguage(''));
+  SetPreviousData(PreviousDataKey, 'ClinkChoiceVersion', '1');
 end;
 
 procedure AddSelectedPlugin(var Selection: String; Component, PluginId: String);
@@ -199,6 +285,24 @@ begin
   AddSelectedPlugin(Result, 'plugins\wol', 'lanctl.network.wol');
   AddSelectedPlugin(Result, 'plugins\lab', 'lanctl.lab.network-emulator');
   if Result = '' then Result := 'none';
+end;
+
+function GetDefaultsArguments(Param: String): String;
+begin
+  Result := 'setup-defaults --theme ' + GetInitialTheme('') +
+    ' --plugins ' + GetPluginSelection('') + ' --language ' + GetProgramLanguage('');
+  if ChangeProgramLanguage.Checked then Result := Result + ' --change-language';
+end;
+
+procedure ConfigureInitialPreferences;
+var ResultCode: Integer;
+begin
+  WizardForm.StatusLabel.Caption := CustomMessage('DefaultsStatus');
+  if not Exec(ExpandConstant('{app}\LANCTL.exe'), GetDefaultsArguments(''),
+    ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    RaiseException(CustomMessage('DefaultsFailed') + ' (' + IntToStr(ResultCode) + ')');
+  if ResultCode <> 0 then
+    RaiseException(CustomMessage('DefaultsFailed') + ' (' + IntToStr(ResultCode) + ')');
 end;
 
 function GetLanipArguments(Param: String): String;

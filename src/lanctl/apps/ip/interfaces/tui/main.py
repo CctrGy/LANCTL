@@ -66,6 +66,7 @@ from lanctl.core.output import (
     FIELD_COLORS,
 )
 from lanctl.core.projects import active_project_info
+from lanctl.shared.i18n import t, translate_label
 
 RESET = Style.RESET_ALL
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
@@ -154,7 +155,9 @@ class LanctlTui:
         self.scroll = 0
         self.command = ""
         self.cursor = 0
-        self.messages = ["F5 actualiza la red. Escribe un comando y pulsa Enter."]
+        self.messages = [
+            t("LANCTL.UI.SCREEN.F5_REFRESHES_THE_NETWORK_TYPE_A_COMMAND_AND_PRESS_ENTER")
+        ]
         self.output_focus = False
         self.output_index = 0
         self.output_scroll = 0
@@ -287,7 +290,13 @@ class LanctlTui:
         self.reload()
         mode, value = self.list_filter
         label = f"{mode}:{value}" if value else mode
-        self.messages = [f"Filtro de lista: {label} | {len(self.devices)} elementos"]
+        self.messages = [
+            t(
+                "LANCTL.UI.MESSAGE.LIST_FILTER_VALUE_VALUE_ELEMENTS",
+                value0=f"{label}",
+                value1=f"{len(self.devices)}",
+            )
+        ]
         return True
 
     def cycle_list_view(self) -> None:
@@ -326,7 +335,10 @@ class LanctlTui:
         if self.selected and self.selected.cnf == "F":
             label = self.selected.alias or self.selected.name or self.selected.ip
             self.messages = [
-                f"Selección fijada en {label}. Usa 'cnf' o 'cnf ESTADO' para liberarla."
+                t(
+                    "LANCTL.UI.MESSAGE.SELECTION_PINNED_TO_VALUE_USE_CNF_OR_CNF_STATE_TO_RELEASE_IT",
+                    value0=f"{label}",
+                )
             ]
             return
         if self.devices:
@@ -483,7 +495,7 @@ class LanctlTui:
 
     def _status_lines(self, width: int) -> list[str]:
         project_info = getattr(self, "project_info", None)
-        project_name = project_info["name"] if project_info else "Sin proyecto"
+        project_name = project_info["name"] if project_info else t("LANCTL.UI.TEXT.NO_PROJECT")
         project_line = (
             f"{Style.BRIGHT}{Fore.CYAN} PROYECTO {RESET} {Fore.WHITE}{project_name}{RESET}"
         )
@@ -491,30 +503,53 @@ class LanctlTui:
             return [
                 project_line,
                 (
-                    f"{Style.BRIGHT}{Fore.YELLOW} ESCANEANDO {RESET} "
-                    f"{Fore.WHITE}Elementos encontrados: "
-                    f"{len(self.scan_visible_devices)}{RESET}"
+                    t(
+                        "LANCTL.UI.MESSAGE.VALUEVALUE_SCANNING_VALUE_VALUEELEMENTS_FOUND_VALUEVALUE",
+                        value0=f"{Style.BRIGHT}",
+                        value1=f"{Fore.YELLOW}",
+                        value2=f"{RESET}",
+                        value3=f"{Fore.WHITE}",
+                        value4=f"{len(self.scan_visible_devices)}",
+                        value5=f"{RESET}",
+                    )
                 ),
-                f"{Fore.LIGHTBLACK_EX}La lista se completa en tiempo real.{RESET}",
+                t(
+                    "LANCTL.UI.MESSAGE.VALUETHE_LIST_FILLS_IN_REAL_TIME_VALUE",
+                    value0=f"{Fore.LIGHTBLACK_EX}",
+                    value1=f"{RESET}",
+                ),
             ]
         scan_error = getattr(self, "scan_error", "")
         if scan_error:
             phase = (
                 "Procesamiento/guardado fallido"
                 if getattr(self, "scan_error_after_discovery", False)
-                else "Descubrimiento fallido"
+                else t("LANCTL.UI.SCREEN.DISCOVERY_FAILED")
             )
             return [
                 project_line,
                 f"{Style.BRIGHT}{Fore.RED} ERROR DE ESCANEO {RESET} {phase}",
-                f"{Fore.YELLOW}Se conserva el último estado válido; los datos no están actualizados.{RESET}",
+                t(
+                    "LANCTL.UI.MESSAGE.VALUETHE_LAST_VALID_STATE_IS_PRESERVED_DATA_IS_NOT_UP_TO_DATE_VALUE",
+                    value0=f"{Fore.YELLOW}",
+                    value1=f"{RESET}",
+                ),
             ]
         summary = self.scan_summary
         if not summary:
             return [
                 project_line,
-                f"{Style.BRIGHT}{Fore.CYAN} RED {RESET} Sin escaneo en esta sesión",
-                f"{Fore.LIGHTBLACK_EX}Pulsa F5 para actualizar.{RESET}",
+                t(
+                    "LANCTL.UI.MESSAGE.VALUEVALUE_NETWORK_VALUE_NO_SCAN_IN_THIS_SESSION",
+                    value0=f"{Style.BRIGHT}",
+                    value1=f"{Fore.CYAN}",
+                    value2=f"{RESET}",
+                ),
+                t(
+                    "LANCTL.UI.DETAIL.VALUEPRESS_F5_TO_REFRESH_VALUE",
+                    value0=f"{Fore.LIGHTBLACK_EX}",
+                    value1=f"{RESET}",
+                ),
             ]
         return [
             project_line,
@@ -720,12 +755,12 @@ class LanctlTui:
         self.renderer.render_modal(
             modal.background,
             title=(
-                f"{modal.title} / MENU[{modal.tabs[modal.tab_index]}]"
-                f"{' / EDITANDO' if modal.editing else ''}"
+                f"{modal.title} / MENU[{translate_label(modal.tabs[modal.tab_index])}]"
+                f"{translate_label(' / EDITANDO') if modal.editing else ''}"
                 if modal.kind in {"settings", "info"} and modal.tabs
                 else modal.title
             ),
-            tabs=modal.tabs,
+            tabs=[translate_label(label) for label in modal.tabs],
             selected_tab=modal.tab_index,
             body=visible,
             footer=modal.footer,
@@ -791,21 +826,24 @@ class LanctlTui:
             self.history_index = 0
             self.view_state = "history"
             self.messages = [
-                f"Historial: {len(self.history_events)} eventos | Enter detalle | Esc inventario"
+                t(
+                    "LANCTL.UI.MESSAGE.HISTORY_VALUE_EVENTS_ENTER_DETAILS_ESC_INVENTORY",
+                    value0=f"{len(self.history_events)}",
+                )
             ]
         except ValueError as error:
             self.messages = [str(error)]
 
     def show_command_history(self) -> None:
-        entries = self.command_history or ["(No hay comandos en esta sesión)"]
+        entries = self.command_history or [t("LANCTL.UI.SCREEN.NO_COMMANDS_IN_THIS_SESSION")]
         self._open_modal(
             ModalState(
                 kind="commands",
-                title="COMANDOS",
-                tabs=["Historial"],
+                title=t("LANCTL.UI.STATUS.COMMANDS"),
+                tabs=[t("LANCTL.UI.TEXT.HISTORY")],
                 pages=[list(entries)],
                 selected=max(0, len(entries) - 1),
-                footer="↑/↓ seleccionar  Enter recuperar  Esc cerrar",
+                footer=t("LANCTL.UI.SCREEN.SELECT_ENTER_RESTORE_ESC_CLOSE"),
             )
         )
 
@@ -814,46 +852,50 @@ class LanctlTui:
         self._open_modal(
             ModalState(
                 kind="help",
-                title="HELP",
-                tabs=["Comandos", "Detalle", "Teclas"],
+                title=t("LANCTL.UI.PRESENTATION.HELP_TITLE"),
+                tabs=[
+                    t("LANCTL.UI.TEXT.COMMANDS"),
+                    t("LANCTL.UI.TEXT.DETAILS_426234E7"),
+                    t("LANCTL.UI.TEXT.KEYS"),
+                ],
                 pages=[
                     [],
                     _help_command_detail(entries[0])
                     if entries
-                    else ["No hay comandos registrados."],
+                    else [t("LANCTL.UI.SCREEN.NO_COMMANDS_RECORDED")],
                     [
                         "NAVEGACIÓN",
-                        "  ←/→       Cambiar entre Comandos, Detalle y Teclas",
-                        "  ↑/↓       Seleccionar un comando o desplazar contenido",
-                        "  PgUp/PgDn Saltar diez comandos o líneas",
-                        "  Home/End   Ir al primer o último comando",
-                        "  Enter      Abrir el detalle del comando seleccionado",
-                        "  Tab        Preparar el comando seleccionado en el prompt",
-                        "  F1 / Esc   Cerrar esta ventana",
+                        t("LANCTL.UI.SCREEN.SWITCH_BETWEEN_COMMANDS_DETAILS_AND_KEYS"),
+                        t("LANCTL.UI.SCREEN.SELECT_A_COMMAND_OR_SCROLL_CONTENT"),
+                        t("LANCTL.UI.SCREEN.PGUP_PGDN_JUMP_TEN_COMMANDS_OR_LINES"),
+                        t("LANCTL.UI.SCREEN.HOME_END_GO_TO_THE_FIRST_OR_LAST_COMMAND"),
+                        t("LANCTL.UI.SCREEN.ENTER_OPEN_DETAILS_FOR_THE_SELECTED_COMMAND"),
+                        t("LANCTL.UI.SCREEN.TAB_PREPARE_THE_SELECTED_COMMAND_AT_THE_PROMPT"),
+                        t("LANCTL.UI.SCREEN.F1_ESC_CLOSE_THIS_WINDOW"),
                         "",
                         "ACCESOS RÁPIDOS DEL TUI",
-                        "  F2         Información completa del elemento",
-                        "  F3         Ping del elemento seleccionado",
-                        "  F5         Actualizar y descubrir la red",
-                        "  F7         Gestor de plugins",
-                        "  F9         Gestor de proyectos",
-                        "  F12        Editor de configuración",
-                        "  Ctrl+H     Historial de comandos",
-                        "  Ctrl+F     Buscar o filtrar elementos",
-                        "  Ctrl+R     Recargar inventario sin escanear",
-                        "  Ctrl+E     Editar el elemento seleccionado",
-                        "  Ctrl+G     Gestionar grupos",
-                        "  Ctrl+P     Abrir la sección de puertos",
-                        "  Ctrl+O     Abrir acceso SSH/HTTP/Telnet/...",
-                        "  Ctrl+S     Guardar manualmente el proyecto",
-                        "  Ctrl+D     Consultar cambios pendientes",
-                        "  Ctrl+X/J   Copiar línea o JSON",
-                        "  Ctrl+L     Limpiar y enfocar la consola",
-                        "  Ctrl+Q     Iniciar el cierre seguro",
+                        t("LANCTL.UI.SCREEN.F2_COMPLETE_ELEMENT_INFORMATION"),
+                        t("LANCTL.UI.SCREEN.F3_PING_THE_SELECTED_ELEMENT"),
+                        t("LANCTL.UI.SCREEN.F5_REFRESH_AND_DISCOVER_THE_NETWORK"),
+                        t("LANCTL.UI.SCREEN.F7_PLUGIN_MANAGER"),
+                        t("LANCTL.UI.SCREEN.F9_PROJECT_MANAGER"),
+                        t("LANCTL.UI.SCREEN.F12_SETTINGS_EDITOR"),
+                        t("LANCTL.UI.SCREEN.CTRL_H_COMMAND_HISTORY"),
+                        t("LANCTL.UI.SCREEN.CTRL_F_SEARCH_OR_FILTER_ELEMENTS"),
+                        t("LANCTL.UI.SCREEN.CTRL_R_RELOAD_INVENTORY_WITHOUT_SCANNING"),
+                        t("LANCTL.UI.SCREEN.CTRL_E_EDIT_THE_SELECTED_ELEMENT"),
+                        t("LANCTL.UI.SCREEN.CTRL_G_MANAGE_GROUPS"),
+                        t("LANCTL.UI.SCREEN.CTRL_P_OPEN_THE_PORTS_SECTION"),
+                        t("LANCTL.UI.SCREEN.CTRL_O_OPEN_SSH_HTTP_TELNET_ACCESS"),
+                        t("LANCTL.UI.SCREEN.CTRL_S_MANUALLY_SAVE_THE_PROJECT"),
+                        t("LANCTL.UI.SCREEN.CTRL_D_QUERY_PENDING_CHANGES"),
+                        t("LANCTL.UI.SCREEN.CTRL_X_J_COPY_LINE_OR_JSON"),
+                        t("LANCTL.UI.SCREEN.CTRL_L_CLEAR_AND_FOCUS_THE_CONSOLE"),
+                        t("LANCTL.UI.SCREEN.CTRL_Q_BEGIN_SAFE_CLOSE"),
                     ],
                 ],
                 items=entries,
-                footer="↑/↓ seleccionar  Enter detalle  Tab preparar  ←/→ sección  F1/Esc cerrar",
+                footer=t("LANCTL.UI.SCREEN.SELECT_ENTER_DETAILS_TAB_PREPARE_SECTION_F1_ESC_CLOSE"),
             )
         )
 
@@ -864,7 +906,9 @@ class LanctlTui:
             plugins = get_plugin_manager().list()
             self._open_modal(plugin_manager_modal(plugins))
         except (OSError, ValueError) as error:
-            self.messages = [f"No se pudo cargar el gestor de plugins: {error}"]
+            self.messages = [
+                t("LANCTL.UI.MESSAGE.COULD_NOT_LOAD_THE_PLUGIN_MANAGER_VALUE", value0=f"{error}")
+            ]
 
     def show_project_manager(self) -> None:
         config = load_config()
@@ -891,7 +935,9 @@ class LanctlTui:
                 print_output=False,
             )
             projects = []
-            self.messages = [f"No se pudo actualizar projects.db: {error}"]
+            self.messages = [
+                t("LANCTL.UI.MESSAGE.COULD_NOT_UPDATE_PROJECTS_DB_VALUE", value0=f"{error}")
+            ]
         self._open_modal(project_manager_modal(projects, active, root))
 
     def show_settings(self) -> None:
@@ -921,18 +967,20 @@ class LanctlTui:
             (
                 "GENERAL",
                 "listColumns",
-                "Columnas de lista",
+                t("LANCTL.UI.SCREEN.LIST_COLUMNS"),
                 "--list-fields",
                 "separadas por comas",
-                "Define qué columnas aparecen en la lista normal y en el inventario del TUI, respetando el orden indicado.",
+                t(
+                    "LANCTL.UI.SCREEN.DEFINE_THE_COLUMNS_SHOWN_IN_THE_REGULAR_LIST_AND_TUI_INVENTORY_RESPECTING_THEIR_ORDER"
+                ),
             ),
             (
                 "GENERAL",
                 "startupInterface",
-                "Interfaz inicial LANCTL",
+                t("LANCTL.UI.SCREEN.LANCTL_STARTUP_INTERFACE"),
                 "--startup-interface",
                 "cli | tui | gui",
-                "Interfaz preferida al iniciar LANCTL sin argumentos.",
+                t("LANCTL.UI.SCREEN.PREFERRED_INTERFACE_WHEN_STARTING_LANCTL_WITHOUT_ARGUMENTS"),
             ),
             (
                 "GENERAL",
@@ -940,23 +988,27 @@ class LanctlTui:
                 "Cerrar GUI al abrir launcher",
                 "--close-gui-on-launch",
                 "on | off",
-                "Cierra LANCTL después de confirmar que la otra GUI está disponible.",
+                t("LANCTL.UI.SCREEN.CLOSE_LANCTL_AFTER_CONFIRMING_THAT_THE_OTHER_GUI_IS_AVAILABLE"),
             ),
             (
                 "APARIENCIA",
                 "tuiPanelLayout",
-                "Posición del CLI",
+                t("LANCTL.UI.SCREEN.CLI_POSITION"),
                 "--tui-layout",
                 "cli.top | cli.bottom",
-                "Coloca el prompt y la salida del CLI por encima o por debajo de la ventana ListElement.",
+                t(
+                    "LANCTL.UI.SCREEN.PLACE_THE_CLI_PROMPT_AND_OUTPUT_ABOVE_OR_BELOW_THE_LISTELEMENT_WINDOW"
+                ),
             ),
             (
                 "APARIENCIA",
                 "tuiCliHeightPercent",
-                "Proporción del CLI",
+                t("LANCTL.UI.SCREEN.CLI_PROPORTION"),
                 "--tui-cli-percent",
                 "15-75 %",
-                "Porcentaje vertical reservado al CLI. ListElement siempre conserva como mínimo el 25% de las filas.",
+                t(
+                    "LANCTL.UI.SCREEN.VERTICAL_PERCENTAGE_RESERVED_FOR_CLI_LISTELEMENT_ALWAYS_RETAINS_AT_LEAST_25_OF_ROWS"
+                ),
             ),
             *tuple(
                 (
@@ -966,9 +1018,15 @@ class LanctlTui:
                     "--tui-column",
                     "caracteres" if name in {"IP", "MAC"} else "peso %",
                     (
-                        f"Anchura fija de {name}; esta columna conserva todos sus caracteres."
+                        t(
+                            "LANCTL.UI.MESSAGE.FIXED_WIDTH_OF_VALUE_THIS_COLUMN_RETAINS_ALL_ITS_CHARACTERS",
+                            value0=f"{name}",
+                        )
                         if name in {"IP", "MAC"}
-                        else f"Peso relativo de {name}. LANCTL aplica automáticamente sus límites mínimo y máximo."
+                        else t(
+                            "LANCTL.UI.MESSAGE.RELATIVE_WEIGHT_OF_VALUE_LANCTL_APPLIES_ITS_MINIMUM_AND_MAXIMUM_BOUNDS_AUTOMATICALLY",
+                            value0=f"{name}",
+                        )
                     ),
                 )
                 for name in DEFAULT_COLUMN_SPECS
@@ -976,18 +1034,22 @@ class LanctlTui:
             (
                 "RED",
                 "range",
-                "Rango de red",
+                t("LANCTL.UI.TEXT.NETWORK_RANGE"),
                 "-range",
-                "CIDR o vacío",
-                "Red IPv4 que LANCTL analizará por defecto. Déjalo vacío para detectar la red desde la interfaz local.",
+                t("LANCTL.UI.SCREEN.CIDR_OR_EMPTY"),
+                t(
+                    "LANCTL.UI.SCREEN.IPV4_NETWORK_LANCTL_WILL_ANALYZE_BY_DEFAULT_LEAVE_EMPTY_TO_DETECT_THE_NETWORK_FROM_THE_LOCAL_IN"
+                ),
             ),
             (
                 "RED",
                 "dhcpRange",
-                "Rango DHCP",
+                t("LANCTL.UI.TEXT.DHCP_RANGE"),
                 "--dhcp-range",
                 "INICIO-FIN u off",
-                "Límites de direcciones entregadas dinámicamente por el servidor DHCP. Se usan para separar visualmente el inventario.",
+                t(
+                    "LANCTL.UI.SCREEN.ADDRESS_BOUNDS_DYNAMICALLY_ASSIGNED_BY_THE_DHCP_SERVER_USED_TO_VISUALLY_SEPARATE_THE_INVENTORY"
+                ),
             ),
             (
                 "RED",
@@ -995,23 +1057,27 @@ class LanctlTui:
                 "Descubrimiento",
                 "--discovery",
                 "icmp | arp | hybrid",
-                "Método base de descubrimiento: ICMP prueba respuesta, ARP consulta vecinos y hybrid combina ambos.",
+                t(
+                    "LANCTL.UI.SCREEN.BASE_DISCOVERY_METHOD_ICMP_CHECKS_RESPONSES_ARP_QUERIES_NEIGHBORS_AND_HYBRID_COMBINES_BOTH"
+                ),
             ),
             (
                 "ESCANEO",
                 "scanProfile",
-                "Perfil de escaneo",
+                t("LANCTL.UI.TEXT.SCAN_PROFILE"),
                 "--scan-profile",
                 "fast | normal | accurate",
-                "Equilibra velocidad y profundidad. Accurate realiza más comprobaciones y puede tardar bastante más.",
+                t(
+                    "LANCTL.UI.SCREEN.BALANCE_SPEED_AND_DEPTH_ACCURATE_PERFORMS_MORE_CHECKS_AND_MAY_TAKE_CONSIDERABLY_LONGER"
+                ),
             ),
             (
                 "ESCANEO",
                 "scanOrder",
-                "Orden de escaneo",
+                t("LANCTL.UI.TEXT.SCAN_ORDER"),
                 "--scan-order",
                 "ascending | descending | random",
-                "Orden en el que se prueban las direcciones del rango durante el descubrimiento.",
+                t("LANCTL.UI.SCREEN.ORDER_IN_WHICH_RANGE_ADDRESSES_ARE_PROBED_DURING_DISCOVERY"),
             ),
             (
                 "ESCANEO",
@@ -1019,7 +1085,9 @@ class LanctlTui:
                 "Workers",
                 "--workers",
                 "entero positivo",
-                "Número máximo de operaciones concurrentes. Un valor alto acelera el escaneo, pero consume más recursos.",
+                t(
+                    "LANCTL.UI.SCREEN.MAXIMUM_CONCURRENT_OPERATIONS_HIGHER_VALUES_SPEED_UP_SCANNING_BUT_CONSUME_MORE_RESOURCES"
+                ),
             ),
             (
                 "ESCANEO",
@@ -1027,100 +1095,120 @@ class LanctlTui:
                 "Timeout",
                 "--timeout",
                 "segundos",
-                "Tiempo máximo de espera para cada operación de red antes de considerarla sin respuesta.",
+                t(
+                    "LANCTL.UI.SCREEN.MAXIMUM_TIMEOUT_PER_NETWORK_OPERATION_BEFORE_CONSIDERING_IT_UNANSWERED"
+                ),
             ),
             (
                 "ESCANEO",
                 "maxHosts",
-                "Máximo de hosts",
+                t("LANCTL.UI.SCREEN.MAXIMUM_HOSTS"),
                 "--max-hosts",
                 "entero positivo",
-                "Límite de seguridad para impedir el escaneo accidental de redes excesivamente grandes.",
+                t(
+                    "LANCTL.UI.SCREEN.SAFETY_LIMIT_TO_PREVENT_ACCIDENTAL_SCANS_OF_EXCESSIVELY_LARGE_NETWORKS"
+                ),
             ),
             (
                 "ESCANEO",
                 "progress",
-                "Mostrar progreso",
+                t("LANCTL.UI.SCREEN.SHOW_PROGRESS"),
                 "--progress",
                 "on | off",
-                "Muestra u oculta la barra de progreso durante los escaneos interactivos.",
+                t("LANCTL.UI.SCREEN.SHOW_OR_HIDE_THE_PROGRESS_BAR_DURING_INTERACTIVE_SCANS"),
             ),
             (
                 "ESCANEO",
                 "serviceIdentification",
-                "Identificar servicios",
+                t("LANCTL.UI.TEXT.IDENTIFY_SERVICES"),
                 "--service-identification",
                 "on | off",
-                "Intenta reconocer servicios y protocolos expuestos por los dispositivos encontrados.",
+                t(
+                    "LANCTL.UI.SCREEN.TRY_TO_RECOGNIZE_SERVICES_AND_PROTOCOLS_EXPOSED_BY_DISCOVERED_DEVICES"
+                ),
             ),
             (
                 "ESCANEO",
                 "disconnectedRetention",
-                "Retención al desconectar",
+                t("LANCTL.UI.SCREEN.DISCONNECTED_RETENTION"),
                 "--disconnected-retention",
                 "permanent | session | forget",
-                "Decide si los elementos ausentes se conservan siempre, solo durante la sesión o se olvidan tras el escaneo.",
+                t(
+                    "LANCTL.UI.SCREEN.DECIDE_WHETHER_ABSENT_ELEMENTS_ARE_ALWAYS_RETAINED_RETAINED_ONLY_DURING_THE_SESSION_OR_FORGOTTE"
+                ),
             ),
             (
                 "ESCANEO",
                 "disconnectedRetentionTarget",
-                "Objetivo de retención",
+                t("LANCTL.UI.SCREEN.RETENTION_TARGET"),
                 "--disconnected-target",
                 "unconfirmed | all",
-                "Limita la regla a elementos no reconocidos con CNF=X o la aplica a cualquier elemento desconectado.",
+                t(
+                    "LANCTL.UI.SCREEN.LIMIT_THE_RULE_TO_UNRECOGNIZED_CNF_X_ELEMENTS_OR_APPLY_IT_TO_ANY_DISCONNECTED_ELEMENT"
+                ),
             ),
             (
                 "ESCANEO",
                 "disconnectedRetentionScope",
-                "Alcance de retención",
+                t("LANCTL.UI.SCREEN.RETENTION_RANGE"),
                 "--disconnected-scope",
                 "all | dhcp",
-                "Aplica la regla en toda la red o únicamente a direcciones incluidas en el rango DHCP configurado.",
+                t(
+                    "LANCTL.UI.SCREEN.APPLY_THE_RULE_TO_THE_ENTIRE_NETWORK_OR_ONLY_ADDRESSES_WITHIN_THE_CONFIGURED_DHCP_RANGE"
+                ),
             ),
             (
                 "PROYECTOS",
                 "projectsDirectory",
-                "Directorio de proyectos",
+                t("LANCTL.UI.TEXT.PROJECT_DIRECTORY"),
                 "--projects-directory",
                 "ruta | auto",
-                "Carpeta predeterminada para proyectos VLF. Auto utiliza Documents\\LanCTL del usuario actual.",
+                t(
+                    "LANCTL.UI.SCREEN.DEFAULT_FOLDER_FOR_VLF_PROJECTS_AUTO_USES_THE_CURRENT_USER_S_DOCUMENTS_LANCTL"
+                ),
             ),
             (
                 "PROYECTOS",
                 "projectSaveMode",
-                "Modo de guardado",
+                t("LANCTL.UI.TEXT.SAVE_MODE"),
                 "--save-mode",
                 "SaveMode | list",
-                "Política que decide cuándo se sincroniza el workspace activo con su archivo de proyecto VLF.",
+                t(
+                    "LANCTL.UI.SCREEN.POLICY_DECIDING_WHEN_THE_ACTIVE_WORKSPACE_SYNCHRONIZES_WITH_ITS_VLF_PROJECT_FILE"
+                ),
             ),
             (
                 "PROYECTOS",
                 "projectSaveIntervalMinutes",
-                "Intervalo de guardado",
+                t("LANCTL.UI.SCREEN.SAVE_INTERVAL"),
                 "--save-interval",
                 "minutos",
-                "Minutos entre guardados cuando SaveMode está configurado como automatic.timeToSave.",
+                t("LANCTL.UI.SCREEN.MINUTES_BETWEEN_SAVES_WHEN_SAVEMODE_IS_AUTOMATIC_TIMETOSAVE"),
             ),
             (
                 "AVANZADO",
                 "cliPromptSaveOnCommandExit",
-                "Consultar guardado por comando",
+                t("LANCTL.UI.SCREEN.ASK_TO_SAVE_PER_COMMAND"),
                 "--cli-exit-save-prompt",
                 "on | off",
-                "Pregunta si se guarda al finalizar cada comando lanzado desde CMD. Desactivado evita bloquear scripts y órdenes consecutivas.",
+                t(
+                    "LANCTL.UI.SCREEN.ASK_WHETHER_TO_SAVE_AFTER_EACH_CMD_COMMAND_DISABLING_AVOIDS_BLOCKING_SCRIPTS_AND_SEQUENTIAL_COM"
+                ),
             ),
             (
                 "AVANZADO",
                 "cliCommandChaining",
-                "Encadenar comandos CLI",
+                t("LANCTL.UI.SCREEN.CHAIN_CLI_COMMANDS"),
                 "--cli-command-chaining",
                 "on | off",
-                "Permite ejecutar varias órdenes en una línea de la CLI interactiva separándolas con punto y coma.",
+                t(
+                    "LANCTL.UI.SCREEN.ALLOW_MULTIPLE_COMMANDS_ON_ONE_INTERACTIVE_CLI_LINE_SEPARATED_BY_SEMICOLONS"
+                ),
             ),
             (
                 "ALMACENAMIENTO",
                 "database",
-                "Base de elementos",
+                t("LANCTL.UI.SCREEN.ELEMENT_DATABASE"),
                 "--database",
                 "ruta",
                 "Archivo JSON que conserva el inventario de dispositivos, identidades, estados y datos descubiertos.",
@@ -1128,50 +1216,62 @@ class LanctlTui:
             (
                 "ALMACENAMIENTO",
                 "physicalDatabase",
-                "Base física LANWIRE",
+                t("LANCTL.UI.SCREEN.LANWIRE_PHYSICAL_DATABASE"),
                 "--physical-database",
                 "ruta SQLite",
-                "Base física physical/idf.db administrada por LANWIRE; no se mezcla ni se abre como inventario JSON.",
+                t(
+                    "LANCTL.UI.SCREEN.PHYSICAL_PHYSICAL_IDF_DB_DATABASE_MANAGED_BY_LANWIRE_NEVER_MIXED_WITH_OR_OPENED_AS_A_JSON_INVEN"
+                ),
             ),
             (
                 "ALMACENAMIENTO",
                 "groups",
-                "Base de grupos",
+                t("LANCTL.UI.SCREEN.GROUP_DATABASE"),
                 "--groups",
                 "ruta",
-                "Archivo que contiene los grupos y las relaciones entre estos y los elementos del inventario.",
+                t(
+                    "LANCTL.UI.SCREEN.FILE_CONTAINING_GROUPS_AND_THEIR_RELATIONSHIPS_WITH_INVENTORY_ELEMENTS"
+                ),
             ),
             (
                 "LOGS",
                 "log",
-                "Directorio de logs",
+                t("LANCTL.UI.SCREEN.LOG_DIRECTORY"),
                 "--log",
                 "ruta",
-                "Directorio donde LANCTL registra comandos, escaneos, cambios, plugins, resultados y errores.",
+                t(
+                    "LANCTL.UI.SCREEN.DIRECTORY_WHERE_LANCTL_RECORDS_COMMANDS_SCANS_CHANGES_PLUGINS_RESULTS_AND_ERRORS"
+                ),
             ),
             (
                 "LOGS",
                 "logCleanupEnabled",
-                "Limpieza de logs",
+                t("LANCTL.UI.SCREEN.LOG_CLEANUP"),
                 "--log-cleanup",
                 "on | off",
-                "Activa la eliminación automática de registros que superen el periodo de retención configurado.",
+                t(
+                    "LANCTL.UI.SCREEN.ENABLE_AUTOMATIC_DELETION_OF_LOGS_OLDER_THAN_THE_CONFIGURED_RETENTION_PERIOD"
+                ),
             ),
             (
                 "LOGS",
                 "logRetentionDays",
-                "Retención de logs",
+                t("LANCTL.UI.SCREEN.LOG_RETENTION"),
                 "--log-retention-days",
-                "días",
-                "Cantidad de días durante los que se conservarán los archivos de registro antes de poder eliminarlos.",
+                t("LANCTL.UI.SCREEN.DAYS"),
+                t(
+                    "LANCTL.UI.SCREEN.NUMBER_OF_DAYS_LOG_FILES_ARE_RETAINED_BEFORE_THEY_MAY_BE_DELETED"
+                ),
             ),
             (
                 "LOGS",
                 "errorLogLevel",
-                "Nivel mínimo de errores",
+                t("LANCTL.UI.SCREEN.MINIMUM_ERROR_LEVEL"),
                 "--error-log-level",
                 "entero 1-59",
-                "Registra eventos con este nivel o superior; usa valores menores de 20 para diagnóstico detallado.",
+                t(
+                    "LANCTL.UI.SCREEN.RECORD_EVENTS_AT_THIS_LEVEL_OR_ABOVE_USE_VALUES_BELOW_20_FOR_DETAILED_DIAGNOSTICS"
+                ),
             ),
             (
                 "REMOTE ACCESS",
@@ -1179,7 +1279,9 @@ class LanctlTui:
                 "Acceso SSH remoto",
                 "--remote-access",
                 "on | off",
-                "Activa el backend SSH restringido de LANCTL. No concede una shell del sistema operativo.",
+                t(
+                    "LANCTL.UI.SCREEN.ENABLE_LANCTL_S_RESTRICTED_SSH_BACKEND_DOES_NOT_GRANT_AN_OPERATING_SYSTEM_SHELL"
+                ),
             ),
             (
                 "REMOTE ACCESS",
@@ -1187,12 +1289,12 @@ class LanctlTui:
                 "IP de enlace",
                 "--remote-bind",
                 "IPv4 local",
-                "Dirección de la interfaz LAN en la que escuchará el servidor SSH remoto.",
+                t("LANCTL.UI.SCREEN.LAN_INTERFACE_ADDRESS_WHERE_THE_REMOTE_SSH_SERVER_LISTENS"),
             ),
             (
                 "REMOTE ACCESS",
                 "remoteAccessCidr",
-                "Red permitida",
+                t("LANCTL.UI.SCREEN.ALLOWED_NETWORK"),
                 "--remote-cidr",
                 "CIDR",
                 "Única red de origen autorizada para establecer conexiones con el backend.",
@@ -1203,39 +1305,49 @@ class LanctlTui:
                 "Puerto SSH",
                 "--remote-port",
                 "1-65535",
-                "Puerto TCP del servidor SSH restringido. El valor recomendado es 2222 para no colisionar con OpenSSH.",
+                t(
+                    "LANCTL.UI.SCREEN.RESTRICTED_SSH_SERVER_TCP_PORT_RECOMMENDED_VALUE_IS_2222_TO_AVOID_CONFLICTING_WITH_OPENSSH"
+                ),
             ),
             (
                 "REMOTE ACCESS",
                 "remoteAccessPasswordAuthentication",
-                "Autenticación por contraseña",
+                t("LANCTL.UI.SCREEN.PASSWORD_AUTHENTICATION"),
                 "--remote-password-auth",
                 "on | off",
-                "Permite contraseñas además de claves públicas. Por seguridad se recomienda mantenerla desactivada.",
+                t(
+                    "LANCTL.UI.SCREEN.ALLOW_PASSWORDS_IN_ADDITION_TO_PUBLIC_KEYS_KEEPING_THIS_DISABLED_IS_RECOMMENDED_FOR_SECURITY"
+                ),
             ),
             (
                 "REMOTE ACCESS",
                 "remoteAccessBackend",
-                "Backend persistente",
+                t("LANCTL.UI.SCREEN.PERSISTENT_BACKEND"),
                 "--remote-backend",
                 "service | user",
-                "Service permanece activo sin abrir LANCTL; user permite lanzar ventanas visibles en la sesión del administrador.",
+                t(
+                    "LANCTL.UI.SCREEN.SERVICE_STAYS_ACTIVE_WITHOUT_OPENING_LANCTL_USER_ALLOWS_VISIBLE_WINDOWS_IN_THE_ADMINISTRATOR_S_"
+                ),
             ),
             (
                 "REMOTE ACCESS",
                 "remoteAccessForcedView",
-                "Vista forzada predeterminada",
+                t("LANCTL.UI.SCREEN.DEFAULT_FORCED_VIEW"),
                 "--remote-forced-view",
-                "off | GUI | TUI | menú",
-                "Vista que podrá solicitar el administrador remoto mediante root forced-view.",
+                t("LANCTL.UI.SCREEN.OFF_GUI_TUI_MENU"),
+                t(
+                    "LANCTL.UI.SCREEN.VIEW_THE_REMOTE_ADMINISTRATOR_MAY_REQUEST_THROUGH_ROOT_FORCED_VIEW"
+                ),
             ),
             (
                 "REMOTE ACCESS",
                 "remoteAccessUsers",
-                "Usuarios remotos",
+                t("LANCTL.UI.SCREEN.REMOTE_USERS"),
                 "",
-                "Enter gestionar",
-                "Abre la lista segura de usuarios SSH: permite crear cuentas, cambiar su contraseña y nivel de acceso, activarlas o eliminarlas.",
+                t("LANCTL.UI.SCREEN.ENTER_MANAGE"),
+                t(
+                    "LANCTL.UI.SCREEN.OPEN_THE_SECURE_SSH_USER_LIST_CREATE_ACCOUNTS_CHANGE_PASSWORDS_ACCESS_LEVELS_ENABLE_OR_DELETE_U"
+                ),
             ),
             *(
                 (
@@ -1247,97 +1359,171 @@ class LanctlTui:
                     description,
                 )
                 for action, label, description in (
-                    ("help", "Ayuda", "Atajo que abre la ayuda jerárquica del TUI."),
+                    (
+                        "help",
+                        t("LANCTL.UI.TEXT.HELP"),
+                        t("LANCTL.UI.SCREEN.SHORTCUT_OPENING_THE_HIERARCHICAL_TUI_HELP"),
+                    ),
                     (
                         "info",
-                        "Información",
-                        "Atajo que abre la información del elemento seleccionado.",
+                        t("LANCTL.COMMON.ACTION.INFO"),
+                        t("LANCTL.UI.SCREEN.SHORTCUT_OPENING_SELECTED_ELEMENT_INFORMATION"),
                     ),
-                    ("ping", "Ping", "Atajo que ejecuta un ping sobre el elemento seleccionado."),
+                    ("ping", "Ping", t("LANCTL.UI.SCREEN.SHORTCUT_PINGING_THE_SELECTED_ELEMENT")),
                     (
                         "refresh",
-                        "Actualizar",
-                        "Atajo que vuelve a descubrir los elementos de la red.",
+                        t("LANCTL.UI.TEXT.REFRESH"),
+                        t("LANCTL.UI.SCREEN.SHORTCUT_REDISCOVERING_NETWORK_ELEMENTS"),
                     ),
-                    ("plugins", "Plugins", "Atajo que abre el gestor de plugins."),
-                    ("projects", "Proyectos", "Atajo que abre el gestor de proyectos."),
-                    ("settings", "Settings", "Atajo que abre esta ventana de configuración."),
-                    ("history", "Historial", "Atajo que abre el historial de comandos."),
-                    ("search", "Buscar", "Prepara la búsqueda o filtrado de elementos."),
-                    ("reload", "Recargar", "Recarga el inventario guardado sin escanear la red."),
-                    ("edit", "Editar elemento", "Prepara la edición del elemento seleccionado."),
-                    ("groups", "Gestionar grupos", "Prepara la gestión de grupos del inventario."),
+                    (
+                        "plugins",
+                        "Plugins",
+                        t("LANCTL.UI.SCREEN.SHORTCUT_OPENING_THE_PLUGIN_MANAGER"),
+                    ),
+                    (
+                        "projects",
+                        t("LANCTL.UI.TEXT.PROJECTS"),
+                        t("LANCTL.UI.SCREEN.SHORTCUT_OPENING_THE_PROJECT_MANAGER"),
+                    ),
+                    (
+                        "settings",
+                        t("LANCTL.UI.TEXT.SETTINGS_74A883A0"),
+                        t("LANCTL.UI.SCREEN.SHORTCUT_OPENING_THIS_SETTINGS_WINDOW"),
+                    ),
+                    (
+                        "history",
+                        t("LANCTL.UI.TEXT.HISTORY"),
+                        t("LANCTL.UI.SCREEN.SHORTCUT_OPENING_COMMAND_HISTORY"),
+                    ),
+                    (
+                        "search",
+                        t("LANCTL.INVENTORY.MANUAL.SEARCH"),
+                        t("LANCTL.UI.SCREEN.PREPARE_ELEMENT_SEARCH_OR_FILTERING"),
+                    ),
+                    (
+                        "reload",
+                        t("LANCTL.COMMON.ACTION.RELOAD"),
+                        t(
+                            "LANCTL.UI.SCREEN.RELOAD_THE_SAVED_INVENTORY_WITHOUT_SCANNING_THE_NETWORK"
+                        ),
+                    ),
+                    (
+                        "edit",
+                        t("LANCTL.UI.TEXT.EDIT_ELEMENT"),
+                        t("LANCTL.UI.SCREEN.PREPARE_EDITING_THE_SELECTED_ELEMENT"),
+                    ),
+                    (
+                        "groups",
+                        t("LANCTL.UI.TEXT.MANAGE_GROUPS"),
+                        t("LANCTL.UI.SCREEN.PREPARE_INVENTORY_GROUP_MANAGEMENT"),
+                    ),
                     (
                         "ports",
-                        "Puertos",
-                        "Abre directamente los puertos del elemento seleccionado.",
+                        t("LANCTL.UI.TEXT.PORTS"),
+                        t("LANCTL.UI.SCREEN.OPEN_SELECTED_ELEMENT_PORTS_DIRECTLY"),
                     ),
-                    ("open", "Abrir acceso", "Prepara la apertura de SSH, HTTP u otro protocolo."),
-                    ("save", "Guardar proyecto", "Guarda manualmente el proyecto activo."),
+                    (
+                        "open",
+                        t("LANCTL.UI.TEXT.OPEN_ACCESS"),
+                        t("LANCTL.UI.SCREEN.PREPARE_SSH_HTTP_OR_ANOTHER_PROTOCOL_CONNECTION"),
+                    ),
+                    (
+                        "save",
+                        t("LANCTL.UI.TEXT.SAVE_PROJECT"),
+                        t("LANCTL.UI.SCREEN.MANUALLY_SAVE_THE_ACTIVE_PROJECT"),
+                    ),
                     (
                         "differences",
-                        "Cambios pendientes",
-                        "Indica si el proyecto activo contiene cambios sin guardar.",
+                        t("LANCTL.UI.TEXT.PENDING_CHANGES"),
+                        t(
+                            "LANCTL.UI.SCREEN.INDICATE_WHETHER_THE_ACTIVE_PROJECT_HAS_UNSAVED_CHANGES"
+                        ),
                     ),
                     (
                         "copyLine",
-                        "Copiar línea",
-                        "Copia la fila completa seleccionada como texto tabulado.",
+                        t("LANCTL.UI.TEXT.COPY_LINE"),
+                        t("LANCTL.UI.SCREEN.COPY_THE_ENTIRE_SELECTED_ROW_AS_TAB_SEPARATED_TEXT"),
                     ),
                     (
                         "copyJson",
-                        "Copiar JSON",
-                        "Copia los campos principales de la selección como JSON.",
+                        t("LANCTL.UI.TEXT.COPY_JSON"),
+                        t("LANCTL.UI.SCREEN.COPY_THE_MAIN_SELECTION_FIELDS_AS_JSON"),
                     ),
                     (
                         "console",
-                        "Consola",
-                        "Limpia la salida y devuelve el foco al prompt del TUI.",
+                        t("LANCTL.UI.TEXT.CONSOLE"),
+                        t("LANCTL.UI.SCREEN.CLEAR_OUTPUT_AND_RETURN_FOCUS_TO_THE_TUI_PROMPT"),
                     ),
-                    ("quit", "Cierre seguro", "Inicia el cierre seguro de LANIP."),
+                    (
+                        "quit",
+                        t("LANCTL.UI.TEXT.SAFE_CLOSE"),
+                        t("LANCTL.UI.SCREEN.BEGIN_SAFE_LANIP_CLOSE"),
+                    ),
                     (
                         "deviceHistory",
-                        "Historial del elemento",
-                        "Abre los eventos del elemento seleccionado.",
+                        t("LANCTL.UI.TEXT.DEVICE_HISTORY"),
+                        t("LANCTL.UI.SCREEN.OPEN_EVENTS_FOR_THE_SELECTED_ELEMENT"),
                     ),
                     (
                         "scanSelected",
-                        "Escanear elemento",
-                        "Prepara un análisis individual del elemento seleccionado.",
+                        t("LANCTL.UI.TEXT.SCAN_DEVICE"),
+                        t(
+                            "LANCTL.UI.SCREEN.PREPARE_AN_INDIVIDUAL_ANALYSIS_OF_THE_SELECTED_ELEMENT"
+                        ),
                     ),
                     (
                         "filterActive",
-                        "Filtrar activos",
-                        "Muestra únicamente los elementos activos del último escaneo.",
+                        t("LANCTL.UI.TEXT.FILTER_ACTIVE"),
+                        t("LANCTL.UI.SCREEN.SHOW_ONLY_ACTIVE_ELEMENTS_FROM_THE_LAST_SCAN"),
                     ),
                     (
                         "filterDisconnected",
-                        "Filtrar desconectados",
-                        "Muestra los elementos no detectados en el último escaneo.",
+                        t("LANCTL.UI.TEXT.FILTER_DISCONNECTED"),
+                        t("LANCTL.UI.SCREEN.SHOW_UNDETECTED_ELEMENTS_FROM_THE_LAST_SCAN"),
                     ),
-                    ("filterAll", "Mostrar todos", "Elimina el filtro actual del inventario."),
-                    ("ssh", "SSH", "Prepara una conexión SSH al elemento seleccionado."),
+                    (
+                        "filterAll",
+                        t("LANCTL.UI.TEXT.SHOW_ALL"),
+                        t("LANCTL.UI.SCREEN.CLEAR_THE_CURRENT_INVENTORY_FILTER"),
+                    ),
+                    (
+                        "ssh",
+                        "SSH",
+                        t("LANCTL.UI.SCREEN.PREPARE_AN_SSH_CONNECTION_TO_THE_SELECTED_ELEMENT"),
+                    ),
                     (
                         "terminal",
-                        "Terminal del elemento",
-                        "Prepara la terminal configurada del elemento seleccionado.",
+                        t("LANCTL.UI.TEXT.DEVICE_TERMINAL"),
+                        t(
+                            "LANCTL.UI.SCREEN.PREPARE_THE_CONFIGURED_TERMINAL_FOR_THE_SELECTED_ELEMENT"
+                        ),
                     ),
                     (
                         "credentials",
-                        "Credenciales",
-                        "Prepara la gestión de credenciales del elemento seleccionado.",
+                        t("LANCTL.UI.TEXT.CREDENTIALS"),
+                        t(
+                            "LANCTL.UI.SCREEN.PREPARE_CREDENTIAL_MANAGEMENT_FOR_THE_SELECTED_ELEMENT"
+                        ),
                     ),
                     (
                         "wakeOnLan",
                         "Wake-on-LAN",
-                        "Prepara una acción Wake-on-LAN sobre el elemento seleccionado.",
+                        t("LANCTL.UI.SCREEN.PREPARE_A_WAKE_ON_LAN_ACTION_FOR_THE_SELECTED_ELEMENT"),
                     ),
-                    ("copyIp", "Copiar IP", "Copia únicamente la dirección IP seleccionada."),
-                    ("copyMac", "Copiar MAC", "Copia únicamente la dirección MAC seleccionada."),
+                    (
+                        "copyIp",
+                        t("LANCTL.UI.TEXT.COPY_IP"),
+                        t("LANCTL.UI.SCREEN.COPY_ONLY_THE_SELECTED_IP_ADDRESS"),
+                    ),
+                    (
+                        "copyMac",
+                        t("LANCTL.UI.TEXT.COPY_MAC"),
+                        t("LANCTL.UI.SCREEN.COPY_ONLY_THE_SELECTED_MAC_ADDRESS"),
+                    ),
                     (
                         "projectStatus",
-                        "Estado del proyecto",
-                        "Muestra el estado y la política del proyecto activo.",
+                        t("LANCTL.UI.TEXT.PROJECT_STATUS"),
+                        t("LANCTL.UI.SCREEN.SHOW_ACTIVE_PROJECT_STATE_AND_POLICY"),
                     ),
                 )
             ),
@@ -1345,47 +1531,49 @@ class LanctlTui:
                 (
                     "TECLADO",
                     f"tuiFooter.{action}",
-                    f"Mostrar {label}",
+                    t("LANCTL.UI.DETAIL.SHOW_VALUE", value0=f"{label}"),
                     "--tui-footer-button",
                     "on | off",
-                    "Muestra u oculta este botón de ayuda en la última línea del TUI; la acción continúa disponible.",
+                    t(
+                        "LANCTL.UI.SCREEN.SHOW_OR_HIDE_THIS_HELP_BUTTON_ON_THE_LAST_TUI_LINE_ITS_ACTION_REMAINS_AVAILABLE"
+                    ),
                 )
                 for action, label in (
-                    ("help", "Ayuda"),
-                    ("info", "Información"),
+                    ("help", t("LANCTL.UI.TEXT.HELP")),
+                    ("info", t("LANCTL.COMMON.ACTION.INFO")),
                     ("ping", "Ping"),
-                    ("refresh", "Actualizar"),
+                    ("refresh", t("LANCTL.UI.TEXT.REFRESH")),
                     ("plugins", "Plugins"),
-                    ("projects", "Proyectos"),
-                    ("settings", "Settings"),
-                    ("history", "Historial"),
-                    ("search", "Buscar"),
-                    ("reload", "Recargar"),
-                    ("edit", "Editar"),
-                    ("groups", "Grupos"),
-                    ("ports", "Puertos"),
-                    ("open", "Abrir acceso"),
-                    ("save", "Guardar"),
-                    ("differences", "Cambios"),
-                    ("copyLine", "Copiar línea"),
-                    ("copyJson", "Copiar JSON"),
-                    ("console", "Consola"),
-                    ("quit", "Cierre seguro"),
-                    ("deviceHistory", "Historial elemento"),
-                    ("scanSelected", "Escanear elemento"),
-                    ("filterActive", "Solo activos"),
+                    ("projects", t("LANCTL.UI.TEXT.PROJECTS")),
+                    ("settings", t("LANCTL.UI.TEXT.SETTINGS_74A883A0")),
+                    ("history", t("LANCTL.UI.TEXT.HISTORY")),
+                    ("search", t("LANCTL.INVENTORY.MANUAL.SEARCH")),
+                    ("reload", t("LANCTL.COMMON.ACTION.RELOAD")),
+                    ("edit", t("LANCTL.UI.TEXT.EDIT")),
+                    ("groups", t("LANCTL.UI.TEXT.GROUPS")),
+                    ("ports", t("LANCTL.UI.TEXT.PORTS")),
+                    ("open", t("LANCTL.UI.TEXT.OPEN_ACCESS")),
+                    ("save", t("LANCTL.UI.TEXT.SAVE")),
+                    ("differences", t("LANCTL.UI.TEXT.CHANGES")),
+                    ("copyLine", t("LANCTL.UI.TEXT.COPY_LINE")),
+                    ("copyJson", t("LANCTL.UI.TEXT.COPY_JSON")),
+                    ("console", t("LANCTL.UI.TEXT.CONSOLE")),
+                    ("quit", t("LANCTL.UI.TEXT.SAFE_CLOSE")),
+                    ("deviceHistory", t("LANCTL.UI.SCREEN.ELEMENT_HISTORY")),
+                    ("scanSelected", t("LANCTL.UI.TEXT.SCAN_DEVICE")),
+                    ("filterActive", t("LANCTL.UI.SCREEN.ACTIVE_ONLY")),
                     ("filterDisconnected", "Desconectados"),
-                    ("filterAll", "Mostrar todos"),
+                    ("filterAll", t("LANCTL.UI.TEXT.SHOW_ALL")),
                     ("ssh", "SSH"),
                     ("terminal", "Terminal"),
-                    ("credentials", "Credenciales"),
+                    ("credentials", t("LANCTL.UI.TEXT.CREDENTIALS")),
                     ("wakeOnLan", "Wake-on-LAN"),
-                    ("copyIp", "Copiar IP"),
-                    ("copyMac", "Copiar MAC"),
-                    ("projectStatus", "Estado proyecto"),
-                    ("select", "Seleccionar"),
-                    ("execute", "Ejecutar"),
-                    ("exit", "Salir"),
+                    ("copyIp", t("LANCTL.UI.TEXT.COPY_IP")),
+                    ("copyMac", t("LANCTL.UI.TEXT.COPY_MAC")),
+                    ("projectStatus", t("LANCTL.UI.SCREEN.PROJECT_STATE")),
+                    ("select", t("LANCTL.UI.TEXT.SELECT")),
+                    ("execute", t("LANCTL.UI.TEXT.EXECUTE")),
+                    ("exit", t("LANCTL.UI.TEXT.QUIT")),
                 )
                 if action in FOOTER_ACTIONS
             ),
@@ -1415,7 +1603,7 @@ class LanctlTui:
                     )
                 )
                 continue
-            value = "Abrir lista…" if key == "remoteAccessUsers" else text(key)
+            value = t("LANCTL.UI.SCREEN.OPEN_LIST") if key == "remoteAccessUsers" else text(key)
             visible = None
             if key.startswith("tuiKey."):
                 action = key.removeprefix("tuiKey.")
@@ -1491,11 +1679,11 @@ class LanctlTui:
         self._open_modal(
             ModalState(
                 kind="settings",
-                title="SETTINGS",
+                title=t("LANCTL.UI.PRESENTATION.SETTINGS_TITLE"),
                 tabs=tabs,
                 pages=[[] for _ in tabs],
                 items=fields,
-                footer="←/→ menú  ↑/↓ variable  Tab editar  Esc salir",
+                footer=t("LANCTL.UI.SCREEN.MENU_SETTING_TAB_EDIT_ESC_EXIT"),
             )
         )
 
@@ -1506,20 +1694,20 @@ class LanctlTui:
             for field in modal.items
         )
         options = (
-            "Salir y guardar",
-            "Salir sin guardar",
-            "Volver a configuración",
+            t("LANCTL.UI.SCREEN.EXIT_AND_SAVE"),
+            t("LANCTL.UI.SCREEN.EXIT_WITHOUT_SAVING"),
+            t("LANCTL.UI.SCREEN.RETURN_TO_SETTINGS"),
         )
         return [
             "",
-            f"  Cambios pendientes: {changed}",
+            t("LANCTL.UI.MESSAGE.PENDING_CHANGES_VALUE", value0=f"{changed}"),
             "",
             *(
                 f"  {'▶' if index == modal.selected else ' '} {label}"
                 for index, label in enumerate(options)
             ),
             "",
-            "  Selecciona cómo quieres cerrar la ventana de configuración.",
+            t("LANCTL.UI.SCREEN.SELECT_HOW_TO_CLOSE_THE_SETTINGS_WINDOW"),
         ]
 
     def _open_settings_exit(self, modal: ModalState) -> None:
@@ -1529,7 +1717,7 @@ class LanctlTui:
         modal.tab_index = modal.tabs.index("EXIT")
         modal.selected = 0
         modal.scroll = 0
-        modal.footer = "↑/↓ seleccionar  Enter confirmar  Esc volver"
+        modal.footer = t("LANCTL.UI.SCREEN.SELECT_ENTER_CONFIRM_ESC_BACK")
 
     def _leave_settings_exit(self, modal: ModalState) -> None:
         previous = modal.tab_selections.get(-1, max(0, modal.tab_index - 1))
@@ -1538,7 +1726,7 @@ class LanctlTui:
         remembered = modal.tab_selections.get(modal.tab_index)
         modal.selected = remembered if remembered in indices else (indices[0] if indices else 0)
         modal.scroll = 0
-        modal.footer = "←/→ menú  ↑/↓ variable  Tab editar  Esc salir"
+        modal.footer = t("LANCTL.UI.SCREEN.MENU_SETTING_TAB_EDIT_ESC_EXIT")
 
     def _handle_settings_exit_key(self, modal: ModalState, key: str) -> None:
         if key in ("UP", "DOWN"):
@@ -1571,7 +1759,7 @@ class LanctlTui:
         result, output = self._remote_access_capture(["user", "list"])
         if result:
             self.messages = _clean_tui_output(output) or [
-                "No se pudo abrir el almacén de usuarios."
+                t("LANCTL.UI.SCREEN.COULD_NOT_OPEN_THE_USER_STORE")
             ]
             return
         try:
@@ -1585,15 +1773,17 @@ class LanctlTui:
             for user in users
         ]
         if not rows:
-            rows = ["No hay usuarios remotos. Pulsa N para crear el primero."]
+            rows = [t("LANCTL.UI.SCREEN.NO_REMOTE_USERS_PRESS_N_TO_CREATE_THE_FIRST_ONE")]
         self._open_modal(
             ModalState(
                 kind="remote_users",
-                title="REMOTE ACCESS / USUARIOS",
+                title=t("LANCTL.UI.STATUS.REMOTE_ACCESS_USERS"),
                 tabs=["Usuario / nivel de acceso"],
                 pages=[rows],
                 items=users,
-                footer="N nuevo  P contraseña  R rol  E activar/desactivar  Supr eliminar  Esc volver",
+                footer=t(
+                    "LANCTL.UI.SCREEN.N_NEW_P_PASSWORD_R_ROLE_E_ENABLE_DISABLE_DELETE_REMOVE_ESC_BACK"
+                ),
             )
         )
 
@@ -1647,22 +1837,22 @@ class LanctlTui:
         self._open_modal(
             ModalState(
                 kind="project_close",
-                title="CAMBIOS SIN GUARDAR",
-                tabs=["Cerrar proyecto"],
+                title=t("LANCTL.UI.STATUS.UNSAVED_CHANGES"),
+                tabs=[t("LANCTL.UI.SCREEN.CLOSE_PROJECT")],
                 pages=[
                     [
-                        "Guardar las modificaciones y cerrar",
-                        "Descartar las modificaciones y cerrar",
+                        t("LANCTL.UI.SCREEN.SAVE_MODIFICATIONS_AND_CLOSE"),
+                        t("LANCTL.UI.SCREEN.DISCARD_MODIFICATIONS_AND_CLOSE"),
                     ]
                 ],
                 items=["save", "discard"],
-                footer="←/→ o ↑/↓ seleccionar  Enter confirmar  Esc cancelar",
+                footer=t("LANCTL.UI.SCREEN.OR_SELECT_ENTER_CONFIRM_ESC_CANCEL"),
             )
         )
 
     def _command_history_lines(self, width: int, height: int) -> list[str]:
         if not self.command_history:
-            return [" Sin comandos en esta sesion"]
+            return [t("LANCTL.UI.SCREEN.NO_COMMANDS_IN_THIS_SESSION_E75794C2")]
         height = max(1, height)
         if self.command_history_index < self.command_history_scroll:
             self.command_history_scroll = self.command_history_index
@@ -1685,7 +1875,7 @@ class LanctlTui:
             rows.append(
                 f"{marker} {event.timestamp[:19]} | {label} | {event.type} | {event.summary}"
             )
-        return [fit_text(line, width) for line in rows] or [" Sin eventos"]
+        return [fit_text(line, width) for line in rows] or [t("LANCTL.UI.SCREEN.NO_EVENTS")]
 
     def show_history_detail(self) -> None:
         if not self.history_events:
@@ -1693,25 +1883,28 @@ class LanctlTui:
         event = self.history_events[self.history_index]
         device = event.device
         self.detail_lines = [
-            f"Tipo: {event.type}",
-            f"Fecha: {event.timestamp}",
-            f"Elemento: {device.label if device else '-'}",
-            f"Source: {event.source}",
-            f"Resultado: {event.result}",
+            t("LANCTL.UI.DETAIL.TYPE_VALUE", value0=f"{event.type}"),
+            t("LANCTL.UI.DETAIL.DATE_VALUE", value0=f"{event.timestamp}"),
+            t("LANCTL.UI.DETAIL.ELEMENT_VALUE", value0=f"{(device.label if device else '-')}"),
+            t("LANCTL.UI.DETAIL.SOURCE_VALUE", value0=f"{event.source}"),
+            t("LANCTL.UI.DETAIL.RESULT_VALUE", value0=f"{event.result}"),
             f"CorrelationId: {event.correlationId or '-'}",
             f"RunId: {event.runId or '-'}",
             f"TaskId: {event.taskId or '-'}",
             f"OperationId: {event.operationId or '-'}",
-            f"Resumen: {event.summary}",
+            t("LANCTL.UI.DETAIL.SUMMARY_VALUE", value0=f"{event.summary}"),
             "Cambios:",
             *[f"  {x.get('field')}: {x.get('before')} => {x.get('after')}" for x in event.changes],
         ]
         if event.error:
             self.detail_lines.extend(
                 (
-                    f"Error: {event.error.get('code', '-')}",
-                    f"Origen: {event.error.get('origin', '-')}",
-                    f"Mensaje: {event.error.get('message', '-')}",
+                    t("LANCTL.UI.DETAIL.ERROR_VALUE", value0=f"{event.error.get('code', '-')}"),
+                    t("LANCTL.UI.DETAIL.ORIGIN_VALUE", value0=f"{event.error.get('origin', '-')}"),
+                    t(
+                        "LANCTL.UI.DETAIL.MESSAGE_VALUE",
+                        value0=f"{event.error.get('message', '-')}",
+                    ),
                 )
             )
 
@@ -1725,10 +1918,11 @@ class LanctlTui:
         lines.extend(f" {fit_text(line, width - 1)}" for line in visible)
         while len(lines) < height - 2:
             lines.append("")
-        position = (
-            f"Lineas {self.detail_scroll + 1}-"
-            f"{min(len(self.detail_lines), self.detail_scroll + rows)}"
-            f"/{len(self.detail_lines)}"
+        position = t(
+            "LANCTL.UI.DETAIL.LINES_VALUE_VALUE_VALUE",
+            value0=f"{self.detail_scroll + 1}",
+            value1=f"{min(len(self.detail_lines), self.detail_scroll + rows)}",
+            value2=f"{len(self.detail_lines)}",
         )
         lines.append(f"{Fore.CYAN}{fit_text(position, width)}{RESET}")
         footer = " Flechas/RePag/AvPag  Desplazar    F2/Esc  Volver "
@@ -1807,7 +2001,7 @@ class LanctlTui:
         """Inicia el descubrimiento sin bloquear teclado ni acciones remotas."""
 
         if self.scanning:
-            self.messages = ["Ya hay un escaneo en curso. Pulsa Esc para cancelarlo."]
+            self.messages = [t("LANCTL.UI.SCREEN.A_SCAN_IS_ALREADY_RUNNING_PRESS_ESC_TO_CANCEL_IT")]
             return
         self.scanning = True
         self._scan_previous_state = (
@@ -1825,7 +2019,7 @@ class LanctlTui:
         self.scan_error_after_discovery = False
         self.all_devices = self.database.load()
         self.devices = self._filtered_devices()
-        self.messages = ["Buscando dispositivos en la LAN…"]
+        self.messages = [t("LANCTL.UI.SCREEN.SEARCHING_FOR_DEVICES_ON_THE_LAN")]
         self._scan_cancel = threading.Event()
         self._scan_thread = threading.Thread(
             target=self._run_refresh,
@@ -1837,7 +2031,7 @@ class LanctlTui:
     def cancel_refresh(self) -> None:
         if self.scanning:
             self._scan_cancel.set()
-            self.messages = ["Cancelando el escaneo de red…"]
+            self.messages = [t("LANCTL.UI.SCREEN.CANCELLING_NETWORK_SCAN")]
 
     def _run_refresh(self) -> None:
         from lanctl.core.project_context import project_operation
@@ -1870,7 +2064,7 @@ class LanctlTui:
                 result = args.handler(args)
         except InterruptedError:
             result = 130
-            output_buffer.write("Escaneo cancelado por el usuario.")
+            output_buffer.write(t("LANCTL.UI.SCREEN.SCAN_CANCELLED_BY_THE_USER"))
         except (OSError, RuntimeError, ValueError, sqlite3.DatabaseError, SystemExit) as error:
             result = int(error.code or 1) if isinstance(error, SystemExit) else 1
             if isinstance(error, SystemExit):
@@ -1952,20 +2146,23 @@ class LanctlTui:
                     previous = getattr(self, "_scan_previous_state", None)
                     if previous is not None:
                         self.active_devices, self.response_ms, self.scan_summary = previous
-                    self.scan_error = summary or "Error al actualizar la LAN."
+                    self.scan_error = summary or t("LANCTL.UI.SCREEN.ERROR_REFRESHING_THE_LAN")
                     self.scan_error_after_discovery = bool(discovery_completed)
                 self._scan_previous_state = None
                 self.reload()
                 self.messages = (
-                    ["Escaneo completado. Pulsa F5 para actualizar de nuevo."]
+                    [t("LANCTL.UI.SCREEN.SCAN_COMPLETED_PRESS_F5_TO_REFRESH_AGAIN")]
                     if result == 0
                     else [
                         self.scan_error,
                         (
-                            "El descubrimiento terminó, pero falló su procesamiento o guardado. "
-                            "Se conserva el último estado válido."
+                            t(
+                                "LANCTL.UI.SCREEN.DISCOVERY_FINISHED_BUT_PROCESSING_OR_SAVING_FAILED_THE_LAST_VALID_STATE_IS_PRESERVED"
+                            )
                             if discovery_completed
-                            else "El descubrimiento no terminó. Se conserva el último estado válido."
+                            else t(
+                                "LANCTL.UI.SCREEN.DISCOVERY_DID_NOT_FINISH_THE_LAST_VALID_STATE_IS_PRESERVED"
+                            )
                         ),
                     ]
                 )
@@ -1974,9 +2171,9 @@ class LanctlTui:
     def show_info(self) -> None:
         device = self.selected
         if not device:
-            self.messages = ["No hay ningun elemento seleccionado."]
+            self.messages = [t("LANCTL.UI.SCREEN.NO_ELEMENT_SELECTED")]
             return
-        self.messages = ["Obteniendo informacion completa del elemento..."]
+        self.messages = [t("LANCTL.UI.SCREEN.OBTAINING_COMPLETE_ELEMENT_INFORMATION")]
         self.render()
         _result, output = self._capture(
             [
@@ -2008,12 +2205,21 @@ class LanctlTui:
             return "-" if value in (None, "", [], {}) else str(value)
 
         identity = [
-            f"  Estado: {'ACTIVO' if observation.get('reachable') else 'NO DETECTADO'}",
+            t(
+                "LANCTL.UI.DETAIL.STATE_VALUE_8CDCFAEE",
+                value0=f"{('ACTIVO' if observation.get('reachable') else 'NO DETECTADO')}",
+            ),
             f"  ID estable: {shown(device.device_id)}",
-            f"  IP registrada: {shown(device.ip)}",
-            f"  MAC registrada: {shown(device.mac)}",
-            f"  MAC observada: {shown(observation.get('observed_mac'))}",
-            f"  Coincidencia: {'Si' if match is True else 'NO' if match is False else '-'}",
+            t("LANCTL.UI.SUMMARY.REGISTERED_IP_VALUE", value0=f"{shown(device.ip)}"),
+            t("LANCTL.UI.SUMMARY.REGISTERED_MAC_VALUE", value0=f"{shown(device.mac)}"),
+            t(
+                "LANCTL.UI.SUMMARY.OBSERVED_MAC_VALUE",
+                value0=f"{shown(observation.get('observed_mac'))}",
+            ),
+            t(
+                "LANCTL.UI.DETAIL.MATCH_VALUE",
+                value0=f"{('Si' if match is True else 'NO' if match is False else '-')}",
+            ),
         ]
         identity_fields = [
             SettingField(
@@ -2023,8 +2229,8 @@ class LanctlTui:
                 device.cnf,
                 device.cnf,
                 "O, X, -, S o F",
-                "Identidad",
-                "Estado de reconocimiento del elemento.",
+                t("LANCTL.UI.TEXT.IDENTITY"),
+                t("LANCTL.UI.SCREEN.ELEMENT_RECOGNITION_STATE"),
                 ("O", "X", "-", "S", "F"),
             ),
             SettingField(
@@ -2033,9 +2239,9 @@ class LanctlTui:
                 "-alias",
                 device.alias,
                 device.alias,
-                "texto único",
-                "Identidad",
-                "Alias corto asignado por el usuario.",
+                t("LANCTL.UI.SCREEN.UNIQUE_TEXT"),
+                t("LANCTL.UI.TEXT.IDENTITY"),
+                t("LANCTL.UI.SCREEN.SHORT_USER_ASSIGNED_ALIAS"),
             ),
             SettingField(
                 "name",
@@ -2044,8 +2250,8 @@ class LanctlTui:
                 device.name,
                 device.name,
                 "texto",
-                "Identidad",
-                "Nombre legible del elemento.",
+                t("LANCTL.UI.TEXT.IDENTITY"),
+                t("LANCTL.UI.SCREEN.HUMAN_READABLE_ELEMENT_NAME"),
             ),
             SettingField(
                 "description",
@@ -2053,9 +2259,9 @@ class LanctlTui:
                 "-description",
                 device.description,
                 device.description,
-                "máximo 42",
-                "Identidad",
-                "Descripción breve del elemento.",
+                t("LANCTL.UI.SCREEN.MAXIMUM_42"),
+                t("LANCTL.UI.TEXT.IDENTITY"),
+                t("LANCTL.UI.SCREEN.SHORT_ELEMENT_DESCRIPTION"),
             ),
             SettingField(
                 "idf",
@@ -2064,8 +2270,10 @@ class LanctlTui:
                 getattr(device, "idf", ""),
                 getattr(device, "idf", ""),
                 "AB-12 a ABCDE-12345",
-                "Identidad",
-                "Identificador físico manual y único, compartido conceptualmente con LANWIRE.",
+                t("LANCTL.UI.TEXT.IDENTITY"),
+                t(
+                    "LANCTL.UI.SCREEN.MANUAL_UNIQUE_PHYSICAL_IDENTIFIER_CONCEPTUALLY_SHARED_WITH_LANWIRE"
+                ),
             ),
             SettingField(
                 "group",
@@ -2074,8 +2282,8 @@ class LanctlTui:
                 "",
                 "",
                 "nombre de grupo",
-                "Clasificación",
-                "Añade el elemento a un grupo; los existentes aparecen debajo.",
+                t("LANCTL.UI.VIEW.CLASSIFICATION"),
+                t("LANCTL.UI.SCREEN.ADD_THE_ELEMENT_TO_A_GROUP_EXISTING_GROUPS_ARE_SHOWN_BELOW"),
             ),
             SettingField(
                 "ip",
@@ -2083,50 +2291,89 @@ class LanctlTui:
                 "-ip",
                 device.ip,
                 device.ip,
-                "IPv4 única",
-                "Red",
-                "Dirección IPv4 registrada para este elemento.",
+                t("LANCTL.UI.SCREEN.UNIQUE_IPV4"),
+                t("LANCTL.UI.TEXT.NETWORK"),
+                t("LANCTL.UI.SCREEN.IPV4_ADDRESS_REGISTERED_FOR_THIS_ELEMENT"),
             ),
             SettingField(
                 "protocol",
-                "PROTOCOLO",
+                t("LANCTL.UI.STATUS.PROTOCOL"),
                 "-protocol",
                 "",
                 "",
                 "ssh o del ssh",
                 "Accesos",
-                "Activa un protocolo; escribe del NOMBRE para desactivarlo.",
+                t("LANCTL.UI.SCREEN.ENABLE_A_PROTOCOL_ENTER_DEL_NAME_TO_DISABLE_IT"),
             ),
         ]
         classification = [
-            f"  Alias: {shown(device.alias)}",
-            f"  Alias detectado: {shown(device.default_alias)}",
-            f"  Nombre: {shown(device.name)}",
-            f"  Hostname detectado: {shown(observation.get('hostname') or device.default_name)}",
-            f"  Descripcion: {shown(device.description)}",
-            f"  Fabricante: {shown(element.get('manufacturer') or device.manufacturer)}",
-            f"  Tipo probable: {shown(identification.get('device_type'))}",
-            f"  Confianza: {shown(identification.get('confidence'))}",
-            f"  Evidencias: {shown('; '.join(identification.get('evidence', [])))}",
-            f"  Grupos: {shown(', '.join(device.groups))}",
+            t("LANCTL.UI.DETAIL.ALIAS_VALUE", value0=f"{shown(device.alias)}"),
+            t("LANCTL.UI.MESSAGE.DETECTED_ALIAS_VALUE", value0=f"{shown(device.default_alias)}"),
+            t("LANCTL.UI.DETAIL.NAME_VALUE_7ED60808", value0=f"{shown(device.name)}"),
+            t(
+                "LANCTL.UI.MESSAGE.DETECTED_HOSTNAME_VALUE",
+                value0=f"{shown(observation.get('hostname') or device.default_name)}",
+            ),
+            t("LANCTL.UI.DETAIL.DESCRIPTION_VALUE", value0=f"{shown(device.description)}"),
+            t(
+                "LANCTL.UI.DETAIL.MANUFACTURER_VALUE",
+                value0=f"{shown(element.get('manufacturer') or device.manufacturer)}",
+            ),
+            t(
+                "LANCTL.UI.MESSAGE.PROBABLE_TYPE_VALUE",
+                value0=f"{shown(identification.get('device_type'))}",
+            ),
+            t(
+                "LANCTL.UI.DETAIL.CONFIDENCE_VALUE",
+                value0=f"{shown(identification.get('confidence'))}",
+            ),
+            t(
+                "LANCTL.UI.DETAIL.EVIDENCE_VALUE",
+                value0=f"{shown('; '.join(identification.get('evidence', [])))}",
+            ),
+            t(
+                "LANCTL.UI.DETAIL.GROUPS_VALUE_B8E12681",
+                value0=f"{shown(', '.join(device.groups))}",
+            ),
         ]
         network = [
-            f"  Latencia: {shown(observation.get('latency_ms'))} ms",
+            t(
+                "LANCTL.UI.DETAIL.LATENCY_VALUE_MS",
+                value0=f"{shown(observation.get('latency_ms'))}",
+            ),
             f"  TTL: {shown(observation.get('ttl'))}",
-            f"  Detectado por: {shown('+'.join(device.discovery_methods) or device.last_discovery)}",
-            f"  Ultima deteccion: {shown(device.last_discovery)}",
-            f"  Ultima vez visto: {shown(device.last_seen)}",
+            t(
+                "LANCTL.UI.MESSAGE.DETECTED_BY_VALUE",
+                value0=f"{shown('+'.join(device.discovery_methods) or device.last_discovery)}",
+            ),
+            t("LANCTL.UI.MESSAGE.LAST_DETECTION_VALUE", value0=f"{shown(device.last_discovery)}"),
+            t("LANCTL.UI.MESSAGE.LAST_SEEN_VALUE", value0=f"{shown(device.last_seen)}"),
         ]
         access = [
-            f"  Protocolos: {shown(', '.join(device.protocols))}",
-            f"  Credenciales referenciadas: {shown(', '.join(f'{key}={value}' for key, value in device.credentials.items()))}",
-            f"  Opciones de protocolo: {shown(json.dumps(device.protocol_options, ensure_ascii=False, sort_keys=True))}",
+            t("LANCTL.UI.DETAIL.PROTOCOLS_VALUE", value0=f"{shown(', '.join(device.protocols))}"),
+            t(
+                "LANCTL.UI.MESSAGE.REFERENCED_CREDENTIALS_VALUE",
+                value0=f"{shown(', '.join((f'{key}={value}' for key, value in device.credentials.items())))}",
+            ),
+            t(
+                "LANCTL.UI.MESSAGE.PROTOCOL_OPTIONS_VALUE",
+                value0=f"{shown(json.dumps(device.protocol_options, ensure_ascii=False, sort_keys=True))}",
+            ),
         ]
         open_ports = observation.get("open_ports", []) or []
         ports = [
-            f"  Puertos abiertos: {len(observation.get('open_ports', []))}",
-            f"  Puertos examinados: {shown(observation.get('scanned_ports'))}",
-            f"  Duracion del analisis: {shown(observation.get('duration'))} s",
+            t(
+                "LANCTL.UI.MESSAGE.OPEN_PORTS_VALUE",
+                value0=f"{len(observation.get('open_ports', []))}",
+            ),
+            t(
+                "LANCTL.UI.MESSAGE.EXAMINED_PORTS_VALUE",
+                value0=f"{shown(observation.get('scanned_ports'))}",
+            ),
+            t(
+                "LANCTL.UI.MESSAGE.ANALYSIS_DURATION_VALUE_S",
+                value0=f"{shown(observation.get('duration'))}",
+            ),
         ]
         if open_ports:
             ports.extend(["", "  PUERTO  SERVICIO       PRODUCTO / BANNER"])
@@ -2136,18 +2383,28 @@ class LanctlTui:
                     service = shown(item.get("service"))
                     product = shown(item.get("product") or item.get("banner"))
                 else:
-                    port, service, product = shown(item), "-", "-"
+                    port, service, product = (
+                        shown(item),
+                        "-",
+                        "-",
+                    )
                 ports.append(f"  {port:<7} {service:<14} {product}")
         else:
-            ports.extend(["", "  Ningún puerto abierto detectado."])
+            ports.extend(["", t("LANCTL.UI.SCREEN.NO_OPEN_PORTS_DETECTED")])
         self._open_modal(
             ModalState(
                 kind="info",
                 title=f"INFO · {device.alias or device.name or device.ip or device.mac}",
-                tabs=["Identidad", "Clasificación", "Red", "Accesos", "Puertos"],
+                tabs=[
+                    t("LANCTL.UI.TEXT.IDENTITY"),
+                    t("LANCTL.UI.VIEW.CLASSIFICATION"),
+                    t("LANCTL.UI.TEXT.NETWORK"),
+                    "Accesos",
+                    t("LANCTL.UI.TEXT.PORTS"),
+                ],
                 pages=[identity, classification, network, access, ports],
                 items=identity_fields,
-                footer="←/→ sección  ↑/↓ campo  Tab editar  F2/Esc cerrar",
+                footer=t("LANCTL.UI.SCREEN.SECTION_FIELD_TAB_EDIT_F2_ESC_CLOSE"),
                 max_width=90,
                 max_height=30,
             )
@@ -2156,7 +2413,7 @@ class LanctlTui:
     def ping_selected(self) -> None:
         device = self.selected
         if not device:
-            self.messages = ["No hay ningún elemento seleccionado para comprobar."]
+            self.messages = [t("LANCTL.UI.SCREEN.NO_ELEMENT_SELECTED_TO_CHECK")]
             return
         result, output = self._capture(["ping", device.mac or device.ip])
         if result == 0:
@@ -2165,11 +2422,17 @@ class LanctlTui:
         if output:
             self._set_command_output(output, result)
         else:
-            self.messages = ["Ping completado." if result == 0 else "El elemento no ha respondido."]
+            self.messages = [
+                t("LANCTL.UI.SCREEN.PING_COMPLETED")
+                if result == 0
+                else t("LANCTL.UI.SCREEN.THE_ELEMENT_DID_NOT_RESPOND")
+            ]
 
     def _set_command_output(self, output: str, result: int) -> None:
         self.messages = (
-            _clean_tui_output(output)[-2000:] if output else [f"Código de salida: {result}"]
+            _clean_tui_output(output)[-2000:]
+            if output
+            else [t("LANCTL.UI.MESSAGE.EXIT_CODE_VALUE", value0=f"{result}")]
         )
         self.output_selectable = _selectable_output_indexes(self.messages)
         self.output_focus = bool(self.output_selectable)
@@ -2228,9 +2491,11 @@ class LanctlTui:
                 self._set_command_output(output, result)
             elif answer in ("n", "no", "cancel", "cancelar"):
                 self.pending_confirmation = None
-                self.messages = ["Operación cancelada; no se ha eliminado el elemento."]
+                self.messages = [
+                    t("LANCTL.UI.SCREEN.OPERATION_CANCELLED_THE_ELEMENT_WAS_NOT_DELETED")
+                ]
             else:
-                self.messages = ["Confirma escribiendo YES o cancela escribiendo NO."]
+                self.messages = [t("LANCTL.UI.SCREEN.CONFIRM_BY_TYPING_YES_OR_CANCEL_BY_TYPING_NO")]
             return
         self.output_focus = False
         self.output_selectable = []
@@ -2247,7 +2512,7 @@ class LanctlTui:
         if command == "element" and any(
             part.casefold() in ("/?", "-h", "--help") for part in parts[1:]
         ):
-            self.messages = list(TUI_ELEMENT_HELP)
+            self.messages = [translate_label(line) for line in TUI_ELEMENT_HELP]
             self.command_suggestions = list(TUI_ELEMENT_SUGGESTIONS)
             self.suggestion_index = -1
             return
@@ -2261,19 +2526,28 @@ class LanctlTui:
         if command in ("help", "?", "commands"):
             if len(parts) > 1 and parts[1].casefold() != "list":
                 help_result, output = self._capture([parts[1], "/?"])
-                self._set_command_output(output or "No hay ayuda disponible.", help_result)
+                self._set_command_output(
+                    output or t("LANCTL.UI.SCREEN.NO_HELP_AVAILABLE"), help_result
+                )
             else:
                 self.messages = [
                     "TUI: list --all | --connected | --disconnected | -group NOMBRE | -dhcp | -statics",
                     'Proyecto: project | project status | project use "RUTA.vlf" | help project.',
-                    "Contexto: info, select ELEMENTO, clear, reload; group NOMBRE -add/-remove usa la selección.",
-                    "Edición rápida: element -name|-alias|-description|-group|-cnf|-delete. Usa element /? a modo de ayuda.",
+                    t(
+                        "LANCTL.UI.SCREEN.CONTEXT_INFO_SELECT_ELEMENT_CLEAR_RELOAD_GROUP_NAME_ADD_REMOVE_USES_THE_SELECTION"
+                    ),
+                    t(
+                        "LANCTL.UI.SCREEN.QUICK_EDIT_ELEMENT_NAME_ALIAS_DESCRIPTION_GROUP_CNF_DELETE_USE_ELEMENT_FOR_HELP"
+                    ),
                 ]
             return
         if command == "reload":
             self.reload()
             self.messages = [
-                f"Inventario recargado | {len(self.devices)} elementos | sin escaneo de red."
+                t(
+                    "LANCTL.UI.MESSAGE.INVENTORY_RELOADED_VALUE_ELEMENTS_NO_NETWORK_SCAN",
+                    value0=f"{len(self.devices)}",
+                )
             ]
             return
         if command == "list":
@@ -2302,7 +2576,9 @@ class LanctlTui:
                 self.index = next(
                     i for i, item in enumerate(self.devices) if item.mac == wanted.mac
                 )
-                self.messages = [f"Seleccionado: {wanted.alias or wanted.ip}"]
+                self.messages = [
+                    t("LANCTL.UI.DETAIL.SELECTED_VALUE", value0=f"{wanted.alias or wanted.ip}")
+                ]
             except (ValueError, StopIteration) as error:
                 self.messages = [str(error)]
             return
@@ -2314,7 +2590,7 @@ class LanctlTui:
                     (self.selected.mac or self.selected.ip) if self.selected else "",
                 )
             except ValueError as error:
-                self.messages = [str(error), "Escribe element /? para ver ejemplos."]
+                self.messages = [str(error), t("LANCTL.UI.SCREEN.TYPE_ELEMENT_TO_SEE_EXAMPLES")]
                 return
             if (
                 len(contextual) >= 3
@@ -2331,7 +2607,7 @@ class LanctlTui:
                 ):
                     target = self.selected.alias or self.selected.ip or self.selected.mac
                 self.messages = [
-                    f"Eliminar completamente {target}?",
+                    t("LANCTL.UI.MESSAGE.COMPLETELY_DELETE_VALUE", value0=f"{target}"),
                     "Escribe YES para confirmar o NO para cancelar.",
                 ]
                 return
@@ -2390,16 +2666,29 @@ class LanctlTui:
                 details={"project": str(settings.get("activeProject") or "")},
                 print_output=False,
             )
-            self._set_terminal_message(f"No se pudo guardar el proyecto: {error}")
+            self._set_terminal_message(
+                t("LANCTL.UI.MESSAGE.COULD_NOT_SAVE_THE_PROJECT_VALUE", value0=f"{error}")
+            )
             return
         if result.saved:
             self.reload()
             state = "cambios aplicados" if had_changes else "sin cambios pendientes"
-            self._set_terminal_message(f"Proyecto guardado correctamente: {result.path} ({state}).")
+            self._set_terminal_message(
+                t(
+                    "LANCTL.UI.MESSAGE.PROJECT_SAVED_SUCCESSFULLY_VALUE_VALUE",
+                    value0=f"{result.path}",
+                    value1=f"{state}",
+                )
+            )
         elif result.reason == "no-active-project":
-            self._set_terminal_message("No hay ningún proyecto activo que guardar.")
+            self._set_terminal_message(t("LANCTL.UI.SCREEN.NO_ACTIVE_PROJECT_TO_SAVE"))
         else:
-            self._set_terminal_message(f"El proyecto no necesitó guardarse: {result.reason}.")
+            self._set_terminal_message(
+                t(
+                    "LANCTL.UI.MESSAGE.THE_PROJECT_DID_NOT_NEED_SAVING_VALUE",
+                    value0=f"{result.reason}",
+                )
+            )
 
     def _selected_clipboard_payload(self) -> dict[str, str]:
         device = self.selected
@@ -2419,7 +2708,7 @@ class LanctlTui:
     def _copy_selected(self, *, as_json: bool) -> None:
         payload = self._selected_clipboard_payload()
         if not payload:
-            self.messages = ["No hay ningún elemento seleccionado para copiar."]
+            self.messages = [t("LANCTL.UI.SCREEN.NO_ELEMENT_SELECTED_TO_COPY")]
             return
         value = (
             json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
@@ -2434,7 +2723,9 @@ class LanctlTui:
 
             copy_text(value)
         except (MemoryError, OSError) as error:
-            self.messages = [f"No se pudo copiar al portapapeles: {error}"]
+            self.messages = [
+                t("LANCTL.UI.MESSAGE.COULD_NOT_COPY_TO_CLIPBOARD_VALUE", value0=f"{error}")
+            ]
             return
         label = self.selected.alias or self.selected.ip or self.selected.mac
         self.messages = [f"{'JSON' if as_json else 'Línea'} copiado: {label}"]
@@ -2452,14 +2743,21 @@ class LanctlTui:
         payload = self._selected_clipboard_payload()
         value = payload.get(field, "")
         if not value:
-            self.messages = [f"El elemento seleccionado no tiene {field.upper()} disponible."]
+            self.messages = [
+                t(
+                    "LANCTL.UI.MESSAGE.THE_SELECTED_ELEMENT_DOES_NOT_HAVE_VALUE_AVAILABLE",
+                    value0=f"{field.upper()}",
+                )
+            ]
             return
         try:
             from lanctl.apps.ip.interfaces.tui.clipboard import copy_text
 
             copy_text(value)
         except (MemoryError, OSError) as error:
-            self.messages = [f"No se pudo copiar al portapapeles: {error}"]
+            self.messages = [
+                t("LANCTL.UI.MESSAGE.COULD_NOT_COPY_TO_CLIPBOARD_VALUE", value0=f"{error}")
+            ]
             return
         self.messages = [f"{field.upper()} copiada: {value}"]
 
@@ -2475,11 +2773,13 @@ class LanctlTui:
         settings = load_config()
         active = str(settings.get("activeProject") or "").strip()
         if not active:
-            self.messages = ["No hay ningún proyecto activo."]
+            self.messages = [t("LANCTL.UI.SCREEN.NO_ACTIVE_PROJECT")]
         elif workspace_is_dirty(settings):
-            self.messages = ["El proyecto activo contiene cambios pendientes de guardar."]
+            self.messages = [t("LANCTL.UI.SCREEN.THE_ACTIVE_PROJECT_HAS_UNSAVED_CHANGES")]
         else:
-            self.messages = ["El proyecto activo está sincronizado; no hay cambios pendientes."]
+            self.messages = [
+                t("LANCTL.UI.SCREEN.THE_ACTIVE_PROJECT_IS_SYNCHRONIZED_NO_PENDING_CHANGES")
+            ]
 
     def _focus_console(self) -> None:
         self.output_focus = False
@@ -2489,7 +2789,7 @@ class LanctlTui:
         self.command_suggestions = []
         self.command = ""
         self.cursor = 0
-        self.messages = ["Consola preparada."]
+        self.messages = [t("LANCTL.UI.SCREEN.CONSOLE_READY")]
 
     def handle_key(self, key: str) -> None:
         from lanctl.core.project_context import project_identity, project_operation
@@ -2504,13 +2804,15 @@ class LanctlTui:
                         self.cancel_refresh()
                     return
                 if self.modal and key != "ESC":
-                    self.modal.footer = (
-                        "El proyecto cambió. Esc cierra esta vista sin aplicar cambios."
+                    self.modal.footer = t(
+                        "LANCTL.UI.SCREEN.THE_PROJECT_CHANGED_ESC_CLOSES_THIS_VIEW_WITHOUT_APPLYING_CHANGES"
                     )
                     return
                 self.modal = None
                 self.reload()
-                self.messages = ["Proyecto actualizado desde otra ventana; revisa la selección."]
+                self.messages = [
+                    t("LANCTL.UI.SCREEN.PROJECT_UPDATED_FROM_ANOTHER_WINDOW_REVIEW_THE_SELECTION")
+                ]
                 return
             return self._handle_key(key)
 
@@ -2536,15 +2838,21 @@ class LanctlTui:
                 "project_edit",
             }:
                 if self.modal.kind == "info" and self.modal.editing:
-                    self.modal.footer = "Tab aplica el campo antes de guardar el proyecto"
+                    self.modal.footer = t(
+                        "LANCTL.UI.SCREEN.TAB_APPLIES_THE_FIELD_BEFORE_SAVING_THE_PROJECT"
+                    )
                     return
                 active_modal = self.modal
                 self._manual_save()
                 if self.modal is active_modal:
                     if active_modal.kind == "projects":
                         self._update_manager_detail(active_modal)
-                    confirmation = self.messages[-1] if self.messages else "Guardado completado."
-                    active_modal.footer = f"{confirmation} · Esc cerrar"
+                    confirmation = (
+                        self.messages[-1] if self.messages else t("LANCTL.UI.SCREEN.SAVE_COMPLETED")
+                    )
+                    active_modal.footer = t(
+                        "LANCTL.UI.MESSAGE.VALUE_ESC_CLOSE", value0=f"{confirmation}"
+                    )
                 return
             self._handle_modal_key(key)
             return
@@ -2580,7 +2888,7 @@ class LanctlTui:
                 )
             elif key == "ESC":
                 self.view_state = "inventory"
-                self.messages = ["Inventario restaurado"]
+                self.messages = [t("LANCTL.UI.SCREEN.INVENTORY_RESTORED")]
             return
         if getattr(self, "view_state", "inventory") == "command-history":
             if key in ("UP", "PGUP"):
@@ -2596,10 +2904,10 @@ class LanctlTui:
                 self.command = self.command_history[self.command_history_index]
                 self.cursor = len(self.command)
                 self.view_state = "inventory"
-                self.messages = ["Comando recuperado; pulsa Enter para ejecutarlo."]
+                self.messages = [t("LANCTL.UI.SCREEN.COMMAND_RESTORED_PRESS_ENTER_TO_EXECUTE_IT")]
             elif key == "ESC":
                 self.view_state = "inventory"
-                self.messages = ["Inventario restaurado"]
+                self.messages = [t("LANCTL.UI.SCREEN.INVENTORY_RESTORED")]
             return
         if self.output_focus:
             if key == "UP":
@@ -2660,23 +2968,23 @@ class LanctlTui:
             self._prepare_shortcut_command("search ", "Buscar: escribe texto, IP, MAC o alias.")
         elif action == "reload":
             self.reload()
-            self.messages = ["Inventario recargado sin ejecutar un escaneo."]
+            self.messages = [t("LANCTL.UI.SCREEN.INVENTORY_RELOADED_WITHOUT_PERFORMING_A_SCAN")]
         elif action == "edit":
             self._prepare_shortcut_command(
                 "element ",
-                "Editar: completa una opción; se aplicará al elemento seleccionado.",
+                t("LANCTL.UI.SCREEN.EDIT_COMPLETE_AN_OPTION_IT_APPLIES_TO_THE_SELECTED_ELEMENT"),
             )
         elif action == "groups":
             self._prepare_shortcut_command(
                 "group ",
-                "Grupos: indica el grupo y la acción; se usará el elemento seleccionado.",
+                t("LANCTL.UI.SCREEN.GROUPS_SPECIFY_THE_GROUP_AND_ACTION_USES_THE_SELECTED_ELEMENT"),
             )
         elif action == "ports":
             self._show_ports()
         elif action == "open":
             self._prepare_shortcut_command(
                 "open ",
-                "Abrir acceso: escribe ssh, http, https, telnet u otro protocolo.",
+                t("LANCTL.UI.SCREEN.OPEN_ACCESS_ENTER_SSH_HTTP_HTTPS_TELNET_OR_ANOTHER_PROTOCOL"),
             )
         elif action == "save":
             self._manual_save()
@@ -2694,7 +3002,7 @@ class LanctlTui:
             self.show_history()
         elif action == "scanSelected":
             self._prepare_shortcut_command(
-                "scan ", "Escanear elemento: añade opciones o pulsa Enter para comenzar."
+                "scan ", t("LANCTL.UI.SCREEN.SCAN_ELEMENT_ADD_OPTIONS_OR_PRESS_ENTER_TO_START")
             )
         elif action == "filterActive":
             self.configure_list(["--active"])
@@ -2708,7 +3016,7 @@ class LanctlTui:
             )
         elif action == "terminal":
             self._prepare_shortcut_command(
-                "terminal ", "Terminal: pulsa Enter o añade las opciones necesarias."
+                "terminal ", t("LANCTL.UI.SCREEN.TERMINAL_PRESS_ENTER_OR_ADD_THE_REQUIRED_OPTIONS")
             )
         elif action == "credentials":
             self._prepare_shortcut_command(
@@ -2716,7 +3024,8 @@ class LanctlTui:
             )
         elif action == "wakeOnLan":
             self._prepare_shortcut_command(
-                "wol ", "Wake-on-LAN: indica wakeup, status, schedule u otra acción."
+                "wol ",
+                t("LANCTL.UI.SCREEN.WAKE_ON_LAN_SPECIFY_WAKEUP_STATUS_SCHEDULE_OR_ANOTHER_ACTION"),
             )
         elif action == "copyIp":
             self._copy_selected_field("ip")
@@ -2803,12 +3112,17 @@ class LanctlTui:
             self.command = self.command_history[modal.selected]
             self.cursor = len(self.command)
             self.modal = None
-            self.messages = ["Comando recuperado; pulsa Enter para ejecutarlo."]
+            self.messages = [t("LANCTL.UI.SCREEN.COMMAND_RESTORED_PRESS_ENTER_TO_EXECUTE_IT")]
         elif key == "ENTER" and modal.kind == "projects" and modal.items:
             item = modal.items[modal.selected]
             path = item.path
             if not item.available:
-                self.messages = [f"El proyecto ya no está disponible: {path}"]
+                self.messages = [
+                    t(
+                        "LANCTL.UI.MESSAGE.THE_PROJECT_IS_NO_LONGER_AVAILABLE_VALUE",
+                        value0=f"{path}",
+                    )
+                ]
                 return
             self._request_project_activation(path)
         elif modal.kind == "projects" and key == "CTRL_N":
@@ -2885,18 +3199,26 @@ class LanctlTui:
                 updated = self.database.edit_device(selector, field.key, field.value)
         except (KeyError, OSError, ValueError) as error:
             field.value = previous_value
-            modal.footer = f"No se pudo guardar: {error} · Tab editar · F2/Esc cerrar"
+            modal.footer = t(
+                "LANCTL.UI.MESSAGE.COULD_NOT_SAVE_VALUE_TAB_EDIT_F2_ESC_CLOSE", value0=f"{error}"
+            )
             return
         if field.key == "group":
             modal.pages[1] = [
-                f"  Grupos: {', '.join(updated.groups) or '-'}"
+                t(
+                    "LANCTL.UI.DETAIL.GROUPS_VALUE_B8E12681",
+                    value0=f"{', '.join(updated.groups) or '-'}",
+                )
                 if line.startswith("  Grupos:")
                 else line
                 for line in modal.pages[1]
             ]
         elif field.key == "protocol":
             modal.pages[3] = [
-                f"  Protocolos: {', '.join(updated.protocols) or '-'}"
+                t(
+                    "LANCTL.UI.DETAIL.PROTOCOLS_VALUE",
+                    value0=f"{', '.join(updated.protocols) or '-'}",
+                )
                 if line.startswith("  Protocolos:")
                 else line
                 for line in modal.pages[3]
@@ -2908,7 +3230,10 @@ class LanctlTui:
         else:
             field.original = field.value
             setattr(device, field.key, getattr(updated, field.key))
-        modal.footer = f"{field.label} guardado · ←/→ sección  ↑/↓ campo  Tab editar  F2/Esc cerrar"
+        modal.footer = t(
+            "LANCTL.UI.MESSAGE.VALUE_SAVED_SECTION_FIELD_TAB_EDIT_F2_ESC_CLOSE",
+            value0=f"{field.label}",
+        )
 
     def _create_project_from_manager(self) -> None:
         from lanctl.core.projects.paths import default_project_directory
@@ -2916,12 +3241,14 @@ class LanctlTui:
 
         if getattr(self, "scanning", False):
             if self.modal:
-                self.modal.footer = "Cierra esta ventana y pulsa Esc para cancelar el escaneo antes de crear un proyecto"
+                self.modal.footer = t(
+                    "LANCTL.UI.SCREEN.CLOSE_THIS_WINDOW_AND_PRESS_ESC_TO_CANCEL_THE_SCAN_BEFORE_CREATING_A_PROJECT"
+                )
             return
         if workspace_is_dirty(load_config()):
             if self.modal:
-                self.modal.footer = (
-                    "Hay cambios pendientes · Ctrl+S guardar antes de crear otro proyecto"
+                self.modal.footer = t(
+                    "LANCTL.UI.SCREEN.PENDING_CHANGES_CTRL_S_TO_SAVE_BEFORE_CREATING_ANOTHER_PROJECT"
                 )
             return
 
@@ -2934,49 +3261,53 @@ class LanctlTui:
         fields = [
             SettingField(
                 "name",
-                "Nombre",
+                t("LANCTL.INVENTORY.MANUAL.NAME"),
                 "",
                 "",
                 "",
-                "Nombre del proyecto y del archivo VLF.",
+                t("LANCTL.UI.SCREEN.PROJECT_AND_VLF_FILE_NAME"),
                 "PROJECT",
             ),
             SettingField(
                 "path",
-                "Ruta",
+                t("LANCTL.UI.TEXT.PATH"),
                 "",
                 str(default_root),
                 str(default_root),
-                "Directorio donde se guardará el proyecto.",
+                t("LANCTL.UI.SCREEN.DIRECTORY_WHERE_THE_PROJECT_WILL_BE_SAVED"),
                 "PROJECT",
             ),
             SettingField(
                 "description",
-                "Descripción",
+                t("LANCTL.INVENTORY.MANUAL.DESCRIPTION"),
                 "",
                 "",
                 "",
-                "Descripción opcional del proyecto.",
+                t("LANCTL.UI.SCREEN.OPTIONAL_PROJECT_DESCRIPTION"),
                 "PROJECT",
             ),
         ]
         from lanctl.core.projects.metadata import FIELDS
 
         fields.extend(
-            SettingField(key, label, "", "", "", "Dato descriptivo opcional.", "PROJECT")
+            SettingField(
+                key, label, "", "", "", t("LANCTL.UI.SCREEN.OPTIONAL_DESCRIPTIVE_DATA"), "PROJECT"
+            )
             for key, label, *_ in FIELDS
             if key not in {"name", "description"}
         )
         self._open_modal(
             ModalState(
                 kind="project_create",
-                title="PROJECT MANAGER / NUEVO PROYECTO",
+                title=t("LANCTL.UI.STATUS.PROJECT_MANAGER_NEW_PROJECT"),
                 tabs=["Datos"],
                 pages=[[]],
                 items=fields,
                 editing=True,
                 editor_fresh=True,
-                footer="escribir editar  Ctrl+S crear  Enter siguiente/crear  ↑/↓ campo  Esc cancelar",
+                footer=t(
+                    "LANCTL.UI.SCREEN.TYPE_EDIT_CTRL_S_CREATE_ENTER_NEXT_CREATE_FIELD_ESC_CANCEL"
+                ),
                 max_width=120,
             )
         )
@@ -2999,7 +3330,7 @@ class LanctlTui:
             else:
                 rows.append(f"{marker}{changed} {field.label:<25} {field.value or placeholder}")
         selected = modal.items[modal.selected]
-        rows.extend(("", "  DESCRIPCIÓN", f"  {selected.description}"))
+        rows.extend(("", "  DESCRIPCIÓN", f"  {translate_label(selected.description)}"))
         return [fit_text(row, width) for row in rows]
 
     def _handle_project_create_key(self, modal: ModalState, key: str) -> None:
@@ -3008,7 +3339,9 @@ class LanctlTui:
                 field.value != field.original for field in modal.items
             ) and not modal.tab_selections.get(-2):
                 modal.tab_selections[-2] = 1
-                modal.footer = "Cambios sin guardar · Esc otra vez para descartar · cualquier otra tecla para continuar"
+                modal.footer = t(
+                    "LANCTL.UI.SCREEN.UNSAVED_CHANGES_ESC_AGAIN_TO_DISCARD_ANY_OTHER_KEY_TO_CONTINUE"
+                )
                 return
             self.show_project_manager()
             return
@@ -3048,7 +3381,7 @@ class LanctlTui:
                     "",
                     data["values"][key],
                     data["values"][key],
-                    "Dato descriptivo del proyecto.",
+                    t("LANCTL.UI.SCREEN.DESCRIPTIVE_PROJECT_DATA"),
                     "PROJECT",
                 )
                 for key, label, *_ in FIELDS
@@ -3056,14 +3389,16 @@ class LanctlTui:
             self._open_modal(
                 ModalState(
                     kind="project_edit",
-                    title="PROJECT MANAGER / EDITAR PROYECTO",
+                    title=t("LANCTL.UI.STATUS.PROJECT_MANAGER_EDIT_PROJECT"),
                     tabs=["Datos"],
                     pages=[[]],
                     items=fields,
                     editing=True,
                     editor_fresh=True,
                     edit_snapshot=json.dumps({"path": str(path), "revision": data["revision"]}),
-                    footer="escribir editar  Ctrl+S guardar  Enter siguiente/guardar  ↑/↓ campo  Esc cancelar",
+                    footer=t(
+                        "LANCTL.UI.SCREEN.TYPE_EDIT_CTRL_S_SAVE_ENTER_NEXT_SAVE_FIELD_ESC_CANCEL"
+                    ),
                     max_width=120,
                 )
             )
@@ -3080,7 +3415,7 @@ class LanctlTui:
             level=34,
             print_output=False,
         )
-        self.messages = [f"No se pudieron editar los metadatos: {error}"]
+        self.messages = [t("LANCTL.UI.MESSAGE.COULD_NOT_EDIT_METADATA_VALUE", value0=f"{error}")]
         if self.modal:
             self.modal.footer = str(error)
 
@@ -3099,7 +3434,7 @@ class LanctlTui:
             )
             self.reload()
             self.show_project_manager()
-            self.messages = ["Metadatos del proyecto guardados."]
+            self.messages = [t("LANCTL.UI.SCREEN.PROJECT_METADATA_SAVED")]
         except (OSError, ValueError, sqlite3.DatabaseError) as error:
             self._project_metadata_error(error)
 
@@ -3112,16 +3447,18 @@ class LanctlTui:
         name = values["name"]
         if not name:
             modal.selected = 0
-            modal.footer = "ERROR: escribe un nombre · Enter siguiente  Esc cancelar"
+            modal.footer = t("LANCTL.UI.SCREEN.ERROR_ENTER_A_NAME_ENTER_NEXT_ESC_CANCEL")
             return
         if any(character in name for character in '<>:"/\\|?*'):
             modal.selected = 0
-            modal.footer = "ERROR: el nombre contiene caracteres no válidos · Esc cancelar"
+            modal.footer = t(
+                "LANCTL.UI.SCREEN.ERROR_THE_NAME_CONTAINS_INVALID_CHARACTERS_ESC_CANCEL"
+            )
             return
         directory_text = values["path"]
         if not directory_text:
             modal.selected = 1
-            modal.footer = "ERROR: indica la ruta del proyecto · Esc cancelar"
+            modal.footer = t("LANCTL.UI.SCREEN.ERROR_SPECIFY_THE_PROJECT_PATH_ESC_CANCEL")
             return
         directory = Path(os.path.expandvars(directory_text)).expanduser()
         description = values["description"]
@@ -3161,7 +3498,9 @@ class LanctlTui:
             )
             write_log(f"PROJECT CREATE id={project_id or '-'} path={path} source=TUI")
             self.reload()
-            self.messages = [f"Proyecto creado y activado: {path}"]
+            self.messages = [
+                t("LANCTL.UI.MESSAGE.PROJECT_CREATED_AND_ACTIVATED_VALUE", value0=f"{path}")
+            ]
             self.show_project_manager()
         except (OSError, ValueError, sqlite3.DatabaseError) as error:
             from lanctl.core.errors import errors
@@ -3174,7 +3513,9 @@ class LanctlTui:
                 details={"project": str(destination)},
                 print_output=False,
             )
-            self.messages = [f"No se pudo crear el proyecto: {error}"]
+            self.messages = [
+                t("LANCTL.UI.MESSAGE.COULD_NOT_CREATE_THE_PROJECT_VALUE", value0=f"{error}")
+            ]
 
     def _delete_project_from_manager(self, item) -> None:
         from lanctl.core.projects.catalog import ProjectCatalog
@@ -3183,12 +3524,16 @@ class LanctlTui:
         active = str((self.project_info or {}).get("path") or "")
         if active and str(path).casefold() == str(Path(active).resolve()).casefold():
             self.messages = [
-                "No se puede eliminar el proyecto activo; activa otro proyecto primero."
+                t(
+                    "LANCTL.UI.SCREEN.CANNOT_DELETE_THE_ACTIVE_PROJECT_ACTIVATE_ANOTHER_PROJECT_FIRST"
+                )
             ]
             return
-        confirmation = self._read_text(f"Escribe ELIMINAR para borrar {item.name}:")
+        confirmation = self._read_text(
+            t("LANCTL.UI.DETAIL.TYPE_ELIMINAR_TO_DELETE_VALUE", value0=f"{item.name}")
+        )
         if confirmation != "ELIMINAR":
-            self.messages = ["Eliminación cancelada."]
+            self.messages = [t("LANCTL.UI.SCREEN.DELETION_CANCELLED")]
             return
         try:
             ProjectCatalog().remove(path, delete_file=True)
@@ -3200,7 +3545,7 @@ class LanctlTui:
                 {"path": str(path), "project_id": item.project_id or None},
             )
             write_log(f"PROJECT DELETE id={item.project_id or '-'} path={path} source=TUI")
-            self.messages = [f"Proyecto eliminado: {path}"]
+            self.messages = [t("LANCTL.UI.MESSAGE.PROJECT_DELETED_VALUE", value0=f"{path}")]
             self.show_project_manager()
         except (OSError, sqlite3.DatabaseError) as error:
             from lanctl.core.errors import errors
@@ -3213,7 +3558,9 @@ class LanctlTui:
                 details={"project": str(path)},
                 print_output=False,
             )
-            self.messages = [f"No se pudo eliminar el proyecto: {error}"]
+            self.messages = [
+                t("LANCTL.UI.MESSAGE.COULD_NOT_DELETE_THE_PROJECT_VALUE", value0=f"{error}")
+            ]
 
     def _handle_help_key(self, modal: ModalState, key: str) -> None:
         if key in ("ESC", "F1"):
@@ -3261,7 +3608,12 @@ class LanctlTui:
         self.command = f"{entry.name} "
         self.cursor = len(self.command)
         self.modal = None
-        self.messages = [f"Comando preparado: {entry.name}. Completa sus argumentos y pulsa Enter."]
+        self.messages = [
+            t(
+                "LANCTL.UI.MESSAGE.COMMAND_PREPARED_VALUE_COMPLETE_ITS_ARGUMENTS_AND_PRESS_ENTER",
+                value0=f"{entry.name}",
+            )
+        ]
 
     def _handle_settings_key(self, modal: ModalState, key: str) -> None:
         if modal.tabs and modal.tabs[modal.tab_index] == "EXIT":
@@ -3277,7 +3629,7 @@ class LanctlTui:
         if modal.tabs and modal.tabs[modal.tab_index] == "EXIT":
             modal.tab_selections[-1] = previous_tab
             modal.selected = 0
-            modal.footer = "↑/↓ seleccionar  Enter confirmar  Esc volver"
+            modal.footer = t("LANCTL.UI.SCREEN.SELECT_ENTER_CONFIRM_ESC_BACK")
 
     def _handle_remote_users_key(self, modal: ModalState, key: str) -> None:
         if key == "ESC":
@@ -3294,7 +3646,7 @@ class LanctlTui:
             modal.scroll = max(0, modal.selected - 4)
             return
         if key.casefold() == "n":
-            username = self._read_text("Nuevo usuario:")
+            username = self._read_text(t("LANCTL.UI.SCREEN.NEW_USER"))
             if not username:
                 return
             role = self._read_text("Nivel [viewer/operator/manager/administrator]:") or "operator"
@@ -3309,7 +3661,9 @@ class LanctlTui:
         if key.casefold() == "p" or key == "ENTER":
             result, output = self._remote_access_capture(["user", "rotate-password", username])
         elif key.casefold() == "r":
-            role = self._read_text("Nuevo nivel [viewer/operator/manager/administrator]:")
+            role = self._read_text(
+                t("LANCTL.UI.SCREEN.NEW_LEVEL_VIEWER_OPERATOR_MANAGER_ADMINISTRATOR")
+            )
             if not role:
                 return
             result, output = self._remote_access_capture(
@@ -3319,7 +3673,9 @@ class LanctlTui:
             action = "disable" if modal.items[modal.selected].get("enabled") else "enable"
             result, output = self._remote_access_capture(["user", action, username])
         elif key == "DELETE":
-            confirmation = self._read_text(f"Escribe ELIMINAR para borrar {username}:")
+            confirmation = self._read_text(
+                t("LANCTL.UI.DETAIL.TYPE_ELIMINAR_TO_DELETE_VALUE", value0=f"{username}")
+            )
             if confirmation != "ELIMINAR":
                 return
             result, output = self._remote_access_capture(["user", "delete", username])
@@ -3330,7 +3686,7 @@ class LanctlTui:
     def _handle_project_close_key(self, modal: ModalState, key: str) -> None:
         if key == "ESC":
             self.modal = None
-            self.messages = ["Cierre cancelado; el proyecto continúa abierto."]
+            self.messages = [t("LANCTL.UI.SCREEN.CLOSE_CANCELLED_THE_PROJECT_REMAINS_OPEN")]
             return
         if key in ("LEFT", "UP", "RIGHT", "DOWN"):
             modal.selected = 1 - modal.selected
@@ -3353,7 +3709,9 @@ class LanctlTui:
 
         if getattr(self, "scanning", False):
             self.messages = [
-                "Cierra esta ventana y pulsa Esc para cancelar el escaneo antes de cambiar de proyecto."
+                t(
+                    "LANCTL.UI.SCREEN.CLOSE_THIS_WINDOW_AND_PRESS_ESC_TO_CANCEL_THE_SCAN_BEFORE_CHANGING_PROJECTS"
+                )
             ]
             if self.modal:
                 self.modal.footer = self.messages[0]
@@ -3366,17 +3724,17 @@ class LanctlTui:
             self._open_modal(
                 ModalState(
                     kind="project_switch",
-                    title="CAMBIOS SIN GUARDAR",
-                    tabs=["Cambiar proyecto"],
+                    title=t("LANCTL.UI.STATUS.UNSAVED_CHANGES"),
+                    tabs=[t("LANCTL.UI.VIEW.CHANGE_PROJECT")],
                     pages=[
                         [
-                            "Guardar los cambios y abrir el proyecto seleccionado",
-                            "Descartar los cambios y abrir el proyecto seleccionado",
-                            "Cancelar y mantener el proyecto actual",
+                            t("LANCTL.UI.SCREEN.SAVE_CHANGES_AND_OPEN_THE_SELECTED_PROJECT"),
+                            t("LANCTL.UI.SCREEN.DISCARD_CHANGES_AND_OPEN_THE_SELECTED_PROJECT"),
+                            t("LANCTL.UI.SCREEN.CANCEL_AND_KEEP_THE_CURRENT_PROJECT"),
                         ]
                     ],
                     items=["save", "discard", "cancel"],
-                    footer="↑/↓ seleccionar  Enter confirmar  Esc cancelar",
+                    footer=t("LANCTL.UI.SCREEN.SELECT_ENTER_CONFIRM_ESC_CANCEL"),
                     max_width=90,
                     max_height=14,
                 )
@@ -3391,12 +3749,16 @@ class LanctlTui:
             activate_project_workspace(path, discard_changes=discard_changes)
             self.modal = None
             self.reload()
-            self._set_terminal_message(f"Proyecto activado: {path}")
+            self._set_terminal_message(
+                t("LANCTL.UI.MESSAGE.PROJECT_ACTIVATED_VALUE", value0=f"{path}")
+            )
         except (OSError, RuntimeError, ValueError, sqlite3.DatabaseError) as error:
-            self._set_terminal_message(f"No se pudo cambiar de proyecto: {error}")
+            self._set_terminal_message(
+                t("LANCTL.UI.MESSAGE.COULD_NOT_CHANGE_PROJECTS_VALUE", value0=f"{error}")
+            )
             self.show_project_manager()
             if self.modal:
-                self.modal.footer = f"ERROR: {error} · Esc cerrar"
+                self.modal.footer = t("LANCTL.UI.MESSAGE.ERROR_VALUE_ESC_CLOSE", value0=f"{error}")
 
     def _handle_project_switch_key(self, modal: ModalState, key: str) -> None:
         if key == "ESC":
@@ -3422,19 +3784,22 @@ class LanctlTui:
             try:
                 save_active_project(SaveTrigger.CHANGE, force=True)
             except (OSError, RuntimeError, ValueError, sqlite3.DatabaseError) as error:
-                modal.footer = f"ERROR al guardar: {error} · Esc cancelar"
+                modal.footer = t(
+                    "LANCTL.UI.MESSAGE.ERROR_SAVING_VALUE_ESC_CANCEL", value0=f"{error}"
+                )
                 self.pending_project_path = target
                 return
         self._activate_project_path(target, discard_changes=action == "discard")
 
     def _finish_remote_user_action(self, result: int, output: str) -> None:
         cleaned = _clean_tui_output(output)
-        self.messages = cleaned[-2:] if cleaned else ["Usuario remoto actualizado."]
+        self.messages = cleaned[-2:] if cleaned else [t("LANCTL.UI.SCREEN.REMOTE_USER_UPDATED")]
         if result == 0:
             self.show_remote_users()
         elif self.modal:
-            self.modal.footer = (
-                f"ERROR: {cleaned[-1] if cleaned else 'operación rechazada'} · Esc volver"
+            self.modal.footer = t(
+                "LANCTL.UI.MESSAGE.ERROR_VALUE_ESC_BACK",
+                value0=f"{(cleaned[-1] if cleaned else 'operación rechazada')}",
             )
 
     @staticmethod
@@ -3449,7 +3814,7 @@ class LanctlTui:
         ]
         if not changed:
             self.modal = None
-            self.messages = ["SETTINGS: no había cambios pendientes."]
+            self.messages = [t("LANCTL.UI.SCREEN.SETTINGS_THERE_WERE_NO_PENDING_CHANGES")]
             return
         from lanctl.apps.suite.settings import save_form_values
         from lanctl.core.project_context import project_identity, project_operation, require_project
@@ -3484,11 +3849,15 @@ class LanctlTui:
                 level=30,
                 print_output=False,
             )
-            modal.footer = f"ERROR: {error} [{event.error_id}] · Enter reintentar · Esc volver"
+            modal.footer = t(
+                "LANCTL.UI.MESSAGE.ERROR_VALUE_VALUE_ENTER_RETRY_ESC_BACK",
+                value0=f"{error}",
+                value1=f"{event.error_id}",
+            )
             return
         self.modal = None
         self.reload()
-        self._set_command_output("Configuración guardada correctamente", 0)
+        self._set_command_output(t("LANCTL.UI.TEXT.SETTINGS_SAVED_SUCCESSFULLY"), 0)
 
     def _update_manager_detail(self, modal: ModalState) -> None:
         if not modal.items:
@@ -3584,7 +3953,9 @@ class LanctlTui:
                 self._external_data_pending = True
                 return
             self.reload()
-            self.messages = ["Inventario sincronizado: cambios de otra sesión."]
+            self.messages = [
+                t("LANCTL.UI.SCREEN.INVENTORY_SYNCHRONIZED_CHANGES_FROM_ANOTHER_SESSION")
+            ]
             return
         if action != "view":
             return
@@ -3972,7 +4343,7 @@ def _help_command_entries() -> list[HelpCommand]:
     if command_action is None:
         return []
     descriptions = {
-        action.dest: str(action.help or "Sin descripción.")
+        action.dest: str(action.help or t("LANCTL.UI.TEXT.NO_DESCRIPTION"))
         for action in command_action._choices_actions
     }
     names_by_parser: dict[int, list[str]] = {}
@@ -4011,7 +4382,9 @@ def _help_command_entries() -> list[HelpCommand]:
         entries.append(
             HelpCommand(
                 name=canonical,
-                description=descriptions.get(canonical, parser.description or "Sin descripción."),
+                description=descriptions.get(
+                    canonical, parser.description or t("LANCTL.UI.TEXT.NO_DESCRIPTION")
+                ),
                 usage=usage,
                 aliases=tuple(aliases),
                 subcommands=tuple(subcommands),
@@ -4035,15 +4408,15 @@ def _help_action_label(action: argparse.Action) -> str:
 
 def _help_command_detail(entry: HelpCommand) -> list[str]:
     lines = [f"COMANDO  LANCTL {entry.name}", ""]
-    lines.extend(textwrap.wrap(entry.description, width=92) or ["Sin descripción."])
-    lines.extend(("", "USO", f"  {entry.usage}"))
+    lines.extend(textwrap.wrap(entry.description, width=92) or [t("LANCTL.UI.TEXT.NO_DESCRIPTION")])
+    lines.extend(("", t("LANCTL.UI.TEXT.USAGE"), f"  {entry.usage}"))
     if entry.aliases:
         lines.extend(("", "ALIAS", f"  {', '.join(entry.aliases)}"))
     if entry.subcommands:
         lines.extend(("", "SUBCOMANDOS", f"  {', '.join(entry.subcommands)}"))
     if entry.options:
         lines.extend(("", "OPCIONES", *(f"  {option}" for option in entry.options)))
-    lines.extend(("", "Tab prepara este comando en el prompt del TUI."))
+    lines.extend(("", t("LANCTL.UI.SCREEN.TAB_PREPARES_THIS_COMMAND_AT_THE_TUI_PROMPT")))
     return lines
 
 
@@ -4055,41 +4428,41 @@ def _function_bar(
     bindings = normalize_key_bindings(key_bindings)
     visible = normalize_footer_actions(visible_actions)
     labels = {
-        "help": "Ayuda",
-        "info": "Info",
+        "help": t("LANCTL.UI.TEXT.HELP"),
+        "info": t("LANCTL.UI.TEXT.INFO"),
         "ping": "Ping",
-        "refresh": "Actualizar",
-        "plugins": "Plugin",
-        "projects": "Proyectos",
-        "settings": "Settings",
-        "history": "Comandos",
-        "search": "Buscar",
-        "reload": "Recargar",
-        "edit": "Editar",
-        "groups": "Grupos",
-        "ports": "Puertos",
-        "open": "Abrir",
-        "save": "Guardar",
-        "differences": "Cambios",
-        "copyLine": "Copiar",
+        "refresh": t("LANCTL.UI.TEXT.REFRESH"),
+        "plugins": t("LANCTL.UI.TEXT.PLUGINS"),
+        "projects": t("LANCTL.UI.TEXT.PROJECTS"),
+        "settings": t("LANCTL.UI.TEXT.SETTINGS_74A883A0"),
+        "history": t("LANCTL.UI.TEXT.COMMANDS"),
+        "search": t("LANCTL.INVENTORY.MANUAL.SEARCH"),
+        "reload": t("LANCTL.COMMON.ACTION.RELOAD"),
+        "edit": t("LANCTL.UI.TEXT.EDIT"),
+        "groups": t("LANCTL.UI.TEXT.GROUPS"),
+        "ports": t("LANCTL.UI.TEXT.PORTS"),
+        "open": t("LANCTL.UI.TEXT.OPEN"),
+        "save": t("LANCTL.UI.TEXT.SAVE"),
+        "differences": t("LANCTL.UI.TEXT.CHANGES"),
+        "copyLine": t("LANCTL.UI.TEXT.COPY"),
         "copyJson": "JSON",
-        "console": "Consola",
-        "quit": "Cerrar",
-        "deviceHistory": "Historial",
+        "console": t("LANCTL.UI.TEXT.CONSOLE"),
+        "quit": t("LANCTL.UI.TEXT.CLOSE"),
+        "deviceHistory": t("LANCTL.UI.TEXT.HISTORY"),
         "scanSelected": "Escanear",
-        "filterActive": "Activos",
+        "filterActive": t("LANCTL.UI.TEXT.ACTIVE_DEVICES"),
         "filterDisconnected": "Offline",
-        "filterAll": "Todos",
+        "filterAll": t("LANCTL.UI.TEXT.ALL"),
         "ssh": "SSH",
         "terminal": "Terminal",
-        "credentials": "Credenciales",
+        "credentials": t("LANCTL.UI.TEXT.CREDENTIALS"),
         "wakeOnLan": "WOL",
         "copyIp": "IP",
         "copyMac": "MAC",
-        "projectStatus": "Proyecto",
-        "select": "Seleccionar",
-        "execute": "Ejecutar",
-        "exit": "Salir",
+        "projectStatus": t("LANCTL.UI.TEXT.PROJECT"),
+        "select": t("LANCTL.UI.TEXT.SELECT"),
+        "execute": t("LANCTL.UI.TEXT.EXECUTE"),
+        "exit": t("LANCTL.UI.TEXT.QUIT"),
     }
     fixed_keys = {"select": "↑↓", "execute": "Enter", "exit": "Esc"}
 

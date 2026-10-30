@@ -381,6 +381,15 @@ def test_monitor_activity_filters_pause_report_and_native_browser(workspace, mon
             preview = page.locator(".report-preview").inner_text()
             assert "LANCTL.GUI.Test" in preview
             assert "privado" not in preview and "10.0.0.1" not in preview
+            page.evaluate("""Object.defineProperty(navigator, 'clipboard', {
+                configurable: true,
+                value: {writeText: async text => { window.copiedReport = text; }}
+            })""")
+            page.locator('[data-report="copy"]').click()
+            page.wait_for_function(
+                "document.querySelector('.report-state').textContent.includes('copiado')"
+            )
+            assert page.evaluate("window.copiedReport") == preview
             assert not open_browser.called
             page.locator('[data-report="github"]').click()
             page.wait_for_function(
@@ -571,3 +580,78 @@ def test_first_scan_retries_and_preserves_selected_origin_and_range(workspace, m
             browser.close()
     finally:
         session.close()
+
+
+def test_projects_directory_persists_resolves_relative_and_preserves_project(
+    workspace, tmp_path, monkeypatch
+):
+    from lanctl.core import config
+
+    directory = tmp_path / "chosen"
+    directory.mkdir()
+    monkeypatch.chdir(tmp_path)
+    suite = SuiteApi()
+    result = suite.set_project_directory("chosen")
+    assert result["ok"] and result["directory"] == str(directory)
+    assert config.load_config()["projectsDirectory"] == str(directory)
+    assert SuiteApi().project_defaults()["directory"] == str(directory)
+    created = suite.create_project("Directory check")
+    assert created["ok"], created
+    project = config.load_config()["activeProject"]
+    assert Path(project).parent == directory
+    before = Path(project).read_bytes()
+    restored = suite.set_project_directory(None)
+    assert restored["ok"] and restored["configuredDirectory"] is None
+    assert config.load_config()["activeProject"] == project
+    assert Path(project).read_bytes() == before
+
+
+def test_projects_directory_rejects_invalid_or_unwritable_without_saving(workspace, tmp_path):
+    from lanctl.core import config
+
+    suite = SuiteApi()
+    before = config.CONFIG_PATH.read_bytes()
+    file = tmp_path / "file"
+    file.write_text("existing", encoding="utf-8")
+    for value in ("", 42, str(file), str(tmp_path / "missing")):
+        assert not suite.set_project_directory(value)["ok"]
+        assert config.CONFIG_PATH.read_bytes() == before
+    with patch("tempfile.TemporaryFile", side_effect=PermissionError("denied")):
+        result = suite.set_project_directory(str(tmp_path))
+    assert not result["ok"] and "denied" in result["error"]
+    assert config.CONFIG_PATH.read_bytes() == before
+
+
+def test_monitor_session_metadata_distinguishes_start_from_retained_record(workspace):
+    from test_launcher_gui import api
+
+    from lanctl.core.activity import ActivityStore
+    from lanctl.core.coordination import Coordinator
+
+    coordinator = Coordinator()
+    identifier = coordinator.register("lanip", "gui")
+    store = ActivityStore()
+    try:
+        first = store.append("First", launcher="lanip", session=identifier)
+        store.append("Second", launcher="lanip", session=identifier)
+        monitor = api("lanmon")
+        result = monitor.monitor_activity()
+        assert result["ok"], result
+        assert result["sessions"] == [identifier]
+        details = result["sessionDetails"][0]
+        assert details["id"] == identifier
+        assert details["firstRecord"] == first["created"]
+        assert details["started"] <= details["firstRecord"]
+        # More than 500 later events cannot turn the first displayed row into
+        # a purported session start or first retained record.
+        for _ in range(510):
+            store.append("Later", launcher="lanip", session=identifier)
+        refreshed = monitor.monitor_activity()
+        assert len(refreshed["records"]) == 500
+        assert refreshed["sessionDetails"][0]["firstRecord"] == first["created"]
+        coordinator.close(identifier)
+        historical = monitor.monitor_activity(identifier)["sessionDetails"][0]
+        assert "started" not in historical
+        assert historical["firstRecord"] == first["created"]
+    finally:
+        coordinator.close(identifier)

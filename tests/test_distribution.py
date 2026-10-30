@@ -78,7 +78,9 @@ class DistributionTests(unittest.TestCase):
     def test_linux_portable_and_service_use_distinct_valid_paths(self):
         root = Path(__file__).resolve().parents[1]
         shell = (root / "install.sh").read_text(encoding="utf-8")
-        build = (root / "scripts/build-linux.sh").read_text(encoding="utf-8")
+        builder = (root / "scripts/build-linux.sh").read_text(encoding="utf-8")
+        self.assertIn('bash scripts/package-linux.sh "$VERSION"', builder)
+        build = (root / "scripts/package-linux.sh").read_text(encoding="utf-8")
         unit = (root / "packaging/systemd/lanctl-monitor.service").read_text(encoding="utf-8")
         self.assertIn("$target/LANCTL/lanctl", shell)
         self.assertIn("$target/LANCTL/lanwire", shell)
@@ -100,7 +102,7 @@ class DistributionTests(unittest.TestCase):
             (root / "packaging/debian/postinst").read_text(encoding="utf-8"),
         )
         control = (root / "packaging/debian/control").read_text(encoding="utf-8")
-        self.assertIn("Depends: libc6", control)
+        self.assertRegex(control, r"(?m)^Depends: .*\blibc6\b")
         self.assertIn("Recommends: iputils-ping, arping, smbclient, xdg-utils", control)
         linux_readme = (root / "packaging/portable/README-linux.txt").read_text(encoding="utf-8")
         self.assertNotIn(".exe", linux_readme)

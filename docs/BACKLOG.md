@@ -1,5 +1,727 @@
 # Trabajo pendiente de LANCTL
 
+## Elegir el idioma del programa desde el instalador — 27/10/2026
+
+- [ ] **P106 · Media · Implementada en fuentes; pendiente certificación de Setup.** Añadir una página del instalador con un
+  selector desplegable del **idioma que utilizará LANCTL**. Obtener las opciones
+  de los catálogos `.lang` disponibles en el repositorio oficial y contemplados
+  para la distribución, usando sus metadatos e identificadores de idioma.
+  La lista debe ampliarse al incorporar catálogos válidos, sin fijar en la
+  interfaz una enumeración permanente de idiomas. Ejemplo comunicado: si hay
+  catálogos de español, inglés, francés e italiano, ofrecer esas cuatro opciones.
+
+  **Preselección solicitada:** tomar el idioma elegido para el asistente en
+  **P105** y preseleccionar automáticamente su equivalente para el programa,
+  cuando esté disponible. Por ejemplo, instalador en inglés → programa en
+  inglés de forma inicial. El usuario puede cambiar esa selección; los dos
+  idiomas son preferencias independientes. Si el equivalente no está disponible,
+  ofrecer inglés como alternativa e indicarlo de forma comprensible.
+
+  Instalar o incluir el catálogo seleccionado, validar formato, compatibilidad
+  y placeholders y persistir la preferencia con los servicios de idiomas
+  existentes, de modo que se aplique al primer arranque del programa. Resolver
+  la procedencia/empaquetado y la consulta al catálogo oficial, falta de conexión,
+  descarga fallida, catálogo inválido y ejecución silenciosa. En actualizaciones,
+  definir la conservación de la elección existente y permitir cambiarla sin
+  sobrescribir traducciones personalizadas inadvertidamente. Coordinar con
+  P100 la cobertura de textos y con P105 el mapeo entre idiomas del asistente
+  y códigos de los catálogos del programa.
+
+  **Criterio de cierre:** lista derivada del catálogo disponible; incorporación
+  de un idioma adicional; preselección coincidente con el instalador, cambio
+  manual, alternativa cuando falte el idioma y primer arranque con la elección
+  efectiva verificados. Comprobar actualización, modo silencioso y fallos de
+  disponibilidad/validación sin dejar seleccionada una traducción sin instalar.
+  **Indicación inicial:** solo registrar. La petición posterior de continuar
+  las tareas del instalador autoriza la implementación del 27/10/2026.
+  **Avance:** selector del programa separado del asistente; opciones generadas
+  desde `bundled/languages/*.lang` y manifiesto con SHA-256. Se incluyen inglés
+  y español, con incorporación de un tercer catálogo sintético probada sin
+  modificar la enumeración del asistente. El bundle corresponde a las fuentes
+  oficiales de esa distribución y funciona sin conexión: no hay consulta ni
+  descarga de idiomas durante Setup. Preselección por idioma del asistente,
+  alternativa inglesa y parámetros `/PROGRAMLANG` y `/CHANGEPROGRAMLANG`.
+  Primer proceso real de LANCTL en español verificado; actualización conserva
+  idioma y catálogos personalizados salvo cambio explícito. Se rechazan formato,
+  placeholders, rutas, integridad y colisiones de nombres de catálogo antes de
+  seleccionar una traducción inválida o sobrescribir otra. Setup comprueba el
+  resultado de `setup-defaults`; no confirma éxito si falla. Falta compilar y
+  recorrer el Setup elevado/silencioso real en Windows. P100 conserva la
+  cobertura completa de cadenas como trabajo independiente.
+
+## Selector inicial de idioma del instalador — 27/10/2026
+
+- [ ] **P105 · Media · Implementada en fuentes; pendiente recorrido nativo.** Al arrancar el instalador, mostrar un
+  selector desplegable para elegir el idioma del asistente antes de continuar.
+  La primera distribución incluirá dos opciones: **English** y **Español**;
+  el usuario elegirá una para esa ejecución. Preparar la estructura de idiomas
+  y traducciones para añadir más opciones en el futuro.
+  Aplicar el idioma elegido a las páginas estándar y personalizadas, títulos,
+  botones, ayudas, validaciones, avisos, componentes y tareas adicionales,
+  incluida la casilla de autocompletado prevista en P104. Centralizar los
+  textos traducibles y mantener claves y placeholders coherentes entre idiomas.
+  Definir la selección inicial y el comportamiento en actualización,
+  desinstalación e instalación silenciosa.
+  **Criterio de cierre:** selector visible al inicio; recorrido completo del
+  instalador comprobado en inglés y español, sin mezclas de idiomas ni textos
+  recortados, y procedimiento documentado para incorporar otro idioma.
+  **Indicación inicial:** solo registrar. Implementación autorizada por la
+  petición posterior de continuar las tareas del instalador.
+  **Avance — 27/10/2026:** `[Languages]` inglés/español y selector inicial
+  explícito; mensajes estándar de los `.isl` de Inno y mensajes propios
+  centralizados en `packaging/inno/messages.iss`, con paridad de claves y
+  placeholders comprobada. Se localizan componentes, tareas, ayudas, temas,
+  estados, validaciones y nombres descriptivos de accesos. El asistente conserva
+  idioma y tareas al actualizar y admite `/LANG=en|es`. La CI incorpora una
+  compilación del asistente con archivos inertes, sin instalarlos ni publicarlos;
+  ese job todavía no se ha ejecutado desde este entorno Linux. Falta verificación
+  de recortes y flujo de instalación/desinstalación en Windows real.
+
+## Autocompletado Lua opcional en el instalador — 27/10/2026
+
+- [ ] **P104 · Media · Implementada en fuentes; pendiente Windows/Clink real.** Añadir a una ventana del instalador de
+  Windows una casilla para elegir si se activa en la terminal el autocompletado
+  de comandos y argumentos definido en `packaging/clink/lanctl.lua`.
+  Actualmente el instalador incluye el Lua y ejecuta `completions install`
+  automáticamente; la opción de añadir LANCTL al PATH es independiente.
+  La nueva elección debe controlar el registro del Lua para el usuario
+  correspondiente y explicar que funciona en CMD con Clink, sin presentar
+  esa integración como soporte de PowerShell o Linux.
+  Definir y comprobar el estado inicial de la casilla, instalaciones silenciosas,
+  conservación de la elección al actualizar y tratamiento de registros previos;
+  contemplar Clink ausente y la instalación elevada sin modificar perfiles
+  ajenos. Mantener la retirada acotada del registro al desinstalar.
+  **Criterio de cierre:** casilla visible y comprensible; instalación con y sin
+  selección, actualización y desinstalación verificadas en Windows, con Clink
+  presente/ausente y registro asociado al usuario correcto.
+  **Indicación inicial:** solo registrar. La petición posterior de continuar
+  las tareas del instalador autoriza la implementación del 27/10/2026.
+  **Avance:** casilla Clink independiente de PATH, con explicación de su alcance
+  CMD y de Clink ausente. El registro queda condicionado a esa tarea y se
+  ejecuta como usuario original; al desmarcar se solicita retirar únicamente
+  el registro de esa distribución para ese usuario. Se conserva la elección
+  de tareas en actualizaciones. La primera migración desde Setup sin casilla
+  mantiene el intento de registro histórico, salvo `/TASKS` o `/MERGETASKS`
+  explícitos; después se conserva la elección del usuario. No se modifica el
+  perfil de otra cuenta. La retirada elevada desde otra cuenta sigue pendiente
+  en P48; no se declara certificada por pruebas de fuente.
+
+## Proyecto seleccionado en LANCTL no reflejado en LANIP — 27/10/2026
+
+- [x] **P103 · Alta · Corregida y verificada en fuentes — 27/10/2026.** El usuario
+  comunica que hay un proyecto seleccionado en LANCTL GUI, pero no aparece
+  dentro de LANIP. Según su observación, los demás launchers parecen reflejar
+  correctamente la selección; todavía no se ha verificado esa comparación.
+  Registrar como caso específico de la sincronización global **P88**.
+
+  **Alcance por determinar:** distinguir si falta únicamente el nombre/estado
+  visual del proyecto o si LANIP también conserva datos/contexto de otro
+  entorno. No se ha confirmado la causa ni una pérdida de datos. Comprobar
+  LANIP abierto antes del cambio, apertura después de seleccionar proyecto,
+  reapertura y cambios sucesivos entre dos proyectos; comparar el arranque
+  desde LANCTL con la invocación directa de LANIP GUI.
+
+  **Revisión inicial de fuentes:** LANIP dispone de `sync_project`, que devuelve
+  conjuntamente proyectos e inventario. La GUI consulta esa actualización al
+  recibir `desktopDataChanged`; aplaza el refresco mientras hay edición, modal
+  abierto u operación en curso. Revisar la carga inicial, la entrega de eventos
+  desde sesiones/LANCTL, la reanudación del refresco aplazado y la actualización
+  coherente de nombre, contexto e inventario. Estos puntos son recorridos de
+  investigación, no una causa reproducida.
+
+  **Resultado esperado:** LANIP utiliza y muestra el proyecto elegido en LANCTL,
+  tanto al abrirse como al cambiar de proyecto con ambas ventanas abiertas,
+  sin mezclar datos ni descartar una edición. Mantener la selección centralizada
+  en LANCTL conforme a P88 y las guardas contra operaciones de otro contexto.
+  **Criterio de cierre:** reproducción nativa del caso, regresiones de arranque
+  y sincronización, pruebas con/sin proyecto, dos VLF diferenciables, edición
+  pendiente y escaneo en curso; nombre/contexto/inventario coherentes tras el
+  refresco y comparación explícita con los demás launchers.
+
+  **Resultado:** reproducida la falta de convergencia de la página real de
+  LANIP al cambiar la selección desde LANCTL sin entregar la notificación
+  `desktopDataChanged`. La carga inicial sí enlaza correctamente en la prueba;
+  no se atribuye a esta causa toda posible incidencia de arranque. Antes, el
+  refresco dependía exclusivamente de esa señal. Se añade `project_selection`,
+  consulta de solo lectura de la identidad compartida; LANIP la comprueba
+  como respaldo cada cinco segundos y refresca juntos nombre/contexto/inventario
+  al detectar cambios. Recuperar el foco también solicita sincronización.
+  Se evitan consultas solapadas y se aplaza tanto la comprobación como la
+  aplicación de resultados con edición, modal u operación en curso; una
+  respuesta que llega cuando la vista ya cambió se descarta y reintenta.
+  Las guardas del contexto original siguen protegiendo escrituras obsoletas.
+  Regresiones con dos VLF distintos, señal ausente, edición, formulario y
+  escaneo simulado en `test_lanip_project_sync_browser.py`. Prueba nativa Qt
+  con las seis páginas reales y cambios sucesivos sin proyecto → primer VLF
+  → segundo VLF, además de inventarios diferenciables. No se han recompilado
+  instalables; su certificación Windows/Linux sigue siendo posterior.
+
+## Configuración GUI con pestañas — 27/10/2026
+
+- **P94, integración verificada en LANCTL GUI:** el usuario aprueba el prototipo GUI como
+  subventana de Settings. Integrado el diseño modal en el botón Configuración,
+  con catálogo real, búsqueda, pestañas y controles tipados. Hay 68 controles
+  distintos en el catálogo GUI actual (69 entradas, descontando el alias
+  compuesto redundante de acceso remoto). No se eliminan preferencias visibles.
+  Se incluyen ajustes del proyecto y engranajes de launchers; las demás
+  interfaces de configuración de aplicaciones mantienen su seguimiento.
+  Pruebas de cobertura del catálogo, guardado atómico del programa, validación,
+  descarte, carpetas, proyecto obsoleto y adaptación de tamaños registradas en
+  `BACKLOG-VERIFICATION.md`. Por petición expresa del usuario, el rediseño
+  figura como tarea pendiente P94: la implementación local no equivale a su
+  aceptación final ni al cierre del alcance transversal.
+  **Encargo actual — 27/10/2026:** revisada y validada la integración de
+  LANCTL/GUI con guardado real; completados foco inicial del buscador, navegación
+  de pestañas por teclado, estado ocupado accesible, descripción del modal,
+  búsqueda sin resultados y presentación legible de errores en temas claros
+  y oscuros. Verificados los cinco temas integrados a 1100×850, 560×500 y
+  390×650, con botones de cierre/guardado visibles y sin desbordamiento
+  horizontal. El modal nativo Qt carga el catálogo real. El alcance de otras
+  aplicaciones y la certificación de instalables conservan su seguimiento.
+
+## Alta manual de elementos LANIP — 27/10/2026
+
+- [ ] **P102 · Implementada en fuentes; validación de distribución pendiente.**
+  La barra de búsqueda conserva su comportamiento y Enter busca; incorpora
+  botones Buscar y Añadir elemento. El segundo abre un formulario con nombre,
+  alias, IDF, IPv4, MAC y descripción, y acciones Cancelar/Añadir. El texto del
+  buscador propone IP, MAC, IDF o nombre según su formato. Cancelar no escribe;
+  los errores conservan abierto el formulario. Al crear, se limpia el filtro
+  para mostrar el nuevo elemento. El envío conserva el contexto de proyecto
+  mostrado al abrir el formulario y admite trabajo sin VLF.
+  El alta manual tiene una operación específica del servicio, sin relajar
+  `add_device` para clientes existentes: IDF normalizado único, alias y MAC
+  conocidos únicos, IPv4 validada y MAC opcional. Puede reutilizarse una IP
+  sin actividad reciente; se rechazan colisiones con equipos vistos en los
+  últimos diez minutos o activos en la ventana actual. No supone un sondeo
+  nuevo de la red al guardar. Cada alta obtiene identidad propia aunque no
+  tenga MAC o comparta IP. El escaneo completa MAC conservando identidad y
+  datos manuales cuando la coincidencia por IP es inequívoca; una dirección
+  ambigua no autoriza fusionar identidades distintas.
+  Las etiquetas nuevas están en los catálogos inglés/español; un catálogo
+  inglés instalado antiguo recurre a las claves nuevas incorporadas sin
+  sobrescribir sus traducciones. Se aplican guardado y auditoría existentes.
+  Pruebas específicas de servicio y navegador en `tests/test_manual_device.py`
+  y `tests/test_manual_device_browser.py`; comprobación visual del formulario
+  y de la barra en Chromium, incluidos anchos de 1280, 760 y 390 píxeles.
+  Validación: suite completa **1.618 pruebas y 1.008 subpruebas correctas**,
+  83 omitidas y 21 deseleccionadas; **5 pruebas de navegador correctas** del
+  bloque formulario/terminal/inventario. Puente Qt/pywebview offscreen con
+  páginas reales de los seis launchers y alta LANIP sin MAC e IDF `AB-12`
+  correcta, usando exclusivamente datos temporales. Ruff/formato, catálogo de
+  errores, referencias CLI/web, higiene y diff correctos.
+  Falta certificación en instalables Windows/Linux; no se ha reconstruido ni
+  publicado el programa instalado.
+
+## Corrección de ayuda del TUI principal — 27/10/2026
+
+- [x] **Ayuda sin salir a CLI.** Caso comunicado: `help` suspendía el TUI de
+  LANCTL, mostraba la salida CLI y pedía Enter antes de volver. La ayuda general,
+  la de subcomandos y las opciones explícitas de ayuda se muestran ahora en una
+  vista desplazable dentro de la misma pantalla alternativa. Flechas,
+  RePág/AvPág e Inicio/Fin navegan; Esc o Enter vuelve al panel. También se
+  muestran en esa vista `commands`, `pwd` y `version`.
+  La CLI conserva su comportamiento. Las aplicaciones interactivas hijas siguen
+  recibiendo sus flujos nativos. No se presenta este cambio como una
+  reorganización integral de todas las pantallas TUI.
+  Evidencia: pruebas de consola y del visor, pseudoterminal Linux con `help` y
+  `help settings`, navegación, regreso sin abandonar la pantalla alternativa y
+  restauración de los modos del terminal incluso ante fallo de renderizado.
+  Falta comprobación manual en Windows. Detalle en `BACKLOG-VERIFICATION.md`.
+
+## Correcciones ejecutadas — 26/10/2026
+
+- **P90:** causa reproducida y corregida en el puente Qt de Linux. El parámetro
+  posicional `arguments` ocultaba el objeto JavaScript que pywebview serializa;
+  ahora se llama `action_arguments`, conservando el alias Python por palabra
+  clave y el contrato RPC posicional. Las páginas reales de los seis launchers
+  pasan `project_state` por su adaptador JS y rechazan contexto obsoleto y
+  métodos no autorizados. Falta completar la matriz de escaneo, guardado,
+  reapertura y cierre con/sin cambios y la comprobación nativa en Windows;
+  P90 no se cierra todavía en toda su extensión.
+- **P96:** completada en fuentes. «Nuevo grupo» se encuentra en la barra inferior
+  del inventario; sigue disponible sin equipo seleccionado, respeta operaciones
+  en curso y modo remoto. Comprobados creación, teclado y tamaños 390–1280 px.
+- **P101:** completada en fuentes. El scroll conserva la posición y selección;
+  las consultas vacías no alteran el DOM. Se sigue la salida solo desde el final,
+  con botón «Ir al final» y hasta 20.000 caracteres de historial. El recorte
+  conserva el anclaje del contenido retenido; el contenido eliminado por el
+  límite deja de estar disponible. Comprobaciones automatizadas de ratón,
+  teclado, selección, recorte y reanudación del seguimiento en Chromium/Linux.
+
+- **P91:** implementada la elección de carpeta desde Projects, con ruta efectiva,
+  restauración automática y persistencia en `projectsDirectory`. Probados rutas
+  relativas, carpeta inválida/sin escritura, cancelación del selector simulado,
+  uso del destino al crear proyecto y conservación del VLF abierto. Se reutiliza
+  el selector nativo existente; falta comprobar su interacción manual y Windows.
+- **P93:** implementadas etiquetas locales de fecha/hora con zona horaria,
+  distinción entre inicio real y primer registro conservado, orden cronológico
+  y sufijos para sesiones simultáneas. Ambos selectores conservan IDs originales;
+  el detalle permite consultar/seleccionar el ID. Comprobados refresco, fecha
+  desconocida, etiquetas coincidentes y ajuste a 390 px en Chromium/Linux.
+
+Evidencia y límites: [BACKLOG-VERIFICATION.md](BACKLOG-VERIFICATION.md),
+sección «Correcciones locales P90/P96/P101 — 26/10/2026». Las demás incidencias
+nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
+
+## Incidencias comunicadas — 26/10/2026
+
+- [x] **P101 · Media · Corregida en fuentes y verificada en Chromium/Linux.**
+  Antecedente: La terminal CLI integrada en la GUI de LANCTL muestra barra de
+  scroll, pero fuerza volver a la última línea e impide consultar cómodamente
+  la salida anterior. `gui/suite.js`, al consultar `terminal_output`, reemplaza
+  el texto y ejecuta siempre `host.scrollTop=host.scrollHeight`, incluso si
+  no llega texto nuevo. El usuario informa del comportamiento en la terminal
+  alojada en la propia interfaz, no en una consola externa.
+  **Modificación prevista:** seguir la salida solo si la vista estaba al final
+  antes de actualizar; si el usuario sube, conservar su posición mientras
+  llegan datos o se realizan consultas vacías. Reanudar el seguimiento al
+  volver al final y ofrecer una acción explícita para ir a la última línea.
+  Revisar el recorte actual a 20.000 caracteres para conservar el anclaje de
+  lectura cuando desaparezca contenido antiguo, sin crecimiento ilimitado;
+  evitar reemplazar el DOM innecesariamente y perturbar la selección de texto.
+  **Criterio de cierre:** comprobar scroll manual con ratón y teclado mientras
+  hay salida continua, consultas sin datos, selección/copia, recorte de historial
+  y retorno al final; seguimiento automático correcto solo cuando corresponde.
+
+- [ ] **P100 · Alta · Internacionalización integral CLI/TUI/GUI y catálogos
+  estructurados · Migración funcional ampliada; certificación nativa
+  pendiente.** Ampliación acordada el
+  **27/10/2026**: centralizar todos los textos visibles de LANCTL, LANIP,
+  LANWIRE, LANRACK, LANACCESS y LANMON, incluidos arranques directos, alias
+  `als`/`lanwre`, servicios compartidos, terminal integrada y aportaciones de
+  plugins. Cubrir CLI, TUI y GUI: ayudas generales y de subcomandos, etiquetas,
+  títulos, menús, botones, placeholders, tooltips, accesibilidad, tablas,
+  estados vacíos, confirmaciones, validación, progreso y mensajes dinámicos.
+  Las modalidades no disponibles deben identificarse como tales en la matriz,
+  sin presentar una sección vacía como cobertura completa.
+
+  **Diagnóstico comprobado — 27/10/2026:** `shared/i18n.py` contiene 67 claves
+  inglesas y 67 españolas; el archivo local
+  `data/lc/config/languages/english.lang` contiene 54, con 13 ausentes del
+  formulario de alta manual. El registro local enumera solo inglés; el español
+  existe en fuentes pero no como catálogo instalado. La recuperación desde el
+  inglés integrado cubre esas 13 claves, no los textos todavía sin clave.
+  Hay literales fuera del sistema en `bootstrap/lanctl.py`,
+  `bootstrap/lanmon.py`, `apps/rack/cli.py`, `apps/ip/interfaces/tui/main.py`,
+  `apps/wire/tui/help.py`, `apps/suite/gui.py`, `gui/index.html` y
+  `gui/monitor-support.js`, entre otros. La cobertura actual se calcula contra
+  `ENGLISH_STRINGS`: un 100 % de ese conjunto no acredita cobertura del programa.
+  Las cuatro pruebas actuales de `tests/test_i18n.py` cubren inicialización,
+  fallback, placeholders y registro, sin recorrer todas las interfaces.
+
+  **Inventario estático inicial — 27/10/2026:** disponibles
+  [alcance y matriz de interfaces](P100-STRING-SCOPE.md),
+  [resumen generado](P100-STRING-SUMMARY.md),
+  [ocurrencias trazables](P100-STRING-INVENTORY.csv) y
+  [manifiesto de fuentes](P100-STRING-FILES.json), reproducibles con
+  `python3 tools/generate_string_inventory.py` y su opción `--check`.
+  Se añade [mapa preliminar sin idioma](P100-STRING-MAP.lang), con las
+  31.902 ocurrencias del CSV actual, IDs provisionales por ocurrencia,
+  origen, texto original, decisión pendiente y clave de destino por asignar.
+  Es un documento de inventario no instalable (`meta.code: null`), no un
+  catálogo público; conserva claves existentes y datos técnicos sin traducir.
+  Formato simplificado v2: `LAUNCHERS` contiene los seis launchers con
+  `CLI`/`TUI`/`GUI` y pares directos identificador/texto; `PENDING_ASSIGNMENT`
+  conserva las ocurrencias de destino sin resolver. Ubicaciones, clasificaciones
+  y decisiones se mantienen en `P100-STRING-MAP-SOURCES.json`, con los mismos
+  identificadores provisionales y sin pérdida de entradas.
+  Generador `tools/generate_string_map.py`, con protección contra sobrescritura
+  de asignaciones manuales; formato y límites en el documento de alcance.
+  Se incluyen fuentes Python, frontend, plugins y empaquetado; se separan
+  prototipos y componentes compartidos. El estado actual ya incluye inglés y
+  español de 67 claves en `bundled/languages`; el hallazgo previo de ausencia
+  de español se refería al catálogo instalado local. Los recuentos incluyen
+  valores técnicos y repeticiones: no equivalen a claves traducibles.
+  Pendiente revisión semántica, atribución de consumidores y contraste con
+  pantallas/flujos Windows/Linux antes de declarar completo el inventario
+  funcional. P100 mantiene su estado pendiente.
+
+  **Actuación iniciada — 27/10/2026:**
+  [plan de ejecución](P100-ACTION-PLAN.md) y
+  [revisión preliminar](P100-PRELIMINARY-REVIEW.md). Lector v1/v2 estricto,
+  catálogos oficiales estructurados inglés/español, fallback compatible con
+  personalizaciones, exportación v2 y recurso frontend reproducible. Migradas
+  ayudas de launchers, consola común, partes CLI/TUI/GUI y ajustes compartidos.
+  GUI recibe el catálogo por bootstrap con bindings explícitos y escape de
+  textos al generar HTML; no traduce arbitrariamente datos ni salida técnica.
+  Se mantienen el inventario y mapa preliminares como fotografías históricas.
+  El informe y CSV residual identifican el trabajo de migración restante;
+  no confundir la paridad de claves con cobertura funcional de toda la suite.
+  La estética y certificación de instalables se mantienen pendientes.
+
+  **Continuación — 27/10/2026:** migración de ayudas avanzadas, preguntas,
+  estados, TUI, GUI, informes y metadatos visibles. Catálogos de 2.470 claves,
+  con auditoría de consumidores y exclusiones técnicas documentadas en la
+  revisión preliminar. Logs canónicos, IDs TUI estables y parámetros/DOM
+  preservados. Pendientes los recorridos nativos y estética; no se confunde
+  la auditoría estática con certificación de todos los flujos de instalación.
+
+  **Contrato de catálogo propuesto:** JSON `.lang` con `schemaVersion: 2`
+  entero, metadatos `code`, `name`, `nativeName`, `region`, `version` y `author`,
+  sección global `shared` y sección `launchers`. Cada launcher tendrá `shared`
+  para textos propios reutilizados y `CLI`, `TUI`, `GUI` para textos específicos,
+  agrupados por pantalla, comando o función. Evitar duplicar acciones y estados
+  comunes. Ejemplo de estructura; las claves mostradas conservan su identidad:
+
+  ```json
+  {
+    "schemaVersion": 2,
+    "meta": {
+      "code": "en", "name": "English", "nativeName": "English",
+      "region": "International", "version": "1.0", "author": "LANCTL"
+    },
+    "shared": {
+      "actions": {"LANCTL.COMMON.ACTION.LIST": "List"}
+    },
+    "launchers": {
+      "LANIP": {
+        "shared": {},
+        "CLI": {},
+        "TUI": {},
+        "GUI": {
+          "manual": {"LANCTL.INVENTORY.MANUAL.TITLE": "Add device"}
+        }
+      }
+    }
+  }
+  ```
+
+  Mantener las claves públicas existentes y los IDs `a.b.c.d` de contratos;
+  mover una cadena de sección no cambia su identidad. Definir un recorrido
+  determinista que normalice el árbol a un índice por clave y rechace claves
+  duplicadas, metadatos/estructuras inválidos y placeholders incompatibles.
+  Separar la versión del esquema de la versión del contenido. El cargador
+  actual convierte `schemaVersion` con `int(...)`: sustituir esa aceptación
+  ambigua por validación explícita de versiones, sin truncar valores como 1.2.
+  Admitir catálogos v1 planos y v2 mediante adaptadores, con exportación v2 y
+  migración documentada que conserve textos personalizados. No sobrescribir
+  archivos locales ni reinterpretar esquemas desconocidos silenciosamente.
+
+  **Servicio y distribución:** mantener un único contrato de resolución en
+  `shared/i18n.py`, consumido por CLI/TUI y por HTML/JavaScript mediante el
+  puente existente. El Core expone mensajes estructurados sin depender de una
+  interfaz concreta. Definir selección de idioma, normalización de códigos,
+  fallback regional/base/inglés, comportamiento de claves desconocidas y
+  actualización de vistas; indicar si algún cambio requiere reinicio.
+  Resolver traducciones al presentar, sin persistir texto localizado como
+  identidad ni evaluar contenido de los catálogos como código o HTML.
+  Validar parámetros y escapar según el destino de presentación.
+  Establecer inglés como referencia completa reproducible y mantener paridad
+  del español de fuentes, sin confundirla con instalación o cobertura global.
+  Conservar la ruta histórica `data/lc/languajes` mediante su adaptador a
+  `data/lc/config/languages`, y `languajes.json` como índice generado.
+  Revisar instalación, validación, listado, información, exportación y paquetes
+  Windows/Linux; una instalación nueva mantiene inglés como idioma inicial.
+  Incorporar nuevas claves mediante fallback/actualización compatible sin
+  perder personalizaciones. No versionar los catálogos locales generados.
+  Para plugins, conservar namespace, propietario, permisos y ciclo de
+  registro/retirada; definir su cobertura aparte del catálogo del Core.
+
+  **Datos técnicos que no se traducen ni modifican mediante `.lang`:**
+  contenido original de logs, excepciones, trazas y salida directa de procesos,
+  dispositivos o herramientas; comandos/opciones, claves JSON y nombres de API;
+  IDs/códigos/orígenes de error, evento, función y tarea; IP, MAC, rutas,
+  nombres, valores y datos del usuario. Las etiquetas y explicaciones de la
+  interfaz sí son traducibles. Un error puede presentar una explicación
+  localizada junto a detalles técnicos originales; el cambio de idioma no
+  altera el registro almacenado, su origen ni la salida técnica exportada.
+  Los parámetros insertados se conservan literalmente. La prohibición afecta
+  a la traducción; se mantienen los controles vigentes de permisos, ocultación
+  de secretos y escape seguro al mostrar los datos.
+
+  **Plan de ejecución y comprobación:**
+  1. Inventariar cada texto visible con launcher, interfaz, pantalla/flujo,
+     archivo/línea, clave, origen y condición traducible/técnico; incluir
+     frontend, mensajes de servicios y contenido dinámico. Contrastar el
+     inventario con los flujos reales, no solo con búsquedas de literales.
+  2. Implementar contrato v2, adaptadores v1, validadores, exportación y puente
+     común; mantener llamadas y claves compatibles durante la transición.
+  3. Migrar por launcher las tres interfaces disponibles y componentes comunes,
+     manteniendo mensajes técnicos originales y sin duplicar reglas de negocio.
+  4. Añadir control automatizado de claves ausentes/huérfanas, duplicados,
+     placeholders, catálogo de referencia y literales visibles nuevos fuera
+     del sistema; excepciones técnicas explícitas y revisables. Mostrar
+     cobertura por launcher/interfaz contra el inventario y distinguirla de
+     la completitud de cada idioma. No afirmar 100 % global usando solo las
+     claves ya registradas.
+  5. Probar catálogos v1/v2, versiones desconocidas, actualización instalada,
+     personalizaciones, fallback, parámetros, plugins y cambio de idioma;
+     comprobar que logs, IDs y salidas técnicas conservan su contenido.
+     Validar ayudas, errores y flujos CLI, TUI y GUI de los seis launchers,
+     aliases y terminal integrada, con datos temporales.
+  6. Verificar textos largos, Unicode, saltos, anchos, foco, accesibilidad y
+     ausencia de recortes/desbordamientos en tamaños admitidos; coordinar
+     con P94. Actualizar `docs/LANG.md`, referencias CLI/web y pruebas; ejecutar
+     controles de higiene y, si cambian puntos de error, regenerar y comprobar
+     `errorList.txt` sin perder su origen. Certificar instalables Windows/Linux.
+
+  **Criterio de cierre:** inventario completo contrastado con flujos y matriz
+  de los seis launchers; todos los textos traducibles consumidos desde el
+  catálogo, sin claves crudas ni mezclas injustificadas; compatibilidad v1/v2,
+  fallback y personalizaciones verificados; datos técnicos originales intactos;
+  cobertura trazable, controles automáticos y comprobación visual/nativa de
+  distribuciones superados. Esta anotación amplía P100; no implementa todavía
+  la migración ni declara completada la internacionalización.
+
+- [ ] **P98 · Alta · Pendiente de auditoría funcional nativa.** Revisar las
+  acciones disponibles sin proyecto seleccionado en todos los launchers.
+  El usuario observa restricciones excesivas: **LANIP → Scan debe permitir
+  descubrir una red aunque todavía no exista proyecto**. Mantener disponibles
+  las acciones independientes de proyecto, como abrir/crear proyecto,
+  configuración de programa, ayuda y diagnóstico/reporte.
+  **Ampliación expresa del usuario:** no limitar este modo al escaneo:
+  permitir crear, editar, eliminar y gestionar todo el entorno sin seleccionar
+  previamente un proyecto, mediante un entorno provisional compartido por los
+  launchers. Mantener permisos, validaciones de dominio y protección contra
+  cambios de contexto entre ventanas. La ausencia de VLF no debe ser por sí
+  sola una causa de bloqueo. Coordinar con P99 su guardado y cierre.
+  Definir cómo conservar los datos y modificaciones de ese entorno y su
+  posterior guardado como proyecto, evitando pérdidas o mezcla con datos de
+  otros proyectos o con el inventario histórico local.
+
+  **Comprobación del 26/10/2026:** prueba aislada con configuración y datos
+  temporales, `activeProject=None`: bootstrap y `project_call(...,
+  'project_state', [])` correctos en LANCTL, LANIP, LANWIRE, LANRACK, LANACCESS
+  y LANMON. En LANIP, `project_call(..., 'scan_network', ['fast'])` ejecuta
+  el recorrido de servicio/CLI con descubrimiento simulado, devuelve el equipo
+  descubierto y mantiene la ausencia de proyecto. `require_project` compara
+  la identidad mostrada con la vigente; no exige por sí mismo un VLF abierto.
+  Prueba exploratoria `/tmp/test_lanctl_no_project_audit.py` y regresiones
+  `tests/test_project_sync.py`, `tests/test_diagnostics.py`: **29 correctas,
+  1 omitida**. No prueba tráfico real, el puente pywebview nativo ni todas las
+  acciones. Por tanto, no confirma un bloqueo general por falta de proyecto;
+  P90 sigue siendo una posible causa del fallo observado en GUI.
+  **Criterio de cierre:** matriz de acciones con/sin proyecto para cada
+  launcher, creación/edición/eliminación y escaneo nativo sin VLF, y posterior
+  guardado verificados; controles habilitados en el entorno provisional con
+  permisos y validaciones vigentes, conservando aislamiento y guardas.
+
+- [ ] **P99 · Alta · Pendiente.** Al cerrar la **última pestaña del entorno
+  LANCTL**, si se está trabajando sin proyecto y existen modificaciones sin
+  guardar, consultar: **«¿Seguro que no quieres guardar todas las modificaciones
+  en un proyecto?»** Ofrecer **Guardar como proyecto**, **Descartar y cerrar**
+  y **Cancelar**. Al cerrar pestañas intermedias, mantener el entorno compartido
+  disponible para las restantes sin lanzar prematuramente esta confirmación.
+  Verificar cómo se corresponden las pestañas del entorno con las ventanas
+  y procesos reales de los launchers para detectar el último propietario.
+  Guardar debe permitir elegir nombre y destino y conservar conjuntamente
+  todos los datos del entorno incluidos en el contrato de proyecto, no solo
+  los de la última vista. Si se cancela el selector o falla el guardado,
+  conservar los cambios y permitir continuar trabajando. Descartar afecta
+  únicamente al entorno provisional, sin borrar proyectos ni datos ajenos.
+  Sin modificaciones pendientes, cerrar sin esta pregunta.
+  Coordinar el estado de cambios y la decisión entre launchers para impedir
+  confirmaciones duplicadas, cierres simultáneos que pierdan cambios y
+  escrituras posteriores a la confirmación. Reutilizar el ciclo de cierre
+  compartido cuando corresponda, manteniendo el comportamiento de proyectos
+  ya abiertos y sin incluir credenciales/configuración privada en el VLF.
+  **Criterio de cierre:** pruebas con una y varias pestañas/launchers, cambios
+  en distintas aplicaciones, cierre intermedio y último cierre, guardado y
+  reapertura íntegra, descarte, cancelación, fallo de guardado y cierres
+  concurrentes; comprobar que el entorno sin cambios no pregunta.
+
+- [ ] **P97 · Alta · Pendiente de reproducción y corrección.** Al detectar
+  un error en un launcher y pulsar **«Report a bug»**, si LANMON ya está
+  abierto, el usuario observa que no se trae al frente con el formulario de
+  reporte. El alcance comunicado es cualquier launcher; queda por verificar
+  la matriz de interfaces y estados de ventana. No se ha confirmado todavía
+  si el formulario llega a abrirse en segundo plano o tampoco se abre.
+  **Resultado esperado:** reutilizar la instancia de LANMON disponible,
+  restaurarla si está minimizada, traer su ventana al frente y abrir/enfocar
+  el formulario de reporte con el error, launcher, proyecto y sesión de origen
+  correctos. Evitar instancias duplicadas y conservar un borrador existente
+  sin sobrescribirlo silenciosamente.
+  **Investigación prevista:** revisar la entrega de la solicitud entre
+  launchers y LANMON, su recepción en una instancia abierta y las operaciones
+  nativas de restauración, activación y foco. Respetar las restricciones del
+  gestor de ventanas; si impiden activarlo, indicar de forma visible que el
+  reporte está preparado y permitir acceder a él.
+  **Criterio de cierre:** probar desde los launchers afectados con LANMON
+  cerrado, abierto detrás de otra ventana y minimizado, con y sin borrador;
+  verificar formulario visible, foco y contexto del error correctos en Linux
+  y Windows, sin pérdida de borradores ni envío automático del reporte.
+
+- [x] **P96 · Media · Corregida en fuentes y verificada en Chromium/Linux.**
+  Solicitud original: Reubicar el botón **«Nuevo grupo»** de
+  LANIP: retirarlo de la cabecera superior global y situarlo en las barras
+  inferiores de acciones del inventario, junto a los controles de elementos
+  y grupos. El usuario aporta una captura con el botón señalado y una flecha
+  hacia la zona del inventario. La posición exacta se ajustará a esa barra
+  contextual, evitando confundirla con el pie informativo global.
+  Evidencia en fuentes: `gui/index.html` lo coloca junto a Configuración;
+  `gui/lanip-controls.js` contiene su acción y `gui/lanip.css` sus reglas de
+  cabecera y visibilidad. Conservar la creación de grupos de elementos,
+  validaciones y restricciones existentes de modo remoto/disponibilidad;
+  actualizar los estilos dependientes de su posición en la cabecera.
+  **Criterio de cierre:** acción disponible en la barra del inventario,
+  ausente de la cabecera global, accesible con teclado y visible sin recortes
+  en tamaños admitidos; creación y restricciones verificadas sin duplicar
+  controles ni cambiar la pertenencia de los elementos a grupos.
+
+- [ ] **P95 · Propuesta funcional y visual · Pendiente de decisión.** Hacer
+  pulsable la versión mostrada en la barra de información inferior para
+  consultar las versiones publicadas en GitHub y presentar una columna con
+  estética de cronograma de versiones. Mostrar la versión instalada como
+  referencia, las versiones estables inferiores y las superiores tanto
+  estables como preliminares (alpha/beta/rc). Diferenciar claramente versión
+  instalada, estable y preliminar; incluir versión, fecha de publicación y
+  acceso a las notas de cada Release. La consulta no implica instalar ni
+  actualizar automáticamente.
+  Usar las Releases públicas del repositorio oficial como fuente; las ramas
+  `stable/VERSION` son fotografías inmutables y `main` es desarrollo, no una
+  versión estable. Resolver la estabilidad conforme a los metadatos de Release
+  y las reglas de distribución, sin inferirla únicamente de sufijos históricos.
+  Comparar versiones con el esquema real de LANCTL, no lexicográficamente ni
+  solo por fecha, y contemplar versiones locales sin Release correspondiente.
+  Concretar cómo presentar la comparación entre preliminares y estables de
+  una misma versión base y el alcance/paginación del historial antiguo.
+  Mostrar carga, consulta sin novedades, errores de red y límites de GitHub
+  de forma comprensible, permitiendo reintentar sin bloquear la interfaz.
+  **Criterio de cierre:** propuesta visual acordada; cronograma y filtrado
+  verificados con versiones anteriores estables, superiores estables y
+  preliminares, versión instalada ausente de GitHub y fallos de consulta;
+  enlaces dirigidos a las Releases oficiales y ninguna actualización implícita.
+
+- [ ] **P94 · Media · LANCTL/GUI integrado y verificado en fuentes; pendientes
+  certificación de distribución y alcance transversal.**
+  **Actualización expresa del usuario — 27/10/2026:** incluir el rediseño de la
+  ventana de Settings de LANCTL/GUI en la lista de tareas pendientes. El diseño
+  de referencia aprobado es el prototipo GUI con pestañas por categorías,
+  cuadros de texto, casillas, listas desplegables y otros controles adecuados,
+  abierto como subventana dentro de LANCTL al pulsar Configuración.
+  Mantener todas las opciones editables pertinentes del catálogo real, con
+  búsqueda, validación, guardado, cancelación y protección de cambios pendientes.
+  Hay una implementación local y pruebas registradas en el bloque del
+  27/10/2026; eso constituye avance y no el cierre de la tarea. Queda revisar
+  el resultado con el usuario en la GUI real, resolver los ajustes visuales o
+  funcionales detectados y validar temas, tamaños, accesibilidad y distribución.
+  Revisar también las pantallas y formularios de ajustes
+  de las aplicaciones para proponer una presentación coherente: agrupación
+  por secciones, jerarquía visual, tipografía, espaciado, alineación de campos,
+  controles y botones, estados de validación y adaptación al tema y al tamaño
+  de ventana. Presentar una propuesta visual representativa antes de extender
+  el diseño al conjunto. Mantener las opciones pertinentes para cada interfaz,
+  su significado, validación y persistencia, incluido el filtrado resuelto en
+  P69. Coordinar con P92 la apariencia de los iconos si se acuerda adaptarlos.
+  **Criterio de cierre:** alcance y propuesta visual concretados con el usuario;
+  pantallas incluidas revisadas en temas disponibles y tamaños de ventana
+  admitidos, con campos legibles, foco visible, navegación por teclado y
+  guardado/cancelación funcionando sin regresiones.
+
+- [x] **P93 · Media · Implementada en fuentes y verificada en Chromium/Linux.**
+  Solicitud original: Mejorar la identificación de sesiones en
+  LANMON: sustituir el código HEX como etiqueta principal de la lista por
+  la fecha y hora de inicio de la sesión/tanda de registros, por ejemplo
+  `26/10/2026 · 21:41:36`. Mostrar la hora local y hacer identificable la zona
+  horaria. Conservar el identificador técnico original como valor de selección,
+  en persistencia, filtros, correlaciones y diagnósticos; permitir consultarlo
+  o copiarlo desde el detalle. Distinguir sesiones que empiecen en el mismo
+  segundo mediante un sufijo corto del ID cuando sea necesario.
+  Revisar tanto el selector de actividad como el de sesión de origen del
+  reporte en `gui/monitor-support.js` y la fuente de sus metadatos. Usar el
+  inicio real cuando exista; si solo se conoce el primer registro conservado,
+  indicarlo como tal y no presentarlo como inicio confirmado. Para sesiones
+  antiguas sin fecha fiable, conservar una etiqueta alternativa con su ID.
+  **Criterio de cierre:** etiquetas legibles y coherentes entre vistas,
+  orden cronológico por fecha real, selección estable tras refrescar y
+  filtros/reportes asociados al mismo ID; comprobar sesiones simultáneas,
+  históricas sin fecha y presentación de zona horaria.
+
+- [ ] **P92 · Propuesta de diseño · Pendiente de decisión.** Evaluar si el
+  cambio de tema debe adaptar el color o la variante de los iconos que
+  identifican LANCTL y sus aplicaciones. El usuario plantea su conveniencia
+  y pregunta si también puede cambiar el icono con el programa compilado;
+  todavía no se ha acordado un recoloreado ni un diseño concreto.
+  Revisar contraste, legibilidad e identidad en los temas disponibles.
+  Distinguir los iconos internos de la interfaz, el icono de ventana/barra
+  de tareas y los iconos del ejecutable, accesos directos y lanzadores del
+  escritorio. Las variantes internas pueden seleccionarse en ejecución si
+  están incluidas o se cargan como recursos; el empaquetado debe contemplarlas.
+  El icono incrustado del ejecutable es un recurso de distribución: cambiarlo
+  requiere normalmente reconstruir y volver a firmar cuando corresponda.
+  Los accesos directos/lanzadores tienen mecanismos propios y cachés del SO;
+  no asumir actualización automática de todos los iconos al cambiar el tema.
+  **Siguiente paso:** proponer variantes y alcance, conservando identidad y
+  contraste; si se aprueba, validar el cambio de tema en ejecución y en
+  distribuciones compiladas de Windows y Linux, con límites documentados.
+
+- [x] **P91 · Media · Implementada en fuentes y verificada en servicios/Chromium Linux;
+  selector manual y Windows pendientes.** Solicitud original: Añadir en **LANCTL → Projects** un botón
+  para seleccionar y asignar la carpeta predeterminada de almacenamiento de
+  proyectos. El usuario ya ha creado una carpeta en Linux que desea asignar;
+  su ubicación concreta no se ha comunicado y debe elegirse desde el selector.
+  Mostrar la ruta efectiva y conservar la elección entre reinicios mediante
+  la configuración compartida `projectsDirectory`, ya existente, evitando
+  crear una preferencia distinta por interfaz. Mantener el soporte de rutas
+  relativas en Linux; verificar su resolución actual y mostrar claramente la
+  ubicación resultante para evitar ambigüedad.
+  En Windows, el modo automático debe respetar la carpeta Documentos del
+  usuario, incluida su redirección, con subcarpeta `LanCTL`; no fijar una ruta
+  bajo `C:/Windows/Users`. Permitir restaurar la ubicación automática.
+  La elección cambia el destino predeterminado, sin mover proyectos existentes
+  ni cambiar la ruta de un proyecto ya abierto. Validar la carpeta y sus
+  permisos, permitir cancelar sin cambios y comunicar errores con su origen.
+  **Criterio de cierre:** seleccionar una carpeta existente desde Projects,
+  reiniciar y comprobar que los proyectos nuevos usan esa ubicación en Linux
+  y Windows; verificar rutas relativas, cancelación y restauración automática.
+  La implementación deberá revisar/reutilizar `select_project_directory` y
+  `core/projects/paths.py`. Prioridad media provisional; P90 puede impedir
+  verificar las operaciones de proyecto en la GUI nativa.
+
+- [ ] **P90 · Crítica / bloqueante · Causa corregida; matriz funcional completa pendiente.** Fallo del puente
+  GUI al invocar `GuiSupportMixin.project_call` en Linux x86_64, versión
+  `0.3.4-alpha.1`. El usuario informa de un error con el simple arranque.
+  El diagnóstico aportado muestra repetidamente
+  `missing 3 required positional arguments: 'expected', 'method', and 'arguments'`
+  en LANCTL, LANIP y LANMON; durante el escaneo de LANIP también aparece
+  `missing 2 required positional arguments: 'method' and 'arguments'`.
+  Un intento de guardar proyecto registra el mismo fallo, por lo que la
+  incidencia afecta a operaciones básicas.
+  Evidencia: informe «LANCTL · Diagnóstico» generado el 26/10/2026 a las
+  20:44:11 UTC; errores de GUI entre las 21:36 y 21:41 según el registro local.
+  No se incorpora el registro bruto ni los identificadores de sesión al repositorio.
+
+  **Persistencia y alcance comunicados — 26/10/2026:** el usuario vuelve a
+  informar del mensaje exacto de los tres argumentos y señala que persiste
+  en **todas las opciones de las interfaces**. Elevar a bloqueante por el
+  alcance transversal observado; no limitar la investigación a escaneo,
+  guardado o cierre. Este alcance es comunicado por el usuario, pendiente de
+  reproducción nativa por acción y launcher. Las pruebas directas de servicios
+  que pasan argumentos correctamente (incluidas las de P98) no acreditan que
+  el puente real de la GUI funcione. Este era el estado anterior a la corrección del puente documentada arriba;
+  se conservan los hallazgos y requisitos originales para verificar el cierre completo.
+
+  **Ampliación comunicada — 26/10/2026:** al intentar cerrar las ventanas
+  de los distintos launchers aparece el mismo error de los tres argumentos;
+  el usuario observa el problema en todas las ventanas. Registrar este caso
+  dentro de P90, sin atribuir todavía una causa distinta ni dar por reproducida
+  toda la matriz. El flujo de cierre usa acciones del puente como
+  `project_state`, `save_project` y `request_close`; determinar cuál falla en
+  cada recorrido. El impacto incluye impedir el cierre normal y comprometer
+  el flujo de decisión de guardado, sin evidencia actual de pérdida de datos.
+
+  **Resultado esperado:** abrir las interfaces y ejecutar sus operaciones de
+  proyecto, incluido escanear y guardar, sin errores de argumentos del puente.
+  **Investigación y modificación previstas:** reproducir en la GUI nativa de
+  Linux; revisar la exposición del método heredado de `GuiSupportMixin` por
+  pywebview y el paso de los tres argumentos desde `gui/app.js`,
+  `gui/launcher.js` y `gui/suite.js`; corregir la causa conservando la validación
+  de identidad de proyecto y la compatibilidad del contrato. La firma Python
+  actual exige esos tres argumentos y los adaptadores JS inspeccionados los
+  envían explícitamente; esto no demuestra todavía dónde se pierden.
+  **Criterio de cierre:** arranque, carga/refresco, escaneo, guardado/reapertura
+  y cierre normal verificados en Linux nativo para los seis launchers, con
+  y sin proyecto y con cambios pendientes; comprobar guardar, descartar y
+  cancelar según el flujo aplicable, además de cierres con otras ventanas
+  abiertas. Añadir regresiones del puente sin relajar las guardas de contexto
+  de proyecto; coordinar la validación con P99.
+
+  **Contexto separado:** el informe incluye fallos anteriores de arranque con
+  petición de instalar `.[gui]` y una advertencia TUI al consultar ARP. Después
+  consta apertura de GUI. No se confirma que estos avisos tengan la misma causa
+  que P90. Faltan pasos exactos de reproducción y traceback para determinarla.
+
 ## Estado vigente — 22/10/2026, cierre de P69
 
 Esta sección prevalece sobre los resultados históricos de ciclos anteriores.
@@ -1656,3 +2378,19 @@ mantienen su alcance. P88 conserva su verificación de selección y guardas de
 contexto; no demuestra aislamiento ni persistencia del inventario físico.
 Falta validar estas fuentes en CI remoto y reconstruir/probar los instaladores;
 el ejecutable instalado no se ha actualizado. No se publica una versión estable.
+
+## Incidencia del portátil — consulta ARP en Linux (28/10/2026)
+
+Diagnóstico de LANIP GUI 0.3.4-alpha.2: dos escaneos abortados con
+`GUI.DESKTOP.FAILED`, error `0e4FDE31E6`, «no se pudo consultar la tabla ARP del
+sistema». La GUI abrió correctamente. El informe no incluye la excepción
+original ni permite confirmar si falta el comando en el portátil.
+
+Corrección en fuentes: consultar `ip -4 neigh show` en Linux también sin
+interfaz explícita, con alternativa `arp -a` cuando no se fija adaptador.
+Comandos ausentes, tiempos de espera y salidas fallidas se registran con origen
+`LANCTL.Scanner.ARPTable`, sin abortar el escaneo ni perder sus detecciones.
+Se conserva el adaptador seleccionado y el tratamiento de caché como evidencia
+no activa. Verificación: 111 pruebas correctas de interfaces y CLI, incluyendo
+regresiones de ausencia, timeout y código de salida fallido. Pendiente reconstruir
+el instalable y validar en el portátil afectado.

@@ -4,7 +4,7 @@ Section: net
 Priority: optional
 Architecture: @ARCH@
 Maintainer: LANCTL contributors <noreply@github.com>
-Depends: libc6
+Depends: adduser, libc6, libnss3, libegl1, libgl1, libxkbcommon-x11-0, libxcb-cursor0, libasound2t64 | libasound2
 Recommends: iputils-ping, arping, smbclient, xdg-utils
 Suggests: openssh-client
 Description: LAN inventory, monitoring and controlled operations

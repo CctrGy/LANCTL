@@ -8,30 +8,35 @@ import subprocess
 import sys
 
 from lanctl.core.paths import application_directory, data_root
+from lanctl.shared.i18n import t
 
 
 def register_lanwire_command(commands: argparse._SubParsersAction) -> None:
     command = commands.add_parser(
         "lanwire",
         aliases=["wire"],
-        help="Abre LANWIRE o ejecuta uno de sus comandos sobre la base física compartida.",
+        help=t(
+            "LANCTL.UI.HELP.OPEN_LANWIRE_OR_RUN_ONE_OF_ITS_COMMANDS_ON_THE_SHARED_PHYSICAL_DATABASE"
+        ),
     )
     command.add_argument(
         "--new-window",
         action="store_true",
-        help="Abre LANWIRE en una consola independiente incluso si se indican argumentos.",
+        help=t(
+            "LANCTL.UI.HELP.OPEN_LANWIRE_IN_A_SEPARATE_CONSOLE_EVEN_WHEN_ARGUMENTS_ARE_PROVIDED"
+        ),
     )
     command.add_argument(
         "--version",
         dest="lanwire_version",
         action="store_true",
-        help="Muestra la versión común de LANWIRE y termina.",
+        help=t("LANCTL.UI.HELP.SHOW_THE_COMMON_LANWIRE_VERSION_AND_EXIT"),
     )
     command.add_argument(
         "--database",
         dest="lanwire_database",
         metavar="ARCHIVO.db",
-        help="Selecciona una base física IDF alternativa.",
+        help=t("LANCTL.UI.HELP.SELECT_AN_ALTERNATIVE_PHYSICAL_IDF_DATABASE"),
     )
     mode = command.add_mutually_exclusive_group()
     mode.add_argument(
@@ -39,19 +44,19 @@ def register_lanwire_command(commands: argparse._SubParsersAction) -> None:
         "--tui",
         dest="lanwire_tui",
         action="store_true",
-        help="Abre la interfaz TUI de LANWIRE.",
+        help=t("LANCTL.UI.HELP.OPEN_THE_LANWIRE_TUI"),
     )
     mode.add_argument(
         "--cli",
         dest="lanwire_cli",
         action="store_true",
-        help="Abre la consola interactiva de LANWIRE.",
+        help=t("LANCTL.UI.TEXT.OPEN_THE_LANWIRE_INTERACTIVE_CONSOLE"),
     )
     command.add_argument(
         "arguments",
         nargs=argparse.REMAINDER,
         metavar="ARGUMENTO",
-        help="Argumentos enviados a LANWIRE, por ejemplo: list.",
+        help=t("LANCTL.UI.HELP.ARGUMENTS_FORWARDED_TO_LANWIRE_FOR_EXAMPLE_LIST"),
     )
     command.set_defaults(handler=run_lanwire)
 
@@ -95,6 +100,11 @@ def run_lanwire(args: argparse.Namespace) -> int:
     if new_window:
         flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0) if os.name == "nt" else 0
         subprocess.Popen(command, env=environment, creationflags=flags)
-        print(f"LANWIRE iniciado | datos: {environment['LANCTL_DATA_DIR']}")
+        print(
+            t(
+                "LANCTL.UI.SUMMARY.LANWIRE_STARTED_DATA_VALUE",
+                value0=f"{environment['LANCTL_DATA_DIR']}",
+            )
+        )
         return 0
     return subprocess.run(command, env=environment, check=False).returncode

@@ -377,6 +377,8 @@ class AccessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "index.html").write_text("<h1>LANCTL</h1>", encoding="utf-8")
+            for filename in ("i18n.js", "i18n-defaults.js"):
+                (root / filename).write_text("window.catalogReady = true;", encoding="utf-8")
             certificate, key = generate_certificate(root / "tls.crt", root / "tls.key", "127.0.0.1")
             store = AccessStore(root / "users.json")
             auth = AuthenticationService(store)
@@ -404,6 +406,12 @@ class AccessTests(unittest.TestCase):
                 response = connection.getresponse()
                 self.assertEqual(response.status, 200)
                 self.assertIn(b"LANCTL", response.read())
+                for filename in ("i18n.js", "i18n-defaults.js"):
+                    connection.request("GET", "/" + filename)
+                    response = connection.getresponse()
+                    self.assertEqual(response.status, 200)
+                    self.assertIn("application/javascript", response.getheader("Content-Type"))
+                    self.assertIn(b"catalogReady", response.read())
                 body = json.dumps({"username": "viewer", "password": "another-strong-password"})
                 connection.request("POST", "/api/login", body, {"Content-Type": "application/json"})
                 response = connection.getresponse()

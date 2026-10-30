@@ -2725,3 +2725,463 @@ ese cambio pendiente y el inventario guardado intacto. Con los casos de raíz
 personalizada, errores nativos y políticas de guardado pasan 40 pruebas
 relacionadas. Catálogo y referencias se regeneran después de esta corrección;
 la siguiente ejecución completa utiliza esas fuentes sin modificaciones.
+
+## Correcciones locales P90/P96/P101 — 26/10/2026
+
+Trabajo realizado sobre el checkout local `codex/experimental-gui-local`,
+versión `0.3.4-alpha.1`; sin publicación ni cambio de versión.
+
+### P90: puente nativo
+
+Reproducción aislada con Python 3.14 y pywebview 6.2.1/Qt en Linux: los seis
+adaptadores recibían cero argumentos al invocar desde JavaScript
+`project_call(context, "project_state", [])`, con el mismo `TypeError` del
+reporte. El generador de pywebview utiliza los nombres posicionales Python
+como parámetros de `new Function(...)`, y su cuerpo serializa
+`Array.prototype.slice.call(arguments)`. El parámetro llamado `arguments`
+ocultaba ese objeto con la lista de argumentos de la acción. Para una acción
+sin argumentos enviaba `[]`; con un argumento enviaba solo ese argumento.
+
+`GuiSupportMixin.project_call` utiliza ahora `action_arguments`. Mantiene
+el alias Python `arguments=` como parámetro solo por palabra clave, que no
+se incorpora a los parámetros JavaScript. Conserva el sobre RPC posicional,
+la lista de acciones permitidas, el bloqueo y `require_project(expected)`.
+
+Evidencia reproducible:
+
+```sh
+QT_QPA_PLATFORM=offscreen QTWEBENGINE_DISABLE_SANDBOX=1 \
+  .venv/bin/python tests/gui_project_bridge_smoke.py
+```
+
+Resultado: **6 launchers correctos**, cargando sus páginas reales y usando
+su función JS `call` y el puente Qt, con datos temporales. También se rechazan
+contextos obsoletos y métodos no autorizados. El entorno offscreen comprueba
+el puente nativo, no el gestor de ventanas ni el foco del escritorio.
+
+**Límite de cierre:** pendiente la matriz completa de escaneo, guardado,
+reapertura y decisiones de cierre con/sin cambios y sesiones concurrentes,
+y su comprobación nativa en Windows. No se atribuye a esta prueba cobertura
+integral de P98/P99 ni de todos los flujos de P90.
+
+### P96: Nuevo grupo
+
+El botón conserva su ID y manejador de creación; se traslada de la cabecera
+a un grupo de acciones del dock inferior del inventario. Su habilitación ya
+no depende de seleccionar un dispositivo; sí de no estar ocupado. Se conserva
+su ocultación remota y la validación del formulario existente.
+
+Comprobados en Chromium/Linux: una sola instancia del botón, activación por
+teclado, creación con nombre y descripción, estado ocupado, modo remoto y
+anchos de 390, 760, 960 y 1280 píxeles. Inspección visual a 960×640.
+
+### P101: historial de terminal
+
+Las consultas vacías no mutan el texto. Las actualizaciones añaden texto al
+nodo existente para conservar selección; solo siguen automáticamente la salida
+cuando la vista estaba al final. El panel recibe foco para desplazamiento con
+teclado e incorpora «Ir al final». Conserva un máximo de 20.000 caracteres,
+recorta preferentemente por líneas y compensa la altura eliminada para
+mantener la posición del contenido retenido, incluidas líneas ajustadas.
+El contenido que sale del límite no puede seguir consultándose en ese panel.
+
+Comprobados en Chromium/Linux: rueda, teclado, consultas vacías, selección de
+texto retenida, salida nueva mientras se lee historial, recorte con anclaje,
+retorno explícito al final y seguimiento posterior. Inspección visual a 960×640.
+
+### Validación relacionada
+
+- `tests/test_project_sync.py`, `test_gui_support.py`, `test_launcher_gui.py`,
+  `test_suite_gui.py`, `test_desktop_gui.py`, `test_desktop_close_project.py`
+  y `test_desktop_history_regressions.py`: **97 correctas, 8 omitidas**.
+- `tests/test_gui_terminal_inventory_browser.py`: **2 correctas**, con
+  `LANCTL_GUI_BROWSER_TESTS=1`. Para reutilizar Chromium instalado puede
+  indicarse `LANCTL_CHROMIUM_EXECUTABLE=/ruta/al/ejecutable`.
+- Ruff sobre el Python modificado y las pruebas nuevas: correcto.
+- Catálogo de errores regenerado y comprobado: 1623 puntos; conserva IDs y
+  actualiza posiciones de origen. Higiene y `git diff --check`: correctos.
+- Referencias CLI/web: los checks ya fallaban antes de estas correcciones.
+  La generación con Python 3.14 cambia el formato de ayuda de argparse para
+  alias; se conservaron los archivos originales para no introducir ese cambio
+  de formato sin comprobar la matriz Python de CI. No se modificaron parsers.
+
+## Correcciones locales P91/P93 — 26/10/2026
+
+### P91: carpeta predeterminada de proyectos
+
+Projects incorpora «Carpeta predeterminada…», con ruta efectiva seleccionable,
+elección de carpeta mediante `select_project_directory` y restauración de la
+ubicación automática. `SuiteApi.set_project_directory` valida carpeta existente,
+lectura y escritura reales con archivo temporal; normaliza rutas relativas y
+guarda únicamente `projectsDirectory` mediante `update_config`. No mueve archivos
+ni cambia la selección del proyecto abierto. `project_defaults` añade
+`configuredDirectory` para distinguir modo automático y personalizado.
+
+Pruebas con configuración/datos temporales: elección y reapertura del adaptador,
+ruta relativa, creación de VLF en el destino guardado, restauración sin modificar
+el VLF abierto, rutas inválidas y fallo de escritura sin alterar configuración.
+Prueba de navegador conectada a `SuiteApi` real, con el selector nativo simulado:
+cancelación, elección, formulario de proyecto nuevo y restauración automática.
+Inspección visual del diálogo a 960×640. Las pruebas existentes de rutas incluyen
+Documentos redirigidos de Windows. **Falta interacción manual con el selector
+nativo y verificación en un escritorio Windows**; no se certifica una entrega.
+
+### P93: etiquetas de sesión de LANMON
+
+`monitor_activity` conserva `sessions` como lista de IDs y añade
+`sessionDetails`. `ActivityStore.session_metadata` obtiene el primer registro
+conservado por sesión del propietario actual, fuera del límite de 500 filas de
+la vista. Solo se añade `started` cuando lo aporta una sesión vigente del
+coordinador; no se atribuye un inicio supuesto a las sesiones históricas.
+No cambia el esquema de almacenamiento ni los identificadores públicos.
+
+Ambos selectores usan fecha/hora local y zona IANA del equipo, orden descendente
+por fecha y sufijo corto de ID cuando las etiquetas coinciden. Las sesiones sin
+fecha fiable conservan su ID como alternativa. El detalle de actividad permite
+consultar y seleccionar el ID técnico; los filtros y reportes siguen enviando
+ese ID. Si una selección desaparece de la ventana de registros, se conserva
+como alternativa explícita en lugar de cambiar el filtro silenciosamente.
+
+Pruebas de servicio: inicio real frente a primer registro, más de 500 eventos y
+sesión cerrada. Pruebas de navegador: zona Europe/Madrid, sesiones del mismo
+segundo con prefijos coincidentes, fechas ausentes, orden, selección estable,
+coherencia de ambos selectores, ID del detalle y ancho de 390 px. Inspección
+visual de la vista de actividad a 960×640.
+
+### Validación de esta tanda
+
+- Actividad, coordinación, diagnósticos, rutas de proyecto, suite GUI, soporte
+  GUI y sincronización: **83 correctas, 7 omitidas**.
+- `tests/test_gui_terminal_inventory_browser.py`: **4 correctas** en Chromium.
+- Smoke de páginas reales mediante Qt offscreen: **6 launchers correctos**,
+  con rechazo de contexto obsoleto y método no permitido.
+- Ruff, formato, catálogo regenerado (1625 puntos), higiene y diff: comprobados.
+- Se mantienen los fallos previos de referencias CLI/web bajo Python 3.14
+  documentados en la tanda anterior. No se modificaron parsers.
+
+Sin cambio de versión, compilación ni publicación. P97–P100 y las propuestas
+P92/P94/P95 mantienen su estado; la matriz ampliada de P90 sigue abierta.
+
+## Ayuda dentro del TUI de LANCTL — 27/10/2026
+
+El caso concreto comunicado por el usuario es `help`: la consola TUI común
+suspendía `ManagementScreen`, despachaba la ayuda a stdout y pedía Enter fuera
+de la pantalla alternativa. Se confirma ese recorrido en `command_console`.
+
+Se incorpora `ManagementScreen.show_text`: contenido de solo lectura en la
+pantalla existente, ajuste al ancho y tamaño actuales, navegación por línea,
+página, inicio/fin y regreso con Esc o Enter. El teclado inmediato dispone de
+adaptadores POSIX y Windows; POSIX restaura los atributos del TTY en `finally`,
+incluidos fallos al dibujar. No se añade una dependencia externa.
+
+`command_console` captura únicamente solicitudes explícitas de ayuda/versión
+para el visor, manteniendo los códigos de salida y los `SystemExit` de argparse.
+Los comandos `commands` y `pwd` usan también el visor cuando existe pantalla.
+No se capturan las aplicaciones interactivas, contraseñas ni TUIs hijos. La CLI
+sin TUI conserva su salida habitual. `docs/TUI.md` distingue ahora el anfitrión
+de LANCTL del TUI de inventario y documenta las teclas del visor.
+
+Validación:
+
+- Pruebas de consola: ayuda general, ayuda de subcomando, ayuda de launcher,
+  versión y comandos informativos permanecen en el visor sin suspender pantalla;
+  los TUIs hijos conservan el recorrido de suspensión existente.
+- Pruebas del visor: desplazamiento, inicio/fin, páginas y ajuste al redimensionar.
+- Pseudoterminal Linux real, datos temporales, proceso `lanctl.py --tui`:
+  `help` y `help settings` muestran la ayuda sin emitir la salida de pantalla
+  alternativa; Fin desplaza, Esc devuelve al prompt TUI y el modo del teclado
+  coincide con el original tanto al volver como al terminar el programa.
+- Fallo de dibujo con TTY real: se restauran los atributos originales.
+- Suite relacionada (visor, launchers interactivos, expansión access/monitor,
+  sesiones físicas y arranque): 106 pruebas correctas antes de ampliar el smoke
+  para incluir por separado la ayuda general y la de settings. Esa ampliación
+  se comprueba adicionalmente en `tests/test_terminal_ui.py`.
+- Ruff/formato, catálogo de errores regenerado y comprobado (1625 puntos),
+  higiene y diff comprobados. Los checks de referencias CLI/web mantienen la
+  diferencia previa de argparse bajo Python 3.14; no se han cambiado parsers.
+
+Límites: no equivale a reorganizar todos los TUIs de las aplicaciones. El caso
+concreto de ayuda queda corregido; el adaptador Windows requiere comprobación
+manual. Sin cambio de versión ni publicación.
+
+## P102 · Alta manual de LANIP — 27/10/2026
+
+Se añade Buscar/Añadir elemento junto al campo de búsqueda, con búsqueda como
+acción predeterminada. El formulario permite nombre, alias, IDF, IPv4, MAC y
+descripción; errores no cierran ni vacían el formulario y cancelar no escribe.
+La operación `create_device` pasa por el contexto de proyecto del formulario,
+admite ausencia de VLF y aplica el guardado configurado. La operación nueva
+`add_manual_device` conserva la política previa de `add_device` para sus clientes.
+Cada alta manual recibe un ID interno propio, incluso sin MAC ni IP.
+
+Regresiones específicas: MAC opcional, promoción por escaneo conservando identidad
+y nombre, IDF/MAC/alias duplicados, datos inválidos sin escritura, direcciones
+compartidas con equipo inactivo y rechazo de actividad reciente, coincidencia
+ambigua por IP sin sobrescritura de identidades, contexto obsoleto rechazado y
+fallback de claves nuevas con catálogo inglés antiguo sin sobrescribirlo.
+La comprobación de actividad utiliza lastSeen (diez minutos) y el estado positivo
+conocido por la ventana; el alta no realiza un sondeo de red adicional.
+
+Validación en este entorno:
+
+- `.venv/bin/python -m pytest -q`: **1.618 passed, 83 skipped, 21 deselected,
+  1.008 subtests passed**, 89,28 s. Las omisiones no certifican sus plataformas.
+- `LANCTL_GUI_BROWSER_TESTS=1` con Chromium local: `test_manual_device_browser.py`
+  y `test_gui_terminal_inventory_browser.py`, **5 correctas**. Búsqueda con Enter,
+  cancelación, error/reintento, alta con MAC vacía y distribución a 1280/760/390 px.
+- Prueba Qt/pywebview offscreen derivada de `gui_project_bridge_smoke.py`, en
+  `/tmp/lanctl_native_manual_smoke.py`: páginas reales y guardas de los seis
+  launchers, más `call('create_device', ...)` en LANIP con MAC vacía, IP de
+  documentación e IDF AB-12; devuelve el elemento correcto. Solo datos temporales.
+  El runtime emitió avisos Qt de Vulkan/limpieza y de actividad sin sesión GUI;
+  la prueba terminó con código 0 y todas sus aserciones correctas.
+- Ruff y formato de fuentes/pruebas afectadas correctos. Catálogo regenerado
+  y comprobado (1.628 puntos); referencias CLI/web regeneradas y comprobadas;
+  higiene y `git diff --check` correctos. La regeneración de referencias refleja
+  también el formato argparse del Python 3.14 de este entorno.
+
+No se han reconstruido instalables ni publicado una versión. La prueba nativa
+fue offscreen; no certifica la interacción del gestor de ventanas ni Windows.
+Los cambios ajenos que ya existían en el checkout se conservan.
+
+## Integración del diseño de Settings GUI — 27/10/2026
+
+Tras aprobar el prototipo GUI, el usuario solicita usarlo como subventana de
+LANCTL y recuerda que hay muchas más preferencias. Se conecta el diseño al
+catálogo completo de `settings_entries(SettingsContext("gui"))`: 69 entradas
+actuales, representadas por 68 controles al deduplicar `access.remote`, cuyas
+preferencias individuales se muestran todas. La política de preferencias
+sigue ocultando rutas internas y opciones exclusivas de otras interfaces.
+
+Nuevos `suite-settings.js` y `suite-settings.css`: modal independiente, pestañas
+por categorías, búsqueda, etiquetas descriptivas, tipos, casillas, selectores,
+listas, opción automática y clave técnica en detalle. Se conserva el contenido
+principal de fondo. Los engranajes de launchers usan su catálogo autorizado.
+El ámbito proyecto conserva el guardado individual por ajuste mediante los
+servicios VLF existentes. El programa usa un lote validado antes de mutar.
+
+`describe_settings` añade metadatos de formulario al payload existente:
+control, anulabilidad y opciones del esquema. Los modos de guardado se toman
+del registro, incluidos plugins; los temas proceden del servicio de apariencia.
+Se conservan los métodos de guardado anteriores. El nuevo RPC de lote usa
+`save_program_changes`, con la política por interfaz/launcher y la transacción
+de acceso remoto existente. El formulario captura el contexto de proyecto y
+lo pasa al sobre RPC, rechazando cambios de contexto entre ventanas.
+
+Validación con configuración y VLF temporales:
+
+- Igualdad de controles representados con todos los paths del catálogo,
+  descontando solo el alias compuesto que duplica los controles de acceso.
+- Guardado de varias preferencias; error en una sin escritura parcial;
+  denegación de rutas internas, preferencias de CLI y launcher incorrecto.
+- Búsqueda entre categorías manteniendo borradores; cancelar el descarte;
+  confirmar el descarte; conservación del borrador tras error de validación.
+- Selector de carpeta simulado: actualiza el borrador; configuración sin cambios
+  hasta el guardado. Se reutiliza el selector nativo existente.
+- Proyecto: cobertura completa, controles numéricos/anulables, guardado del
+  nombre y rechazo de una edición después de activar otro proyecto.
+- Ventanas de 1100×850, 560×500 y 390×650; footer visible y sin desborde horizontal.
+- Capturas inspeccionadas de General, LANIP y formato estrecho.
+- Suite de servicios relacionada: 122 correctas, 7 omitidas. Pruebas de navegador
+  de esta ventana y regresiones anteriores: 6 correctas; ampliación del selector
+  comprobada adicionalmente. Smoke Qt de páginas reales: 6 launchers correctos.
+
+Se actualizan catálogo de errores y manual GUI. Sin cambios de parsers, versión
+ni publicación. Los checks finales de referencias CLI/web son correctos en
+el estado actual del checkout. La verificación manual de la ventana en Windows y la
+extensión visual a los Settings propios de otras aplicaciones siguen pendientes.
+
+## P103 y P94 · Sincronización LANIP y Settings LANCTL/GUI — 27/10/2026
+
+P103: se reproduce en la página real de LANIP con servicios reales y dos VLF
+provisionales: la carga inicial selecciona bien el primer proyecto, pero un
+cambio desde LANCTL queda sin reflejar si no se entrega desktopDataChanged.
+Antes, desktop.js solo consultaba sync_project bajo esa señal; launcher.js ya
+contaba con un refresco de respaldo. No se afirma que la ausencia de señal sea
+la única causa posible del informe original.
+
+Se añade project_selection, RPC de lectura de la identidad vigente, sin exigir
+el contexto antiguo ni leer inventario. LANIP comprueba la selección cada cinco
+segundos cuando está libre y solicita actualización al recuperar el foco.
+Nombre, contexto e inventario se aplican juntos desde sync_project. No se
+solapan consultas, no se inicia la comprobación antes de cargar el inventario,
+y se retiene la notificación si aparecen edición, modal, operación o cambio de
+vista mientras llega la respuesta. Las guardas de escritura siguen intactas.
+
+P94: se verifica y completa la integración ya existente del prototipo aprobado
+como modal de LANCTL. Catálogo real completo, programa/proyecto, engranajes por
+launcher, controles tipados y guardado real conservados. Se completan descripción
+accesible, foco en búsqueda, estado ocupado, aviso de búsqueda vacía y foco
+visible para pestañas/textarea/detalles. El mensaje de error usa el color de
+texto del tema con un borde de error, evitando el rojo pálido sobre fondo claro.
+
+Comprobaciones específicas:
+
+- tests/test_lanip_project_sync_browser.py: cuatro casos correctos con servicios
+  reales, ausencia de señal y protección de edición, modal y escaneo simulado.
+  Al liberar el bloqueo se ve el segundo proyecto con su inventario, sin datos
+  del primero ni sobrescritura del borrador.
+- tests/test_settings_window_browser.py: tres casos correctos, incluido catálogo
+  completo, guardado/cancelación, validación sin cambios parciales, proyecto
+  obsoleto, foco, pestañas con flechas/Home/End y búsqueda sin resultados.
+- Matriz visual: los cinco temas de GUI a 1100×850, 560×500 y 390×650, sin
+  desbordamiento horizontal y con cierre/guardado visibles. Captura de tema
+  claro inspeccionada en /tmp/lanctl-settings-light.png.
+- Bloque conjunto de navegador con regresiones de alta manual, terminal e
+  inventario: 12 pruebas correctas.
+- tests/gui_project_bridge_smoke.py, Qt/pywebview offscreen con datos temporales:
+  seis páginas reales correctas, cambios sin proyecto → primer VLF → segundo
+  VLF en LANIP, contraste explícito con los otros cuatro launchers y apertura
+  del modal de Settings con más de 50 controles reales. Avisos Qt de Vulkan y
+  limpieza de perfiles y avisos de actividad por ausencia de una sesión GUI en
+  el arnés; código de salida 0 y aserciones correctas.
+
+Sin reconstrucción de instalables ni publicación. La certificación instalada
+en Windows/Linux y las pantallas de Settings propias de otras aplicaciones
+siguen pendientes; P94 se acredita aquí para LANCTL/GUI.
+
+Cierre de validación de este encargo: integral final **1.621 pruebas y 1.008
+subpruebas correctas, 90 omitidas, 21 deseleccionadas**, 86,95 s. La primera
+integral tuvo un fallo al activar el proceso propietario de un plugin en
+`test_worker_exits_when_owner_dies_even_without_windows_job`; el caso aislado
+pasó en 0,63 s y la segunda integral completa pasó. No se ha determinado la
+causa de esa intermitencia ni se ha modificado el runtime de plugins. La última
+regresión de LANIP, tras añadir la guarda de carga inicial, vuelve a pasar sus
+cuatro casos. Ruff/formato, catálogo de 1.629 puntos, referencias CLI/web,
+higiene y comprobación del diff correctos.
+
+## P104/P105/P106 · Opciones del instalador — 27/10/2026
+
+La petición de continuar las tareas del instalador sustituye la indicación
+anterior de registrar únicamente estas tres opciones. Implementación en fuentes:
+
+- P104: tarea Clink independiente de PATH; el registro se condiciona a su
+  selección, y desmarcar solicita retirada acotada para el usuario original.
+  Se conserva la elección al actualizar; la migración de la antigua integración
+  implícita mantiene ese valor salvo override explícito de tareas. No cambia
+  la política de configure_clink ni se intervienen perfiles de otras cuentas.
+- P105: selector inicial English/Español; mensajes estándar de Inno y mensajes
+  personalizados centralizados, incluidos estados, errores, temas, componentes,
+  tareas y nombres descriptivos de accesos. UsePreviousLanguage/Tasks mantienen
+  las selecciones del asistente; idioma de Setup y programa son independientes.
+- P106: página de idioma del programa con opciones generadas del bundle oficial
+  de la versión; inglés/español incluidos y tercer catálogo sintético probado.
+  Validación de esquema/placeholders, nombres, códigos únicos, rutas y SHA-256.
+  Sin conexión ni descarga durante Setup. El runtime instala el seleccionado
+  mediante el gestor existente, conserva catálogos personalizados y rechaza
+  colisiones de archivo con otro idioma. setup-defaults conserva una instalación
+  existente salvo --change-language explícito, sin cambiar tema/plugins previos.
+  Se comprueba el exit code antes de confirmar configuración y antes de abrir
+  el asistente de cuenta remota; las ACL existentes se aplican previamente.
+
+Pruebas de tests/test_installer_languages.py incluyen proceso real de CLI en
+un directorio temporal, seguido de otro proceso que inicializa el idioma desde
+la configuración y traduce Listar en español. También se comprueban actualización
+sin cambios, cambio explícito, preservación de traducción personalizada, idiomas
+no disponibles y bundles dañados antes de escritura. El generador incorpora
+un tercer idioma desde metadatos sin enumerarlo en la interfaz. Los contratos
+de fuente verifican referencias a mensajes, paridad de claves/placeholders,
+casilla condicionada, usuario original, parámetros silenciosos y empaquetado.
+Las regresiones existentes de servicio LANMON en Standard se adaptan al catálogo
+de mensajes y conservan su comprobación de independencia del binario interactivo.
+
+Los builds Windows y Linux validan los recursos de idioma. LANCTL.spec incluye
+el bundle tanto en instalado como en portable. La CI añade inno-source-check:
+compila el asistente en Windows con siete archivos inertes en una carpeta temporal,
+que borra al finalizar y nunca instala ni publica. No se ha ejecutado ese job
+ni un compilador Inno desde esta sesión Linux, donde no hay ISCC/Wine. Esto no
+certifica el recorrido visual, UAC, actualización o desinstalación de Windows.
+P71/P72 conservan su alcance y estado; no se declara completada la reorganización
+en cinco páginas ni la desinstalación completa por estas tres opciones.
+
+Referencias de formato comprobadas con la documentación oficial de Inno:
+[selector de idioma](https://jrsoftware.org/ishelp/topic_setup_showlanguagedialog.htm),
+[mensajes personalizados](https://jrsoftware.org/ishelp/topic_custommessagessection.htm),
+[persistencia de tareas](https://jrsoftware.org/ishelp/topic_setup_useprevioustasks.htm)
+y [eventos de instalación](https://jrsoftware.org/ishelp/topic_scriptinstall.htm).
+
+Validación final de estas opciones: **49 pruebas y 6 subpruebas correctas** del
+bloque de idiomas, preferencias de instalación, monitor, previews, distribución,
+Clink, i18n y referencia web. Incluye 13 casos del nuevo archivo de idiomas.
+Ruff global correcto; formato de los siete archivos Python afectados correcto.
+El check global de formato detecta dos archivos ajenos preexistentes sin formatear
+(test_run_completion.py y complete_run.py), que se conservan sin cambios.
+Catálogo actualizado a **1.642 puntos**, referencias CLI/web y recursos de
+idiomas comprobados, higiene/diff y sintaxis Bash correctos.
+
+La última integral termina con **1 fallo, 1.633 pruebas y 1.008 subpruebas
+correctas, 90 omitidas y 21 deseleccionadas** (87,36 s). El fallo es
+`test_worker_exits_when_owner_dies_even_without_windows_job`: el worker devuelve
+`RuntimeError: can't start new thread`. Otra pasada observó el mismo error en
+`test_revocation_interrupts_callback_and_native_threads`; ambos casos pasan
+juntos al ejecutarlos por separado. El runtime no se ha modificado ni se ha
+identificado definitivamente la causa; la integral no se declara verde.
+La pasada anterior también detectó la referencia web desactualizada tras aparecer
+nueva documentación P100 durante el trabajo; se regeneró y su prueba posterior
+pasa. No se han alterado esos documentos de inventario P100.
+
+
+## P100 — Base v2 y primera migración de idiomas — 27/10/2026
+
+Plan en `P100-ACTION-PLAN.md` y revisión desglosada en
+`P100-PRELIMINARY-REVIEW.md`. Se implementan contrato v2 estructurado,
+compatibilidad v1, validación estricta, fallback Python/frontend, protección de
+claves técnicas históricas, catálogos inglés/español reproducibles y bindings
+GUI explícitos con escape de contenido. La reexportación histórica
+`settings_menu.CATEGORIES` se mantiene. La migración cubre partes de los seis
+launchers, consolas, ayudas, TUI, GUI y ajustes, sin rediseño estético.
+
+Catálogos: 745 claves por idioma, conjuntos y placeholders iguales. Auditoría
+estática: 1.025 referencias explícitas, 601 claves distintas, ninguna referencia
+reconocida ausente. CSV residual: 1.065 candidatos Python/HTML por clasificar;
+contiene datos técnicos y no acredita exhaustividad de JavaScript dinámico.
+P100 sigue abierta; no se declara completada la internacionalización integral.
+
+Suite completa local, con `PYTHONPATH=src` para subprocesos de pruebas:
+**1.667 pruebas y 1.008 subpruebas correctas**, 94 omitidas y 21 deseleccionadas,
+90,48 s. Comprobaciones de catálogo de errores, catálogos/manifiesto, referencias
+CLI/web, auditoría, Ruff, higiene y diff. La certificación nativa e instalables
+Windows/Linux quedan pendientes. El informe de P100 recoge además la revisión
+Chromium de bindings, datos, logs, seguridad de traducciones y flujos GUI.
+
+## P100 — Continuación de migración y revisión local (27/10/2026)
+
+- Catálogos oficiales inglés/español: 2.470 claves por idioma; sin diferencias de
+  claves/parámetros ni consumidores explícitos inexistentes. 344 archivos auditados,
+  2.893 referencias explícitas y 397 candidatos residuales con disposición revisada.
+- Se amplían CLI/TUI/GUI, preguntas, ayudas avanzadas, informes y metadatos.
+  Se conservan identificadores, datos y diagnósticos técnicos. Logs canónicos y
+  navegación TUI independiente del idioma; carga diferida de diccionarios.
+- Suite consolidada: 1.673 pruebas y 1.008 subpruebas superadas; 94 omitidas,
+  21 deseleccionadas. Chromium final: 15 casos superados, incluidas cuatro variantes
+  de sincronización de proyecto y cambio inglés/español sin modificar datos.
+- El conjunto opcional antiguo que fija `channel="msedge"` no puede certificarse
+  en este entorno sin Edge. Los fallos funcionales encontrados en el barrido
+  (`returnwindow`, expectativa fija de idioma) se corrigieron y se verificaron.
+- Ruff, generadores, higiene y diff comprobados. Dos archivos de completado
+  preexistentes conservan diferencias de formato ajenas a esta modificación.
+- Evidencia y límites: `P100-PRELIMINARY-REVIEW.md` y su JSON/CSV. P100 conserva
+  pendientes estética, recorridos nativos completos y certificación de instaladores.
+
+
+## Sincronización de experimental-gui — 30/10/2026
+
+Se prepara la subida de los cambios locales de GUI, configuración, TUI,
+localización, selección de proyecto, launchers y asistente Linux para
+`0.3.4-alpha.2`. Se incluyen las fuentes y documentación; los instalables,
+datos y configuración local quedan fuera de Git. `AGENTS.md` se conserva como
+archivo local ignorado, conforme a la petición del usuario.
+
+Ruff/formato, higiene, referencias CLI/web, catálogo de errores (1.663 puntos),
+idiomas del instalador, versión y comprobación del diff correctos. Se actualizan
+dos pruebas a la separación entre compilación/empaquetado Linux y al comando
+del helper en ejecución desde fuentes. Los CSV P100 mantienen sus bytes y
+finales de línea originales mediante atributos Git, para conservar sus hashes.
+
+Suite general aislada: **1.687 pruebas correctas, 94 omitidas, 21 deseleccionadas
+y 1.008 subpruebas correctas; una prueba falla**. La prueba pendiente es
+`test_revocation_interrupts_callback_and_native_threads` de
+`tests/test_plugin_process_runtime.py`: el proceso aislado devuelve
+`RuntimeError: can't start new thread`. La repetición individual reproduce el
+fallo; no se ha omitido la prueba ni relajado el aislamiento. Debe resolverse
+antes de certificar la integración o una versión estable.

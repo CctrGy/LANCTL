@@ -11,6 +11,7 @@ from lanctl.apps.suite.processes import launcher_command, open_system_cli, proce
 from lanctl.core.config import load_config
 from lanctl.core.project_context import project_identity, project_operation
 from lanctl.core.resources import bundled_path
+from lanctl.shared.i18n import initialize_language, t
 
 LAUNCHERS = {"lanwire", "lanrack", "lanaccess", "lanmon"}
 
@@ -98,13 +99,14 @@ class LauncherApi(GuiSupportMixin):
             return {
                 **payload,
                 "launcher": self._launcher,
+                "languageCatalog": initialize_language().presentation_payload(),
                 "version": __version__,
                 "project": config.get("activeProject") or "",
                 "projectContext": project_identity(config),
                 "projectActions": self._project_actions(),
                 "projectName": Path(config["activeProject"]).stem
                 if config.get("activeProject")
-                else "Sin proyecto",
+                else t("LANCTL.UI.TEXT.NO_PROJECT"),
             }
 
         return self._respond(operation, "Read")

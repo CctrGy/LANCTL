@@ -7,6 +7,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+import pytest
+
 from lanctl.apps.ip.interfaces.cli.main import build_parser
 from lanctl.apps.ip.interfaces.tui.keyboard import DEFAULT_TUI_KEY_BINDINGS, read_posix_key
 from lanctl.apps.ip.interfaces.tui.main import (
@@ -36,6 +38,7 @@ from lanctl.apps.ip.interfaces.tui.main import (
     _TuiScanProgress,
 )
 from lanctl.apps.ip.interfaces.tui.modal import HelpCommand, ModalState, SettingField
+from lanctl.shared.i18n import t
 
 
 class TuiTests(unittest.TestCase):
@@ -463,10 +466,10 @@ class TuiTests(unittest.TestCase):
         self.assertIn("CAMPO", keyboard_page)
         self.assertIn("TECLA/VALOR", keyboard_page)
         self.assertIn("VISIBLE", keyboard_page)
-        self.assertIn("Ayuda", keyboard_page)
+        self.assertIn(t("LANCTL.UI.TEXT.HELP"), keyboard_page)
         self.assertIn("F1", keyboard_page)
         self.assertNotIn("Mostrar Ayuda", keyboard_page)
-        self.assertIn("Historial del elemento", keyboard_page)
+        self.assertIn(t("LANCTL.UI.TEXT.DEVICE_HISTORY"), keyboard_page)
         self.assertIn("None", keyboard_page)
         keyboard_indices = tui._settings_field_indices(tui.modal)
         tui.modal.selected = keyboard_indices[0]
@@ -1371,7 +1374,7 @@ class TuiTests(unittest.TestCase):
         rendered = _function_bar(120)
         self.assertIn(Back.WHITE + Fore.BLACK + " F1 ", rendered)
         self.assertIn(Back.WHITE + Fore.BLACK + " F3 ", rendered)
-        self.assertIn(Back.BLACK + Fore.WHITE + " Ayuda", rendered)
+        self.assertIn(Back.BLACK + Fore.WHITE + " " + t("LANCTL.UI.TEXT.HELP"), rendered)
 
     def test_function_bar_resizes_and_distributes_shortcuts(self):
         from rich.text import Text
@@ -1381,7 +1384,7 @@ class TuiTests(unittest.TestCase):
             self.assertEqual(Text.from_ansi(rendered).cell_len, width)
             self.assertIn("F1", Text.from_ansi(rendered).plain)
         wide = Text.from_ansi(_function_bar(210)).plain
-        self.assertGreater(wide.index("F2") - wide.index("Ayuda"), 5)
+        self.assertGreater(wide.index("F2") - wide.index(t("LANCTL.UI.TEXT.HELP")), 5)
         for expected in ("F1", "F2", "F3", "F5", "F7", "F9", "F12", "↑↓"):
             self.assertIn(expected, wide)
         for hidden in ("Ctrl+H", "Ctrl+F", "Ctrl+S", "Enter", "Esc"):
@@ -1665,3 +1668,19 @@ class TuiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# Existing interaction and layout cases were specified against Spanish labels.
+# Separate test_language_presentation cases exercise both languages explicitly.
+
+
+@pytest.fixture(autouse=True)
+def spanish_presentation_labels(tmp_path, monkeypatch):
+    from lanctl.shared import i18n
+
+    manager = i18n.LanguageManager(tmp_path / "test-languages")
+    manager.initialize("en")
+    manager.install(Path(__file__).resolve().parents[1] / "bundled/languages/spanish.lang")
+    monkeypatch.setattr(i18n, "_MANAGER", manager)
+    with i18n.language_context("es"):
+        yield

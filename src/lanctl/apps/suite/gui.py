@@ -20,6 +20,7 @@ from lanctl.core.plugins.manager import get_plugin_manager
 from lanctl.core.plugins.settings import PluginSettings
 from lanctl.core.project_context import project_operation
 from lanctl.core.resources import bundled_path
+from lanctl.shared.i18n import initialize_language, t, translate_label
 
 
 class SuiteApi(GuiSupportMixin):
@@ -60,11 +61,13 @@ class SuiteApi(GuiSupportMixin):
 
             return {
                 "version": __version__,
+                "languageCatalog": initialize_language().presentation_payload(),
                 "system": platform.system(),
                 "architecture": platform.machine(),
                 "sessions": Coordinator().sessions(),
                 **self._desktop._projects_payload(),
                 **self._plugin_payload(),
+                "projectActions": self._project_actions(),
             }
 
         return self._respond("Bootstrap", operation)
@@ -84,7 +87,7 @@ class SuiteApi(GuiSupportMixin):
                 {
                     "id": p.manifest.plugin_id,
                     "name": p.manifest.name,
-                    "description": p.manifest.description,
+                    "description": translate_label(p.manifest.description),
                     "version": p.manifest.version,
                     "author": p.manifest.author,
                     "minimumLanctl": p.manifest.minimum_lanctl,
@@ -191,7 +194,7 @@ class SuiteApi(GuiSupportMixin):
             update_metadata(path, values, revision)
             return {
                 **self._desktop._projects_payload(),
-                "message": "Metadatos del proyecto guardados.",
+                "message": t("LANCTL.UI.SCREEN.PROJECT_METADATA_SAVED"),
             }
 
         return self._respond("ProjectMetadataSave", operation)
@@ -223,29 +226,63 @@ class SuiteApi(GuiSupportMixin):
         def operation():
             from lanctl.core.projects.paths import resolve_project_path
 
+            settings = load_config()
             return {
                 "directory": str(
                     resolve_project_path(
-                        "Nuevo proyecto.vlf", load_config().get("projectsDirectory")
+                        "Nuevo proyecto.vlf", settings.get("projectsDirectory")
                     ).parent
                 ),
                 "lan": "LAN principal",
+                "configuredDirectory": settings.get("projectsDirectory"),
             }
 
         return self._respond("ProjectDefaults", operation)
 
+    def set_project_directory(self, directory):
+        def operation():
+            import os
+            from pathlib import Path
+            from tempfile import TemporaryFile
+
+            from lanctl.core.config import update_config
+
+            if directory is not None:
+                if not isinstance(directory, str) or not directory.strip():
+                    raise ValueError("Selecciona una carpeta de proyectos válida")
+                folder = Path(os.path.expandvars(directory)).expanduser().resolve(strict=True)
+                if not folder.is_dir():
+                    raise ValueError("La ubicación de proyectos debe ser una carpeta")
+                # Probe actual access, including ACLs and read-only mounts.
+                with os.scandir(folder):
+                    pass
+                with TemporaryFile(dir=folder) as probe:
+                    probe.write(b"LANCTL")
+                    probe.flush()
+                value = str(folder)
+            else:
+                value = None
+            update_config(lambda settings: settings.update(projectsDirectory=value))
+            return self.project_defaults()
+
+        return self._respond("ProjectDirectorySave", operation)
+
     def settings_catalog(self, scope="program"):
         def operation():
             from lanctl.apps.suite.settings import settings_entries
-            from lanctl.core.settings_catalog import CATEGORIES
+            from lanctl.apps.suite.settings_form import describe_settings
+            from lanctl.core.settings_catalog import category_labels
             from lanctl.core.settings_policy import SettingsContext
 
             if scope not in {"program", "project"}:
                 raise ValueError("Ámbito de configuración desconocido")
             return {
-                "entries": settings_entries(SettingsContext("gui", scope=scope)),
+                "entries": describe_settings(
+                    settings_entries(SettingsContext("gui", scope=scope)),
+                    project=scope == "project",
+                ),
                 "categories": {
-                    **CATEGORIES,
+                    **category_labels(),
                     "identity": "Identidad del proyecto",
                     "lan": "Identidad LAN",
                     "vlan": "VLAN del proyecto",
@@ -262,9 +299,21 @@ class SuiteApi(GuiSupportMixin):
             if scope not in {"program", "project"}:
                 raise ValueError("Ámbito de configuración desconocido")
             save_setting(SettingsContext("gui", scope=scope), path, value)
-            return {"message": "Configuración guardada"}
+            return {"message": t("LANCTL.UI.TEXT.SETTINGS_SAVED")}
 
         return self._respond("SettingsCatalogSave", operation)
+
+    def save_catalog_settings(self, changes, launcher="lanctl"):
+        def operation():
+            from lanctl.apps.suite.settings import save_program_changes
+            from lanctl.core.settings_policy import SettingsContext
+
+            if not isinstance(changes, dict):
+                raise ValueError("Se requiere un conjunto de ajustes")
+            save_program_changes(changes, SettingsContext("gui", launcher=launcher))
+            return {"message": t("LANCTL.UI.TEXT.SETTINGS_SAVED")}
+
+        return self._respond("SettingsCatalogBatchSave", operation)
 
     @staticmethod
     def _launcher_categories(launcher):
@@ -275,14 +324,15 @@ class SuiteApi(GuiSupportMixin):
     def launcher_settings(self, launcher):
         def operation():
             from lanctl.apps.suite.settings import settings_entries
-            from lanctl.core.settings_catalog import CATEGORIES
+            from lanctl.apps.suite.settings_form import describe_settings
+            from lanctl.core.settings_catalog import category_labels
 
             if launcher == "lanctl":
                 raise ValueError("Selecciona un launcher específico")
             from lanctl.core.settings_policy import SettingsContext
 
             entries = settings_entries(SettingsContext("gui", launcher=launcher))
-            return {"entries": entries, "categories": CATEGORIES}
+            return {"entries": describe_settings(entries), "categories": category_labels()}
 
         return self._respond("LauncherSettings", operation)
 
@@ -294,7 +344,7 @@ class SuiteApi(GuiSupportMixin):
             if launcher == "lanctl":
                 raise ValueError("Selecciona un launcher específico")
             save_setting(SettingsContext("gui", launcher=launcher), path, value)
-            return {"message": "Configuración guardada"}
+            return {"message": t("LANCTL.UI.TEXT.SETTINGS_SAVED")}
 
         return self._respond("LauncherSettingSave", operation)
 

@@ -9,33 +9,33 @@ No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.
 Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [-web | -github | -reference] [--admin]
               LAUNCHER ...
 
-Orquestador raíz de las aplicaciones de la suite LANCTL.
+Root orchestrator for the LANCTL suite applications.
 
 Arguments:
   LAUNCHER
-    lanip (ip)             Inventario lógico, descubrimiento, IP, MAC y servicios.
-    lanwire (wire)         Cableado, puertos, paneles y topología física.
-    lanrack (rack)         Salas técnicas, racks, unidades U y equipos.
-    lanaccess (access)     Usuarios, credenciales y accesos remotos.
-    lanmon (monitor)       Monitorización, eventos, incidencias e historial.
-    plugin                 Administración compartida de la suite.
-    settings               Administración compartida de la suite.
-    language               Administración compartida de la suite.
-    backend                Administración compartida de la suite.
-    setup-defaults         Inicializa preferencias de instalación sin sobrescribir las existentes.
-    completions            Registra o retira el completado Clink del usuario actual.
-    post-install           Abre LANIP con el usuario normal al finalizar la instalación.
+    lanip (ip)             Logical inventory, discovery, IP, MAC and services.
+    lanwire (wire)         Wiring, ports, panels and physical topology.
+    lanrack (rack)         Technical rooms, racks, rack units and equipment.
+    lanaccess (access)     Users, credentials and remote access.
+    lanmon (monitor)       Monitoring, events, incidents and history.
+    plugin                 Shared suite administration.
+    settings               Shared suite administration.
+    language               Shared suite administration.
+    backend                Shared suite administration.
+    setup-defaults         Initialize installation preferences without overwriting existing ones.
+    completions            Register or remove Clink completion for the current user.
+    post-install           Open LANIP as the normal user after installation.
 
 Options:
   -h, --help               Show this help and exit.
-  --version                Muestra la versión común de la suite y termina.
-  --cli, -cli              Abre la consola principal.
-  -tui, --tui              Abre el TUI principal.
-  --gui                    Abre el centro gráfico de LANCTL.
-  -web, --web              Muestra y abre la web oficial.
-  -github, --github        Muestra y abre GitHub oficial.
-  -reference, --reference  Muestra y abre la referencia oficial.
-  --admin                  Solicita UAC explícitamente para un launcher instalado en Windows.
+  --version                Show the common suite version and exit.
+  --cli, -cli              Open the main console.
+  -tui, --tui              Open the main TUI.
+  --gui                    Open the LANCTL graphical hub.
+  -web, --web              Show and open the official website.
+  -github, --github        Show and open the official GitHub.
+  -reference, --reference  Show and open the official reference.
+  --admin                  Explicitly request UAC for an installed launcher on Windows.
 ```
 
 ## `LANIP`
@@ -49,61 +49,60 @@ Logical control of LAN devices and infrastructure.
 
 Arguments:
   COMANDO
-    ephemeral (-e)            Escanea activos sin leer ni guardar ningún inventario.
-    list                      Escanea la LAN y muestra dispositivos activos e históricos.
-    recurrent                 Consulta los elementos recurrentes conocidos por LANCTL.
-    ping                      Comprueba puntualmente si un elemento responde por PING o ARP.
-    open (connect)            Abre un elemento con un cliente acorde al protocolo.
-    settings                  Consulta o modifica la configuración persistente de LANCTL.
-    call                      Resuelve un alias, una IP o una MAC a los datos del dispositivo.
-    search                    Busca dispositivos por alias, nombre, IP o MAC.
-    scan                      Inspecciona en profundidad un único elemento de la LAN.
-    cnf                       Asigna el estado CNF de un elemento por IP, MAC o alias.
+    ephemeral (-e)            Scan active hosts without reading or saving any inventory.
+    list                      Scan the LAN and show active and historical devices.
+    recurrent                 Query recurring elements known to LANCTL.
+    ping                      Check once whether an element responds to PING or ARP.
+    open (connect)            Open an element with a protocol-appropriate client.
+    settings                  Query or change LANCTL's persistent configuration.
+    call                      Resolve an alias, IP or MAC to device data.
+    search                    Search devices by alias, name, IP or MAC.
+    scan                      Inspect a single LAN element in depth.
+    cnf                       Assign an element's CNF state by IP, MAC or alias.
     credential (credentials, auth)
-                              Asocia credenciales cifradas a un elemento y protocolo.
-    GATEWAY (gateway)         Consulta y configura el gateway mediante TR-064.
+                              Associate encrypted credentials with an element and protocol.
+    GATEWAY (gateway)         Query and configure the gateway through TR-064.
     downloadSettings (downloadsettings, download-settings)
-                              Alias heredado de «GATEWAY downloadSettings».
-    protocol                  Consulta o configura un protocolo de un elemento.
-    ssh                       Abre SSH o ejecuta una consulta show de solo lectura.
-    radmin                    Configura, comprueba o abre Radmin Viewer.
-    wol                       Enciende equipos mediante Wake-on-LAN y ejecuta secuencias seguras.
-    history                   Consulta eventos estructurados del proyecto VLF activo.
-    monitor                   Opera sesiones y checks del monitor LAN.
-    access                    Configura acceso remoto LAN seguro por SSH y HTTPS.
-    smb                       Descubre y abre recursos SMB de Windows.
-    terminal (cli)            Abre la terminal propia de un elemento según su protocolo.
-    switch                    Planifica comandos Cisco filtrados, remapeados y clasificados.
-    group                     Crea, edita y consulta grupos de elementos.
-    element                   Edita uno o varios campos de un elemento identificado por IP, MAC o
+                              Legacy alias for “GATEWAY downloadSettings”.
+    protocol                  Query or configure an element's protocol.
+    ssh                       Open SSH or run a read-only show query.
+    radmin                    Configure, check or open Radmin Viewer.
+    wol                       Wake devices through Wake-on-LAN and run safe sequences.
+    history                   Query structured events from the active VLF project.
+    monitor                   Operate LAN monitor sessions and checks.
+    access                    Configure secure LAN remote access through SSH and HTTPS.
+    smb                       Discover and open Windows SMB resources.
+    terminal (cli)            Open an element's terminal according to its protocol.
+    switch                    Plan filtered, remapped and classified Cisco commands.
+    group                     Create, edit and query element groups.
+    element                   Edit one or more fields of an element identified by IP, MAC or
                               alias.
-    project (projects)        Crea, actualiza e inspecciona proyectos LANCTL .vlf.
+    project (projects)        Create, update and inspect LANCTL .vlf projects.
     plugin (plugins, addon, addons)
-                              Gestiona complementos unificados LANCTL .lcp.
+                              Manage unified LANCTL .lcp plugins.
     language (languages, lang)
                               Manage LANCTL interface languages.
-    error (errors)            Consulta el catálogo por identificador 0eXXXXXXXX.
-    database (db)             Diagnostica y exporta datos.
-    demo                      Genera un recorrido reproducible sin depender de una red real.
-    lanwire (wire)            Abre LANWIRE o ejecuta uno de sus comandos sobre la base física
-                              compartida.
-    lab                       Gestiona redes LAN simuladas sin tráfico real.
+    error (errors)            Query the catalog by identifier 0eXXXXXXXX.
+    database (db)             Diagnose and export data.
+    demo                      Generate a reproducible walkthrough without depending on a real
+                              network.
+    lanwire (wire)            Open LANWIRE or run one of its commands on the shared physical
+                              database.
+    lab                       Manage simulated LANs without real traffic.
 
 Options:
   -h, --help                  Show this help and exit.
-  --version                   Muestra la versión y termina.
-  --quiet                     Omite la salida correcta; conserva errores.
-  --verbose                   Añade diagnóstico de ejecución a stderr.
-  --gui                       Abre la interfaz gráfica de LANIP.
-  --first-scan                Solicita confirmación del primer escaneo al abrir la GUI; no escanea
-                              automáticamente.
+  --version                   Show the version and exit.
+  --quiet                     Suppress successful output; preserve errors.
+  --verbose                   Add execution diagnostics to stderr.
+  --gui                       Open the LANIP graphical interface.
+  --first-scan                Request first scan confirmation when opening the GUI; do not scan
+                              automatically.
   --cli, -cli                 Open the persistent interactive LANCTL terminal.
-  -tui [VENTANA], --tui [VENTANA]
-                              Open the advanced full-screen terminal interface. Puede abrir
-                              directamente PLUGINS, PROJECTS o SETTINGS.
-  -project ARCHIVO.vlf, --project ARCHIVO.vlf
-                              Selecciona un proyecto VLF antes de abrir el TUI o ejecutar un
-                              comando.
+  -tui, --tui [VENTANA]       Open the advanced full-screen terminal interface. Can open PLUGINS,
+                              PROJECTS or SETTINGS directly.
+  -project, --project ARCHIVO.vlf
+                              Select a VLF project before opening the TUI or running a command.
 ```
 
 ## `LANIP ephemeral`
@@ -113,22 +112,22 @@ Usage: LANIP ephemeral [-h] [--fast | --normal | --accurate] [--range NETWORK] [
                        [--ports PORTS] [--json] [--workers WORKERS] [--timeout TIMEOUT]
                        [--max-hosts MAX_HOSTS] [--scan-order {ascending,descending,random}]
 
-Ejecuta el descubrimiento real en una sesión aislada en memoria. No abre, modifica ni guarda proyectos o bases de dispositivos.
+Perform actual discovery in an isolated in-memory session. Does not open, modify or save projects or device databases.
 
 Options:
   -h, --help                  Show this help and exit.
   --fast                      Prioriza un barrido ARP rápido.
   --normal                    Combina ICMP, ARP y descubrimiento de servicios.
   --accurate                  Añade reintentos y reconocimiento más profundo.
-  --range NETWORK             Rango CIDR que se explorará solo durante esta ejecución.
-  --resolve-names             Resuelve nombres sin almacenarlos.
-  --ports PORTS               Puertos TCP opcionales, por ejemplo 22,80,443.
-  --json                      Devuelve la sesión como JSON.
-  --workers WORKERS           Sondeos simultáneos.
-  --timeout TIMEOUT           Tiempo máximo base por sondeo, en segundos.
-  --max-hosts MAX_HOSTS       Límite defensivo de direcciones autorizadas.
+  --range NETWORK             CIDR range to explore only during this execution.
+  --resolve-names             Resolve names without storing them.
+  --ports PORTS               Optional TCP ports, for example 22,80,443.
+  --json                      Return the session as JSON.
+  --workers WORKERS           Concurrent probes.
+  --timeout TIMEOUT           Base timeout per probe, in seconds.
+  --max-hosts MAX_HOSTS       Defensive limit on authorized addresses.
   --scan-order {ascending,descending,random}
-                              Orden de exploración de las direcciones.
+                              Address exploration order.
 ```
 
 ## `LANIP list`
@@ -144,54 +143,51 @@ Usage: LANIP list [-h] [--network NETWORK] [--interface INTERFACE] [--database D
                   [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]
                   [-group GRUPO] [-dhcp]
 
-Realiza un escaneo básico de IP/MAC, actualiza la base de datos por MAC y muestra también los equipos no detectados.
+Perform a basic IP/MAC scan, update the database by MAC and also show undetected devices.
 
 Options:
   -h, --help                  Show this help and exit.
-  --network NETWORK           Red CIDR. Por defecto detecta la LAN como /24.
-  --interface INTERFACE       Origen IPv4 local o ID de interfaz; usa su máscara real. Solo
-                              ICMP/ARP, sin DNS ni descubridores externos.
-  --database DATABASE         Archivo JSON de elementos.
-  --groups GROUPS             Archivo JSON de grupos.
-  -f {table,json,csv,html,xml,yaml}, --format {table,json,csv,html,xml,yaml}
-                              Formato de salida (por defecto: table).
-  -o OUTPUT, --output OUTPUT  Guarda la salida en un archivo.
-  -recurrent, --recurrent     Lista los elementos recurrentes sin escanear la LAN ni mostrar IP.
-  --where WHERE               Consulta combinable, por ejemplo: "active and group=IOT and
+  --network NETWORK           CIDR network. Detects the LAN as /24 by default.
+  --interface INTERFACE       Local IPv4 source or interface ID; uses its actual mask. ICMP/ARP
+                              only, without DNS or external discovery.
+  --database DATABASE         Element JSON file.
+  --groups GROUPS             Group JSON file.
+  -f, --format {table,json,csv,html,xml,yaml}
+                              Output format (default: table).
+  -o, --output OUTPUT         Save output to a file.
+  -recurrent, --recurrent     List recurring elements without scanning the LAN or showing IP.
+  --where WHERE               Composable query, for example: "active and group=IOT and
                               vendor~Amazon".
-  -w WORKERS, --workers WORKERS
-                              Comprobaciones simultáneas.
-  -t TIMEOUT, --timeout TIMEOUT
-                              Timeout base en segundos por operación y host; el perfil puede
-                              ajustarlo.
+  -w, --workers WORKERS       Concurrent checks.
+  -t, --timeout TIMEOUT       Base timeout in seconds per operation and host; the profile may
+                              adjust it.
   --scan-order {ascending,descending,random}
-                              Orden de sondeo de IP: ascending, descending o random.
-  --include-unknown           Incluye hosts activos aunque todavía no tengan MAC.
-  --resolve-names             Resuelve y guarda nombres DNS de los elementos detectados.
-  --max-hosts MAX_HOSTS       Máximo de hosts permitido en un escaneo.
+                              IP probe order: ascending, descending or random.
+  --include-unknown           Include active hosts even if their MAC is not yet known.
+  --resolve-names             Resolve and save DNS names of detected elements.
+  --max-hosts MAX_HOSTS       Maximum hosts allowed in a scan.
   --discovery {icmp,arp,hybrid}
-                              Método: icmp, arp activo o hybrid (por defecto según settings).
+                              Method: icmp, active arp or hybrid (default from settings).
   --profile {fast,normal,accurate}
-                              Perfil completo de escaneo: fast, normal o accurate.
-  --fast                      Escaneo ARP rápido.
-  --normal                    Escaneo híbrido equilibrado.
-  --accurate                  Escaneo profundo con varios métodos.
-  --progress                  Muestra el progreso interactivo.
-  --no-progress               Oculta el progreso.
-  --show-discovery            Añade una columna con ICMP, ARP, LOCAL, BASIC o CACHE.
-  --include-arp-cache         Importa vecinos ARP en caché como CACHE no verificada; no cuentan
-                              como activos.
-  --show-detection            Añade los métodos históricos y la fecha de última detección.
+                              Complete scan profile: fast, normal or accurate.
+  --fast                      Fast ARP scan.
+  --normal                    Balanced hybrid scan.
+  --accurate                  Deep scan using multiple methods.
+  --progress                  Show interactive progress.
+  --no-progress               Hide progress.
+  --show-discovery            Add a column with ICMP, ARP, LOCAL, BASIC or CACHE.
+  --include-arp-cache         Import cached ARP neighbors as unverified CACHE; they do not count
+                              as active.
+  --show-detection            Add historical methods and last-seen date.
   --active, -active, -connected, --connected, -conected
-                              Muestra solo los dispositivos activos en el escaneo actual.
+                              Show only devices active in the current scan.
   -disconnected, --disconnected, -offline
-                              Muestra solo los dispositivos no detectados actualmente.
-  -basic, --basic             Vista reducida: IP, alias y descripción.
-  -cnf {O,X,-,S,F}, --cnf-state {O,X,-,S,F}
-                              Filtra por estado CNF: O, X, -, S o F.
-  -group GRUPO, --group GRUPO
-                              Muestra solo los elementos de un grupo.
-  -dhcp, --dhcp-only          Muestra solo IP incluidas en el rango DHCP configurado.
+                              Show only devices not currently detected.
+  -basic, --basic             Compact view: IP, alias and description.
+  -cnf, --cnf-state {O,X,-,S,F}
+                              Filter by CNF state: O, X, -, S or F.
+  -group, --group GRUPO       Show only elements in a group.
+  -dhcp, --dhcp-only          Show only IPs within the configured DHCP range.
 ```
 
 ## `LANIP recurrent`
@@ -199,14 +195,14 @@ Options:
 ```text
 Usage: LANIP recurrent [-h] -list [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT]
 
-Muestra identidades recurrentes por MAC. No incluye IP porque puede cambiar en cada LAN.
+Show recurring identities by MAC. Does not include IP because it can change on each LAN.
 
 Options:
   -h, --help                  Show this help and exit.
-  -list, --list               Lista todos los elementos recurrentes sin sus IP.
-  -f {table,json,csv,html,xml,yaml}, --format {table,json,csv,html,xml,yaml}
-                              Formato de salida (por defecto: table).
-  -o OUTPUT, --output OUTPUT  Guarda la salida en un archivo.
+  -list, --list               List all recurring elements without their IPs.
+  -f, --format {table,json,csv,html,xml,yaml}
+                              Output format (default: table).
+  -o, --output OUTPUT         Save output to a file.
 ```
 
 ## `LANIP ping`
@@ -216,19 +212,19 @@ Usage: LANIP ping [-h] [--method {auto,ping,arp} | --ping | --arp] [--timeout TI
                   [--database DATABASE]
                   selector
 
-Diagnostica un único elemento sin modificar la base de datos. PING prueba ICMP; ARP realiza una consulta activa en la LAN; AUTO combina ambos métodos.
+Diagnose a single element without changing the database. PING tests ICMP; ARP performs an active LAN query; AUTO combines both methods.
 
 Arguments:
-  selector                  IP, MAC, alias o nombre registrado.
+  selector                  IP, MAC, alias or registered name.
 
 Options:
   -h, --help                Show this help and exit.
-  --method {auto,ping,arp}  Buscador utilizado: auto, ping o arp (por defecto: auto).
-  --ping                    Usa únicamente una solicitud ICMP.
-  --arp                     Usa únicamente una solicitud ARP activa.
-  --timeout TIMEOUT         Tiempo máximo de cada comprobación, en segundos.
-  --json                    Devuelve el diagnóstico como JSON.
-  --database DATABASE       Archivo JSON de elementos.
+  --method {auto,ping,arp}  Lookup method: auto, ping or arp (default: auto).
+  --ping                    Use only one ICMP request.
+  --arp                     Use only one active ARP request.
+  --timeout TIMEOUT         Maximum timeout per check, in seconds.
+  --json                    Return diagnostics as JSON.
+  --database DATABASE       Element JSON file.
 ```
 
 ## `LANIP open`
@@ -242,27 +238,27 @@ Usage: LANIP open [-h] [--port PORT] [--path PATH]
                   selector [{auto,ssh,tr-064,telnet,http,https,ftp,rdp,rtsp,smb,radmin}]
 
 Arguments:
-  selector                    IP, MAC o alias del elemento.
+  selector                    Element IP, MAC or alias.
   {auto,ssh,tr-064,telnet,http,https,ftp,rdp,rtsp,smb,radmin}
-                              Protocolo o detección automática.
+                              Protocol or automatic detection.
 
 Options:
   -h, --help                  Show this help and exit.
-  --port PORT                 Puerto alternativo.
-  --path PATH                 Ruta HTTP/FTP/RTSP o recurso SMB.
+  --port PORT                 Alternative port.
+  --path PATH                 HTTP/FTP/RTSP path or SMB resource.
   --mode {control,view,file,shutdown,chat,voice,message,telnet}
-                              Modo de conexión Radmin.
-  --through THROUGH           Servidor Radmin intermedio HOST:PUERTO.
-  --fullscreen                Abre control o vista a pantalla completa.
+                              Radmin connection mode.
+  --through THROUGH           Intermediate Radmin server HOST:PORT.
+  --fullscreen                Open full-screen control or view.
   --color-depth {24,16,8,4,2,1}
-                              Profundidad de color de Radmin (1, 2, 4, 8, 16 o 24 bits).
-  --updates UPDATES           Máximo de actualizaciones de pantalla por segundo (1-120).
-  --phonebook PHONEBOOK       Ruta de phonebook Radmin .rpb.
+                              Radmin color depth (1, 2, 4, 8, 16 or 24 bits).
+  --updates UPDATES           Maximum screen updates per second (1-120).
+  --phonebook PHONEBOOK       Radmin .rpb phonebook path.
   --phonebook-id PHONEBOOK_ID
-                              Identificador de entrada dentro del phonebook de Radmin.
-  --dry-run                   Muestra el destino sin abrirlo.
-  --database DATABASE         Archivo JSON de elementos.
-  --store STORE               Almacén cifrado de credenciales.
+                              Entry identifier within the Radmin phonebook.
+  --dry-run                   Show the target without opening it.
+  --database DATABASE         Element JSON file.
+  --store STORE               Encrypted credential store.
 ```
 
 ## `LANIP settings`
@@ -295,89 +291,86 @@ Usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-l
 Options:
   -h, --help                  Show this help and exit.
   --startup-interface {cli,tui,gui}
-                              Interfaz preferida al abrir LANCTL sin argumentos.
+                              Preferred interface when opening LANCTL without arguments.
   --close-gui-on-launch {on,off}
-                              Cierra la GUI principal cuando el launcher solicitado esté
-                              disponible.
-  -range CIDR                 Rango LAN predeterminado, por ejemplo 192.168.1.1/24.
-  -list-fields CAMPO [CAMPO ...], --list-fields CAMPO [CAMPO ...], -list CAMPO [CAMPO ...]
-                              Columnas mostradas por list, separadas por espacios o comas.
-  -dhcp-range INICIO-FIN, --dhcp-range INICIO-FIN, -dhcp INICIO-FIN
-                              Rango DHCP manual. Usa 'off' para dejarlo sin configurar.
-  -credentials ARCHIVO, --credentials ARCHIVO
-                              Ruta del almacén de credenciales cifradas.
-  -discovery {icmp,arp,hybrid}, --discovery {icmp,arp,hybrid}
-                              Método predeterminado utilizado por list.
+                              Close the main GUI when the requested launcher is available.
+  -range CIDR                 Default LAN range, for example 192.168.1.1/24.
+  -list-fields, --list-fields, -list CAMPO [CAMPO ...]
+                              Columns displayed by list, separated by spaces or commas.
+  -dhcp-range, --dhcp-range, -dhcp INICIO-FIN
+                              Manual DHCP range. Use 'off' to leave it unconfigured.
+  -credentials, --credentials ARCHIVO
+                              Path to the encrypted credential store.
+  -discovery, --discovery {icmp,arp,hybrid}
+                              Default method used by list.
   --scan-profile {fast,normal,accurate}
-                              Perfil predeterminado de list: fast, normal o accurate.
-  --progress {on,off}         Activa o desactiva el progreso interactivo.
+                              Default list profile: fast, normal or accurate.
+  --progress {on,off}         Enable or disable interactive progress.
   --service-identification {on,off}
-                              Activa o desactiva el reconocimiento de servicios en scan.
+                              Enable or disable service recognition in scan.
   --disconnected-retention {permanent,session,forget}
-                              Persistencia de desconectados: permanent, session o forget.
+                              Disconnected device persistence: permanent, session or forget.
   --disconnected-target {unconfirmed,all}
-                              Aplica la retención solo a CNF=X (unconfirmed) o a todos (all).
+                              Apply retention only to CNF=X (unconfirmed) or to all (all).
   --disconnected-scope {all,dhcp}
-                              Aplica la regla a toda la LAN (all) o solo al rango DHCP (dhcp).
-  --workers WORKERS           Concurrencia predeterminada de los escaneos.
-  --timeout TIMEOUT           Timeout predeterminado por operación de red.
+                              Apply the rule to the entire LAN (all) or only the DHCP range
+                              (dhcp).
+  --workers WORKERS           Default scan concurrency.
+  --timeout TIMEOUT           Default timeout per network operation.
   --scan-order {ascending,descending,random}
-                              Orden predeterminado de sondeo: ascending, descending o random.
-  --max-hosts MAX_HOSTS       Máximo de hosts autorizado por escaneo.
-  --database ARCHIVO          Ruta del inventario de elementos.
+                              Default probe order: ascending, descending or random.
+  --max-hosts MAX_HOSTS       Maximum hosts authorized per scan.
+  --database ARCHIVO          Path to the element inventory.
   --physical-database ARCHIVO
-                              Ruta de la base física SQLite administrada exclusivamente por
-                              LANWIRE.
-  --groups ARCHIVO            Ruta de la base de grupos.
-  --log DIRECTORIO            Directorio de registros.
-  --error-log-level 1-59      Nivel mínimo de ErrorEvent escrito en el log (1 incluye diagnóstico
-                              detallado).
+                              Path to the physical SQLite database managed exclusively by LANWIRE.
+  --groups ARCHIVO            Path to the group database.
+  --log DIRECTORIO            Log directory.
+  --error-log-level 1-59      Minimum ErrorEvent level written to the log (1 includes detailed
+                              diagnostics).
   --projects-directory DIRECTORIO
-                              Carpeta predeterminada para nombres de proyecto VLF relativos.
-  -save-mode MODO, --save-mode MODO
-                              Política de guardado VLF. Usa 'list' para consultar las opciones
-                              integradas y las aportadas por plugins.
-  -save-interval MINUTOS, --save-interval MINUTOS
-                              Intervalo de automatic.timeToSave en minutos (mínimo 0.1).
+                              Default folder for relative VLF project names.
+  -save-mode, --save-mode MODO
+                              VLF save policy. Use 'list' to query built-in and plugin-provided
+                              options.
+  -save-interval, --save-interval MINUTOS
+                              Interval for automatic.timeToSave in minutes (minimum 0.1).
   --cli-exit-save-prompt {on,off}
-                              Consulta si se guarda al terminar cada comando individual de
-                              consola.
+                              Ask whether to save after each individual console command.
   --cli-command-chaining {on,off}
-                              Permite encadenar órdenes con ; dentro de la CLI interactiva.
-  -log-cleanup {on,off}, --log-cleanup {on,off}
-                              Activa o desactiva la limpieza automática de logs antiguos.
-  -log-retention-days DÍAS, --log-retention-days DÍAS
-                              Días durante los que se conservan los archivos de log.
-  --remote-access {on,off}    Activa el acceso SSH restringido.
-  --remote-bind IP            IPv4 local de escucha SSH.
-  --remote-cidr CIDR          Red de origen autorizada.
-  --remote-port REMOTE_PORT   Puerto del servidor SSH remoto.
+                              Allow command chaining with ; in the interactive CLI.
+  -log-cleanup, --log-cleanup {on,off}
+                              Enable or disable automatic cleanup of old logs.
+  -log-retention-days, --log-retention-days DÍAS
+                              Number of days to retain log files.
+  --remote-access {on,off}    Enable restricted SSH access.
+  --remote-bind IP            Local IPv4 address for SSH listening.
+  --remote-cidr CIDR          Authorized source network.
+  --remote-port REMOTE_PORT   Remote SSH server port.
   --remote-password-auth {on,off}
-                              Permite o bloquea autenticación SSH mediante contraseña.
+                              Allow or block SSH password authentication.
   --remote-backend {service,user}
-                              Ejecuta el backend como servicio persistente o proceso de usuario.
+                              Run the backend as a persistent service or user process.
   --remote-forced-view {off,gui,tui,plugins,projects,settings}
-                              Vista predeterminada para root forced-view.
-  --tui-key ACCIÓN=TECLA      Asigna una tecla a una acción del TUI. Puede repetirse.
+                              Default view for root forced-view.
+  --tui-key ACCIÓN=TECLA      Assign a key to a TUI action. May be repeated.
   --tui-layout {cli.bottom,cli.top}
-                              Coloca el CLI arriba (cli.top) o abajo (cli.bottom).
-  --tui-cli-percent 15-75     Porcentaje vertical reservado al CLI; ListElement conserva al menos
+                              Place the CLI at the top (cli.top) or bottom (cli.bottom).
+  --tui-cli-percent 15-75     Vertical percentage reserved for CLI; ListElement retains at least
                               25%.
   --tui-column COLUMNA=TAMAÑO
-                              Peso de columna (GROUP=15%); IP=15ch y MAC=17ch son fijas.
+                              Column weight (GROUP=15%); IP=15ch and MAC=17ch are fixed.
   --tui-footer-buttons ACCIONES
-                              Acciones visibles en la barra inferior, separadas por comas; usa all
-                              para todas.
+                              Visible bottom-bar actions, comma-separated; use all for all
+                              actions.
   --tui-footer-button ACCIÓN=on|off
-                              Muestra u oculta una acción concreta de la barra inferior. Puede
-                              repetirse.
-  --menu                      Editor interactivo por categorías de programa y proyecto.
-  --catalog                   Lista preferencias comunes y CLI por categorías, con valor y estado
-                              editable.
-  --get RUTA                  Consulta un ajuste por su ruta, por ejemplo ip.workers.
-  --set RUTA VALOR            Modifica una preferencia común o CLI; listas y booleanos usan JSON.
-  --scope {program,project}   Ámbito de configuración (predeterminado: program).
-  --category CATEGORY         Filtra el catálogo por categoría, por ejemplo network o monitor.
+                              Show or hide a specific bottom-bar action. May be repeated.
+  --menu                      Interactive program and project editor organized by category.
+  --catalog                   List common and CLI preferences by category, with values and
+                              editability.
+  --get RUTA                  Query a setting by path, for example ip.workers.
+  --set RUTA VALOR            Change a common or CLI preference; lists and booleans use JSON.
+  --scope {program,project}   Configuration scope (default: program).
+  --category CATEGORY         Filter the catalog by category, for example network or monitor.
 ```
 
 ## `LANIP call`
@@ -389,14 +382,14 @@ Usage: LANIP call [-h]
                   selector
 
 Arguments:
-  selector                    Alias, IP o MAC del dispositivo.
+  selector                    Device alias, IP or MAC.
 
 Options:
   -h, --help                  Show this help and exit.
-  -f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}, --field {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}
-                              Dato devuelto (por defecto: ip).
-  --json                      Devuelve el registro completo como JSON.
-  --database DATABASE         Archivo JSON de elementos.
+  -f, --field {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}
+                              Returned field (default: ip).
+  --json                      Return the complete record as JSON.
+  --database DATABASE         Element JSON file.
 ```
 
 ## `LANIP search`
@@ -405,12 +398,12 @@ Options:
 Usage: LANIP search [-h] [--json] [--database DATABASE] selector
 
 Arguments:
-  selector             Alias, nombre, IP o MAC exactos.
+  selector             Exact alias, name, IP or MAC.
 
 Options:
   -h, --help           Show this help and exit.
-  --json               Devuelve el registro completo como JSON para scripts.
-  --database DATABASE  Archivo JSON de elementos.
+  --json               Return the complete record as JSON for scripts.
+  --database DATABASE  Element JSON file.
 ```
 
 ## `LANIP scan`
@@ -420,21 +413,21 @@ Usage: LANIP scan [-h] [--ports LISTA] [--all-ports] [--timeout TIMEOUT] [--work
                   [--banners] [--identify] [--json] [--database DATABASE]
                   selector
 
-Resuelve un elemento por IP, MAC o alias y comprueba identidad, disponibilidad y puertos TCP. No modifica el dispositivo.
+Resolve an element by IP, MAC or alias and check identity, availability and TCP ports. Does not modify the device.
 
 Arguments:
-  selector             IP, MAC o alias registrado en LANCTL.
+  selector             IP, MAC or alias registered in LANCTL.
 
 Options:
   -h, --help           Show this help and exit.
-  --ports LISTA        Puertos o rangos: 22,80,443,8000-8100 (por defecto: common).
-  --all-ports          Autoriza explícitamente el escaneo TCP 1-65535.
-  --timeout TIMEOUT    Tiempo máximo por conexión, en segundos.
-  --workers WORKERS    Número máximo de conexiones simultáneas.
-  --banners            Lee banners pasivos; no envía sondas específicas de protocolo.
-  --identify           Reconoce servicios y deduce el tipo de dispositivo con evidencias.
-  --json               Salida JSON.
-  --database DATABASE  Archivo JSON de elementos.
+  --ports LISTA        Ports or ranges: 22,80,443,8000-8100 (default: common).
+  --all-ports          Explicitly authorize a TCP 1-65535 scan.
+  --timeout TIMEOUT    Maximum timeout per connection, in seconds.
+  --workers WORKERS    Maximum number of concurrent connections.
+  --banners            Read passive banners; do not send protocol-specific probes.
+  --identify           Recognize services and infer device type from evidence.
+  --json               JSON output.
+  --database DATABASE  Element JSON file.
 ```
 
 ## `LANIP cnf`
@@ -443,13 +436,13 @@ Options:
 Usage: LANIP cnf [-h] [--database DATABASE] selector [value]
 
 Arguments:
-  selector             IP, MAC o alias del elemento.
-  value                O (OK), X (UNKNOWN), - (UNRECOGNIZED), S (MARKED) o F (FIXED). Sin valor
-                       libera F y restaura O.
+  selector             Element IP, MAC or alias.
+  value                O (OK), X (UNKNOWN), - (UNRECOGNIZED), S (MARKED) or F (FIXED). Without a
+                       value, release F and restore O.
 
 Options:
   -h, --help           Show this help and exit.
-  --database DATABASE  Archivo JSON de elementos.
+  --database DATABASE  Element JSON file.
 ```
 
 ## `LANIP credential`
@@ -459,16 +452,15 @@ Usage: LANIP credential [-h] [-user USERNAME] [--database DATABASE] [--store STO
                         selector [{set,list,delete}] [protocol]
 
 Arguments:
-  selector                    IP, MAC o alias del elemento.
-  {set,list,delete}           Operación sobre la credencial.
-  protocol                    Protocolo, por ejemplo tr-064.
+  selector                    Element IP, MAC or alias.
+  {set,list,delete}           Credential operation.
+  protocol                    Protocol, for example tr-064.
 
 Options:
   -h, --help                  Show this help and exit.
-  -user USERNAME, --username USERNAME
-                              Nombre de usuario remoto.
-  --database DATABASE         Archivo JSON de elementos.
-  --store STORE               Almacén cifrado de credenciales.
+  -user, --username USERNAME  Remote username.
+  --database DATABASE         Element JSON file.
+  --store STORE               Encrypted credential store.
 ```
 
 ## `LANIP GATEWAY`
@@ -479,7 +471,7 @@ Usage: LANIP GATEWAY [-h] ACCIÓN ...
 Arguments:
   ACCIÓN
     downloadSettings (downloadsettings, download-settings)
-                              Descarga las opciones LAN y DHCP interesantes para configuración.
+                              Download relevant LAN and DHCP settings for configuration.
 
 Options:
   -h, --help                  Show this help and exit.
@@ -493,10 +485,10 @@ Usage: LANIP GATEWAY downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--
 
 Options:
   -h, --help           Show this help and exit.
-  --port PORT          Puerto TR-064 del router.
-  --timeout TIMEOUT    Tiempo máximo de espera en segundos.
-  --database DATABASE  Archivo JSON de elementos.
-  --store STORE        Almacén cifrado de credenciales.
+  --port PORT          Router TR-064 port.
+  --timeout TIMEOUT    Maximum timeout in seconds.
+  --database DATABASE  Element JSON file.
+  --store STORE        Encrypted credential store.
 ```
 
 ## `LANIP downloadSettings`
@@ -507,14 +499,14 @@ Usage: LANIP downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--database
                               [gateway]
 
 Arguments:
-  gateway              IP, MAC o alias del router.
+  gateway              Router IP, MAC or alias.
 
 Options:
   -h, --help           Show this help and exit.
-  --port PORT          Puerto TR-064 del router.
-  --timeout TIMEOUT    Tiempo máximo de espera en segundos.
-  --database DATABASE  Archivo JSON de elementos.
-  --store STORE        Almacén cifrado de credenciales.
+  --port PORT          Router TR-064 port.
+  --timeout TIMEOUT    Maximum timeout in seconds.
+  --database DATABASE  Element JSON file.
+  --store STORE        Encrypted credential store.
 ```
 
 ## `LANIP protocol`
@@ -526,19 +518,19 @@ Usage: LANIP protocol [-h] [--port PORT] [--driver DRIVER] [--host-key HOST_KEY]
                       selector {show,configure} protocol
 
 Arguments:
-  selector                    IP, MAC o alias.
-  {show,configure}            Consulta o modifica el protocolo.
-  protocol                    Protocolo que se configura.
+  selector                    IP, MAC or alias.
+  {show,configure}            Query or change the protocol.
+  protocol                    Protocol to configure.
 
 Options:
   -h, --help                  Show this help and exit.
-  --port PORT                 Puerto remoto.
-  --driver DRIVER             Controlador del dispositivo.
-  --host-key HOST_KEY         Algoritmo de clave de host permitido; se puede repetir.
-  --kex KEX                   Algoritmo de intercambio de claves; se puede repetir.
+  --port PORT                 Remote port.
+  --driver DRIVER             Device driver.
+  --host-key HOST_KEY         Allowed host-key algorithm; may be repeated.
+  --kex KEX                   Key-exchange algorithm; may be repeated.
   --profile {ssh_legacy_cisco_s300,ssh_esp32_rack_monitor}
-                              Perfil SSH reutilizable.
-  --database DATABASE         Archivo JSON de elementos.
+                              Reusable SSH profile.
+  --database DATABASE         Element JSON file.
 ```
 
 ## `LANIP ssh`
@@ -548,16 +540,16 @@ Usage: LANIP ssh [-h] [--database DATABASE] [--store STORE] [--host HOST]
                  selector {probe,fingerprint,trust,open,show} [COMANDO ...]
 
 Arguments:
-  selector                    IP, MAC o alias.
+  selector                    IP, MAC or alias.
   {probe,fingerprint,trust,open,show}
-                              Operación SSH.
-  COMANDO                     Huella o comando remoto, según la operación.
+                              SSH operation.
+  COMANDO                     Fingerprint or remote command, depending on the operation.
 
 Options:
   -h, --help                  Show this help and exit.
-  --database DATABASE         Archivo JSON de elementos.
-  --store STORE               Almacén cifrado de credenciales.
-  --host HOST                 IP candidata para probe/fingerprint, sin modificar la base de datos.
+  --database DATABASE         Element JSON file.
+  --store STORE               Encrypted credential store.
+  --host HOST                 Candidate IP for probe/fingerprint, without changing the database.
 ```
 
 ## `LANIP radmin`
@@ -570,7 +562,7 @@ Usage: LANIP radmin [-h] [--mode {control,view,file,shutdown,chat,voice,message,
                     selector {probe,configure,open}
 
 Arguments:
-  selector                    IP, MAC o alias del elemento.
+  selector                    Element IP, MAC or alias.
   {probe,configure,open}      Opción de configuración de Radmin Viewer.
 
 Options:
@@ -578,15 +570,15 @@ Options:
   --mode {control,view,file,shutdown,chat,voice,message,telnet}
                               Opción de configuración de Radmin Viewer.
   --port PORT                 Opción de configuración de Radmin Viewer.
-  --executable EXECUTABLE     Ruta por dispositivo; usa 'auto' para detección automática.
-  --through THROUGH           Servidor intermedio HOST:PUERTO.
-  --fullscreen                Abre control o vista a pantalla completa.
+  --executable EXECUTABLE     Per-device path; use 'auto' for automatic detection.
+  --through THROUGH           Intermediate server HOST:PORT.
+  --fullscreen                Open full-screen control or view.
   --color-depth {24,16,8,4,2,1}
-                              Profundidad de color de Radmin (1, 2, 4, 8, 16 o 24 bits).
-  --updates UPDATES           Máximo de actualizaciones de pantalla por segundo (1-120).
-  --phonebook PHONEBOOK       Phonebook .rpb administrado por Radmin.
+                              Radmin color depth (1, 2, 4, 8, 16 or 24 bits).
+  --updates UPDATES           Maximum screen updates per second (1-120).
+  --phonebook PHONEBOOK       Radmin-managed .rpb phonebook.
   --phonebook-id PHONEBOOK_ID
-                              Identificador de entrada dentro del phonebook de Radmin.
+                              Entry identifier within the Radmin phonebook.
   --database DATABASE         Opción de configuración de Radmin Viewer.
   --store STORE               Opción de configuración de Radmin Viewer.
 ```
@@ -607,18 +599,16 @@ Usage: LANIP wol [-h] [-if CONDICIÓN] [--if-all CONDICIÓN] [--if-any CONDICIÓ
                  [words ...]
 
 Arguments:
-  words                       NAME [wakeup|status|shutdown|restart|sleep|hibernate|configure] o
+  words                       NAME [wakeup|status|shutdown|restart|sleep|hibernate|configure] or
                               sequence ...
 
 Options:
   -h, --help                  Show this help and exit.
-  -if CONDICIÓN, --if CONDICIÓN
-                              Condición AND adicional (repetible).
+  -if, --if CONDICIÓN         Condición AND adicional (repetible).
   --if-all CONDICIÓN          Condición AND adicional.
   --if-any CONDICIÓN          Condición OR adicional.
   --if-not CONDICIÓN          Condición negada.
-  -t SCHEDULE, --time SCHEDULE
-                              Momento del apagado programado.
+  -t, --time SCHEDULE         Momento del apagado programado.
   --message MESSAGE           Mensaje remoto, si el transporte lo admite.
   --force                     Solicita cierre forzado al transporte.
   --cancel                    Cancela una programación, si el transporte lo admite.
@@ -652,8 +642,8 @@ Options:
                               Sistema operativo remoto.
   --power-command ACCIÓN=COMANDO
                               Plantilla administrada ACCIÓN=COMANDO.
-  --database DATABASE         Archivo JSON de elementos.
-  --store STORE               Almacén cifrado de credenciales.
+  --database DATABASE         Element JSON file.
+  --store STORE               Encrypted credential store.
   --sequences SEQUENCES       Archivo transaccional de secuencias.
 ```
 
@@ -666,23 +656,23 @@ Usage: LANIP history [-h] [--all] [--commands] [--today] [--from FECHA] [--to FE
                      [selector]
 
 Arguments:
-  selector                   DeviceId, alias, nombre, MAC, IP actual o histórica.
+  selector                   DeviceId, alias, name, MAC, current or historical IP.
 
 Options:
   -h, --help                 Show this help and exit.
-  --all                      Incluye eventos generales de toda la LAN.
-  --commands                 En CLI interactiva muestra los comandos de la sesión.
-  --today                    Limita la consulta al día local actual.
-  --from FECHA               Fecha inicial YYYY-MM-DD.
-  --to FECHA                 Fecha final YYYY-MM-DD.
-  --type TYPES               Tipo canónico; se puede repetir.
-  --source SOURCE            Filtra por origen.
-  --result RESULT            Filtra por resultado.
-  --errors                   Muestra únicamente errores.
-  --search SEARCH            Busca texto seguro.
-  --limit LIMIT              Máximo de eventos (1..10000).
-  --reverse                  Orden descendente.
-  --format {table,json,csv}  Formato de salida.
+  --all                      Include general events from the entire LAN.
+  --commands                 In the interactive CLI, show session commands.
+  --today                    Limit the query to the current local day.
+  --from FECHA               Start date YYYY-MM-DD.
+  --to FECHA                 End date YYYY-MM-DD.
+  --type TYPES               Canonical type; may be repeated.
+  --source SOURCE            Filter by source.
+  --result RESULT            Filter by result.
+  --errors                   Show errors only.
+  --search SEARCH            Search safe text.
+  --limit LIMIT              Maximum number of events (1..10000).
+  --reverse                  Descending order.
+  --format {table,json,csv}  Output format.
 ```
 
 ## `LANIP monitor`
@@ -703,7 +693,7 @@ Usage: LANIP monitor [-h] [--project PROJECT] [--permanent] [--duration DURATION
 
 Arguments:
   words                       attach, detach, status, once, session, incidents, incident, service
-                              o foreground.
+                              or foreground.
 
 Options:
   -h, --help                  Show this help and exit.
@@ -724,24 +714,24 @@ Options:
   --fast                      Opción operativa del monitor.
   --unknown                   Opción operativa del monitor.
   --follow                    Opción operativa del monitor.
-  --sessions SESSIONS         Estado runtime de sesiones.
+  --sessions SESSIONS         Runtime session state.
   --incidents-store INCIDENTS_STORE
-                              Estado runtime de incidencias.
-  --lock LOCK                 Lock singleton del monitor.
-  --monitor-db MONITOR_DB     Repositorio SQLite del monitor.
-  --profiles PROFILES         Perfiles personalizados.
+                              Runtime incident state.
+  --lock LOCK                 Monitor singleton lock.
+  --monitor-db MONITOR_DB     Monitor SQLite repository.
+  --profiles PROFILES         Custom profiles.
   --assignments-store ASSIGNMENTS_STORE
-                              Asignaciones persistentes.
-  --profile PROFILE           Perfil monitor.
+                              Persistent assignments.
+  --profile PROFILE           Monitor profile.
   --priority {low,normal,high,critical}
-                              Prioridad de asignación.
-  --check CHECK               Check ping, arp o port:NN.
-  --presence PRESENCE         Intervalo de presencia.
-  --discovery DISCOVERY       Intervalo de descubrimiento.
-  --services SERVICES         Intervalo de servicios.
-  --deep DEEP                 Intervalo profundo.
-  --workers WORKERS           Workers del perfil.
-  --timeout TIMEOUT           Timeout del perfil.
+                              Assignment priority.
+  --check CHECK               Check ping, arp or port:NN.
+  --presence PRESENCE         Presence interval.
+  --discovery DISCOVERY       Discovery interval.
+  --services SERVICES         Service interval.
+  --deep DEEP                 Deep scan interval.
+  --workers WORKERS           Profile workers.
+  --timeout TIMEOUT           Profile timeout.
 ```
 
 ## `LANIP access`
@@ -755,7 +745,7 @@ Usage: LANIP access [-h] [--bind BIND] [--cidr CIDR] [--port PORT] [--password-a
                     [words ...]
 
 Arguments:
-  words                      init, status, enable, disable, configure, user, role, session, web o
+  words                      init, status, enable, disable, configure, user, role, session, web or
                              certificate.
 
 Options:
@@ -773,9 +763,9 @@ Options:
   --common-name COMMON_NAME  Opción de acceso remoto.
   --yes                      Opción de acceso remoto.
   --json                     Opción de acceso remoto.
-  --scope {user,service}     Separa credenciales del usuario y del servicio permanente.
-  --config CONFIG            Configuración remota separada.
-  --users USERS              Almacén de usuarios remotos.
+  --scope {user,service}     Separate user credentials from the persistent service credentials.
+  --config CONFIG            Separate remote configuration.
+  --users USERS              Remote user store.
 ```
 
 ## `LANIP smb`
@@ -787,26 +777,26 @@ Usage: LANIP smb [-h] [--network] [--group GROUP] [--timeout TIMEOUT] [--workers
                  [name] [action] [resource] [{open,queue,connect}]
 
 Arguments:
-  name                  Servidor/dispositivo (sin acción equivale a info).
+  name                  Server/device (no action defaults to info).
   action                scan, info, shares, open, printers, workgroups, connect, disconnect,
-                        status o printer.
-  resource              Carpeta o impresora compartida.
-  {open,queue,connect}  Acción sobre la impresora.
+                        status or printer.
+  resource              Shared folder or printer.
+  {open,queue,connect}  Printer action.
 
 Options:
   -h, --help            Show this help and exit.
-  --network             Examina todo el inventario LANCTL.
-  --group GROUP         Limita el escaneo a un grupo LANCTL.
-  --timeout TIMEOUT     Tiempo máximo del probe TCP.
-  --workers WORKERS     Número máximo de probes concurrentes.
-  --anonymous           No carga credenciales asociadas.
-  --include-system      Incluye recursos administrativos y especiales.
-  --dry-run             Muestra el plan sin autenticar, abrir ni mutar.
-  --yes                 Confirma una conexión de impresora.
-  --json                Emite JSON estructurado.
-  --database DATABASE   Archivo JSON del inventario.
-  --store STORE         Almacén DPAPI de credenciales.
-  --storage STORAGE     Directorio de observaciones de plugins.
+  --network             Examine the entire LANCTL inventory.
+  --group GROUP         Limit the scan to a LANCTL group.
+  --timeout TIMEOUT     TCP probe timeout.
+  --workers WORKERS     Maximum number of concurrent probes.
+  --anonymous           Do not load associated credentials.
+  --include-system      Include administrative and special resources.
+  --dry-run             Show the plan without authenticating, opening or changing anything.
+  --yes                 Confirm a printer connection.
+  --json                Output structured JSON.
+  --database DATABASE   Inventory JSON file.
+  --store STORE         DPAPI credential store.
+  --storage STORAGE     Plugin observations directory.
 ```
 
 ## `LANIP terminal`
@@ -815,15 +805,14 @@ Options:
 Usage: LANIP terminal [-h] [-p PROTOCOL] [--native] [--database DATABASE] [--store STORE] selector
 
 Arguments:
-  selector                    IP, MAC o alias del elemento.
+  selector                 Element IP, MAC or alias.
 
 Options:
-  -h, --help                  Show this help and exit.
-  -p PROTOCOL, --protocol PROTOCOL
-                              Protocolo si hay varias terminales.
-  --native                    Usa el cliente SSH nativo sin la capa de color de LANCTL.
-  --database DATABASE         Archivo JSON de elementos.
-  --store STORE               Almacén cifrado de credenciales.
+  -h, --help               Show this help and exit.
+  -p, --protocol PROTOCOL  Protocol when multiple terminals are available.
+  --native                 Use the native SSH client without LANCTL's color layer.
+  --database DATABASE      Element JSON file.
+  --store STORE            Encrypted credential store.
 ```
 
 ## `LANIP switch`
@@ -833,56 +822,55 @@ Usage: LANIP switch [-h] [--profile PROFILE] [--profiles PROFILES] [--database D
                     [--dry-run] [--yes]
                     selector ...
 
-Comandos Cisco gestionados:
-  show COMANDO
+Managed Cisco commands:
+  show COMMAND
   port list
-  port label PUERTO NOMBRE
-  port unlabel PUERTO
-  port show [PUERTO] status|description|config|errors|vlan
-  port set [PUERTO] description|speed|duplex VALOR
-  port enable|disable|reset [PUERTO]
-  start|stop|reset [PUERTO]
+  port label PORT NAME
+  port unlabel PORT
+  port show [PORT] status|description|config|errors|vlan
+  port set [PORT] description|speed|duplex VALUE
+  port enable|disable|reset [PORT]
+  start|stop|reset [PORT]
   save-config
   terminal
 
-Opciones globales: --profile PERFIL --dry-run --yes
-Esta fase utiliza un adaptador simulado y no conecta con el switch.
+Global options: --profile PROFILE --dry-run --yes
+This phase uses a simulated adapter and does not connect to the switch.
 
 Arguments:
-  selector             IP, MAC o alias del switch.
-  COMANDO              Acción Cisco gestionada que se quiere planificar.
+  selector             Switch IP, MAC or alias.
+  COMANDO              Managed Cisco action to plan.
 
 Options:
   -h, --help           Show this help and exit.
-  --profile PROFILE    Perfil Cisco que remapea los puertos.
-  --profiles PROFILES  Archivo JSON que contiene los perfiles Cisco.
-  --database DATABASE  Archivo JSON de elementos.
-  --dry-run            Solo muestra el plan.
-  --yes                Confirma cambios sin preguntar.
+  --profile PROFILE    Cisco profile that remaps ports.
+  --profiles PROFILES  JSON file containing Cisco profiles.
+  --database DATABASE  Element JSON file.
+  --dry-run            Show the plan only.
+  --yes                Confirm changes without asking.
 ```
 
 ## `LANIP group`
 
 ```text
-Usage: LANIP group [-h]
-                   [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENTO | -remove ELEMENTO | -list]
-                   [--database DATABASE] [--groups GROUPS]
+Usage: LANIP group [-h] [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENT |
+                   -remove ELEMENT | -list] [--database DATABASE] [--groups GROUPS]
                    [name]
 
 Arguments:
-  name                 Nombre del grupo.
+  name                 Group name.
 
 Options:
   -h, --help           Show this help and exit.
-  -new                 Crea el grupo.
-  -del                 Elimina el grupo.
-  -rename NUEVO        Renombra el grupo.
-  -description TEXTO   Edita su descripción.
-  -add ELEMENTO        Añade IP, MAC o alias.
-  -remove ELEMENTO     Retira IP, MAC o alias.
-  -list                Lista los elementos que pertenecen al grupo.
-  --database DATABASE  Archivo JSON de elementos.
-  --groups GROUPS      Archivo JSON de grupos.
+  -new                 Create the group.
+  -del                 Delete the group.
+  -rename NUEVO        Rename the group.
+  -description TEXTO   Edit its description.
+  -add ELEMENT         Add IP, MAC or alias.
+  -remove ELEMENT      Remove IP, MAC or alias.
+  -list                List elements belonging to the group.
+  --database DATABASE  Element JSON file.
+  --groups GROUPS      Group JSON file.
 ```
 
 ## `LANIP element`
@@ -897,33 +885,28 @@ Usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_A
                      [values ...]
 
 Arguments:
-  selector                    IP, MAC o alias.
+  selector                    IP, MAC or alias.
   {edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}
-                              Campo o acción que se quiere editar.
-  values                      Nuevo valor.
+                              Field or action to edit.
+  values                      New value.
 
 Options:
   -h, --help                  Show this help and exit.
-  -add MAC                    Añade un elemento nuevo utilizando su dirección MAC.
-  -name NEW_NAME, --name NEW_NAME
-                              Asigna NAME al elemento indicado.
-  -ip NEW_IP, --ip NEW_IP     Asigna una dirección IPv4.
-  -alias NEW_ALIAS, --alias NEW_ALIAS
-                              Asigna ALIAS al elemento indicado.
-  -description NEW_DESCRIPTION, --description NEW_DESCRIPTION
-                              Asigna DESCRIPTION al elemento indicado.
-  -cnf NEW_CNF, --cnf NEW_CNF
-                              Asigna el estado CNF.
-  -idf NEW_IDF, --idf NEW_IDF
-                              Asigna un IDF único (2-5 letras y 2-5 dígitos).
-  -group NEW_GROUP, --group NEW_GROUP
-                              Añade el elemento al grupo.
-  -protocol NEW_PROTOCOL, --protocol NEW_PROTOCOL
-                              Activa un protocolo.
-  -delete, --delete           Elimina completamente el elemento indicado.
-  --database DATABASE         Archivo JSON de elementos.
-  --groups GROUPS             Archivo JSON de grupos.
-  --yes                       Elimina sin solicitar confirmación.
+  -add MAC                    Add a new element using its MAC address.
+  -name, --name NEW_NAME      Assign NAME to the specified element.
+  -ip, --ip NEW_IP            Assign an IPv4 address.
+  -alias, --alias NEW_ALIAS   Assign ALIAS to the specified element.
+  -description, --description NEW_DESCRIPTION
+                              Assign DESCRIPTION to the specified element.
+  -cnf, --cnf NEW_CNF         Assign the CNF state.
+  -idf, --idf NEW_IDF         Assign a unique IDF (2-5 letters and 2-5 digits).
+  -group, --group NEW_GROUP   Add the element to the group.
+  -protocol, --protocol NEW_PROTOCOL
+                              Enable a protocol.
+  -delete, --delete           Completely delete the specified element.
+  --database DATABASE         Element JSON file.
+  --groups GROUPS             Group JSON file.
+  --yes                       Delete without requesting confirmation.
 ```
 
 ## `LANIP project`
@@ -933,19 +916,18 @@ Usage: LANIP project [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
-    status         Muestra el proyecto activo.
-    create         Crea un proyecto VLF vacío por defecto.
-    update         Actualiza datos activos conservando información complementaria.
-    save           Guarda manualmente el proyecto VLF activo.
-    import-physical
-                   Copia una base IDF histórica al proyecto físico vacío activo.
-    info           Muestra los metadatos del proyecto.
-    verify         Comprueba hashes, estructura y SQLite.
-    use            Selecciona el proyecto VLF que recibirá la auditoría.
-    list           Lista el contenido interno sin extraerlo.
+    status           Show the active project.
+    create           Create an empty VLF project by default.
+    update           Update active data while preserving supplementary information.
+    save             Manually save the active VLF project.
+    import-physical  Copy a historical IDF database into the active empty physical project.
+    info             Show project metadata.
+    verify           Check hashes, structure and SQLite.
+    use              Select the VLF project that receives the audit.
+    list             List internal contents without extracting them.
 
 Options:
-  -h, --help       Show this help and exit.
+  -h, --help         Show this help and exit.
 ```
 
 ## `LANIP project status`
@@ -955,7 +937,7 @@ Usage: LANIP project status [-h] [--json]
 
 Options:
   -h, --help  Show this help and exit.
-  --json      Devuelve JSON.
+  --json      Return JSON.
 ```
 
 ## `LANIP project create`
@@ -967,20 +949,20 @@ Usage: LANIP project create [-h] [--name NAME] [--description DESCRIPTION] [--au
                             file
 
 Arguments:
-  file                       Archivo de salida; se añade .vlf si falta.
+  file                       Output file; .vlf is appended if missing.
 
 Options:
   -h, --help                 Show this help and exit.
-  --name NAME                Nombre humano del proyecto.
-  --description DESCRIPTION  Descripción general.
-  --author AUTHOR            Autor del proyecto.
-  --lan-name LAN_NAME        Nombre humano de la LAN.
-  --location LOCATION        Ubicación física.
-  --company COMPANY          Empresa u organización.
-  --responsible RESPONSIBLE  Responsable de la LAN.
-  --clone-current            Crea el proyecto copiando explícitamente el inventario y grupos
-                             activos.
-  --force                    Sobrescribe un VLF existente.
+  --name NAME                Human-readable project name.
+  --description DESCRIPTION  General description.
+  --author AUTHOR            Project author.
+  --lan-name LAN_NAME        Human-readable LAN name.
+  --location LOCATION        Physical location.
+  --company COMPANY          Company or organization.
+  --responsible RESPONSIBLE  Person responsible for the LAN.
+  --clone-current            Create the project by explicitly copying the active inventory and
+                             groups.
+  --force                    Overwrite an existing VLF.
 ```
 
 ## `LANIP project update`
@@ -989,7 +971,7 @@ Options:
 Usage: LANIP project update [-h] file
 
 Arguments:
-  file        Proyecto VLF existente.
+  file        Existing VLF project.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1010,7 +992,7 @@ Options:
 Usage: LANIP project import-physical [-h] file
 
 Arguments:
-  file        Base IDF .db de origen; se conserva intacta.
+  file        Source IDF .db database; preserved unchanged.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1022,11 +1004,11 @@ Options:
 Usage: LANIP project info [-h] [--json] file
 
 Arguments:
-  file        Proyecto VLF.
+  file        VLF project.
 
 Options:
   -h, --help  Show this help and exit.
-  --json      Devuelve JSON.
+  --json      Return JSON.
 ```
 
 ## `LANIP project verify`
@@ -1035,11 +1017,11 @@ Options:
 Usage: LANIP project verify [-h] [--json] file
 
 Arguments:
-  file        Proyecto VLF.
+  file        VLF project.
 
 Options:
   -h, --help  Show this help and exit.
-  --json      Devuelve JSON.
+  --json      Return JSON.
 ```
 
 ## `LANIP project use`
@@ -1048,7 +1030,7 @@ Options:
 Usage: LANIP project use [-h] file
 
 Arguments:
-  file        Proyecto VLF existente.
+  file        Existing VLF project.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1060,7 +1042,7 @@ Options:
 Usage: LANIP project list [-h] file
 
 Arguments:
-  file        Proyecto VLF.
+  file        VLF project.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1073,25 +1055,23 @@ Usage: LANIP plugin [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
-    list       Lista complementos instalados.
-    catalog    Muestra el catálogo oficial incluido.
-    info       Muestra manifiesto, permisos y estado.
-    install    Verifica e instala un paquete .lcp desactivado.
-    enable     Concede permisos y activa un complemento.
-    disable    Desactiva el complemento.
-    reload     Recarga un complemento activo.
-    uninstall  Desinstala el complemento.
-    verify     Verifica un .lcp o plugin instalado.
-    permissions
-               Muestra permisos solicitados y concedidos.
-    revoke     Revoca permisos y confianza de un complemento.
-    publisher  Gestiona huellas Ed25519 de editores LCP confiables.
-    extensions
-               Lista extensiones para CLI, TUI y futura GUI.
-    pack       Construye un paquete .lcp desde un directorio.
+    list         List installed plugins.
+    catalog      Show the bundled official catalog.
+    info         Show manifest, permissions and state.
+    install      Verify and install a disabled .lcp package.
+    enable       Grant permissions and enable a plugin.
+    disable      Desactiva el complemento.
+    reload       Recarga un complemento activo.
+    uninstall    Desinstala el complemento.
+    verify       Verify a .lcp or installed plugin.
+    permissions  Show requested and granted permissions.
+    revoke       Revoke a plugin's permissions and trust.
+    publisher    Manage Ed25519 fingerprints of trusted LCP publishers.
+    extensions   List extensions for CLI, TUI and the future GUI.
+    pack         Build a .lcp package from a directory.
 
 Options:
-  -h, --help   Show this help and exit.
+  -h, --help     Show this help and exit.
 ```
 
 ## `LANIP plugin list`
@@ -1118,7 +1098,7 @@ Options:
 Usage: LANIP plugin info [-h] plugin_id
 
 Arguments:
-  plugin_id   Identificador estable del complemento.
+  plugin_id   Stable plugin identifier.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1130,7 +1110,7 @@ Options:
 Usage: LANIP plugin install [-h] file
 
 Arguments:
-  file        Archivo de paquete con extensión .lcp.
+  file        Package file with the .lcp extension.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1142,13 +1122,13 @@ Options:
 Usage: LANIP plugin enable [-h] [--grant [PERMISO ...]] [--grant-all] [--trust] plugin_id
 
 Arguments:
-  plugin_id              Identificador del complemento instalado.
+  plugin_id              Installed plugin identifier.
 
 Options:
   -h, --help             Show this help and exit.
-  --grant [PERMISO ...]  Permisos concretos que se conceden.
-  --grant-all            Concede todos los permisos solicitados.
-  --trust                Autoriza código trusted dentro del proceso.
+  --grant [PERMISO ...]  Specific permissions to grant.
+  --grant-all            Grant all requested permissions.
+  --trust                Authorize trusted code within the process.
 ```
 
 ## `LANIP plugin disable`
@@ -1157,7 +1137,7 @@ Options:
 Usage: LANIP plugin disable [-h] plugin_id
 
 Arguments:
-  plugin_id   Identificador del complemento instalado.
+  plugin_id   Installed plugin identifier.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1169,7 +1149,7 @@ Options:
 Usage: LANIP plugin reload [-h] plugin_id
 
 Arguments:
-  plugin_id   Identificador del complemento instalado.
+  plugin_id   Installed plugin identifier.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1181,7 +1161,7 @@ Options:
 Usage: LANIP plugin uninstall [-h] plugin_id
 
 Arguments:
-  plugin_id   Identificador del complemento instalado.
+  plugin_id   Installed plugin identifier.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1193,7 +1173,7 @@ Options:
 Usage: LANIP plugin verify [-h] target
 
 Arguments:
-  target      Identificador instalado o ruta de un archivo .lcp.
+  target      Installed identifier or path to a .lcp file.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1205,7 +1185,7 @@ Options:
 Usage: LANIP plugin permissions [-h] plugin_id
 
 Arguments:
-  plugin_id   Identificador del complemento instalado.
+  plugin_id   Installed plugin identifier.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1217,8 +1197,8 @@ Options:
 Usage: LANIP plugin revoke [-h] plugin_id [PERMISO ...]
 
 Arguments:
-  plugin_id   Identificador del complemento instalado.
-  PERMISO     Vacío revoca todos los permisos.
+  plugin_id   Installed plugin identifier.
+  PERMISO     Leave empty to revoke all permissions.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1231,9 +1211,9 @@ Usage: LANIP plugin publisher [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
-    list      Lista editores confiables.
-    trust     Confía en la firma que contiene un paquete LCP.
-    revoke    Revoca una huella de editor.
+    list      List trusted publishers.
+    trust     Trust the signature contained in an LCP package.
+    revoke    Revoke a publisher fingerprint.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1254,11 +1234,11 @@ Options:
 Usage: LANIP plugin publisher trust [-h] [--name NAME] file
 
 Arguments:
-  file         Paquete .lcp firmado y verificado.
+  file         Signed and verified .lcp package.
 
 Options:
   -h, --help   Show this help and exit.
-  --name NAME  Nombre descriptivo del editor.
+  --name NAME  Descriptive publisher name.
 ```
 
 ## `LANIP plugin publisher revoke`
@@ -1267,7 +1247,7 @@ Options:
 Usage: LANIP plugin publisher revoke [-h] fingerprint
 
 Arguments:
-  fingerprint  Huella SHA-256 Ed25519 completa.
+  fingerprint  Full Ed25519 SHA-256 fingerprint.
 
 Options:
   -h, --help   Show this help and exit.
@@ -1280,7 +1260,7 @@ Usage: LANIP plugin extensions [-h] [--type TYPE]
 
 Options:
   -h, --help   Show this help and exit.
-  --type TYPE  Filtra por tipo de extensión unificada.
+  --type TYPE  Filter by unified extension type.
 ```
 
 ## `LANIP plugin pack`
@@ -1289,13 +1269,13 @@ Options:
 Usage: LANIP plugin pack [-h] [--force] [--signing-key SIGNING_KEY] directory output
 
 Arguments:
-  directory                  Directorio fuente que contiene plugin.info.
-  output                     Archivo .lcp de salida.
+  directory                  Source directory containing plugin.info.
+  output                     Output .lcp file.
 
 Options:
   -h, --help                 Show this help and exit.
-  --force                    Sobrescribe el paquete de salida existente.
-  --signing-key SIGNING_KEY  Clave privada Ed25519 PEM para firmar el LCP.
+  --force                    Overwrite the existing output package.
+  --signing-key SIGNING_KEY  Ed25519 PEM private key for signing the LCP.
 ```
 
 ## `LANIP language`
@@ -1391,31 +1371,31 @@ Options:
 Usage: LANIP error [-h] [--json] 0eXXXXXXXX
 
 Arguments:
-  0eXXXXXXXX  Identificador estable del error.
+  0eXXXXXXXX  Stable error identifier.
 
 Options:
   -h, --help  Show this help and exit.
-  --json      Emite el resultado como JSON.
+  --json      Output the result as JSON.
 ```
 
 ## `LANIP database`
 
 ```text
-Usage: LANIP database [-h]
-                      (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip | --import ARCHIVO.zip | --restore ARCHIVO.bak)
+Usage: LANIP database [-h] (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip |
+                      --import ARCHIVO.zip | --restore ARCHIVO.bak)
                       [--target {database,groups,physical}] [--yes] [--json]
 
 Options:
   -h, --help                  Show this help and exit.
-  --diagnose                  Valida los almacenes configurados.
-  --export ARCHIVO.zip        Exporta datos con hashes verificables.
-  --verify ARCHIVO.zip        Verifica una exportación sin importarla.
-  --import ARCHIVO.zip        Importa datos verificados.
-  --restore ARCHIVO.bak       Restaura un backup validado del almacén.
+  --diagnose                  Validate configured stores.
+  --export ARCHIVO.zip        Export data with verifiable hashes.
+  --verify ARCHIVO.zip        Verify an export without importing it.
+  --import ARCHIVO.zip        Import verified data.
+  --restore ARCHIVO.bak       Restore a validated store backup.
   --target {database,groups,physical}
-                              Almacén que se restaura.
-  --yes                       Confirma la sustitución de datos.
-  --json                      Emite el diagnóstico como JSON.
+                              Store to restore.
+  --yes                       Confirm data replacement.
+  --json                      Output diagnostics as JSON.
 ```
 
 ## `LANIP demo`
@@ -1423,13 +1403,13 @@ Options:
 ```text
 Usage: LANIP demo [-h] [--output DIRECTORIO] [--force] [--format {json,html,all}]
 
-Crea inventario, proyecto VLF, evidencias, monitorización y un informe de demostración aislados de los datos del usuario.
+Create inventory, VLF project, evidence, monitoring and a demonstration report isolated from user data.
 
 Options:
   -h, --help                Show this help and exit.
-  --output DIRECTORIO       Directorio donde se guardará el proyecto y el informe.
-  --force                   Reemplaza una demo anterior.
-  --format {json,html,all}  Formato del informe exportado.
+  --output DIRECTORIO       Directory for the project and report.
+  --force                   Replace a previous demo.
+  --format {json,html,all}  Exported report format.
 ```
 
 ## `LANIP lanwire`
@@ -1438,16 +1418,15 @@ Options:
 Usage: LANIP lanwire [-h] [--new-window] [--version] [--database ARCHIVO.db] [-tui | --cli] ...
 
 Arguments:
-  ARGUMENTO              Argumentos enviados a LANWIRE, por ejemplo: list.
+  ARGUMENTO              Arguments forwarded to LANWIRE, for example: list.
 
 Options:
   -h, --help             Show this help and exit.
-  --new-window           Abre LANWIRE en una consola independiente incluso si se indican
-                         argumentos.
-  --version              Muestra la versión común de LANWIRE y termina.
-  --database ARCHIVO.db  Selecciona una base física IDF alternativa.
-  -tui, --tui            Abre la interfaz TUI de LANWIRE.
-  --cli                  Abre la consola interactiva de LANWIRE.
+  --new-window           Open LANWIRE in a separate console even when arguments are provided.
+  --version              Show the common LANWIRE version and exit.
+  --database ARCHIVO.db  Select an alternative physical IDF database.
+  -tui, --tui            Open the LANWIRE TUI.
+  --cli                  Open the LANWIRE interactive console.
 ```
 
 ## `LANIP lab`
@@ -1457,17 +1436,17 @@ Usage: LANIP lab [-h] ACCIÓN ...
 
 Arguments:
   ACCIÓN
-    generate  Genera un escenario reproducible.
+    generate  Generate a reproducible scenario.
     list      Lista escenarios.
     status    Muestra el escenario activo.
     stop      Desactiva el proveedor simulado.
-    start     Activa explícitamente un escenario virtual.
-    validate  Valida un escenario.
-    export    Exporta un escenario.
-    import    Importa un escenario JSON.
-    network   Crea manualmente una red virtual.
-    device    Edita dispositivos simulados.
-    evolve    Avanza el reloj y aplica eventos pendientes.
+    start     Explicitly activate a virtual scenario.
+    validate  Validate a scenario.
+    export    Export a scenario.
+    import    Import a JSON scenario.
+    network   Manually create a virtual network.
+    device    Edit simulated devices.
+    evolve    Advance the clock and apply pending events.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1483,18 +1462,18 @@ Usage: LANIP lab generate [-h] [--name NAME] [--cidr CIDR]
 
 Options:
   -h, --help                  Show this help and exit.
-  --name NAME                 Nombre del escenario.
-  --cidr CIDR                 Red IPv4 virtual.
+  --name NAME                 Scenario name.
+  --cidr CIDR                 Virtual IPv4 network.
   --profile {home,office,datacenter,industrial,chaotic}
-                              Perfil de dispositivos.
-  --devices DEVICES           Cantidad de dispositivos.
-  --seed SEED                 Semilla reproducible.
+                              Device profile.
+  --devices DEVICES           Number of devices.
+  --seed SEED                 Reproducible seed.
   --active-percent ACTIVE_PERCENT
-                              Porcentaje activo.
+                              Active percentage.
   --dhcp-percent DHCP_PERCENT
-                              Porcentaje DHCP.
+                              DHCP percentage.
   --type {snapshot,timeline,chaos}
-                              Evolución del escenario.
+                              Scenario evolution.
 ```
 
 ## `LANIP lab list`
@@ -1530,7 +1509,7 @@ Options:
 Usage: LANIP lab start [-h] scenario
 
 Arguments:
-  scenario    Nombre del escenario.
+  scenario    Scenario name.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1542,7 +1521,7 @@ Options:
 Usage: LANIP lab validate [-h] scenario
 
 Arguments:
-  scenario    Nombre del escenario.
+  scenario    Scenario name.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1554,12 +1533,12 @@ Options:
 Usage: LANIP lab export [-h] [--format {json,csv}] [--output OUTPUT] scenario
 
 Arguments:
-  scenario             Nombre del escenario.
+  scenario             Scenario name.
 
 Options:
   -h, --help           Show this help and exit.
-  --format {json,csv}  Formato de salida.
-  --output OUTPUT      Archivo de destino; stdout si se omite.
+  --format {json,csv}  Output format.
+  --output OUTPUT      Destination file; stdout if omitted.
 ```
 
 ## `LANIP lab import`
@@ -1568,7 +1547,7 @@ Options:
 Usage: LANIP lab import [-h] file
 
 Arguments:
-  file        Archivo JSON.
+  file        JSON file.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1581,7 +1560,7 @@ Usage: LANIP lab network [-h] {create} ...
 
 Arguments:
   {create}
-    create    Crea un escenario vacío.
+    create    Create an empty scenario.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1594,8 +1573,8 @@ Usage: LANIP lab network create [-h] --name NAME [--cidr CIDR]
 
 Options:
   -h, --help   Show this help and exit.
-  --name NAME  Nombre del escenario.
-  --cidr CIDR  CIDR virtual.
+  --name NAME  Scenario name.
+  --cidr CIDR  Virtual CIDR.
 ```
 
 ## `LANIP lab device`
@@ -1605,8 +1584,8 @@ Usage: LANIP lab device [-h] {add,delete} ...
 
 Arguments:
   {add,delete}
-    add         Añade un dispositivo.
-    delete      Elimina un dispositivo.
+    add         Add a device.
+    delete      Delete a device.
 
 Options:
   -h, --help    Show this help and exit.
@@ -1619,15 +1598,15 @@ Usage: LANIP lab device add [-h] --ip IP --mac MAC [--alias ALIAS] [--name NAME]
                             scenario
 
 Arguments:
-  scenario       Escenario.
+  scenario       Scenario.
 
 Options:
   -h, --help     Show this help and exit.
-  --ip IP        IPv4 simulada.
-  --mac MAC      MAC simulada.
+  --ip IP        Simulated IPv4.
+  --mac MAC      Simulated MAC.
   --alias ALIAS  Alias.
-  --name NAME    Nombre.
-  --inactive     Lo crea inactivo.
+  --name NAME    Name.
+  --inactive     Create it inactive.
 ```
 
 ## `LANIP lab device delete`
@@ -1636,8 +1615,8 @@ Options:
 Usage: LANIP lab device delete [-h] scenario device
 
 Arguments:
-  scenario    Escenario.
-  device      ID, IP, MAC o alias.
+  scenario    Scenario.
+  device      ID, IP, MAC or alias.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1650,7 +1629,7 @@ Usage: LANIP lab evolve [-h] --seconds SECONDS
 
 Options:
   -h, --help         Show this help and exit.
-  --seconds SECONDS  Segundos virtuales.
+  --seconds SECONDS  Virtual seconds.
 ```
 
 ## `LANWIRE`
@@ -1658,31 +1637,31 @@ Options:
 ```text
 Usage: LANWIRE [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli] COMANDO ...
 
-Gestión física, IDF, cableado y topología de la suite LANCTL.
+Physical management, IDF, wiring and topology for the LANCTL suite.
 
 Arguments:
   COMANDO
-    tui                  Abre la interfaz de pantalla completa.
-    cli                  Abre la consola interactiva.
-    help                 Muestra la ayuda de comandos de LANWIRE.
-    list (ls)            Lista los identificadores.
-    seed                 Carga la topología inicial de pruebas.
-    show                 Muestra un identificador.
-    add                  Genera el siguiente IDF.
-    idf                  Crea identificadores con perfil físico completo.
-    reserve              Reserva un IDF.
-    element              Consulta o actualiza los datos y puertos de un elemento.
-    delete (del)         Elimina un IDF.
-    graph (map)          Muestra la topología física.
-    prefix               Gestiona juegos de letras.
+    tui                  Open the full-screen interface.
+    cli                  Open the interactive console.
+    help                 Show LANWIRE command help.
+    list (ls)            List identifiers.
+    seed                 Load the initial test topology.
+    show                 Show an identifier.
+    add                  Generate the next IDF.
+    idf                  Create identifiers with a complete physical profile.
+    reserve              Reserve an IDF.
+    element              Query or update an element's data and ports.
+    delete (del)         Delete an IDF.
+    graph (map)          Show the physical topology.
+    prefix               Manage letter sets.
 
 Options:
   -h, --help             Show this help and exit.
-  --version              Muestra la versión común de la suite y termina.
-  --database ARCHIVO.db  Base física IDF; por defecto usa physical/idf.db en la raíz compartida.
-  --gui                  Abre la interfaz gráfica de escritorio.
-  -tui, --tui            Abre la interfaz de pantalla completa.
-  --cli, -cli            Abre la consola interactiva de LANWIRE.
+  --version              Show the common suite version and exit.
+  --database ARCHIVO.db  Physical IDF database; defaults to physical/idf.db in the shared root.
+  --gui                  Open the desktop graphical interface.
+  -tui, --tui            Open the full-screen interface.
+  --cli, -cli            Open the LANWIRE interactive console.
 ```
 
 ## `LANWIRE tui`
@@ -1718,7 +1697,7 @@ Options:
 Usage: LANWIRE list [-h] [prefix]
 
 Arguments:
-  prefix      Filtra por prefijo IDF.
+  prefix      Filter by IDF prefix.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1739,7 +1718,7 @@ Options:
 Usage: LANWIRE show [-h] idf
 
 Arguments:
-  idf         Identificador físico que se desea consultar.
+  idf         Physical identifier to query.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1751,12 +1730,12 @@ Options:
 Usage: LANWIRE add [-h] [--digits {2,3,4,5}] [-more N] prefix
 
 Arguments:
-  prefix              Prefijo del tipo de elemento físico.
+  prefix              Physical element type prefix.
 
 Options:
   -h, --help          Show this help and exit.
-  --digits {2,3,4,5}  Cantidad de dígitos del contador (2 a 5).
-  -more N, --more N   Crea N IDF consecutivos.
+  --digits {2,3,4,5}  Number of counter digits (2 to 5).
+  -more, --more N     Create N consecutive IDFs.
 ```
 
 ## `LANWIRE idf`
@@ -1766,13 +1745,13 @@ Usage: LANWIRE idf [-h] {list,types,show,edit,delete,del,new,add} ...
 
 Arguments:
   {list,types,show,edit,delete,del,new,add}
-    list                      Lista prefijos o los IDF de uno de ellos.
-    types                     Lista los perfiles físicos disponibles.
-    show                      Consulta un prefijo o IDF.
-    edit                      Edita un prefijo o los datos de un IDF.
-    delete (del)              Elimina un IDF.
-    new                       Asigna un perfil físico a un prefijo.
-    add                       Crea un IDF del perfil asignado al prefijo.
+    list                      List prefixes or the IDFs of a prefix.
+    types                     List available physical profiles.
+    show                      Query a prefix or IDF.
+    edit                      Edit a prefix or IDF data.
+    delete (del)              Delete an IDF.
+    new                       Assign a physical profile to a prefix.
+    add                       Create an IDF using the assigned prefix profile.
 
 Options:
   -h, --help                  Show this help and exit.
@@ -1784,7 +1763,7 @@ Options:
 Usage: LANWIRE idf list [-h] [prefix]
 
 Arguments:
-  prefix      Prefijo cuyos elementos se listan.
+  prefix      Prefix whose elements are listed.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1805,7 +1784,7 @@ Options:
 Usage: LANWIRE idf show [-h] code
 
 Arguments:
-  code        Prefijo o IDF concreto.
+  code        Specific prefix or IDF.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1819,15 +1798,15 @@ Usage: LANWIRE idf edit [-h] [-type ELEMENT_TYPE] [-name NAME] [-alias ALIAS]
                         code [CAMPO=VALOR ...]
 
 Arguments:
-  code                      Prefijo o IDF concreto.
-  CAMPO=VALOR               Datos del IDF.
+  code                      Specific prefix or IDF.
+  CAMPO=VALOR               IDF data.
 
 Options:
   -h, --help                Show this help and exit.
-  -type ELEMENT_TYPE        Nuevo perfil del prefijo.
-  -name NAME                Nombre del prefijo.
-  -alias ALIAS              Alias del prefijo.
-  -description DESCRIPTION  Descripción del prefijo.
+  -type ELEMENT_TYPE        New prefix profile.
+  -name NAME                Prefix name.
+  -alias ALIAS              Prefix alias.
+  -description DESCRIPTION  Prefix description.
 ```
 
 ## `LANWIRE idf delete`
@@ -1836,7 +1815,7 @@ Options:
 Usage: LANWIRE idf delete [-h] code
 
 Arguments:
-  code        IDF concreto; no elimina prefijos.
+  code        Specific IDF; does not delete prefixes.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1845,20 +1824,20 @@ Options:
 ## `LANWIRE idf new`
 
 ```text
-Usage: LANWIRE idf new [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION] -type
-                       ELEMENT_TYPE
+Usage: LANWIRE idf new [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION]
+                       -type ELEMENT_TYPE
                        code
 
 Arguments:
-  code                        Prefijo para new o IDF exacto para add.
+  code                        Prefix for new or exact IDF for add.
 
 Options:
   -h, --help                  Show this help and exit.
-  -name NAME                  Nombre del registro.
-  -alias ALIAS                Alias opcional.
-  -description DESCRIPTION, -descriptionn DESCRIPTION
-                              Descripción opcional.
-  -type ELEMENT_TYPE          Perfil físico.
+  -name NAME                  Record name.
+  -alias ALIAS                Optional alias.
+  -description, -descriptionn DESCRIPTION
+                              Optional description.
+  -type ELEMENT_TYPE          Physical profile.
 ```
 
 ## `LANWIRE idf add`
@@ -1867,14 +1846,14 @@ Options:
 Usage: LANWIRE idf add [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION] code
 
 Arguments:
-  code                        Prefijo para new o IDF exacto para add.
+  code                        Prefix for new or exact IDF for add.
 
 Options:
   -h, --help                  Show this help and exit.
-  -name NAME                  Nombre del registro.
-  -alias ALIAS                Alias opcional.
-  -description DESCRIPTION, -descriptionn DESCRIPTION
-                              Descripción opcional.
+  -name NAME                  Record name.
+  -alias ALIAS                Optional alias.
+  -description, -descriptionn DESCRIPTION
+                              Optional description.
 ```
 
 ## `LANWIRE reserve`
@@ -1883,8 +1862,8 @@ Options:
 Usage: LANWIRE reserve [-h] idf [CLAVE=VALOR ...]
 
 Arguments:
-  idf          IDF exacto que se desea reservar.
-  CLAVE=VALOR  Datos iniciales opcionales.
+  idf          Exact IDF to reserve.
+  CLAVE=VALOR  Optional initial data.
 
 Options:
   -h, --help   Show this help and exit.
@@ -1896,8 +1875,8 @@ Options:
 Usage: LANWIRE element [-h] idf [CAMPO=VALOR ...]
 
 Arguments:
-  idf          IDF que se desea consultar o actualizar.
-  CAMPO=VALOR  Campos físicos que se desean modificar.
+  idf          IDF to query or update.
+  CAMPO=VALOR  Physical fields to modify.
 
 Options:
   -h, --help   Show this help and exit.
@@ -1909,7 +1888,7 @@ Options:
 Usage: LANWIRE delete [-h] idf
 
 Arguments:
-  idf         IDF que se desea eliminar.
+  idf         IDF to delete.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1931,10 +1910,10 @@ Usage: LANWIRE prefix [-h] {list,ls,show,set,delete,del} ...
 
 Arguments:
   {list,ls,show,set,delete,del}
-    list (ls)                 Lista las definiciones.
-    show                      Muestra una definición.
-    set                       Crea o actualiza una definición.
-    delete (del)              Elimina una definición.
+    list (ls)                 List definitions.
+    show                      Show a definition.
+    set                       Create or update a definition.
+    delete (del)              Delete a definition.
 
 Options:
   -h, --help                  Show this help and exit.
@@ -1955,7 +1934,7 @@ Options:
 Usage: LANWIRE prefix show [-h] letters
 
 Arguments:
-  letters     Letras del prefijo.
+  letters     Prefix letters.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1967,9 +1946,9 @@ Options:
 Usage: LANWIRE prefix set [-h] letters name [description]
 
 Arguments:
-  letters      Letras del prefijo.
-  name         Nombre descriptivo del tipo.
-  description  Descripción opcional.
+  letters      Prefix letters.
+  name         Descriptive type name.
+  description  Optional description.
 
 Options:
   -h, --help   Show this help and exit.
@@ -1981,7 +1960,7 @@ Options:
 Usage: LANWIRE prefix delete [-h] letters
 
 Arguments:
-  letters     Letras del prefijo que se desea eliminar.
+  letters     Prefix letters to delete.
 
 Options:
   -h, --help  Show this help and exit.
@@ -1993,24 +1972,24 @@ Options:
 Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]
                {list,ls,show,dimensions,elements,add-element,element} ...
 
-Visualiza racks y sus equipos.
+Display racks and their equipment.
 
 Arguments:
   {list,ls,show,dimensions,elements,add-element,element}
-    list (ls)                 Lista los racks disponibles.
-    show                      Muestra un rack y sus ocupantes.
-    dimensions                Edita altura y ancho de montaje del rack.
-    elements                  Lista todos los elementos, ubicaciones y bandejas.
-    add-element               Crea un elemento físico compartido.
-    element                   Edita o reubica un elemento sin cambiar sus enlaces.
+    list (ls)                 List available racks.
+    show                      Show a rack and its occupants.
+    dimensions                Edit the rack height and mounting width.
+    elements                  List all elements, locations and trays.
+    add-element               Create a shared physical element.
+    element                   Edit or relocate an element without changing its links.
 
 Options:
   -h, --help                  Show this help and exit.
-  --version                   Muestra la versión común de la suite y termina.
-  --database ARCHIVO.db       Base física IDF compartida.
-  --gui                       Abre la interfaz gráfica de escritorio.
-  -tui, --tui                 Abre la interfaz de pantalla completa.
-  --cli, -cli                 Abre la consola interactiva.
+  --version                   Show the common suite version and exit.
+  --database ARCHIVO.db       Shared physical IDF database.
+  --gui                       Open the desktop graphical interface.
+  -tui, --tui                 Open the full-screen interface.
+  --cli, -cli                 Open the interactive console.
 ```
 
 ## `LANRACK list`
@@ -2028,7 +2007,7 @@ Options:
 Usage: LANRACK show [-h] rack
 
 Arguments:
-  rack        ID o nombre del rack.
+  rack        Rack ID or name.
 
 Options:
   -h, --help  Show this help and exit.
@@ -2040,13 +2019,13 @@ Options:
 Usage: LANRACK dimensions [-h] --units UNITS --width-inches {10,19,21,23} rack
 
 Arguments:
-  rack                        ID del rack.
+  rack                        Rack ID.
 
 Options:
   -h, --help                  Show this help and exit.
-  --units UNITS               Altura de 4 a 52 U.
+  --units UNITS               Height from 4 to 52 U.
   --width-inches {10,19,21,23}
-                              Ancho de montaje en pulgadas.
+                              Mounting width in inches.
 ```
 
 ## `LANRACK elements`
@@ -2065,9 +2044,9 @@ Usage: LANRACK add-element [-h] --kind KIND --prefix PREFIX [--name NAME]
 
 Options:
   -h, --help       Show this help and exit.
-  --kind KIND      Perfil de equipo, panel, outlet o tray.
-  --prefix PREFIX  Prefijo IDF.
-  --name NAME      Nombre del elemento.
+  --kind KIND      Equipment, panel, outlet or tray profile.
+  --prefix PREFIX  IDF prefix.
+  --name NAME      Element name.
 ```
 
 ## `LANRACK element`
@@ -2079,18 +2058,18 @@ Usage: LANRACK element [-h] [--name NAME] [--description DESCRIPTION]
                        element
 
 Arguments:
-  element                     ID del elemento.
+  element                     Element ID.
 
 Options:
   -h, --help                  Show this help and exit.
-  --name NAME                 Nombre del elemento.
-  --description DESCRIPTION   Descripción del elemento.
+  --name NAME                 Element name.
+  --description DESCRIPTION   Element description.
   --placement {inside,environment,independent,hosted}
-                              Clasificación física.
-  --rack RACK                 ID del rack de destino.
-  --unit UNIT                 Unidad inicial del montaje.
-  --height-u HEIGHT_U         Altura ocupada del elemento.
-  --tray TRAY                 Bandeja que aloja al dispositivo.
+                              Physical classification.
+  --rack RACK                 Destination rack ID.
+  --unit UNIT                 Starting mounting unit.
+  --height-u HEIGHT_U         Height occupied by the element.
+  --tray TRAY                 Tray housing the device.
 ```
 
 ## `LANACCESS`
@@ -2099,38 +2078,37 @@ Options:
 Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]
                  [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]
                  [--project-dir PROJECT_DIR] [--gui | -tui | --cli]
-                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
-                 ...
+                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ...
 
-Gestiona credenciales cifradas del entorno LANCTL.
+Manage encrypted credentials in the LANCTL environment.
 
 Arguments:
   {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}
-    remote-setup              Crea la primera cuenta remota del servicio en Windows (requiere
-                              administrador).
-    list (ls)                 Lista metadatos; nunca secretos.
-    show                      Muestra metadatos de una credencial.
-    set                       Crea o actualiza una credencial.
-    delete (del)              Elimina una credencial.
-    credential                Gestión, transporte y recuperación de credenciales.
-    doctor                    Comprueba vínculos y permisos sin cambiar datos.
-    settings                  Muestra o selecciona el almacén compartido.
-    protocol                  Resumen por protocolos del almacén.
-    user                      Usuarios del acceso remoto; no cuentas de Windows.
+    remote-setup              Create the first remote service account on Windows (administrator
+                              required).
+    list (ls)                 List metadata; never secrets.
+    show                      Show credential metadata.
+    set                       Create or update a credential.
+    delete (del)              Delete a credential.
+    credential                Credential management, transport and recovery.
+    doctor                    Check links and permissions without changing data.
+    settings                  Show or select the shared store.
+    protocol                  Store protocol summary.
+    user                      Remote access users; not Windows accounts.
 
 Options:
   -h, --help                  Show this help and exit.
-  --version                   Muestra la versión común de la suite y termina.
-  --database DATABASE         Base de elementos LANCTL.
-  --store STORE               Almacén cifrado de credenciales.
+  --version                   Show the common suite version and exit.
+  --database DATABASE         LANCTL element database.
+  --store STORE               Encrypted credential store.
   --cipher {auto,dpapi,portable}
-                              Proveedor de cifrado; portable pide contraseña.
+                              Encryption provider; portable prompts for a password.
   --scope {program,windows,project}
-                              Ubicación; no cambia permisos ni copia secretos automáticamente.
-  --project-dir PROJECT_DIR   Directorio del proyecto para su almacén independiente.
-  --gui                       Abre la interfaz gráfica de escritorio.
-  -tui, --tui                 Abre la interfaz de pantalla completa.
-  --cli, -cli                 Abre la consola interactiva.
+                              Location; does not change permissions or copy secrets automatically.
+  --project-dir PROJECT_DIR   Project directory for its independent store.
+  --gui                       Open the desktop graphical interface.
+  -tui, --tui                 Open the full-screen interface.
+  --cli, -cli                 Open the interactive console.
 ```
 
 ## `LANACCESS remote-setup`
@@ -2157,7 +2135,7 @@ Options:
 Usage: LANACCESS show [-h] credential_id
 
 Arguments:
-  credential_id  Identificador de la credencial.
+  credential_id  Credential identifier.
 
 Options:
   -h, --help     Show this help and exit.
@@ -2169,13 +2147,12 @@ Options:
 Usage: LANACCESS set [-h] --username USERNAME element protocol
 
 Arguments:
-  element                     IP, MAC, alias o ID del dispositivo.
-  protocol                    Protocolo asociado, por ejemplo ssh.
+  element                     Device IP, MAC, alias or ID.
+  protocol                    Associated protocol, for example ssh.
 
 Options:
   -h, --help                  Show this help and exit.
-  --username USERNAME, -user USERNAME
-                              Usuario remoto.
+  --username, -user USERNAME  Remote username.
 ```
 
 ## `LANACCESS delete`
@@ -2184,7 +2161,7 @@ Options:
 Usage: LANACCESS delete [-h] credential_id
 
 Arguments:
-  credential_id  Identificador de la credencial.
+  credential_id  Credential identifier.
 
 Options:
   -h, --help     Show this help and exit.
@@ -2197,14 +2174,14 @@ Usage: LANACCESS credential [-h] {list,show,delete,set,export,import,copy,recove
 
 Arguments:
   {list,show,delete,set,export,import,copy,recover}
-    list                      Lista metadatos.
-    show                      show por identificador.
-    delete                    delete por identificador.
-    set                       Guarda y vincula una credencial.
-    export                    Transporta un almacén cifrado; nunca texto plano.
-    import                    Transporta un almacén cifrado; nunca texto plano.
-    copy                      Copia a otro almacén y verifica; origen conservado.
-    recover                   Repara referencias ausentes; no elimina ni sobrescribe secretos.
+    list                      List metadata.
+    show                      show by identifier.
+    delete                    delete by identifier.
+    set                       Save and link a credential.
+    export                    Transport an encrypted store; never plaintext.
+    import                    Transport an encrypted store; never plaintext.
+    copy                      Copy to another store and verify; preserve the source.
+    recover                   Repair missing references; do not delete or overwrite secrets.
 
 Options:
   -h, --help                  Show this help and exit.
@@ -2301,7 +2278,7 @@ Usage: LANACCESS credential recover [-h] [--yes]
 
 Options:
   -h, --help  Show this help and exit.
-  --yes       Aplica reparaciones; por defecto sólo diagnostica.
+  --yes       Apply repairs; diagnose only by default.
 ```
 
 ## `LANACCESS doctor`
@@ -2324,7 +2301,7 @@ Arguments:
 
 Options:
   -h, --help        Show this help and exit.
-  --yes             Confirma cambiar el almacén configurado sin mover secretos.
+  --yes             Confirm changing the configured store without moving secrets.
 ```
 
 ## `LANACCESS protocol`
@@ -2340,8 +2317,8 @@ Arguments:
 
 Options:
   -h, --help        Show this help and exit.
-  --port PORT       Puerto 1-65535.
-  --driver DRIVER   Driver del protocolo.
+  --port PORT       Port 1-65535.
+  --driver DRIVER   Protocol driver.
 ```
 
 ## `LANACCESS user`
@@ -2357,7 +2334,7 @@ Arguments:
 Options:
   -h, --help                  Show this help and exit.
   --role {viewer,operator,manager,administrator}
-  --yes                       Confirma eliminación.
+  --yes                       Confirm deletion.
 ```
 
 ## `LANMON`
@@ -2376,7 +2353,7 @@ Usage: LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DUR
               [--limit LIMIT] [--window] [--level LEVEL]
               [words ...]
 
-Monitorización, eventos e incidencias de la suite LANCTL.
+Monitoring, events and incidents for the LANCTL suite.
 
 Arguments:
   words                       logs, events, status, attach, detach, once, session, incidents,
@@ -2384,7 +2361,7 @@ Arguments:
 
 Options:
   -h, --help                  Show this help and exit.
-  --version                   Muestra la versión común de la suite y termina.
+  --version                   Show the common suite version and exit.
   --project PROJECT           Opción operativa del monitor.
   --permanent                 Opción operativa del monitor.
   --duration DURATION         Opción operativa del monitor.
@@ -2402,30 +2379,30 @@ Options:
   --fast                      Opción operativa del monitor.
   --unknown                   Opción operativa del monitor.
   --follow                    Opción operativa del monitor.
-  --sessions SESSIONS         Estado runtime de sesiones.
+  --sessions SESSIONS         Runtime session state.
   --incidents-store INCIDENTS_STORE
-                              Estado runtime de incidencias.
-  --lock LOCK                 Lock singleton del monitor.
-  --monitor-db MONITOR_DB     Repositorio SQLite del monitor.
-  --profiles PROFILES         Perfiles personalizados.
+                              Runtime incident state.
+  --lock LOCK                 Monitor singleton lock.
+  --monitor-db MONITOR_DB     Monitor SQLite repository.
+  --profiles PROFILES         Custom profiles.
   --assignments-store ASSIGNMENTS_STORE
-                              Asignaciones persistentes.
-  --profile PROFILE           Perfil monitor.
+                              Persistent assignments.
+  --profile PROFILE           Monitor profile.
   --priority {low,normal,high,critical}
-                              Prioridad de asignación.
-  --check CHECK               Check ping, arp o port:NN.
-  --presence PRESENCE         Intervalo de presencia.
-  --discovery DISCOVERY       Intervalo de descubrimiento.
-  --services SERVICES         Intervalo de servicios.
-  --deep DEEP                 Intervalo profundo.
-  --workers WORKERS           Workers del perfil.
-  --timeout TIMEOUT           Timeout del perfil.
-  --gui                       Abre la interfaz gráfica de escritorio.
-  --cli, -cli                 Abre la consola de comandos.
-  --tui, -tui                 Abre el visor tabular de eventos.
+                              Assignment priority.
+  --check CHECK               Check ping, arp or port:NN.
+  --presence PRESENCE         Presence interval.
+  --discovery DISCOVERY       Discovery interval.
+  --services SERVICES         Service interval.
+  --deep DEEP                 Deep scan interval.
+  --workers WORKERS           Profile workers.
+  --timeout TIMEOUT           Profile timeout.
+  --gui                       Open the desktop graphical interface.
+  --cli, -cli                 Open the command console.
+  --tui, -tui                 Open the tabular event viewer.
   --source {all,program,project}
-                              Origen para logs.
-  --limit LIMIT               Máximo de eventos (1-1000).
-  --window                    Abre logs en otra terminal y sigue el registro común.
-  --level LEVEL               Nivel mínimo (1-59); conserva líneas sin nivel.
+                              Log source.
+  --limit LIMIT               Maximum number of events (1-1000).
+  --window                    Open logs in another terminal and follow the common log.
+  --level LEVEL               Minimum level (1-59); preserve lines without a level.
 ```

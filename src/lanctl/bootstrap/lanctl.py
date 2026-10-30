@@ -13,13 +13,14 @@ from lanctl.core.parser import (
     normalize_help_arguments,
 )
 from lanctl.core.session import coordinated_launcher
+from lanctl.shared.i18n import initialize_language, t
 
 _LAUNCHERS = {
-    "lanip": ("ip", "Inventario lógico, descubrimiento, IP, MAC y servicios."),
-    "lanwire": ("wire", "Cableado, puertos, paneles y topología física."),
-    "lanrack": ("rack", "Salas técnicas, racks, unidades U y equipos."),
-    "lanaccess": ("access", "Usuarios, credenciales y accesos remotos."),
-    "lanmon": ("monitor", "Monitorización, eventos, incidencias e historial."),
+    "lanip": ("ip", "LANCTL.UI.TEXT.LOGICAL_INVENTORY_DISCOVERY_IP_MAC_AND_SERVICES"),
+    "lanwire": ("wire", "LANCTL.UI.TEXT.WIRING_PORTS_PANELS_AND_PHYSICAL_TOPOLOGY"),
+    "lanrack": ("rack", "LANCTL.UI.TEXT.TECHNICAL_ROOMS_RACKS_RACK_UNITS_AND_EQUIPMENT"),
+    "lanaccess": ("access", "LANCTL.UI.TEXT.USERS_CREDENTIALS_AND_REMOTE_ACCESS"),
+    "lanmon": ("monitor", "LANCTL.UI.TEXT.MONITORING_EVENTS_INCIDENTS_AND_HISTORY"),
 }
 
 
@@ -34,63 +35,87 @@ def configure_utf8_stdio() -> None:
 def build_parser() -> LANCTLArgumentParser:
     parser = LANCTLArgumentParser(
         prog="LANCTL",
-        description="Orquestador raíz de las aplicaciones de la suite LANCTL.",
+        description=t("LANCTL.UI.TEXT.ROOT_ORCHESTRATOR_FOR_THE_LANCTL_SUITE_APPLICATIONS"),
     )
     parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
-        help="Muestra la versión común de la suite y termina.",
+        help=t("LANCTL.UI.TEXT.SHOW_THE_COMMON_SUITE_VERSION_AND_EXIT"),
     )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola principal.")
-    mode.add_argument("-tui", "--tui", action="store_true", help="Abre el TUI principal.")
-    mode.add_argument("--gui", action="store_true", help="Abre el centro gráfico de LANCTL.")
+    mode.add_argument(
+        "--cli", "-cli", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_MAIN_CONSOLE")
+    )
+    mode.add_argument(
+        "-tui", "--tui", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_MAIN_TUI")
+    )
+    mode.add_argument(
+        "--gui", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_LANCTL_GRAPHICAL_HUB")
+    )
     links = parser.add_mutually_exclusive_group()
-    for key, label in (("web", "la web"), ("github", "GitHub"), ("reference", "la referencia")):
+    for key, label in (
+        ("web", t("LANCTL.SUITE.LINK.WEBSITE")),
+        ("github", "GitHub"),
+        ("reference", t("LANCTL.SUITE.LINK.REFERENCE")),
+    ):
         links.add_argument(
-            f"-{key}", f"--{key}", action="store_true", help=f"Muestra y abre {label} oficial."
+            f"-{key}",
+            f"--{key}",
+            action="store_true",
+            help=t("LANCTL.SUITE.LINK.HELP", label=label),
         )
     parser.add_argument(
         "--admin",
         action="store_true",
-        help="Solicita UAC explícitamente para un launcher instalado en Windows.",
+        help=t("LANCTL.UI.TEXT.EXPLICITLY_REQUEST_UAC_FOR_AN_INSTALLED_LAUNCHER_ON_WINDOWS"),
     )
     launchers = parser.add_subparsers(dest="launcher", metavar="LAUNCHER")
     for name, (alias, description) in _LAUNCHERS.items():
-        child = launchers.add_parser(name, aliases=[alias], help=description, add_help=False)
+        child = launchers.add_parser(name, aliases=[alias], help=t(description), add_help=False)
         child.add_argument("arguments", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
     for name in ("plugin", "settings", "language", "backend"):
         child = launchers.add_parser(
-            name, help="Administración compartida de la suite.", add_help=False
+            name, help=t("LANCTL.UI.TEXT.SHARED_SUITE_ADMINISTRATION"), add_help=False
         )
         child.add_argument("arguments", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
     setup = launchers.add_parser(
         "setup-defaults",
-        help="Inicializa preferencias de instalación sin sobrescribir las existentes.",
+        help=t(
+            "LANCTL.UI.TEXT.INITIALIZE_INSTALLATION_PREFERENCES_WITHOUT_OVERWRITING_EXISTING_ONES"
+        ),
     )
     setup.add_argument(
         "--theme",
         choices=("graphite", "midnight", "forest", "violet", "light"),
         default="graphite",
-        help="Tema inicial.",
+        help=t("LANCTL.UI.TEXT.INITIAL_THEME"),
     )
     setup.add_argument(
         "--plugins",
         default="all",
-        help="all, none o IDs de plugins opcionales separados por comas.",
+        help=t("LANCTL.UI.TEXT.ALL_NONE_OR_COMMA_SEPARATED_OPTIONAL_PLUGIN_IDS"),
+    )
+    setup.add_argument(
+        "--language", help=t("LANCTL.UI.TEXT.LANGUAGE_CODE_INCLUDED_IN_THIS_DISTRIBUTION")
+    )
+    setup.add_argument(
+        "--change-language",
+        action="store_true",
+        help=t("LANCTL.UI.TEXT.EXPLICITLY_CHANGE_THE_LANGUAGE_OF_AN_EXISTING_INSTALLATION"),
     )
     completions = launchers.add_parser(
-        "completions", help="Registra o retira el completado Clink del usuario actual."
+        "completions",
+        help=t("LANCTL.UI.TEXT.REGISTER_OR_REMOVE_CLINK_COMPLETION_FOR_THE_CURRENT_USER"),
     )
     completions.add_argument("action", choices=("install", "uninstall"))
     post_install = launchers.add_parser(
-        "post-install", help="Abre LANIP con el usuario normal al finalizar la instalación."
+        "post-install", help=t("LANCTL.UI.TEXT.OPEN_LANIP_AS_THE_NORMAL_USER_AFTER_INSTALLATION")
     )
     post_install.add_argument(
         "--first-scan",
         action="store_true",
-        help="Prepara confirmación del rango; no inicia sondas.",
+        help=t("LANCTL.UI.TEXT.PREPARE_RANGE_CONFIRMATION_DO_NOT_START_PROBES"),
     )
     return parser
 
@@ -118,6 +143,7 @@ def _run_launcher(name: str, arguments: list[str]) -> int:
 
 @coordinated_launcher("lanctl")
 def main(argv: list[str] | None = None) -> int:
+    initialize_language()
     configure_utf8_stdio()
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
     if arguments and arguments[0] == "backend":
@@ -148,7 +174,12 @@ def main(argv: list[str] | None = None) -> int:
             if args.launcher == "setup-defaults":
                 from lanctl.core.installation import initialize_defaults
 
-                result = initialize_defaults(theme=args.theme, plugins=args.plugins)
+                result = initialize_defaults(
+                    theme=args.theme,
+                    plugins=args.plugins,
+                    language=args.language,
+                    change_language=args.change_language,
+                )
             elif args.launcher == "completions":
                 from lanctl.core.clink_integration import configure_clink
 

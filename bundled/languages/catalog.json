@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "languages": [
+    {
+      "code": "en",
+      "nativeName": "English",
+      "file": "english.lang",
+      "sha256": "72366a5676bfecc9a44b51b7a57cb2e0804e2bf259e6e0d6dc79d8d31efcd310"
+    },
+    {
+      "code": "es",
+      "nativeName": "Español",
+      "file": "spanish.lang",
+      "sha256": "5c0e26a1b9aadc25569c59b414428bc34480449c88972b2a5d57f345f39596bf"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ _LOCK = Lock()
 
 def write_log(message: str, directory: Path | None = None) -> Path:
     """Añade una línea al log operativo diario del programa."""
+    message = getattr(message, "canonical_text", message)
     now = datetime.now(timezone.utc).astimezone()
     if directory is None:
         from lanctl.core.config import load_config
@@ -31,6 +32,7 @@ def write_log(message: str, directory: Path | None = None) -> Path:
 
 def write_database_log(message: str, directory: Path | None = None) -> Path | None:
     """Añade una entrada al VLF activo o al directorio explícito de pruebas."""
+    message = getattr(message, "canonical_text", message)
     now = datetime.now(timezone.utc).astimezone()
     if directory is None:
         from lanctl.core.config import load_config

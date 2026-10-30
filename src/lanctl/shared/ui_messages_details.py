@@ -1,0 +1,223 @@
+"""Reviewed dynamic presentation templates. Values preserve their original formatting."""
+
+DETAIL_MESSAGES = {
+    "LANCTL.UI.DETAIL.SEARCH_VALUE_VALUE_VALUE_VALUE_FOUND_VALUE_VALUE": (
+        "Search:    [{value0}] {value1} {value2}/{value3}  [found: {value4}/{value5}]",
+        "Search:    [{value0}] {value1} {value2}/{value3}  [founds: {value4}/{value5}]",
+    ),
+    "LANCTL.UI.DETAIL.REVIEW_VALUE": ("  Review: {value0}", "  Revisar: {value0}"),
+    "LANCTL.UI.DETAIL.ERROR_VALUE": ("Error: {value0}", "Error: {value0}"),
+    "LANCTL.UI.DETAIL.SAVED_VALUE": ("Saved: {value0}", "Guardada: {value0}"),
+    "LANCTL.UI.DETAIL.LANACCESS_VALUE_CREDENTIALS": (
+        "LANACCESS {value0} · Credentials",
+        "LANACCESS {value0} · Credenciales",
+    ),
+    "LANCTL.UI.DETAIL.TR_064_TERMINAL_FOR_VALUE_READ_ONLY": (
+        "TR-064 terminal for {value0} (read-only)",
+        "Terminal TR-064 de {value0} (solo lectura)",
+    ),
+    "LANCTL.UI.DETAIL.SSH_TERMINAL_OPENED_FOR_VALUE_VALUE": (
+        "SSH terminal opened for {value0}:{value1}",
+        "Terminal SSH abierta para {value0}:{value1}",
+    ),
+    "LANCTL.UI.DETAIL.FORMAT_VALUE": ("   Format: {value0}", "   Formato: {value0}"),
+    "LANCTL.UI.DETAIL.NAME_VALUE": ("Name         : {value0}", "Nombre       : {value0}"),
+    "LANCTL.UI.DETAIL.STATE_VALUE": ("State        : {value0}", "Estado       : {value0}"),
+    "LANCTL.UI.DETAIL.AUTHOR_VALUE": ("Author       : {value0}", "Autor        : {value0}"),
+    "LANCTL.UI.DETAIL.RUNTIME_VALUE": ("Runtime      : {value0}", "Runtime      : {value0}"),
+    "LANCTL.UI.DETAIL.CAPABILITIES_VALUE": ("Capabilities : {value0}", "Capacidades  : {value0}"),
+    "LANCTL.UI.DETAIL.PERMISSIONS_VALUE": ("Permissions  : {value0}", "Permisos     : {value0}"),
+    "LANCTL.UI.DETAIL.GRANTED_VALUE": ("Granted      : {value0}", "Concedidos   : {value0}"),
+    "LANCTL.UI.DETAIL.PATH_VALUE": ("Path         : {value0}", "Ruta         : {value0}"),
+    "LANCTL.UI.DETAIL.ERROR_VALUE_33EFAEFA": ("Error        : {value0}", "Error        : {value0}"),
+    "LANCTL.UI.DETAIL.ACTIVE_VALUE": ("Active       : {value0}", "Activo       : {value0}"),
+    "LANCTL.UI.DETAIL.COMPANY_VALUE": ("Company      : {value0}", "Empresa      : {value0}"),
+    "LANCTL.UI.DETAIL.RESPONSIBLE_VALUE": ("Responsible  : {value0}", "Responsable  : {value0}"),
+    "LANCTL.UI.DETAIL.UPDATED_VALUE": ("Updated      : {value0}", "Actualizado  : {value0}"),
+    "LANCTL.UI.DETAIL.DEVICES_VALUE": ("Devices      : {value0}", "Dispositivos : {value0}"),
+    "LANCTL.UI.DETAIL.GROUPS_VALUE": ("Groups       : {value0}", "Grupos       : {value0}"),
+    "LANCTL.UI.DETAIL.PROJECT_VALUE": ("Project: {value0}", "Proyecto: {value0}"),
+    "LANCTL.UI.DETAIL.PATH_VALUE_D419AD11": ("Path: {value0}", "Ruta: {value0}"),
+    "LANCTL.UI.DETAIL.LINES_VALUE_VALUE_VALUE": (
+        "Lines {value0}-{value1}/{value2}",
+        "Lineas {value0}-{value1}/{value2}",
+    ),
+    "LANCTL.UI.DETAIL.TYPE_VALUE": ("Type: {value0}", "Tipo: {value0}"),
+    "LANCTL.UI.DETAIL.DATE_VALUE": ("Date: {value0}", "Fecha: {value0}"),
+    "LANCTL.UI.DETAIL.ELEMENT_VALUE": ("Element: {value0}", "Elemento: {value0}"),
+    "LANCTL.UI.DETAIL.SOURCE_VALUE": ("Source: {value0}", "Source: {value0}"),
+    "LANCTL.UI.DETAIL.RESULT_VALUE": ("Result: {value0}", "Resultado: {value0}"),
+    "LANCTL.UI.DETAIL.SUMMARY_VALUE": ("Summary: {value0}", "Resumen: {value0}"),
+    "LANCTL.UI.DETAIL.STATE_VALUE_8CDCFAEE": ("  State: {value0}", "  Estado: {value0}"),
+    "LANCTL.UI.DETAIL.MATCH_VALUE": ("  Match: {value0}", "  Coincidencia: {value0}"),
+    "LANCTL.UI.DETAIL.ALIAS_VALUE": ("  Alias: {value0}", "  Alias: {value0}"),
+    "LANCTL.UI.DETAIL.NAME_VALUE_7ED60808": ("  Name: {value0}", "  Nombre: {value0}"),
+    "LANCTL.UI.DETAIL.DESCRIPTION_VALUE": ("  Description: {value0}", "  Descripcion: {value0}"),
+    "LANCTL.UI.DETAIL.MANUFACTURER_VALUE": ("  Manufacturer: {value0}", "  Fabricante: {value0}"),
+    "LANCTL.UI.DETAIL.CONFIDENCE_VALUE": ("  Confidence: {value0}", "  Confianza: {value0}"),
+    "LANCTL.UI.DETAIL.EVIDENCE_VALUE": ("  Evidence: {value0}", "  Evidencias: {value0}"),
+    "LANCTL.UI.DETAIL.GROUPS_VALUE_B8E12681": ("  Groups: {value0}", "  Grupos: {value0}"),
+    "LANCTL.UI.DETAIL.LATENCY_VALUE_MS": ("  Latency: {value0} ms", "  Latencia: {value0} ms"),
+    "LANCTL.UI.DETAIL.PROTOCOLS_VALUE": ("  Protocols: {value0}", "  Protocolos: {value0}"),
+    "LANCTL.UI.DETAIL.TYPE_ELIMINAR_TO_DELETE_VALUE": (
+        "Type ELIMINAR to delete {value0}:",
+        "Escribe ELIMINAR para borrar {value0}:",
+    ),
+    "LANCTL.UI.DETAIL.VALUEPRESS_F5_TO_REFRESH_VALUE": (
+        "{value0}Press F5 to refresh.{value1}",
+        "{value0}Pulsa F5 para actualizar.{value1}",
+    ),
+    "LANCTL.UI.DETAIL.ORIGIN_VALUE": ("Origin: {value0}", "Origen: {value0}"),
+    "LANCTL.UI.DETAIL.MESSAGE_VALUE": ("Message: {value0}", "Mensaje: {value0}"),
+    "LANCTL.UI.DETAIL.SELECTED_VALUE": ("Selected: {value0}", "Seleccionado: {value0}"),
+    "LANCTL.UI.DETAIL.SHOW_VALUE": ("Show {value0}", "Mostrar {value0}"),
+    "LANCTL.UI.DETAIL.LEVEL_VALUE": ("Level: {value0}", "Nivel: {value0}"),
+    "LANCTL.UI.DETAIL.SOURCE_VALUE_VALUE": (
+        "Source: {value0}:{value1}",
+        "Fuente: {value0}:{value1}",
+    ),
+    "LANCTL.UI.DETAIL.PROFILE_VALUE": ("Profile: {value0}", "Perfil: {value0}"),
+    "LANCTL.UI.DETAIL.MODE_VALUE": ("Mode: {value0}", "Modo: {value0}"),
+    "LANCTL.UI.DETAIL.WARNING_VALUE": ("Warning: {value0}", "Advertencia: {value0}"),
+    "LANCTL.UI.DETAIL.SIGNATURE_VALUE": ("Signature: {value0}", "Firma: {value0}"),
+    "LANCTL.UI.DETAIL.FINGERPRINT_VALUE": (" Fingerprint: {value0}", " Huella : {value0}"),
+    "LANCTL.UI.DETAIL.SIGNATURE_VALUE_B2E0957F": (" Signature  : {value0}", " Firma   : {value0}"),
+    "LANCTL.UI.DETAIL.CLOSE_GUI_WHEN_OPENING_A_LAUNCHER_VALUE": (
+        "Close GUI when opening a launcher: {value0}",
+        "Cerrar GUI al abrir launcher: {value0}",
+    ),
+    "LANCTL.UI.DETAIL.SAVEMODE_VALUE": ("SaveMode: {value0}", "SaveMode: {value0}"),
+    "LANCTL.UI.DETAIL.RANGE_VALUE": ("Range: {value0}", "Rango: {value0}"),
+    "LANCTL.UI.DETAIL.DHCP_RANGE_VALUE": ("DHCP range: {value0}", "Rango DHCP: {value0}"),
+    "LANCTL.UI.DETAIL.CREDENTIALS_VALUE": ("Credentials: {value0}", "Credenciales: {value0}"),
+    "LANCTL.UI.DETAIL.DISCOVERY_VALUE": ("Discovery: {value0}", "Descubrimiento: {value0}"),
+    "LANCTL.UI.DETAIL.PROGRESS_VALUE": ("Progress: {value0}", "Progreso: {value0}"),
+    "LANCTL.UI.DETAIL.WORKERS_VALUE": ("Workers: {value0}", "Workers: {value0}"),
+    "LANCTL.UI.DETAIL.TIMEOUT_VALUE": ("Timeout: {value0}", "Timeout: {value0}"),
+    "LANCTL.UI.DETAIL.FILE_VALUE": ("File: {value0}", "Archivo: {value0}"),
+    "LANCTL.UI.DETAIL.GROUP_VALUE": ("Group {value0}", "Grupo {value0}"),
+    "LANCTL.UI.DETAIL.FILE_VALUE_539A9E46": (" File    : {value0}", " Archivo : {value0}"),
+    "LANCTL.UI.DETAIL.SAVEMODE_VALUE_603C21DC": (" SaveMode: {value0}", " SaveMode: {value0}"),
+    "LANCTL.UI.DETAIL.BACKUP_VALUE": (" Backup  : {value0}", " Backup  : {value0}"),
+    "LANCTL.UI.DETAIL.VALUE_SAVEMODE_VALUE": (
+        "{value0} | SaveMode {value1}",
+        "{value0} | SaveMode {value1}",
+    ),
+    "LANCTL.UI.DETAIL.INTERVAL_VALUE_MINUTES": (
+        " Interval: {value0} minutes",
+        " Intervalo: {value0} minutos",
+    ),
+    "LANCTL.UI.DETAIL.FORMAT_VALUE_VALUE_FILES": (
+        "Format {value0} | {value1} files",
+        "Formato {value0} | {value1} archivos",
+    ),
+    "LANCTL.UI.DETAIL.LAN_NETWORK_VALUE": ("LAN network: {value0}", "Red LAN: {value0}"),
+    "LANCTL.UI.DETAIL.GATEWAY_VALUE": ("Gateway: {value0}", "Gateway: {value0}"),
+    "LANCTL.UI.DETAIL.STATE_VALUE_2921817C": (
+        "  State        : {value0}",
+        "  Estado       : {value0}",
+    ),
+    "LANCTL.UI.DETAIL.LOOKUP_METHOD_VALUE": (
+        "  Lookup method: {value0}",
+        "  Buscador     : {value0}",
+    ),
+    "LANCTL.UI.DETAIL.LATENCY_VALUE": ("  Latency      : {value0}", "  Latencia     : {value0}"),
+    "LANCTL.UI.DETAIL.MAC_IDENTITY_VALUE_EXPECTED_VALUE": (
+        "  MAC identity : {value0} | expected {value1}",
+        "  Identidad MAC: {value0} | esperada {value1}",
+    ),
+    "LANCTL.UI.DETAIL.DEVICE_VALUE_VALUE": (
+        "  Device      : {value0} ({value1})",
+        "  Dispositivo : {value0} ({value1})",
+    ),
+    "LANCTL.UI.DETAIL.RISK_VALUE": ("  Risk        : {value0}", "  Riesgo      : {value0}"),
+    "LANCTL.UI.DETAIL.TRANSPORT_VALUE": ("  Transport   : {value0}", "  Transporte  : {value0}"),
+    "LANCTL.UI.DETAIL.TARGET_VALUE_VALUE": (
+        "  Target      : {value0} -> {value1}",
+        "  Objetivo    : {value0} -> {value1}",
+    ),
+    "LANCTL.UI.DETAIL.PROFILE_VALUE_VALUE": (
+        "\nProfile: {value0} | {value1}",
+        "\nPerfil: {value0} | {value1}",
+    ),
+    "LANCTL.UI.DETAIL.MATCH_VALUE_67CFE32A": (
+        "  Match        : {value0}",
+        "  Coincidencia  : {value0}",
+    ),
+    "LANCTL.UI.DETAIL.ALIAS_NAME_VALUE_VALUE": (
+        "  Alias / name : {value0} / {value1}",
+        "  Alias / nombre: {value0} / {value1}",
+    ),
+    "LANCTL.UI.DETAIL.MANUFACTURER_VALUE_77F5D6AD": (
+        "  Manufacturer : {value0}",
+        "  Fabricante    : {value0}",
+    ),
+    "LANCTL.UI.DETAIL.HOSTNAME_VALUE": ("  Hostname     : {value0}", "  Hostname      : {value0}"),
+    "LANCTL.UI.DETAIL.GROUPS_VALUE_CBB70DC6": (
+        "  Groups       : {value0}",
+        "  Grupos        : {value0}",
+    ),
+    "LANCTL.UI.DETAIL.LATENCY_TTL_VALUE_MS_VALUE": (
+        "  Latency / TTL: {value0} ms / {value1}",
+        "  Latencia / TTL: {value0} ms / {value1}",
+    ),
+    "LANCTL.UI.DETAIL.CONFIDENCE_VALUE_584F7720": (
+        "  Confidence    : {value0}",
+        "  Confianza      : {value0}",
+    ),
+    "LANCTL.UI.DETAIL.EVIDENCE_VALUE_D2013F98": (
+        "  Evidence      : {value0}",
+        "  Evidencias     : {value0}",
+    ),
+    "LANCTL.UI.DETAIL.WAKE_ON_LAN_VALUE": ("Wake-on-LAN: {value0}", "Wake-on-LAN: {value0}"),
+    "LANCTL.UI.DETAIL.FILE_VALUE_2A0C89A4": (" File: {value0}", " Archivo: {value0}"),
+    "LANCTL.UI.DETAIL.CREATED_VALUE_VALUE": (
+        "Created {value0} ({value1})",
+        "Creado {value0} ({value1})",
+    ),
+    "LANCTL.UI.DETAIL.UPDATED_VALUE_VALUE": (
+        "Updated {value0}: {value1}",
+        "Actualizado {value0}: {value1}",
+    ),
+    "LANCTL.UI.DETAIL.CREATED_VALUE": ("Created {value0}", "Creado {value0}"),
+    "LANCTL.UI.DETAIL.CREATED_VALUE_BF79A28C": ("Created {value0}", "Creados {value0}"),
+    "LANCTL.UI.DETAIL.RESERVED_VALUE": ("Reserved {value0}", "Reservado {value0}"),
+    "LANCTL.UI.DETAIL.DELETED_VALUE": ("Deleted {value0}", "Eliminado {value0}"),
+    "LANCTL.UI.DETAIL.ERROR_VALUE_VALUE": (
+        "Error [{value0}]: {value1}",
+        "Error [{value0}]: {value1}",
+    ),
+    "LANCTL.UI.DETAIL.SEARCH_IDF_VALUE": ("Search IDF: {value0}▌\n\n", "Buscar IDF: {value0}▌\n"),
+    "LANCTL.UI.DETAIL.FILTER_IDF_VALUE": ("Filter IDF: {value0}▌\n\n", "Filtrar IDF: {value0}▌\n"),
+    "LANCTL.UI.DETAIL.MOVED_VALUE_VALUE_VALUE_VALUE_VALUE": (
+        "Moved {value0}: {value1}.{value2} -> {value3}.{value4}",
+        "Movido {value0}: {value1}.{value2} -> {value3}.{value4}",
+    ),
+    "LANCTL.UI.DETAIL.LANWIRE_TUI_VALUE_LISTELEMENT_VALUE_VALUE_VALUE_VALUE": (
+        "LANWIRE TUI {value0} ─ ListElement [{value1} · {value2}] {value3}/{value4}",
+        "LANWIRE TUI {value0} ─ ListElement [{value1} · {value2}] {value3}/{value4}",
+    ),
+    "LANCTL.UI.DETAIL.UPDATED_VALUE_VALUE_VALUE": (
+        "Updated {value0}.{value1}: {value2}",
+        "Actualizado {value0}.{value1}: {value2}",
+    ),
+    "LANCTL.UI.DETAIL.ERROR_VALUE_EDITING_VALUE_VALUE": (
+        "Error [{value0}] editing {value1}: {value2}",
+        "Error [{value0}] editando {value1}: {value2}",
+    ),
+    "LANCTL.UI.DETAIL.ERROR_VALUE_DELETING_VALUE_VALUE": (
+        "Error [{value0}] deleting {value1}: {value2}",
+        "Error [{value0}] eliminando {value1}: {value2}",
+    ),
+    "LANCTL.UI.DETAIL.ERROR_VALUE_EDITING_PORT_VALUE": (
+        "Error [{value0}] editing port: {value1}",
+        "Error [{value0}] editando puerto: {value1}",
+    ),
+}
+
+for _key, (_english, _spanish) in tuple(DETAIL_MESSAGES.items()):
+    if _spanish.startswith("Search:    ["):
+        DETAIL_MESSAGES[_key] = (
+            _english,
+            "Buscar:    [{value0}] {value1} {value2}/{value3}  [encontrados: {value4}/{value5}]",
+        )

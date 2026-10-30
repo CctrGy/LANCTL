@@ -10,41 +10,48 @@ from lanctl.core.console import ok
 from lanctl.core.plugins.manager import get_plugin_manager
 from lanctl.core.plugins.package import build_package, verify_package
 from lanctl.core.resources import bundled_path
+from lanctl.shared.i18n import t
 
 
 def register_plugin_command(commands: argparse._SubParsersAction) -> None:
     command = commands.add_parser(
         "plugin",
         aliases=["plugins", "addon", "addons"],
-        help="Gestiona complementos unificados LANCTL .lcp.",
+        help=t("LANCTL.UI.HELP.MANAGE_UNIFIED_LANCTL_LCP_PLUGINS"),
     )
     actions = command.add_subparsers(dest="plugin_action", metavar="ACCIÓN", required=True)
-    actions.add_parser("list", help="Lista complementos instalados.").set_defaults(
+    actions.add_parser("list", help=t("LANCTL.UI.HELP.LIST_INSTALLED_PLUGINS")).set_defaults(
         plugin_handler=_list
     )
-    actions.add_parser("catalog", help="Muestra el catálogo oficial incluido.").set_defaults(
-        plugin_handler=_catalog
-    )
-    info = actions.add_parser("info", help="Muestra manifiesto, permisos y estado.")
-    info.add_argument("plugin_id", help="Identificador estable del complemento.")
+    actions.add_parser(
+        "catalog", help=t("LANCTL.UI.HELP.SHOW_THE_BUNDLED_OFFICIAL_CATALOG")
+    ).set_defaults(plugin_handler=_catalog)
+    info = actions.add_parser("info", help=t("LANCTL.UI.HELP.SHOW_MANIFEST_PERMISSIONS_AND_STATE"))
+    info.add_argument("plugin_id", help=t("LANCTL.UI.HELP.STABLE_PLUGIN_IDENTIFIER"))
     info.set_defaults(plugin_handler=_info)
-    install = actions.add_parser("install", help="Verifica e instala un paquete .lcp desactivado.")
-    install.add_argument("file", help="Archivo de paquete con extensión .lcp.")
+    install = actions.add_parser(
+        "install", help=t("LANCTL.UI.HELP.VERIFY_AND_INSTALL_A_DISABLED_LCP_PACKAGE")
+    )
+    install.add_argument("file", help=t("LANCTL.UI.HELP.PACKAGE_FILE_WITH_THE_LCP_EXTENSION"))
     install.set_defaults(plugin_handler=_install)
-    enable = actions.add_parser("enable", help="Concede permisos y activa un complemento.")
-    enable.add_argument("plugin_id", help="Identificador del complemento instalado.")
+    enable = actions.add_parser(
+        "enable", help=t("LANCTL.UI.HELP.GRANT_PERMISSIONS_AND_ENABLE_A_PLUGIN")
+    )
+    enable.add_argument("plugin_id", help=t("LANCTL.UI.HELP.INSTALLED_PLUGIN_IDENTIFIER"))
     enable.add_argument(
         "--grant",
         nargs="*",
         default=None,
         metavar="PERMISO",
-        help="Permisos concretos que se conceden.",
+        help=t("LANCTL.UI.HELP.SPECIFIC_PERMISSIONS_TO_GRANT"),
     )
     enable.add_argument(
-        "--grant-all", action="store_true", help="Concede todos los permisos solicitados."
+        "--grant-all", action="store_true", help=t("LANCTL.UI.HELP.GRANT_ALL_REQUESTED_PERMISSIONS")
     )
     enable.add_argument(
-        "--trust", action="store_true", help="Autoriza código trusted dentro del proceso."
+        "--trust",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.AUTHORIZE_TRUSTED_CODE_WITHIN_THE_PROCESS"),
     )
     enable.set_defaults(plugin_handler=_enable)
     for name, handler, help_text in (
@@ -53,52 +60,69 @@ def register_plugin_command(commands: argparse._SubParsersAction) -> None:
         ("uninstall", _uninstall, "Desinstala el complemento."),
     ):
         item = actions.add_parser(name, help=help_text)
-        item.add_argument("plugin_id", help="Identificador del complemento instalado.")
+        item.add_argument("plugin_id", help=t("LANCTL.UI.HELP.INSTALLED_PLUGIN_IDENTIFIER"))
         item.set_defaults(plugin_handler=handler)
-    verify = actions.add_parser("verify", help="Verifica un .lcp o plugin instalado.")
-    verify.add_argument("target", help="Identificador instalado o ruta de un archivo .lcp.")
+    verify = actions.add_parser("verify", help=t("LANCTL.UI.HELP.VERIFY_A_LCP_OR_INSTALLED_PLUGIN"))
+    verify.add_argument(
+        "target", help=t("LANCTL.UI.HELP.INSTALLED_IDENTIFIER_OR_PATH_TO_A_LCP_FILE")
+    )
     verify.set_defaults(plugin_handler=_verify)
     permissions = actions.add_parser(
-        "permissions", help="Muestra permisos solicitados y concedidos."
+        "permissions", help=t("LANCTL.UI.HELP.SHOW_REQUESTED_AND_GRANTED_PERMISSIONS")
     )
-    permissions.add_argument("plugin_id", help="Identificador del complemento instalado.")
+    permissions.add_argument("plugin_id", help=t("LANCTL.UI.HELP.INSTALLED_PLUGIN_IDENTIFIER"))
     permissions.set_defaults(plugin_handler=_permissions)
-    revoke = actions.add_parser("revoke", help="Revoca permisos y confianza de un complemento.")
-    revoke.add_argument("plugin_id", help="Identificador del complemento instalado.")
+    revoke = actions.add_parser(
+        "revoke", help=t("LANCTL.UI.HELP.REVOKE_A_PLUGIN_S_PERMISSIONS_AND_TRUST")
+    )
+    revoke.add_argument("plugin_id", help=t("LANCTL.UI.HELP.INSTALLED_PLUGIN_IDENTIFIER"))
     revoke.add_argument(
-        "permissions", nargs="*", metavar="PERMISO", help="Vacío revoca todos los permisos."
+        "permissions",
+        nargs="*",
+        metavar="PERMISO",
+        help=t("LANCTL.UI.HELP.LEAVE_EMPTY_TO_REVOKE_ALL_PERMISSIONS"),
     )
     revoke.set_defaults(plugin_handler=_revoke)
     publisher = actions.add_parser(
-        "publisher", help="Gestiona huellas Ed25519 de editores LCP confiables."
+        "publisher", help=t("LANCTL.UI.HELP.MANAGE_ED25519_FINGERPRINTS_OF_TRUSTED_LCP_PUBLISHERS")
     )
     publisher_actions = publisher.add_subparsers(
         dest="publisher_action", metavar="ACCIÓN", required=True
     )
-    publisher_actions.add_parser("list", help="Lista editores confiables.").set_defaults(
-        plugin_handler=_publisher_list
-    )
+    publisher_actions.add_parser(
+        "list", help=t("LANCTL.UI.HELP.LIST_TRUSTED_PUBLISHERS")
+    ).set_defaults(plugin_handler=_publisher_list)
     trust_publisher = publisher_actions.add_parser(
-        "trust", help="Confía en la firma que contiene un paquete LCP."
+        "trust", help=t("LANCTL.UI.HELP.TRUST_THE_SIGNATURE_CONTAINED_IN_AN_LCP_PACKAGE")
     )
-    trust_publisher.add_argument("file", help="Paquete .lcp firmado y verificado.")
-    trust_publisher.add_argument("--name", default="", help="Nombre descriptivo del editor.")
+    trust_publisher.add_argument("file", help=t("LANCTL.UI.HELP.SIGNED_AND_VERIFIED_LCP_PACKAGE"))
+    trust_publisher.add_argument(
+        "--name", default="", help=t("LANCTL.UI.HELP.DESCRIPTIVE_PUBLISHER_NAME")
+    )
     trust_publisher.set_defaults(plugin_handler=_publisher_trust)
-    revoke_publisher = publisher_actions.add_parser("revoke", help="Revoca una huella de editor.")
-    revoke_publisher.add_argument("fingerprint", help="Huella SHA-256 Ed25519 completa.")
+    revoke_publisher = publisher_actions.add_parser(
+        "revoke", help=t("LANCTL.UI.HELP.REVOKE_A_PUBLISHER_FINGERPRINT")
+    )
+    revoke_publisher.add_argument(
+        "fingerprint", help=t("LANCTL.UI.HELP.FULL_ED25519_SHA_256_FINGERPRINT")
+    )
     revoke_publisher.set_defaults(plugin_handler=_publisher_revoke)
     extensions = actions.add_parser(
-        "extensions", help="Lista extensiones para CLI, TUI y futura GUI."
+        "extensions", help=t("LANCTL.UI.HELP.LIST_EXTENSIONS_FOR_CLI_TUI_AND_THE_FUTURE_GUI")
     )
-    extensions.add_argument("--type", help="Filtra por tipo de extensión unificada.")
+    extensions.add_argument("--type", help=t("LANCTL.UI.HELP.FILTER_BY_UNIFIED_EXTENSION_TYPE"))
     extensions.set_defaults(plugin_handler=_extensions)
-    pack = actions.add_parser("pack", help="Construye un paquete .lcp desde un directorio.")
-    pack.add_argument("directory", help="Directorio fuente que contiene plugin.info.")
-    pack.add_argument("output", help="Archivo .lcp de salida.")
+    pack = actions.add_parser("pack", help=t("LANCTL.UI.HELP.BUILD_A_LCP_PACKAGE_FROM_A_DIRECTORY"))
+    pack.add_argument("directory", help=t("LANCTL.UI.HELP.SOURCE_DIRECTORY_CONTAINING_PLUGIN_INFO"))
+    pack.add_argument("output", help=t("LANCTL.UI.HELP.OUTPUT_LCP_FILE"))
     pack.add_argument(
-        "--force", action="store_true", help="Sobrescribe el paquete de salida existente."
+        "--force",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.OVERWRITE_THE_EXISTING_OUTPUT_PACKAGE"),
     )
-    pack.add_argument("--signing-key", help="Clave privada Ed25519 PEM para firmar el LCP.")
+    pack.add_argument(
+        "--signing-key", help=t("LANCTL.UI.HELP.ED25519_PEM_PRIVATE_KEY_FOR_SIGNING_THE_LCP")
+    )
     pack.set_defaults(plugin_handler=_pack)
     command.set_defaults(handler=lambda args: args.plugin_handler(args))
 
@@ -114,7 +138,7 @@ def _list(args) -> int:
             f"{plugin.manifest.plugin_id:<30} {plugin.manifest.version:<14} {plugin.state.value:<14} {','.join(plugin.manifest.capabilities)}"
         )
     if not values:
-        print("No hay complementos instalados.")
+        print(t("LANCTL.UI.PROMPT.NO_PLUGINS_INSTALLED"))
     return 0
 
 
@@ -144,12 +168,19 @@ def _info(args) -> int:
 def _install(args) -> int:
     inspected = verify_package(args.file)
     requested = inspected["manifest"].permissions
-    print("Permisos solicitados antes de instalar:")
-    print(" " + (", ".join(requested) if requested else "ninguno"))
-    print(f"Firma: {inspected['signature']}")
+    print(t("LANCTL.UI.PROMPT.REQUESTED_PERMISSIONS_BEFORE_INSTALLATION"))
+    print(" " + (", ".join(requested) if requested else t("LANCTL.UI.VALUE.NONE")))
+    print(t("LANCTL.UI.DETAIL.SIGNATURE_VALUE", value0=f"{inspected['signature']}"))
     plugin = get_plugin_manager().install(args.file)
-    ok("PLUGIN INSTALADO", f"{plugin.manifest.plugin_id} {plugin.manifest.version} | desactivado")
-    print(" Actívalo con: lanctl plugin enable ID --grant-all")
+    ok(
+        t("LANCTL.UI.STATUS.PLUGIN_INSTALLED"),
+        t(
+            "LANCTL.UI.SUMMARY.VALUE_VALUE_DISABLED",
+            value0=f"{plugin.manifest.plugin_id}",
+            value1=f"{plugin.manifest.version}",
+        ),
+    )
+    print(t("LANCTL.UI.PROMPT.ENABLE_IT_WITH_LANCTL_PLUGIN_ENABLE_ID_GRANT_ALL"))
     return 0
 
 
@@ -162,36 +193,36 @@ def _enable(args) -> int:
         else (set(args.grant) if args.grant is not None else set(plugin.granted))
     )
     manager.enable(args.plugin_id, grant=grants, trusted=args.trust)
-    ok("PLUGIN ACTIVO", args.plugin_id)
+    ok(t("LANCTL.UI.STATUS.PLUGIN_ACTIVE"), args.plugin_id)
     return 0
 
 
 def _disable(args) -> int:
     get_plugin_manager().disable(args.plugin_id)
-    ok("PLUGIN DESACTIVADO", args.plugin_id)
+    ok(t("LANCTL.UI.STATUS.PLUGIN_DISABLED"), args.plugin_id)
     return 0
 
 
 def _reload(args) -> int:
     get_plugin_manager().reload(args.plugin_id)
-    ok("PLUGIN RECARGADO", args.plugin_id)
+    ok(t("LANCTL.UI.STATUS.PLUGIN_RELOADED"), args.plugin_id)
     return 0
 
 
 def _uninstall(args) -> int:
     get_plugin_manager().uninstall(args.plugin_id)
-    ok("PLUGIN ELIMINADO", args.plugin_id)
+    ok(t("LANCTL.UI.STATUS.PLUGIN_REMOVED"), args.plugin_id)
     return 0
 
 
 def _verify(args) -> int:
     result = get_plugin_manager().verify(args.target)
     manifest = result["manifest"]
-    ok("LCP VÁLIDO", f"{manifest.plugin_id} {manifest.version}")
+    ok(t("LANCTL.UI.STATUS.LCP_VALID"), f"{manifest.plugin_id} {manifest.version}")
     if result.get("checksum"):
         print(f" SHA-256 : {result['checksum']}")
     if result.get("signature"):
-        print(f" Firma   : {result['signature']}")
+        print(t("LANCTL.UI.DETAIL.SIGNATURE_VALUE_B2E0957F", value0=f"{result['signature']}"))
     return 0
 
 
@@ -206,7 +237,7 @@ def _permissions(args) -> int:
 def _revoke(args) -> int:
     permissions = set(args.permissions) if args.permissions else None
     get_plugin_manager().revoke(args.plugin_id, permissions)
-    ok("PERMISOS REVOCADOS", args.plugin_id)
+    ok(t("LANCTL.UI.STATUS.PERMISSIONS_REVOKED"), args.plugin_id)
     return 0
 
 
@@ -217,15 +248,15 @@ def _publisher_list(args) -> int:
 
 def _publisher_trust(args) -> int:
     entry = get_plugin_manager().publishers.trust_package(args.file, args.name)
-    ok("EDITOR CONFIABLE", entry["name"])
-    print(f" Huella : {entry['fingerprint']}")
+    ok(t("LANCTL.UI.STATUS.TRUSTED_PUBLISHER"), entry["name"])
+    print(t("LANCTL.UI.DETAIL.FINGERPRINT_VALUE", value0=f"{entry['fingerprint']}"))
     return 0
 
 
 def _publisher_revoke(args) -> int:
     if not get_plugin_manager().publishers.revoke(args.fingerprint):
         raise ValueError("huella de editor no encontrada")
-    ok("EDITOR REVOCADO", args.fingerprint)
+    ok(t("LANCTL.UI.STATUS.PUBLISHER_REVOKED"), args.fingerprint)
     return 0
 
 
@@ -242,7 +273,7 @@ def _pack(args) -> int:
     result = build_package(
         args.directory, args.output, overwrite=args.force, signing_key=args.signing_key
     )
-    ok("LCP CREADO", result["path"])
+    ok(t("LANCTL.UI.STATUS.LCP_CREATED"), result["path"])
     print(f" SHA-256 : {result['checksum']}")
-    print(f" Firma   : {result['signature']}")
+    print(t("LANCTL.UI.DETAIL.SIGNATURE_VALUE_B2E0957F", value0=f"{result['signature']}"))
     return 0

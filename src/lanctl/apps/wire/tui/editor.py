@@ -10,6 +10,7 @@ from typing import Any
 from rich.text import Text
 
 from lanctl.apps.wire.topology import apply_device_preset, build_ports, resize_port_pattern
+from lanctl.shared.i18n import t
 
 
 @dataclass(frozen=True)
@@ -102,7 +103,9 @@ def editable_fields(
                         port.get("speeds", []),
                     ),
                     EditableField(
-                        "Eliminar puerto", ("ports", selected_port), "Enter para confirmar"
+                        t("LANCTL.UI.SCREEN.DELETE_PORT"),
+                        ("ports", selected_port),
+                        t("LANCTL.UI.SCREEN.ENTER_TO_CONFIRM"),
                     ),
                 )
             )
@@ -185,13 +188,19 @@ def element_options_view(
     title = f"OPCIONES · {identifier}" if port is None else f"OPCIONES · {port}"
     text = Text(title + "\n", style="bold bright_cyan")
     choices = [
-        "Datos generales del elemento",
-        "Datos del puerto",
-        "Conectar al puerto",
-        "Eliminar elemento",
+        t("LANCTL.UI.SCREEN.GENERAL_ELEMENT_DATA"),
+        t("LANCTL.UI.SCREEN.PORT_DATA"),
+        t("LANCTL.UI.SCREEN.CONNECT_TO_PORT"),
+        t("LANCTL.UI.VIEW.DELETE_ELEMENT"),
     ]
     if wire:
-        choices.extend((f"Editar cable {wire}", "Desconectar cable", "Mover cable"))
+        choices.extend(
+            (
+                t("LANCTL.UI.MESSAGE.EDIT_CABLE_VALUE", value0=f"{wire}"),
+                t("LANCTL.UI.SCREEN.DISCONNECT_CABLE"),
+                t("LANCTL.UI.SCREEN.MOVE_CABLE"),
+            )
+        )
     for index, choice in enumerate(choices):
         start = len(text)
         text.append(f"{'▶' if focused and index == selection else ' '} {choice}")
@@ -199,9 +208,9 @@ def element_options_view(
             text.stylize("bold black on bright_cyan", start, len(text))
         text.append("\n")
     text.append(
-        "\n↑/↓ opción · Enter abrir · F3 seguir · Esc volver"
+        t("LANCTL.UI.BLOCK.OPTION_ENTER_OPEN_F3_FOLLOW_ESC_BACK")
         if focused
-        else "\n↑/↓ puerto · F3 seguir cable · Tab/Enter opciones · Esc cerrar",
+        else t("LANCTL.UI.BLOCK.PORT_F3_FOLLOW_CABLE_TAB_ENTER_OPTIONS_ESC_CLOSE"),
         style="dim",
     )
     return text
@@ -268,27 +277,33 @@ def options_view(
     options = choices if choices is not None else field_options(field)
     text = Text(f"OPCIONES · {field.label}\n", style="bold bright_cyan")
     if filter_text is not None:
-        text.append(f"Filtrar IDF: {filter_text}▌\n", style="bright_white")
+        text.append(
+            t("LANCTL.UI.DETAIL.FILTER_IDF_VALUE", value0=f"{filter_text}"), style="bright_white"
+        )
         if not options:
             text.append("(sin coincidencias)\n", style="dim")
     for index, option in enumerate(options):
         start = len(text)
-        text.append(option or "(vacío)")
+        text.append(option or t("LANCTL.UI.SCREEN.EMPTY"))
         if index == selected:
             text.stylize("bold black on bright_cyan", start, len(text))
         if index < len(options) - 1:
             text.append("\n")
     hint = (
-        "↑/↓ seleccionar · Enter conectar · Esc volver"
+        t("LANCTL.UI.SCREEN.SELECT_ENTER_CONNECT_ESC_BACK")
         if filter_text is not None
-        else "↑/↓ seleccionar · Enter aplicar · ← volver"
+        else t("LANCTL.UI.SCREEN.SELECT_ENTER_APPLY_BACK")
     )
     text.append(f"\n\n{hint}", style="dim")
     return text
 
 
 def connector_actions(connected_wire: str | None) -> list[str]:
-    return ["Desconectar", "Mover", "Editar cable"] if connected_wire else ["Conectar"]
+    return (
+        ["Desconectar", "Mover", t("LANCTL.UI.SCREEN.EDIT_CABLE")]
+        if connected_wire
+        else ["Conectar"]
+    )
 
 
 def actions_view(actions: list[str], selection: int, buffer: str | None = None) -> Text:
@@ -319,7 +334,7 @@ def connection_browser_view(
     text.append(f"CABLES COMPATIBLES · {len(cables)}\n", style="bold bright_cyan")
     text.append("Conectar", style="bold black on bright_cyan")
     text.append(" " * 9 + "│ ", style="bright_cyan")
-    text.append(f"Buscar IDF: {query}▌\n", style="bright_white")
+    text.append(t("LANCTL.UI.DETAIL.SEARCH_IDF_VALUE", value0=f"{query}"), style="bright_white")
     start = max(0, min(selection - max_rows + 1, len(cables) - max_rows))
     visible = cables[start : start + max_rows]
     for index, cable in enumerate(visible, start=start):
@@ -331,7 +346,7 @@ def connection_browser_view(
         text.append("\n")
     if not cables:
         text.append(" " * 17 + "│ (sin coincidencias)\n", style="dim")
-    text.append("\n↑/↓ seleccionar · Enter conectar · Esc volver", style="dim")
+    text.append(t("LANCTL.UI.BLOCK.SELECT_ENTER_CONNECT_ESC_BACK"), style="dim")
     return text
 
 

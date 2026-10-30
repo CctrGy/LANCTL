@@ -1,0 +1,3256 @@
+{
+  "description": "Initial explicit presentation migration; locations refer to the pre-migration source snapshot. Not full UI coverage.",
+  "messages": {
+    "LANCTL.UI.TEXT.MANAGE_ENCRYPTED_CREDENTIALS_IN_THE_LANCTL_ENVIRONMENT": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 31
+      }
+    ],
+    "LANCTL.UI.TEXT.SHOW_THE_COMMON_SUITE_VERSION_AND_EXIT": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 37
+      },
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 32
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 35
+      },
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 43
+      },
+      {
+        "file": "src/lanctl/bootstrap/lanmon.py",
+        "lineBeforeMigration": 31
+      }
+    ],
+    "LANCTL.UI.TEXT.LANCTL_ELEMENT_DATABASE": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 39
+      }
+    ],
+    "LANCTL.UI.TEXT.ENCRYPTED_CREDENTIAL_STORE": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 41
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/commands/credential.py",
+        "lineBeforeMigration": 34
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/commands/download_settings.py",
+        "lineBeforeMigration": 43
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/commands/open.py",
+        "lineBeforeMigration": 106
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/commands/ssh.py",
+        "lineBeforeMigration": 38
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/commands/terminal.py",
+        "lineBeforeMigration": 30
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/commands/wol.py",
+        "lineBeforeMigration": 111
+      }
+    ],
+    "LANCTL.UI.TEXT.ENCRYPTION_PROVIDER_PORTABLE_PROMPTS_FOR_A_PASSWORD": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 47
+      }
+    ],
+    "LANCTL.UI.TEXT.LOCATION_DOES_NOT_CHANGE_PERMISSIONS_OR_COPY_SECRETS_AUTOMATICALLY": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 53
+      }
+    ],
+    "LANCTL.UI.TEXT.PROJECT_DIRECTORY_FOR_ITS_INDEPENDENT_STORE": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 56
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_DESKTOP_GRAPHICAL_INTERFACE": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 59
+      },
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 41
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 44
+      },
+      {
+        "file": "src/lanctl/bootstrap/lanmon.py",
+        "lineBeforeMigration": 38
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_FULL_SCREEN_INTERFACE": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 61
+      },
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 43
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 46
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 53
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_INTERACTIVE_CONSOLE": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 63
+      },
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 45
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 54
+      }
+    ],
+    "LANCTL.UI.TEXT.CREATE_THE_FIRST_REMOTE_SERVICE_ACCOUNT_ON_WINDOWS_ADMINISTRATOR_REQUIRED": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 67
+      }
+    ],
+    "LANCTL.UI.TEXT.LIST_METADATA_NEVER_SECRETS": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 69
+      }
+    ],
+    "LANCTL.UI.TEXT.SHOW_CREDENTIAL_METADATA": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 70
+      }
+    ],
+    "LANCTL.UI.TEXT.CREDENTIAL_IDENTIFIER": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 71
+      },
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 77
+      }
+    ],
+    "LANCTL.UI.TEXT.CREATE_OR_UPDATE_A_CREDENTIAL": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 72
+      }
+    ],
+    "LANCTL.UI.TEXT.DEVICE_IP_MAC_ALIAS_OR_ID": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 73
+      }
+    ],
+    "LANCTL.UI.TEXT.ASSOCIATED_PROTOCOL_FOR_EXAMPLE_SSH": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 74
+      }
+    ],
+    "LANCTL.UI.TEXT.REMOTE_USERNAME": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 75
+      }
+    ],
+    "LANCTL.UI.TEXT.DELETE_A_CREDENTIAL": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 76
+      }
+    ],
+    "LANCTL.UI.TEXT.CREDENTIAL_MANAGEMENT_TRANSPORT_AND_RECOVERY": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 79
+      }
+    ],
+    "LANCTL.UI.TEXT.LIST_METADATA": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 82
+      }
+    ],
+    "LANCTL.UI.TEXT.SAVE_AND_LINK_A_CREDENTIAL": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 86
+      }
+    ],
+    "LANCTL.UI.TEXT.COPY_TO_ANOTHER_STORE_AND_VERIFY_PRESERVE_THE_SOURCE": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 93
+      }
+    ],
+    "LANCTL.UI.TEXT.REPAIR_MISSING_REFERENCES_DO_NOT_DELETE_OR_OVERWRITE_SECRETS": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 97
+      }
+    ],
+    "LANCTL.UI.TEXT.APPLY_REPAIRS_DIAGNOSE_ONLY_BY_DEFAULT": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 100
+      }
+    ],
+    "LANCTL.UI.TEXT.CHECK_LINKS_AND_PERMISSIONS_WITHOUT_CHANGING_DATA": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 102
+      }
+    ],
+    "LANCTL.UI.TEXT.SHOW_OR_SELECT_THE_SHARED_STORE": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 103
+      }
+    ],
+    "LANCTL.UI.TEXT.CONFIRM_CHANGING_THE_CONFIGURED_STORE_WITHOUT_MOVING_SECRETS": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 109
+      }
+    ],
+    "LANCTL.UI.TEXT.STORE_PROTOCOL_SUMMARY": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 111
+      }
+    ],
+    "LANCTL.UI.TEXT.PORT_1_65535": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 115
+      }
+    ],
+    "LANCTL.UI.TEXT.PROTOCOL_DRIVER": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 116
+      }
+    ],
+    "LANCTL.UI.TEXT.REMOTE_ACCESS_USERS_NOT_WINDOWS_ACCOUNTS": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 117
+      }
+    ],
+    "LANCTL.UI.TEXT.CONFIRM_DELETION": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 123
+      }
+    ],
+    "LANCTL.UI.TEXT.PROTOCOL": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 173
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 34
+      }
+    ],
+    "LANCTL.UI.TEXT.USERNAME": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 173
+      },
+      {
+        "file": "gui/record-editors.js",
+        "lineBeforeMigration": 42
+      }
+    ],
+    "LANCTL.UI.TEXT.TRANSPORT_AN_ENCRYPTED_STORE_NEVER_PLAINTEXT": [
+      {
+        "file": "src/lanctl/apps/access/manager_cli.py",
+        "lineBeforeMigration": 91
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_LANWIRE_INTERACTIVE_CONSOLE": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/commands/lanwire.py",
+        "lineBeforeMigration": 48
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 49
+      }
+    ],
+    "LANCTL.UI.TEXT.YES": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/commands/scan.py",
+        "lineBeforeMigration": 161
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/managers.py",
+        "lineBeforeMigration": 38
+      }
+    ],
+    "LANCTL.UI.TEXT.PROJECT_DIRECTORY": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/commands/settings.py",
+        "lineBeforeMigration": 474
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1083
+      }
+    ],
+    "LANCTL.UI.TEXT.SHOW_THE_VERSION_AND_EXIT": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/main.py",
+        "lineBeforeMigration": 121
+      }
+    ],
+    "LANCTL.UI.TEXT.SUPPRESS_SUCCESSFUL_OUTPUT_PRESERVE_ERRORS": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/main.py",
+        "lineBeforeMigration": 125
+      }
+    ],
+    "LANCTL.UI.TEXT.ADD_EXECUTION_DIAGNOSTICS_TO_STDERR": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/main.py",
+        "lineBeforeMigration": 128
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_LANIP_GRAPHICAL_INTERFACE": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/main.py",
+        "lineBeforeMigration": 134
+      }
+    ],
+    "LANCTL.UI.TEXT.REQUEST_FIRST_SCAN_CONFIRMATION_WHEN_OPENING_THE_GUI_DO_NOT_SCAN_AUTOMATICALLY": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/main.py",
+        "lineBeforeMigration": 139
+      }
+    ],
+    "LANCTL.UI.TEXT.SELECT_A_VLF_PROJECT_BEFORE_OPENING_THE_TUI_OR_RUNNING_A_COMMAND": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/cli/main.py",
+        "lineBeforeMigration": 166
+      }
+    ],
+    "LANCTL.UI.TEXT.SETTINGS_SAVED_SUCCESSFULLY": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/gui/desktop.py",
+        "lineBeforeMigration": 619
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 3491
+      }
+    ],
+    "LANCTL.UI.TEXT.PROJECT": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/gui/main.py",
+        "lineBeforeMigration": 429
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4089
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1176
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1243
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1256
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 15
+      },
+      {
+        "file": "gui/launcher.html",
+        "lineBeforeMigration": 5
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.HELP": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4058
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1250
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1354
+      },
+      {
+        "file": "src/lanctl/apps/wire/tui/renderer.py",
+        "lineBeforeMigration": 236
+      },
+      {
+        "file": "src/lanctl/core/terminal_ui.py",
+        "lineBeforeMigration": 126
+      }
+    ],
+    "LANCTL.UI.TEXT.REFRESH": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4061
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1259
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1357
+      },
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 940
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 27
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 98
+      }
+    ],
+    "LANCTL.UI.TEXT.PROJECTS": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4063
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1263
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1359
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/managers.py",
+        "lineBeforeMigration": 84
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.COMMANDS": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4065
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 818
+      },
+      {
+        "file": "src/lanctl/apps/wire/tui/help.py",
+        "lineBeforeMigration": 89
+      }
+    ],
+    "LANCTL.INVENTORY.MANUAL.SEARCH": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4066
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1266
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1362
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 29
+      }
+    ],
+    "LANCTL.COMMON.ACTION.RELOAD": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4067
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1267
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1363
+      }
+    ],
+    "LANCTL.UI.TEXT.EDIT": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4068
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1364
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 120
+      }
+    ],
+    "LANCTL.UI.TEXT.GROUPS": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4069
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1365
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 25
+      },
+      {
+        "file": "gui/device-sheet.js",
+        "lineBeforeMigration": 41
+      },
+      {
+        "file": "gui/record-editors.js",
+        "lineBeforeMigration": 141
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 241
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 354
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1217
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1233
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 82
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 120
+      }
+    ],
+    "LANCTL.UI.TEXT.PORTS": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4070
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 2469
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 2147
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1272
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1366
+      },
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 1119
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1068
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4071
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 25
+      },
+      {
+        "file": "gui/device-sheet.js",
+        "lineBeforeMigration": 60
+      }
+    ],
+    "LANCTL.UI.TEXT.SAVE": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4072
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1368
+      },
+      {
+        "file": "src/lanctl/apps/wire/tui/renderer.py",
+        "lineBeforeMigration": 238
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 15
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 133
+      },
+      {
+        "file": "gui/launcher.html",
+        "lineBeforeMigration": 9
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 12
+      }
+    ],
+    "LANCTL.UI.TEXT.COPY": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4074
+      },
+      {
+        "file": "src/lanctl/apps/wire/tui/renderer.py",
+        "lineBeforeMigration": 241
+      }
+    ],
+    "LANCTL.UI.TEXT.CLOSE": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4077
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 117
+      },
+      {
+        "file": "gui/launcher.html",
+        "lineBeforeMigration": 9
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 12
+      }
+    ],
+    "LANCTL.UI.TEXT.HISTORY": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4078
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 805
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1265
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1361
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 20
+      }
+    ],
+    "LANCTL.UI.TEXT.CREDENTIALS": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 4085
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1327
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1381
+      }
+    ],
+    "LANCTL.UI.TEXT.NO_PROJECT": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 486
+      },
+      {
+        "file": "src/lanctl/apps/suite/launcher_gui.py",
+        "lineBeforeMigration": 107
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 16
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 32
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 15
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 100
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 7
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 10
+      }
+    ],
+    "LANCTL.UI.TEXT.NETWORK": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 2087
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 2147
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.INVENTORY.MANUAL.NAME": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 2937
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 25
+      },
+      {
+        "file": "gui/device-sheet.js",
+        "lineBeforeMigration": 41
+      },
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 790
+      },
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 1092
+      },
+      {
+        "file": "gui/rack-dimensions.js",
+        "lineBeforeMigration": 52
+      },
+      {
+        "file": "gui/record-editors.js",
+        "lineBeforeMigration": 86
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 5
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 922
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1277
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1490
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 53
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 78
+      }
+    ],
+    "LANCTL.UI.TEXT.PATH": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 2946
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 47
+      }
+    ],
+    "LANCTL.INVENTORY.MANUAL.DESCRIPTION": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 2955
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 25
+      },
+      {
+        "file": "gui/device-sheet.js",
+        "lineBeforeMigration": 41
+      },
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 791
+      },
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 1096
+      },
+      {
+        "file": "gui/rack-dimensions.js",
+        "lineBeforeMigration": 53
+      },
+      {
+        "file": "gui/record-editors.js",
+        "lineBeforeMigration": 89
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 5
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 924
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1492
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 54
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 80
+      }
+    ],
+    "LANCTL.UI.TEXT.KEYS": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 818
+      },
+      {
+        "file": "src/lanctl/apps/wire/tui/help.py",
+        "lineBeforeMigration": 89
+      }
+    ],
+    "LANCTL.COMMON.ACTION.INFO": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1253
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1355
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/managers.py",
+        "lineBeforeMigration": 65
+      },
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/managers.py",
+        "lineBeforeMigration": 84
+      }
+    ],
+    "LANCTL.UI.TEXT.SAVE_PROJECT": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/main.py",
+        "lineBeforeMigration": 1276
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 15
+      },
+      {
+        "file": "gui/launcher.html",
+        "lineBeforeMigration": 8
+      }
+    ],
+    "LANCTL.UI.TEXT.NO": [
+      {
+        "file": "src/lanctl/apps/ip/interfaces/tui/managers.py",
+        "lineBeforeMigration": 38
+      }
+    ],
+    "LANCTL.UI.TEXT.SOURCE": [
+      {
+        "file": "src/lanctl/apps/monitor/interfaces.py",
+        "lineBeforeMigration": 35
+      },
+      {
+        "file": "gui/app-support.js",
+        "lineBeforeMigration": 88
+      }
+    ],
+    "LANCTL.UI.TEXT.FILE": [
+      {
+        "file": "src/lanctl/apps/monitor/interfaces.py",
+        "lineBeforeMigration": 35
+      }
+    ],
+    "LANCTL.UI.TEXT.LEVEL": [
+      {
+        "file": "src/lanctl/apps/monitor/interfaces.py",
+        "lineBeforeMigration": 35
+      }
+    ],
+    "LANCTL.UI.TEXT.EVENT": [
+      {
+        "file": "src/lanctl/apps/monitor/interfaces.py",
+        "lineBeforeMigration": 35
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 98
+      }
+    ],
+    "LANCTL.UI.TEXT.R_RELOAD_P_PROGRAM_J_PROJECT_A_BOTH_LEVEL_1_59_Q_QUIT": [
+      {
+        "file": "src/lanctl/apps/monitor/interfaces.py",
+        "lineBeforeMigration": 51
+      }
+    ],
+    "LANCTL.UI.TEXT.LANMON_PROGRAM_AND_PROJECT_EVENTS": [
+      {
+        "file": "src/lanctl/apps/monitor/interfaces.py",
+        "lineBeforeMigration": 34
+      }
+    ],
+    "LANCTL.UI.TEXT.VALID_LEVEL_1_59": [
+      {
+        "file": "src/lanctl/apps/monitor/interfaces.py",
+        "lineBeforeMigration": 67
+      }
+    ],
+    "LANCTL.UI.TEXT.DISPLAY_RACKS_AND_THEIR_EQUIPMENT": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 27
+      }
+    ],
+    "LANCTL.UI.TEXT.SHARED_PHYSICAL_IDF_DATABASE": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 38
+      }
+    ],
+    "LANCTL.UI.TEXT.LIST_AVAILABLE_RACKS": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 47
+      }
+    ],
+    "LANCTL.UI.TEXT.SHOW_A_RACK_AND_ITS_OCCUPANTS": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 48
+      }
+    ],
+    "LANCTL.UI.TEXT.RACK_ID_OR_NAME": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 49
+      }
+    ],
+    "LANCTL.UI.TEXT.EDIT_THE_RACK_HEIGHT_AND_MOUNTING_WIDTH": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 50
+      }
+    ],
+    "LANCTL.UI.TEXT.RACK_ID": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 51
+      }
+    ],
+    "LANCTL.UI.TEXT.HEIGHT_FROM_4_TO_52_U": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 52
+      }
+    ],
+    "LANCTL.UI.TEXT.MOUNTING_WIDTH_IN_INCHES": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 58
+      }
+    ],
+    "LANCTL.UI.TEXT.LIST_ALL_ELEMENTS_LOCATIONS_AND_TRAYS": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 60
+      }
+    ],
+    "LANCTL.UI.TEXT.CREATE_A_SHARED_PHYSICAL_ELEMENT": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 61
+      }
+    ],
+    "LANCTL.UI.TEXT.EQUIPMENT_PANEL_OUTLET_OR_TRAY_PROFILE": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 62
+      }
+    ],
+    "LANCTL.UI.TEXT.IDF_PREFIX": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 63
+      }
+    ],
+    "LANCTL.UI.TEXT.ELEMENT_NAME": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 64
+      },
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 69
+      }
+    ],
+    "LANCTL.UI.TEXT.EDIT_OR_RELOCATE_AN_ELEMENT_WITHOUT_CHANGING_ITS_LINKS": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 66
+      }
+    ],
+    "LANCTL.UI.TEXT.ELEMENT_ID": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 68
+      }
+    ],
+    "LANCTL.UI.TEXT.ELEMENT_DESCRIPTION": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 70
+      }
+    ],
+    "LANCTL.UI.TEXT.PHYSICAL_CLASSIFICATION": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 74
+      }
+    ],
+    "LANCTL.UI.TEXT.DESTINATION_RACK_ID": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 76
+      }
+    ],
+    "LANCTL.UI.TEXT.STARTING_MOUNTING_UNIT": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 77
+      }
+    ],
+    "LANCTL.UI.TEXT.HEIGHT_OCCUPIED_BY_THE_ELEMENT": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 78
+      }
+    ],
+    "LANCTL.UI.TEXT.TRAY_HOUSING_THE_DEVICE": [
+      {
+        "file": "src/lanctl/apps/rack/cli.py",
+        "lineBeforeMigration": 79
+      }
+    ],
+    "LANCTL.UI.TEXT.SETTINGS_SAVED": [
+      {
+        "file": "src/lanctl/apps/suite/gui.py",
+        "lineBeforeMigration": 300
+      },
+      {
+        "file": "src/lanctl/apps/suite/gui.py",
+        "lineBeforeMigration": 312
+      },
+      {
+        "file": "src/lanctl/apps/suite/gui.py",
+        "lineBeforeMigration": 345
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 131
+      }
+    ],
+    "LANCTL.UI.TEXT.PHYSICAL_MANAGEMENT_IDF_WIRING_AND_TOPOLOGY_FOR_THE_LANCTL_SUITE": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 29
+      }
+    ],
+    "LANCTL.UI.TEXT.PHYSICAL_IDF_DATABASE_DEFAULTS_TO_PHYSICAL_IDF_DB_IN_THE_SHARED_ROOT": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 41
+      }
+    ],
+    "LANCTL.UI.TEXT.SHOW_LANWIRE_COMMAND_HELP": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 55
+      }
+    ],
+    "LANCTL.UI.TEXT.LIST_IDENTIFIERS": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 56
+      }
+    ],
+    "LANCTL.UI.TEXT.FILTER_BY_IDF_PREFIX": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 57
+      }
+    ],
+    "LANCTL.UI.TEXT.LOAD_THE_INITIAL_TEST_TOPOLOGY": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 58
+      }
+    ],
+    "LANCTL.UI.TEXT.SHOW_AN_IDENTIFIER": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 59
+      }
+    ],
+    "LANCTL.UI.TEXT.PHYSICAL_IDENTIFIER_TO_QUERY": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 60
+      }
+    ],
+    "LANCTL.UI.TEXT.GENERATE_THE_NEXT_IDF": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 61
+      }
+    ],
+    "LANCTL.UI.TEXT.PHYSICAL_ELEMENT_TYPE_PREFIX": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 62
+      }
+    ],
+    "LANCTL.UI.TEXT.NUMBER_OF_COUNTER_DIGITS_2_TO_5": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 64
+      }
+    ],
+    "LANCTL.UI.TEXT.CREATE_N_CONSECUTIVE_IDFS": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 67
+      }
+    ],
+    "LANCTL.UI.TEXT.CREATE_IDENTIFIERS_WITH_A_COMPLETE_PHYSICAL_PROFILE": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 69
+      }
+    ],
+    "LANCTL.UI.TEXT.LIST_PREFIXES_OR_THE_IDFS_OF_A_PREFIX": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 71
+      }
+    ],
+    "LANCTL.UI.TEXT.PREFIX_WHOSE_ELEMENTS_ARE_LISTED": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 72
+      }
+    ],
+    "LANCTL.UI.TEXT.LIST_AVAILABLE_PHYSICAL_PROFILES": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 73
+      }
+    ],
+    "LANCTL.UI.TEXT.QUERY_A_PREFIX_OR_IDF": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 74
+      }
+    ],
+    "LANCTL.UI.TEXT.SPECIFIC_PREFIX_OR_IDF": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 75
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 77
+      }
+    ],
+    "LANCTL.UI.TEXT.EDIT_A_PREFIX_OR_IDF_DATA": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 76
+      }
+    ],
+    "LANCTL.UI.TEXT.IDF_DATA": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 78
+      }
+    ],
+    "LANCTL.UI.TEXT.NEW_PREFIX_PROFILE": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 80
+      }
+    ],
+    "LANCTL.UI.TEXT.PREFIX_NAME": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 82
+      }
+    ],
+    "LANCTL.UI.TEXT.PREFIX_ALIAS": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 83
+      }
+    ],
+    "LANCTL.UI.TEXT.PREFIX_DESCRIPTION": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 84
+      }
+    ],
+    "LANCTL.UI.TEXT.DELETE_AN_IDF": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 85
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 109
+      }
+    ],
+    "LANCTL.UI.TEXT.SPECIFIC_IDF_DOES_NOT_DELETE_PREFIXES": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 86
+      }
+    ],
+    "LANCTL.UI.TEXT.ASSIGN_A_PHYSICAL_PROFILE_TO_A_PREFIX": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 87
+      }
+    ],
+    "LANCTL.UI.TEXT.CREATE_AN_IDF_USING_THE_ASSIGNED_PREFIX_PROFILE": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 88
+      }
+    ],
+    "LANCTL.UI.TEXT.PHYSICAL_PROFILE": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 96
+      }
+    ],
+    "LANCTL.UI.TEXT.RESERVE_AN_IDF": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 97
+      }
+    ],
+    "LANCTL.UI.TEXT.EXACT_IDF_TO_RESERVE": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 98
+      }
+    ],
+    "LANCTL.UI.TEXT.OPTIONAL_INITIAL_DATA": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 100
+      }
+    ],
+    "LANCTL.UI.TEXT.QUERY_OR_UPDATE_AN_ELEMENT_S_DATA_AND_PORTS": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 103
+      }
+    ],
+    "LANCTL.UI.TEXT.IDF_TO_QUERY_OR_UPDATE": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 105
+      }
+    ],
+    "LANCTL.UI.TEXT.PHYSICAL_FIELDS_TO_MODIFY": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 107
+      }
+    ],
+    "LANCTL.UI.TEXT.IDF_TO_DELETE": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 110
+      }
+    ],
+    "LANCTL.UI.TEXT.SHOW_THE_PHYSICAL_TOPOLOGY": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 111
+      }
+    ],
+    "LANCTL.UI.TEXT.MANAGE_LETTER_SETS": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 112
+      }
+    ],
+    "LANCTL.UI.TEXT.LIST_DEFINITIONS": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 114
+      }
+    ],
+    "LANCTL.UI.TEXT.SHOW_A_DEFINITION": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 115
+      }
+    ],
+    "LANCTL.UI.TEXT.PREFIX_LETTERS": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 116
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 118
+      }
+    ],
+    "LANCTL.UI.TEXT.CREATE_OR_UPDATE_A_DEFINITION": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 117
+      }
+    ],
+    "LANCTL.UI.TEXT.DESCRIPTIVE_TYPE_NAME": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 119
+      }
+    ],
+    "LANCTL.UI.TEXT.OPTIONAL_DESCRIPTION": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 120
+      },
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 94
+      }
+    ],
+    "LANCTL.UI.TEXT.DELETE_A_DEFINITION": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 122
+      }
+    ],
+    "LANCTL.UI.TEXT.PREFIX_LETTERS_TO_DELETE": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 124
+      }
+    ],
+    "LANCTL.UI.TEXT.PREFIX_FOR_NEW_OR_EXACT_IDF_FOR_ADD": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 90
+      }
+    ],
+    "LANCTL.UI.TEXT.RECORD_NAME": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 91
+      }
+    ],
+    "LANCTL.UI.TEXT.OPTIONAL_ALIAS": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 92
+      }
+    ],
+    "LANCTL.UI.TEXT.ERROR": [
+      {
+        "file": "src/lanctl/apps/wire/cli/main.py",
+        "lineBeforeMigration": 256
+      }
+    ],
+    "LANCTL.UI.TEXT.ROOT_ORCHESTRATOR_FOR_THE_LANCTL_SUITE_APPLICATIONS": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 37
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_MAIN_CONSOLE": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 46
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_MAIN_TUI": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 47
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_LANCTL_GRAPHICAL_HUB": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 48
+      }
+    ],
+    "LANCTL.UI.TEXT.EXPLICITLY_REQUEST_UAC_FOR_AN_INSTALLED_LAUNCHER_ON_WINDOWS": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 57
+      }
+    ],
+    "LANCTL.UI.TEXT.INITIALIZE_INSTALLATION_PREFERENCES_WITHOUT_OVERWRITING_EXISTING_ONES": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 70
+      }
+    ],
+    "LANCTL.UI.TEXT.INITIAL_THEME": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 76
+      }
+    ],
+    "LANCTL.UI.TEXT.ALL_NONE_OR_COMMA_SEPARATED_OPTIONAL_PLUGIN_IDS": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 81
+      }
+    ],
+    "LANCTL.UI.TEXT.LANGUAGE_CODE_INCLUDED_IN_THIS_DISTRIBUTION": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 83
+      }
+    ],
+    "LANCTL.UI.TEXT.EXPLICITLY_CHANGE_THE_LANGUAGE_OF_AN_EXISTING_INSTALLATION": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 87
+      }
+    ],
+    "LANCTL.UI.TEXT.REGISTER_OR_REMOVE_CLINK_COMPLETION_FOR_THE_CURRENT_USER": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 90
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_LANIP_AS_THE_NORMAL_USER_AFTER_INSTALLATION": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 94
+      }
+    ],
+    "LANCTL.UI.TEXT.PREPARE_RANGE_CONFIRMATION_DO_NOT_START_PROBES": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 99
+      }
+    ],
+    "LANCTL.UI.TEXT.SHARED_SUITE_ADMINISTRATION": [
+      {
+        "file": "src/lanctl/bootstrap/lanctl.py",
+        "lineBeforeMigration": 65
+      }
+    ],
+    "LANCTL.UI.TEXT.MONITORING_EVENTS_AND_INCIDENTS_FOR_THE_LANCTL_SUITE": [
+      {
+        "file": "src/lanctl/bootstrap/lanmon.py",
+        "lineBeforeMigration": 25
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_COMMAND_CONSOLE": [
+      {
+        "file": "src/lanctl/bootstrap/lanmon.py",
+        "lineBeforeMigration": 39
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_TABULAR_EVENT_VIEWER": [
+      {
+        "file": "src/lanctl/bootstrap/lanmon.py",
+        "lineBeforeMigration": 41
+      }
+    ],
+    "LANCTL.UI.TEXT.LOG_SOURCE": [
+      {
+        "file": "src/lanctl/bootstrap/lanmon.py",
+        "lineBeforeMigration": 44
+      }
+    ],
+    "LANCTL.UI.TEXT.MAXIMUM_NUMBER_OF_EVENTS_1_1000": [
+      {
+        "file": "src/lanctl/bootstrap/lanmon.py",
+        "lineBeforeMigration": 46
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_LOGS_IN_ANOTHER_TERMINAL_AND_FOLLOW_THE_COMMON_LOG": [
+      {
+        "file": "src/lanctl/bootstrap/lanmon.py",
+        "lineBeforeMigration": 50
+      }
+    ],
+    "LANCTL.UI.TEXT.MINIMUM_LEVEL_1_59_PRESERVE_LINES_WITHOUT_A_LEVEL": [
+      {
+        "file": "src/lanctl/bootstrap/lanmon.py",
+        "lineBeforeMigration": 53
+      }
+    ],
+    "LANCTL.UI.TEXT.READY_HELP_LISTS_COMMANDS_EXIT_RETURNS_OR_EXITS": [
+      {
+        "file": "src/lanctl/core/interactive_console.py",
+        "lineBeforeMigration": 34
+      }
+    ],
+    "LANCTL.UI.TEXT.COULD_NOT_LOAD_THE_PANEL_YOU_CAN_VIEW_HELP_OR_EXIT": [
+      {
+        "file": "src/lanctl/core/interactive_console.py",
+        "lineBeforeMigration": 51
+      }
+    ],
+    "LANCTL.UI.TEXT.CLOSE_CANCELLED_THE_CONSOLE_REMAINS_OPEN": [
+      {
+        "file": "src/lanctl/core/interactive_console.py",
+        "lineBeforeMigration": 72
+      }
+    ],
+    "LANCTL.UI.TEXT.READY": [
+      {
+        "file": "src/lanctl/core/interactive_console.py",
+        "lineBeforeMigration": 88
+      }
+    ],
+    "LANCTL.UI.TEXT.ENTER_A_COMMAND_AND_PRESS_ENTER_HELP_FOR_HELP_EXIT_TO_QUIT": [
+      {
+        "file": "src/lanctl/core/interactive_console.py",
+        "lineBeforeMigration": 61
+      }
+    ],
+    "LANCTL.UI.TEXT.STATUS": [
+      {
+        "file": "src/lanctl/core/interactive_console.py",
+        "lineBeforeMigration": 60
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 25
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 47
+      },
+      {
+        "file": "gui/device-sheet.js",
+        "lineBeforeMigration": 41
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 52
+      }
+    ],
+    "LANCTL.CORE.APP.CANCELLED": [
+      {
+        "file": "src/lanctl/core/interactive_console.py",
+        "lineBeforeMigration": 147
+      }
+    ],
+    "LANCTL.UI.TEXT.COULD_NOT_COMPLETE_THE_OPERATION": [
+      {
+        "file": "gui/app-preferences.js",
+        "lineBeforeMigration": 9
+      },
+      {
+        "file": "gui/app-support.js",
+        "lineBeforeMigration": 9
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 19
+      }
+    ],
+    "LANCTL.UI.TEXT.APPEARANCE": [
+      {
+        "file": "gui/app-preferences.js",
+        "lineBeforeMigration": 201
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.LOGS": [
+      {
+        "file": "gui/app-support.js",
+        "lineBeforeMigration": 145
+      },
+      {
+        "file": "gui/monitor-support.js",
+        "lineBeforeMigration": 44
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.NOT_DETECTED": [
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 16
+      },
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 25
+      },
+      {
+        "file": "gui/device-sheet.js",
+        "lineBeforeMigration": 41
+      }
+    ],
+    "LANCTL.UI.TEXT.MANUFACTURER": [
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 25
+      },
+      {
+        "file": "gui/device-sheet.js",
+        "lineBeforeMigration": 41
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 34
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 53
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 71
+      }
+    ],
+    "LANCTL.UI.TEXT.LAST_SEEN": [
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 25
+      },
+      {
+        "file": "gui/device-sheet.js",
+        "lineBeforeMigration": 41
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 54
+      }
+    ],
+    "LANCTL.UI.TEXT.INVENTORY_CONNECTED_TO_THE_LANCTL_CORE": [
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 39
+      }
+    ],
+    "LANCTL.UI.TEXT.TYPE": [
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 47
+      },
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 1094
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 215
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 349
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1214
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1279
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1483
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 52
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 76
+      }
+    ],
+    "LANCTL.UI.TEXT.AUTHENTICATION_REJECTED": [
+      {
+        "file": "gui/app.js",
+        "lineBeforeMigration": 96
+      }
+    ],
+    "LANCTL.UI.TEXT.IP_ADDRESS": [
+      {
+        "file": "gui/device-sheet.js",
+        "lineBeforeMigration": 13
+      },
+      {
+        "file": "gui/record-editors.js",
+        "lineBeforeMigration": 88
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1000
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1218
+      }
+    ],
+    "LANCTL.UI.TEXT.APPLY": [
+      {
+        "file": "gui/first-scan.js",
+        "lineBeforeMigration": 85
+      }
+    ],
+    "LANCTL.UI.TEXT.ACTIVITY": [
+      {
+        "file": "gui/monitor-support.js",
+        "lineBeforeMigration": 43
+      },
+      {
+        "file": "gui/monitor-support.js",
+        "lineBeforeMigration": 72
+      }
+    ],
+    "LANCTL.UI.TEXT.PREPARE_REPORT_IN_LANMON": [
+      {
+        "file": "gui/monitor-support.js",
+        "lineBeforeMigration": 160
+      }
+    ],
+    "LANCTL.UI.TEXT.NEW_CABLE": [
+      {
+        "file": "gui/physical-editor.js",
+        "lineBeforeMigration": 141
+      }
+    ],
+    "LANCTL.UI.TEXT.NEW_RACK": [
+      {
+        "file": "gui/physical-editor.js",
+        "lineBeforeMigration": 142
+      },
+      {
+        "file": "gui/rack-dimensions.js",
+        "lineBeforeMigration": 100
+      }
+    ],
+    "LANCTL.UI.TEXT.NEW_DEVICE": [
+      {
+        "file": "gui/physical-editor.js",
+        "lineBeforeMigration": 153
+      }
+    ],
+    "LANCTL.UI.TEXT.LOCATION": [
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 792
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 5
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1067
+      }
+    ],
+    "LANCTL.UI.TEXT.SUMMARY": [
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 872
+      },
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 1118
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 98
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 120
+      }
+    ],
+    "LANCTL.UI.TEXT.EQUIPMENT": [
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 873
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1232
+      }
+    ],
+    "LANCTL.UI.TEXT.NO_SELECTION": [
+      {
+        "file": "gui/physical-gui.js",
+        "lineBeforeMigration": 928
+      },
+      {
+        "file": "gui/launcher.html",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.INVENTORY.MANUAL.ADD": [
+      {
+        "file": "gui/record-editors.js",
+        "lineBeforeMigration": 103
+      }
+    ],
+    "LANCTL.UI.TEXT.LANGUAGE": [
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 5
+      },
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.ENABLED_BA5F3324": [
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 5
+      }
+    ],
+    "LANCTL.UI.TEXT.THEME": [
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 5
+      }
+    ],
+    "LANCTL.UI.TEXT.DISABLED": [
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 6
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1354
+      }
+    ],
+    "LANCTL.UI.TEXT.REMOTE_ACCESS": [
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.DISCARD_CHANGES": [
+      {
+        "file": "gui/suite-settings.js",
+        "lineBeforeMigration": 43
+      }
+    ],
+    "LANCTL.UI.TEXT.CONTINUE": [
+      {
+        "file": "gui/suite.js",
+        "lineBeforeMigration": 5
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 15
+      }
+    ],
+    "LANCTL.UI.TEXT.INVENTORY_AND_DIAGNOSTICS": [
+      {
+        "file": "gui/suite.js",
+        "lineBeforeMigration": 24
+      }
+    ],
+    "LANCTL.UI.TEXT.WIRING_AND_TOPOLOGY": [
+      {
+        "file": "gui/suite.js",
+        "lineBeforeMigration": 25
+      }
+    ],
+    "LANCTL.UI.TEXT.ROOMS_AND_RACKS": [
+      {
+        "file": "gui/suite.js",
+        "lineBeforeMigration": 26
+      }
+    ],
+    "LANCTL.UI.TEXT.CREDENTIALS_AND_ACCESS": [
+      {
+        "file": "gui/suite.js",
+        "lineBeforeMigration": 27
+      }
+    ],
+    "LANCTL.UI.TEXT.MONITORING_AND_EVENTS": [
+      {
+        "file": "gui/suite.js",
+        "lineBeforeMigration": 28
+      }
+    ],
+    "LANCTL.UI.TEXT.CONNECTIONS": [
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 217
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 350
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 967
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1069
+      }
+    ],
+    "LANCTL.UI.TEXT.CONNECTION": [
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 233
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 352
+      },
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 926
+      }
+    ],
+    "LANCTL.UI.TEXT.VIEW_AND_EDIT_DATA": [
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 807
+      }
+    ],
+    "LANCTL.UI.TEXT.ACTIVE": [
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1229
+      }
+    ],
+    "LANCTL.UI.TEXT.INCIDENTS": [
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1250
+      }
+    ],
+    "LANCTL.UI.TEXT.ENABLED": [
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1353
+      }
+    ],
+    "LANCTL.UI.TEXT.ADVANCED": [
+      {
+        "file": "gui/wire-gui.js",
+        "lineBeforeMigration": 1381
+      }
+    ],
+    "LANCTL.UI.TEXT.ACTIVE_PROJECT": [
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 15
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.SETTINGS": [
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 16
+      }
+    ],
+    "LANCTL.INVENTORY.MANUAL.ALIAS": [
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 53
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 77
+      }
+    ],
+    "LANCTL.UI.TEXT.SAVE_CHANGES": [
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 82
+      }
+    ],
+    "LANCTL.UI.TEXT.VIEW_DETAILS": [
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 92
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 104
+      }
+    ],
+    "LANCTL.UI.TEXT.DATE": [
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 98
+      }
+    ],
+    "LANCTL.UI.TEXT.DEVICE_DETAILS": [
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 120
+      }
+    ],
+    "LANCTL.INVENTORY.MANUAL.CANCEL": [
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 132
+      },
+      {
+        "file": "gui/index.html",
+        "lineBeforeMigration": 133
+      },
+      {
+        "file": "gui/launcher.html",
+        "lineBeforeMigration": 9
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 12
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 15
+      }
+    ],
+    "LANCTL.UI.TEXT.CONNECTING": [
+      {
+        "file": "gui/launcher.html",
+        "lineBeforeMigration": 4
+      }
+    ],
+    "LANCTL.UI.TEXT.SETTINGS_B25ACB56": [
+      {
+        "file": "gui/launcher.html",
+        "lineBeforeMigration": 5
+      },
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.PASSWORD": [
+      {
+        "file": "gui/remote-setup.html",
+        "lineBeforeMigration": 19
+      }
+    ],
+    "LANCTL.UI.TEXT.LOCAL_SESSION": [
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 6
+      }
+    ],
+    "LANCTL.UI.TEXT.GENERAL_OPTIONS": [
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.HOME": [
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.PROJECTS_F0A63CD2": [
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 7
+      }
+    ],
+    "LANCTL.UI.TEXT.OPEN_THE_GENERAL_CLI_IN_THE_SYSTEM_TERMINAL": [
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 10
+      }
+    ],
+    "LANCTL.UI.TEXT.ACTIVITY_1990A1A7": [
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 10
+      }
+    ],
+    "LANCTL.UI.TEXT.SYSTEM_22FAA842": [
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 10
+      }
+    ],
+    "LANCTL.UI.TEXT.REFERENCE": [
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 10
+      }
+    ],
+    "LANCTL.UI.TEXT.LANCTL_CONFIRMATION": [
+      {
+        "file": "gui/suite.html",
+        "lineBeforeMigration": 14
+      }
+    ]
+  },
+  "files": [
+    "src/lanctl/apps/access/manager_cli.py",
+    "src/lanctl/apps/ip/interfaces/cli/commands/credential.py",
+    "src/lanctl/apps/ip/interfaces/cli/commands/download_settings.py",
+    "src/lanctl/apps/ip/interfaces/cli/commands/lanwire.py",
+    "src/lanctl/apps/ip/interfaces/cli/commands/open.py",
+    "src/lanctl/apps/ip/interfaces/cli/commands/scan.py",
+    "src/lanctl/apps/ip/interfaces/cli/commands/settings.py",
+    "src/lanctl/apps/ip/interfaces/cli/commands/ssh.py",
+    "src/lanctl/apps/ip/interfaces/cli/commands/terminal.py",
+    "src/lanctl/apps/ip/interfaces/cli/commands/wol.py",
+    "src/lanctl/apps/ip/interfaces/cli/main.py",
+    "src/lanctl/apps/ip/interfaces/gui/desktop.py",
+    "src/lanctl/apps/ip/interfaces/gui/main.py",
+    "src/lanctl/apps/ip/interfaces/tui/main.py",
+    "src/lanctl/apps/ip/interfaces/tui/managers.py",
+    "src/lanctl/apps/monitor/interfaces.py",
+    "src/lanctl/apps/rack/cli.py",
+    "src/lanctl/apps/suite/gui.py",
+    "src/lanctl/apps/suite/launcher_gui.py",
+    "src/lanctl/apps/wire/cli/main.py",
+    "src/lanctl/apps/wire/tui/help.py",
+    "src/lanctl/apps/wire/tui/renderer.py",
+    "src/lanctl/bootstrap/lanctl.py",
+    "src/lanctl/bootstrap/lanmon.py",
+    "src/lanctl/core/interactive_console.py",
+    "src/lanctl/core/terminal_ui.py",
+    "gui/app-preferences.js",
+    "gui/app-support.js",
+    "gui/app.js",
+    "gui/device-sheet.js",
+    "gui/first-scan.js",
+    "gui/monitor-support.js",
+    "gui/physical-editor.js",
+    "gui/physical-gui.js",
+    "gui/rack-dimensions.js",
+    "gui/record-editors.js",
+    "gui/suite-settings.js",
+    "gui/suite.js",
+    "gui/wire-gui.js",
+    "gui/index.html",
+    "gui/launcher.html",
+    "gui/remote-setup.html",
+    "gui/suite.html"
+  ],
+  "additionalFrontendOccurrences": [
+    {
+      "key": "LANCTL.UI.TEXT.AVAILABLE",
+      "file": "gui/app-support.js",
+      "lineBeforeMigration": 218
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ACTIVE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 16
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 23
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ACTIVE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PROTOCOLS",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LATENCY",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PORT_DETECTED",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 46
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 47
+    },
+    {
+      "key": "LANCTL.LANGUAGE.FIELD.ACTIVE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 62
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 62
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 62
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/app.js",
+      "lineBeforeMigration": 62
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ALL",
+      "file": "gui/desktop.js",
+      "lineBeforeMigration": 125
+    },
+    {
+      "key": "LANCTL.UI.TEXT.CREATE_GROUP",
+      "file": "gui/desktop.js",
+      "lineBeforeMigration": 169
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.TITLE",
+      "file": "gui/desktop.js",
+      "lineBeforeMigration": 169
+    },
+    {
+      "key": "LANCTL.UI.TEXT.GROUP_NAME",
+      "file": "gui/desktop.js",
+      "lineBeforeMigration": 170
+    },
+    {
+      "key": "LANCTL.UI.TEXT.IDF_IDENTIFIER",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 14
+    },
+    {
+      "key": "LANCTL.UI.TEXT.REFRESH_PORTS_AND_SERVICES",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 19
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ACTIVE",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 41
+    },
+    {
+      "key": "LANCTL.UI.TEXT.CONFIRMATION",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 41
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PROTOCOLS",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 41
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LATENCY",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 41
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_MEASUREMENT",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 41
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LAST_DISCOVERY",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 41
+    },
+    {
+      "key": "LANCTL.UI.TEXT.TYPE_ICON",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 41
+    },
+    {
+      "key": "LANCTL.UI.TEXT.INSPECTING_PORTS_AND_SERVICES",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 60
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PORT_DETECTED",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 60
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_OPEN_PORTS_WERE_DETECTED_DURING_INSPECTION",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 60
+    },
+    {
+      "key": "LANCTL.UI.TEXT.INSPECTION_FINISHED",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 60
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SPECIFY_AN_EXISTING_GROUP",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 61
+    },
+    {
+      "key": "LANCTL.UI.TEXT.GROUP_UPDATED",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 61
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SPECIFY_A_GROUP_NAME",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 64
+    },
+    {
+      "key": "LANCTL.UI.TEXT.GROUP_CREATED",
+      "file": "gui/device-sheet.js",
+      "lineBeforeMigration": 64
+    },
+    {
+      "key": "LANCTL.UI.TEXT.CREATE_GROUP",
+      "file": "gui/lanip-controls.js",
+      "lineBeforeMigration": 66
+    },
+    {
+      "key": "LANCTL.UI.TEXT.GROUP_NAME",
+      "file": "gui/lanip-controls.js",
+      "lineBeforeMigration": 66
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PHYSICAL_INFRASTRUCTURE",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 6
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_RACK",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 6
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NETWORK_STATUS",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 6
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_SELECTION",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 15
+    },
+    {
+      "key": "LANCTL.UI.TEXT.VIEW_DETAILS",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 15
+    },
+    {
+      "key": "LANCTL.UI.TEXT.EDIT",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 15
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.NAME",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 20
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.DESCRIPTION",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 20
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SOURCE",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 20
+    },
+    {
+      "key": "LANCTL.UI.TEXT.STATUS",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 20
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PROTOCOL",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 20
+    },
+    {
+      "key": "LANCTL.UI.TEXT.USERNAME",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 20
+    },
+    {
+      "key": "LANCTL.UI.TEXT.POSITION",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 20
+    },
+    {
+      "key": "LANCTL.UI.TEXT.IP_ADDRESS",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 20
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LATENCY",
+      "file": "gui/launcher-prototypes.js",
+      "lineBeforeMigration": 20
+    },
+    {
+      "key": "LANCTL.UI.TEXT.CONNECTIONS_AND_INFRASTRUCTURE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 12
+    },
+    {
+      "key": "LANCTL.UI.TEXT.EQUIPMENT_CABLES_AND_PORTS_IN_THE_PHYSICAL_STORE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 12
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PHYSICAL_INFRASTRUCTURE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 12
+    },
+    {
+      "key": "LANCTL.UI.TEXT.VIEW_RACKS_AND_OCCUPANTS_EDITING_IS_AVAILABLE_IN_LANWIRE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 12
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ACCESS_AND_CREDENTIALS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 12
+    },
+    {
+      "key": "LANCTL.UI.TEXT.METADATA_AND_ENCRYPTED_CREDENTIALS_IN_THE_SELECTED_STORE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 12
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NETWORK_STATUS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 12
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ACTUAL_METRICS_AND_INCIDENTS_OPENING_THIS_VIEW_DOES_NOT_START_PROBES",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 12
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LOCAL_SESSION",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 19
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_SELECTION",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.REFRESH",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_DEVICE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.UNLOCK",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_CREDENTIAL",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LOCK",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.START_MONITOR",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.STOP",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.CHECK_ONCE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 25
+    },
+    {
+      "key": "LANCTL.UI.TEXT.VIEW_DETAILS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.UI.TEXT.EDIT",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.UI.TEXT.EDIT_PORTS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.COMMON.ACTION.REMOVE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.UI.TEXT.UPDATE_CREDENTIAL",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.COMMON.ACTION.REMOVE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 26
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PREPARE_ENCRYPTED_STORE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 27
+    },
+    {
+      "key": "LANCTL.UI.TEXT.UNLOCK_STORE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 27
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_MATCHES_FOR_THE_FILTERS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 28
+    },
+    {
+      "key": "LANCTL.UI.TEXT.THERE_ARE_NO_ELEMENTS_IN_THIS_STORE_YET",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 28
+    },
+    {
+      "key": "LANCTL.UI.TEXT.DEVICE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 29
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PROTOCOL",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 29
+    },
+    {
+      "key": "LANCTL.UI.TEXT.USERNAME",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 29
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PASSWORD",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 29
+    },
+    {
+      "key": "LANCTL.UI.TEXT.HIDDEN_ENCRYPTED_STORE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 29
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_ENDPOINTS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 31
+    },
+    {
+      "key": "LANCTL.UI.TEXT.TYPE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 31
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PORTS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 31
+    },
+    {
+      "key": "LANCTL.UI.TEXT.HEIGHT",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 32
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_UNIT",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 32
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PROCESS_ACTIVE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 34
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_ACTIVE_PROCESS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 34
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_SAMPLES_RECORDED_FOR_THIS_DEVICE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 34
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.CANCEL",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 36
+    },
+    {
+      "key": "LANCTL.UI.TEXT.CLOSE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 36
+    },
+    {
+      "key": "LANCTL.UI.TEXT.THERE_ARE_UNSAVED_CHANGES_DISCARD_THEM",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 37
+    },
+    {
+      "key": "LANCTL.UI.TEXT.COPPER_CABLE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 39
+    },
+    {
+      "key": "LANCTL.UI.TEXT.FIBER_CABLE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 39
+    },
+    {
+      "key": "LANCTL.UI.TEXT.TYPE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 39
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.NAME",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 39
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.DESCRIPTION",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 39
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_PHYSICAL_ELEMENT",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 39
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.NAME",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 40
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.DESCRIPTION",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 40
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_RACK",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 40
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NOT_CONNECTED",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 41
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_NAME",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 42
+    },
+    {
+      "key": "LANCTL.UI.TEXT.POSITION",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 42
+    },
+    {
+      "key": "LANCTL.UI.TEXT.FIRST_ADD_A_DEVICE_TO_THE_INVENTORY_WITH_LANIP",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.UI.TEXT.UPDATE_CREDENTIAL",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_CREDENTIAL",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.UI.TEXT.DEVICE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PROTOCOL",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.UI.TEXT.USERNAME",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PASSWORD",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.UI.TEXT.REPEAT_PASSWORD",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 43
+    },
+    {
+      "key": "LANCTL.UI.TEXT.STORE_PASSWORD",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 44
+    },
+    {
+      "key": "LANCTL.UI.TEXT.REPEAT_PASSWORD_AT_LEAST_12_CHARACTERS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 44
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PREPARE_ENCRYPTED_STORE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 44
+    },
+    {
+      "key": "LANCTL.UI.TEXT.UNLOCK_STORE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 44
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SEARCH_SETTINGS",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 45
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SHARED_SETTING_VALIDATED_BEFORE_SAVING",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 45
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ENABLED",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 45
+    },
+    {
+      "key": "LANCTL.UI.TEXT.DISABLED",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 45
+    },
+    {
+      "key": "LANCTL.UI.TEXT.START_ACTUAL_MONITORING_FOR_THIS_PROJECT_IT_WILL_CONTINUE_AFTER_CLOSING_THE_WINDOW",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 46
+    },
+    {
+      "key": "LANCTL.UI.TEXT.STOP_THIS_PROJECT_S_MONITORING_SESSION",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 46
+    },
+    {
+      "key": "LANCTL.UI.TEXT.CHECK_THIS_PROJECT_S_DEVICES_NOW_NETWORK_PROBES_WILL_BE_SENT",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 46
+    },
+    {
+      "key": "LANCTL.UI.TEXT.CLOSE_INCIDENT",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 48
+    },
+    {
+      "key": "LANCTL.UI.TEXT.INCIDENT_UPDATED",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 48
+    },
+    {
+      "key": "LANCTL.UI.TEXT.CHANGES_SAVED_IN_THE_ACTUAL_STORE",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 51
+    },
+    {
+      "key": "LANCTL.UI.TEXT.WAIT_FOR_THE_OPERATION_TO_FINISH_BEFORE_CLOSING",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 52
+    },
+    {
+      "key": "LANCTL.UI.TEXT.THE_PROJECT_HAS_PENDING_CHANGES_SAVE_THEM_BEFORE_CLOSING",
+      "file": "gui/launcher.js",
+      "lineBeforeMigration": 52
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LOGS",
+      "file": "gui/monitor-support.js",
+      "lineBeforeMigration": 72
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PAUSE",
+      "file": "gui/monitor-support.js",
+      "lineBeforeMigration": 90
+    },
+    {
+      "key": "LANCTL.UI.TEXT.DEVICE_1C555EB7",
+      "file": "gui/physical-editor.js",
+      "lineBeforeMigration": 119
+    },
+    {
+      "key": "LANCTL.UI.TEXT.HIDE_CABLE_NAMES",
+      "file": "gui/physical-gui.js",
+      "lineBeforeMigration": 515
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SHOW_CABLE_NAMES",
+      "file": "gui/physical-gui.js",
+      "lineBeforeMigration": 515
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NOT_CONNECTED",
+      "file": "gui/physical-gui.js",
+      "lineBeforeMigration": 696
+    },
+    {
+      "key": "LANCTL.UI.TEXT.COPY_JSON",
+      "file": "gui/physical-gui.js",
+      "lineBeforeMigration": 878
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LIST",
+      "file": "gui/physical-gui.js",
+      "lineBeforeMigration": 931
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SHOW_SIMPLE_UNITS",
+      "file": "gui/rack-skins.js",
+      "lineBeforeMigration": 295
+    },
+    {
+      "key": "LANCTL.UI.TEXT.REPEAT_PASSWORD",
+      "file": "gui/record-editors.js",
+      "lineBeforeMigration": 47
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_MEASUREMENT",
+      "file": "gui/record-editors.js",
+      "lineBeforeMigration": 91
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ALL",
+      "file": "gui/suite-settings.js",
+      "lineBeforeMigration": 6
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SETTINGS",
+      "file": "gui/suite-settings.js",
+      "lineBeforeMigration": 98
+    },
+    {
+      "key": "LANCTL.UI.TEXT.OPEN_THIS_INTERFACE_WITH_LANCTL_GUI",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 42
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_PROJECT",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 49
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_PROJECT",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 52
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ACTIVE",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 64
+    },
+    {
+      "key": "LANCTL.COMMON.ACTION.DISABLE",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 65
+    },
+    {
+      "key": "LANCTL.COMMON.ACTION.ENABLE",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 65
+    },
+    {
+      "key": "LANCTL.UI.TEXT.UNAVAILABLE",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 88
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SAVE",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 146
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.NAME",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 150
+    },
+    {
+      "key": "LANCTL.INVENTORY.MANUAL.DESCRIPTION",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 150
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LOCATION",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 150
+    },
+    {
+      "key": "LANCTL.UI.TEXT.THERE_ARE_UNSAVED_CHANGES_DISCARD_THEM",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 241
+    },
+    {
+      "key": "LANCTL.UI.TEXT.DISCARD_CHANGES",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 241
+    },
+    {
+      "key": "LANCTL.UI.TEXT.DISCARD_AND_CLOSE",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 247
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SYSTEM",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 269
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PROJECT",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 269
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NO_PROJECT",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 269
+    },
+    {
+      "key": "LANCTL.UI.TEXT.VALUE",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 319
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SEARCH_SETTINGS",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 330
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PROJECT",
+      "file": "gui/suite.js",
+      "lineBeforeMigration": 348
+    },
+    {
+      "key": "LANCTL.UI.TEXT.COPPER_CABLE",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 14
+    },
+    {
+      "key": "LANCTL.UI.TEXT.FIBER_CABLE",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 15
+    },
+    {
+      "key": "LANCTL.UI.TEXT.ALL",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 293
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NOT_CONNECTED",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 328
+    },
+    {
+      "key": "LANCTL.COMMON.VALUE.NONE",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 531
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NOT_CONNECTED",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 571
+    },
+    {
+      "key": "LANCTL.UI.TEXT.COPY_JSON",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1047
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_NAME",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1127
+    },
+    {
+      "key": "LANCTL.UI.TEXT.POSITION",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1128
+    },
+    {
+      "key": "LANCTL.UI.TEXT.TOPOLOGY",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1271
+    },
+    {
+      "key": "LANCTL.UI.TEXT.LIST",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1272
+    },
+    {
+      "key": "LANCTL.UI.TEXT.TOPOLOGY",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1338
+    },
+    {
+      "key": "LANCTL.UI.TEXT.PROJECT",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1380
+    },
+    {
+      "key": "LANCTL.UI.TEXT.SEARCH_SETTINGS",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1385
+    },
+    {
+      "key": "LANCTL.UI.TEXT.COPPER_CABLE",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1476
+    },
+    {
+      "key": "LANCTL.UI.TEXT.FIBER_CABLE",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1477
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NOT_CONNECTED",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1510
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_CABLE",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1530
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_RACK",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1530
+    },
+    {
+      "key": "LANCTL.UI.TEXT.NEW_PHYSICAL_ELEMENT",
+      "file": "gui/wire-gui.js",
+      "lineBeforeMigration": 1530
+    }
+  ]
+}

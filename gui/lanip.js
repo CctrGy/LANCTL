@@ -66,10 +66,11 @@ $("#inventory-view").addEventListener("change",event=>{
 });
 function syncInspector() {
   const selected=state.devices.some(device=>device.id===state.selectedId);
-  document.querySelectorAll(".inspector input,.inspector select,.inspector button:not(.contract-only)").forEach(control=>control.disabled=!selected||desktopBusy);
+  document.querySelectorAll(".inspector input,.inspector select,.inspector button:not(.contract-only):not(#new-group)").forEach(control=>control.disabled=!selected||desktopBusy);
+  $("#new-group").disabled=desktopBusy;
   const device=state.devices.find(device=>device.id===state.selectedId);
   $("#wake-device").disabled=!selected||desktopBusy||!device?.wolAvailable;
-  $(".inspector").setAttribute("aria-label",selected?"Opciones del equipo seleccionado":"Selecciona un equipo del inventario");
+  $(".inspector").setAttribute("aria-label",selected?window.LanctlI18n.t("LANCTL.UI.VIEW.SELECTED_DEVICE_OPTIONS"):window.LanctlI18n.t("LANCTL.UI.VIEW.SELECT_A_DEVICE_FROM_THE_INVENTORY"));
 }
 const selectedRenderer=renderSelected;
 renderSelected=function(device){selectedRenderer(device);syncInspector();};

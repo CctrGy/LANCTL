@@ -22,6 +22,7 @@ from lanctl.core.group_database import GroupDatabase
 from lanctl.core.output import write_records
 from lanctl.core.progress import ScanProgress
 from lanctl.core.query import matches_query
+from lanctl.shared.i18n import t
 
 
 class _ExplicitNetwork(argparse.Action):
@@ -34,134 +35,157 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
     command = commands.add_parser(
         "list",
-        help="Escanea la LAN y muestra dispositivos activos e históricos.",
+        help=t("LANCTL.UI.HELP.SCAN_THE_LAN_AND_SHOW_ACTIVE_AND_HISTORICAL_DEVICES"),
         description=(
-            "Realiza un escaneo básico de IP/MAC, actualiza la base de datos "
-            "por MAC y muestra también los equipos no detectados."
+            t(
+                "LANCTL.UI.HELP.PERFORM_A_BASIC_IP_MAC_SCAN_UPDATE_THE_DATABASE_BY_MAC_AND_ALSO_SHOW_UNDETECTED_DEVICES"
+            )
         ),
     )
     command.add_argument(
         "--network",
         action=_ExplicitNetwork,
         default=config["range"],
-        help="Red CIDR. Por defecto detecta la LAN como /24.",
+        help=t("LANCTL.UI.HELP.CIDR_NETWORK_DETECTS_THE_LAN_AS_24_BY_DEFAULT"),
     )
     command.add_argument(
         "--interface",
         default=None,
-        help="Origen IPv4 local o ID de interfaz; usa su máscara real. Solo ICMP/ARP, sin DNS ni descubridores externos.",
+        help=t(
+            "LANCTL.UI.HELP.LOCAL_IPV4_SOURCE_OR_INTERFACE_ID_USES_ITS_ACTUAL_MASK_ICMP_ARP_ONLY_WITHOUT_DNS_OR_EXTERNAL_DI"
+        ),
     )
     command.set_defaults(network_explicit=False)
     command.set_defaults(configured_gateway=config.get("gateway"))
     command.add_argument(
-        "--database", default=config["database"], help="Archivo JSON de elementos."
+        "--database", default=config["database"], help=t("LANCTL.UI.HELP.ELEMENT_JSON_FILE")
     )
-    command.add_argument("--groups", default=config["groups"], help="Archivo JSON de grupos.")
+    command.add_argument(
+        "--groups", default=config["groups"], help=t("LANCTL.UI.HELP.GROUP_JSON_FILE")
+    )
     command.add_argument(
         "-f",
         "--format",
         choices=("table", "json", "csv", "html", "xml", "yaml"),
         default="table",
-        help="Formato de salida (por defecto: table).",
+        help=t("LANCTL.UI.HELP.OUTPUT_FORMAT_DEFAULT_TABLE"),
     )
-    command.add_argument("-o", "--output", help="Guarda la salida en un archivo.")
+    command.add_argument("-o", "--output", help=t("LANCTL.UI.HELP.SAVE_OUTPUT_TO_A_FILE"))
     command.add_argument(
         "-recurrent",
         "--recurrent",
         action="store_true",
-        help="Lista los elementos recurrentes sin escanear la LAN ni mostrar IP.",
+        help=t("LANCTL.UI.HELP.LIST_RECURRING_ELEMENTS_WITHOUT_SCANNING_THE_LAN_OR_SHOWING_IP"),
     )
     command.add_argument(
         "--where",
-        help='Consulta combinable, por ejemplo: "active and group=IOT and vendor~Amazon".',
+        help=t(
+            "LANCTL.UI.HELP.COMPOSABLE_QUERY_FOR_EXAMPLE_ACTIVE_AND_GROUP_IOT_AND_VENDOR_AMAZON"
+        ),
     )
     command.add_argument(
         "-w",
         "--workers",
         type=int,
         default=config["workers"],
-        help="Comprobaciones simultáneas.",
+        help=t("LANCTL.UI.HELP.CONCURRENT_CHECKS"),
     )
     command.add_argument(
         "-t",
         "--timeout",
         type=float,
         default=config["timeout"],
-        help="Timeout base en segundos por operación y host; el perfil puede ajustarlo.",
+        help=t(
+            "LANCTL.UI.HELP.BASE_TIMEOUT_IN_SECONDS_PER_OPERATION_AND_HOST_THE_PROFILE_MAY_ADJUST_IT"
+        ),
     )
     command.add_argument(
         "--scan-order",
         choices=SCAN_ORDERS,
         default=config.get("scanOrder", "ascending"),
-        help="Orden de sondeo de IP: ascending, descending o random.",
+        help=t("LANCTL.UI.HELP.IP_PROBE_ORDER_ASCENDING_DESCENDING_OR_RANDOM"),
     )
     command.add_argument(
         "--include-unknown",
         action="store_true",
-        help="Incluye hosts activos aunque todavía no tengan MAC.",
+        help=t("LANCTL.UI.HELP.INCLUDE_ACTIVE_HOSTS_EVEN_IF_THEIR_MAC_IS_NOT_YET_KNOWN"),
     )
     command.add_argument(
         "--resolve-names",
         action="store_true",
-        help="Resuelve y guarda nombres DNS de los elementos detectados.",
+        help=t("LANCTL.UI.HELP.RESOLVE_AND_SAVE_DNS_NAMES_OF_DETECTED_ELEMENTS"),
     )
     command.add_argument(
         "--max-hosts",
         type=int,
         default=config["maxHosts"],
-        help="Máximo de hosts permitido en un escaneo.",
+        help=t("LANCTL.UI.HELP.MAXIMUM_HOSTS_ALLOWED_IN_A_SCAN"),
     )
     command.add_argument(
         "--discovery",
         choices=DISCOVERY_MODES,
         default=None,
-        help=("Método: icmp, arp activo o hybrid (por defecto según settings)."),
+        help=(t("LANCTL.UI.HELP.METHOD_ICMP_ACTIVE_ARP_OR_HYBRID_DEFAULT_FROM_SETTINGS")),
     )
     profiles = command.add_mutually_exclusive_group()
     profiles.add_argument(
         "--profile",
         choices=tuple(SCAN_PROFILES),
         default=None,
-        help="Perfil completo de escaneo: fast, normal o accurate.",
+        help=t("LANCTL.UI.HELP.COMPLETE_SCAN_PROFILE_FAST_NORMAL_OR_ACCURATE"),
     )
     profiles.add_argument(
-        "--fast", dest="profile", action="store_const", const="fast", help="Escaneo ARP rápido."
+        "--fast",
+        dest="profile",
+        action="store_const",
+        const="fast",
+        help=t("LANCTL.UI.HELP.FAST_ARP_SCAN"),
     )
     profiles.add_argument(
         "--normal",
         dest="profile",
         action="store_const",
         const="normal",
-        help="Escaneo híbrido equilibrado.",
+        help=t("LANCTL.UI.HELP.BALANCED_HYBRID_SCAN"),
     )
     profiles.add_argument(
         "--accurate",
         dest="profile",
         action="store_const",
         const="accurate",
-        help="Escaneo profundo con varios métodos.",
+        help=t("LANCTL.UI.HELP.DEEP_SCAN_USING_MULTIPLE_METHODS"),
     )
     progress_options = command.add_mutually_exclusive_group()
     progress_options.add_argument(
-        "--progress", dest="progress", action="store_true", help="Muestra el progreso interactivo."
+        "--progress",
+        dest="progress",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.SHOW_INTERACTIVE_PROGRESS"),
     )
     progress_options.add_argument(
-        "--no-progress", dest="progress", action="store_false", help="Oculta el progreso."
+        "--no-progress",
+        dest="progress",
+        action="store_false",
+        help=t("LANCTL.UI.HELP.HIDE_PROGRESS"),
     )
     command.add_argument(
         "--show-discovery",
         action="store_true",
-        help="Añade una columna con ICMP, ARP, LOCAL, BASIC o CACHE.",
+        help=t("LANCTL.UI.HELP.ADD_A_COLUMN_WITH_ICMP_ARP_LOCAL_BASIC_OR_CACHE"),
     )
     command.add_argument(
         "--include-arp-cache",
         action="store_true",
-        help=("Importa vecinos ARP en caché como CACHE no verificada; no cuentan como activos."),
+        help=(
+            t(
+                "LANCTL.UI.HELP.IMPORT_CACHED_ARP_NEIGHBORS_AS_UNVERIFIED_CACHE_THEY_DO_NOT_COUNT_AS_ACTIVE"
+            )
+        ),
     )
     command.add_argument(
         "--show-detection",
         action="store_true",
-        help="Añade los métodos históricos y la fecha de última detección.",
+        help=t("LANCTL.UI.HELP.ADD_HISTORICAL_METHODS_AND_LAST_SEEN_DATE"),
     )
     connection = command.add_mutually_exclusive_group()
     connection.add_argument(
@@ -172,39 +196,39 @@ def register_list_command(commands: argparse._SubParsersAction) -> None:
         "-conected",
         dest="connected",
         action="store_true",
-        help="Muestra solo los dispositivos activos en el escaneo actual.",
+        help=t("LANCTL.UI.HELP.SHOW_ONLY_DEVICES_ACTIVE_IN_THE_CURRENT_SCAN"),
     )
     connection.add_argument(
         "-disconnected",
         "--disconnected",
         "-offline",
         action="store_true",
-        help="Muestra solo los dispositivos no detectados actualmente.",
+        help=t("LANCTL.UI.HELP.SHOW_ONLY_DEVICES_NOT_CURRENTLY_DETECTED"),
     )
     command.add_argument(
         "-basic",
         "--basic",
         action="store_true",
-        help="Vista reducida: IP, alias y descripción.",
+        help=t("LANCTL.UI.HELP.COMPACT_VIEW_IP_ALIAS_AND_DESCRIPTION"),
     )
     command.add_argument(
         "-cnf",
         "--cnf-state",
         choices=("O", "X", "-", "S", "F"),
         type=str.upper,
-        help="Filtra por estado CNF: O, X, -, S o F.",
+        help=t("LANCTL.UI.HELP.FILTER_BY_CNF_STATE_O_X_S_OR_F"),
     )
     command.add_argument(
         "-group",
         "--group",
         metavar="GRUPO",
-        help="Muestra solo los elementos de un grupo.",
+        help=t("LANCTL.UI.HELP.SHOW_ONLY_ELEMENTS_IN_A_GROUP"),
     )
     command.add_argument(
         "-dhcp",
         "--dhcp-only",
         action="store_true",
-        help="Muestra solo IP incluidas en el rango DHCP configurado.",
+        help=t("LANCTL.UI.HELP.SHOW_ONLY_IPS_WITHIN_THE_CONFIGURED_DHCP_RANGE"),
     )
     command.set_defaults(
         handler=run_list,
@@ -437,12 +461,20 @@ def run_list(args: argparse.Namespace) -> int:
             }
         )
     ok(
-        "LISTADO",
-        f"Mostrados: {len(visible_devices)} | Activos: {active_count} | "
-        f"No detectados: {len(visible_devices) - active_count} | "
-        f"Total registrados: {len(devices)}\n"
-        f"Perfil: {profile.name} | Descubrimiento: {discovery} | "
-        f"Orden: {args.scan_order} | Timeout: {effective_timeout:g}s | ICMP: {icmp_count} | "
-        f"ARP: {arp_count} | Cache no verificada: {cache_count}",
+        t("LANCTL.UI.STATUS.LISTED"),
+        t(
+            "LANCTL.UI.MESSAGE.SHOWN_VALUE_ACTIVE_VALUE_UNDETECTED_VALUE_TOTAL_RECORDED_VALUE_PROFILE_VALUE_DISCOVERY_VALUE_OR",
+            value0=f"{len(visible_devices)}",
+            value1=f"{active_count}",
+            value2=f"{len(visible_devices) - active_count}",
+            value3=f"{len(devices)}",
+            value4=f"{profile.name}",
+            value5=f"{discovery}",
+            value6=f"{args.scan_order}",
+            value7=f"{effective_timeout:g}",
+            value8=f"{icmp_count}",
+            value9=f"{arp_count}",
+            value10=f"{cache_count}",
+        ),
     )
     return 0

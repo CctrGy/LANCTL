@@ -2,7 +2,7 @@
 // Local presentation only; decisions remain with the calling application.
 const appNotice=document.createElement("dialog");
 appNotice.setAttribute("aria-labelledby","app-notice-title");
-appNotice.innerHTML='<h2 id="app-notice-title">LANIP</h2><p id="app-notice-text"></p><input id="app-notice-value" aria-label="Valor" hidden><div class="dialog-actions"><button type="button" id="app-notice-cancel">Cancelar</button><button type="button" id="app-notice-accept" class="primary">Continuar</button></div>';
+appNotice.innerHTML="<h2 id=\"app-notice-title\">LANIP</h2><p id=\"app-notice-text\"></p><input id=\"app-notice-value\" aria-label=\"Valor\" hidden data-i18n-aria-label=\"LANCTL.UI.TEXT.VALUE\"><div class=\"dialog-actions\"><button type=\"button\" id=\"app-notice-cancel\"><span data-i18n=\"LANCTL.INVENTORY.MANUAL.CANCEL\">Cancelar</span></button><button type=\"button\" id=\"app-notice-accept\" class=\"primary\"><span data-i18n=\"LANCTL.UI.TEXT.CONTINUE\">Continuar</span></button></div>";
 document.body.append(appNotice);
 let appNoticeResolve=null,appNoticePrompt=false;
 function appDecision(text,prompt=false){

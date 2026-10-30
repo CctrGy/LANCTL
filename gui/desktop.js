@@ -59,9 +59,9 @@ function chooseSave(shared = false) {
   return new Promise(resolve => {
     const dialog = $("#save-dialog");
     dialog.querySelector("p").textContent = shared
-      ? "Los cambios aplicados son compartidos con otras sesiones. Cerrar sin guardar conserva esos cambios para las otras sesiones y no modifica el archivo del proyecto."
-      : "El proyecto tiene modificaciones sin guardar.";
-    dialog.querySelector('[data-decision="discard"]').textContent = shared ? "Cerrar sin guardar" : "Descartar";
+      ? window.LanctlI18n.t("LANCTL.UI.VIEW.APPLIED_CHANGES_ARE_SHARED_WITH_OTHER_SESSIONS_CLOSING_WITHOUT_SAVING_PRESERVES_THOSE_CHANGES_F")
+      : window.LanctlI18n.t("LANCTL.UI.TEXT.THE_PROJECT_HAS_UNSAVED_CHANGES");
+    dialog.querySelector('[data-decision="discard"]').textContent = shared ? window.LanctlI18n.t("LANCTL.UI.VIEW.CLOSE_WITHOUT_SAVING") : window.LanctlI18n.t("LANCTL.UI.TEXT.DISCARD");
     dialog.oncancel = event => {event.preventDefault(); finish("cancel");};
     function finish(answer) { dialog.close(); resolve(answer); }
     dialog.querySelectorAll("button").forEach(button => button.onclick=()=>finish(button.dataset.decision));
@@ -79,7 +79,7 @@ async function protectProject() {
 async function desktopClose() {
   if(window.desktopClosing)return;window.desktopClosing=true;
   try {
-    if(desktopBusy){await call("cancel_scan");let stopped=false;for(let i=0;i<100;i++){if(!(await call("scan_status")).running){stopped=true;break;}await new Promise(resolve=>setTimeout(resolve,100));}if(!stopped)return message("Cancelación solicitada. Espera a que termine la operación y vuelve a cerrar.",true);}
+    if(desktopBusy){await call("cancel_scan");let stopped=false;for(let i=0;i<100;i++){if(!(await call("scan_status")).running){stopped=true;break;}await new Promise(resolve=>setTimeout(resolve,100));}if(!stopped)return message(window.LanctlI18n.t("LANCTL.UI.VIEW.CANCELLATION_REQUESTED_WAIT_FOR_THE_OPERATION_TO_FINISH_THEN_CLOSE_AGAIN"),true);}
     const status = await call("project_state");
     const decision = status.dirty || editorDirty() ? await chooseSave(status.shared) : "discard";
     if(decision === "save") await commitEditor();
@@ -87,10 +87,11 @@ async function desktopClose() {
   } catch(error) { message(error.message, true); }
   finally {window.desktopClosing=false;}
 }
-function showForm(title, fields, submit) {
+function showForm(title, fields, submit, acceptLabel = window.LanctlI18n.t("LANCTL.UI.TEXT.ACCEPT")) {
   const dialog = $("#desktop-dialog"), host = $("#desktop-fields");
   $("#desktop-dialog-title").textContent = title;
   $("#desktop-error").textContent = "";
+  $("#desktop-form button[type=submit]").textContent = acceptLabel;
   host.replaceChildren();
   fields.forEach(field => {
     if(field.section && ![...host.querySelectorAll("h3")].some(heading=>heading.textContent===field.section)) {
@@ -117,11 +118,11 @@ const inventoryRenderer = renderInventory;
 renderInventory = function(payload) {
   inventorySnapshot = payload;
   const select = $("#group-filter"), previous = select.value;
-  select.replaceChildren(new Option("Todos los grupos", ""));
+  select.replaceChildren(new Option(window.LanctlI18n.t("LANCTL.UI.TEXT.ALL_GROUPS"), ""));
   [...new Set([...(payload.devices||[]).flatMap(device=>device.groups),...(payload.groupCatalog||[]).map(group=>group.name)])].sort().forEach(group=>select.add(new Option(group, group)));
   select.value = previous;
   for(const [id,values] of [["#vendor-filter",(payload.devices||[]).map(d=>d.manufacturer)],["#protocol-filter",(payload.devices||[]).flatMap(d=>d.protocols)]]){
-    const input=$(id),value=input.value;input.replaceChildren(new Option("Todos",""));[...new Set(values.filter(Boolean))].sort().forEach(item=>input.add(new Option(item,item)));input.value=value;
+    const input=$(id),value=input.value;input.replaceChildren(new Option(window.LanctlI18n.t("LANCTL.UI.TEXT.ALL"),""));[...new Set(values.filter(Boolean))].sort().forEach(item=>input.add(new Option(item,item)));input.value=value;
   }
   filterInventory();
 };
@@ -148,13 +149,13 @@ window.addEventListener("pywebviewready", () => {
   if(!window.pywebview.api.project_state) return;
   desktopReady = true;
   replaceHandler("#project-save","click",async()=>{
-    setBusy(true,"Guardando proyecto…");
+    setBusy(true,window.LanctlI18n.t("LANCTL.UI.VIEW.SAVING_PROJECT"));
     try {await commitEditor(); const payload=await call("save_project"); renderProjects(payload); renderInventory(payload);message(payload.message);}
     catch(error){message(error.message,true);} finally{setBusy(false);}
   });
   replaceHandler("#save-device","click",async()=>{
-    if(!state.selectedId) return message("Selecciona un elemento",true);
-    setBusy(true,"Guardando elemento…");
+    if(!state.selectedId) return message(window.LanctlI18n.t("LANCTL.UI.VIEW.SELECT_AN_ELEMENT"),true);
+    setBusy(true,window.LanctlI18n.t("LANCTL.UI.VIEW.SAVING_ELEMENT"));
     try {
       const payload=await call("update_device",state.selectedId,{
         name:$("#edit-name").value, alias:$("#edit-alias").value,
@@ -164,11 +165,11 @@ window.addEventListener("pywebviewready", () => {
       renderInventory(payload); message(payload.message);
     } catch(error){message(error.message,true);} finally{setBusy(false);}
   });
-  $("#device-groups").onclick=()=>showForm("Grupos del elemento",[
-    {key:"action",label:"Acción",value:"add",choices:[{label:"Crear grupo",value:"create"},{label:"Añadir elemento",value:"add"},{label:"Retirar elemento",value:"remove"}]},
-    {key:"name",label:"Nombre del grupo",value:""}
+  $("#device-groups").onclick=()=>showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.ELEMENT_GROUPS"),[
+    {key:"action",label:window.LanctlI18n.t("LANCTL.UI.VIEW.ACTION"),value:"add",choices:[{label:window.LanctlI18n.t("LANCTL.UI.TEXT.CREATE_GROUP"),value:"create"},{label:window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.TITLE"),value:"add"},{label:window.LanctlI18n.t("LANCTL.UI.VIEW.REMOVE_ELEMENT"),value:"remove"}]},
+    {key:"name",label:window.LanctlI18n.t("LANCTL.UI.TEXT.GROUP_NAME"),value:""}
   ],async values=>{
-    if(values.action!=="create" && !state.selectedId) throw new Error("Selecciona un elemento");
+    if(values.action!=="create" && !state.selectedId) throw new Error(window.LanctlI18n.t("LANCTL.UI.VIEW.SELECT_AN_ELEMENT"));
     const payload=await call("group_action",values.action,values.name,state.selectedId||"");
     renderInventory(payload); message(payload.message);
   });
@@ -183,7 +184,7 @@ window.addEventListener("pywebviewready", () => {
     filterInventory();
   }));
   replaceHandler("#scan-network", "click", async()=>{
-    setBusy(true,"Escaneando la red…");
+    setBusy(true,window.LanctlI18n.t("LANCTL.UI.VIEW.SCANNING_THE_NETWORK"));
     $("#cancel-scan").hidden=false; $("#scan-progress").hidden=false;
     const poll=setInterval(async()=>{
       try {const status=await call("scan_status"); $("#scan-progress").value=100*status.current/Math.max(1,status.total);}
@@ -202,7 +203,7 @@ window.addEventListener("pywebviewready", () => {
   $("#desktop-settings").onclick=async()=>{
     try {
       const payload=await call("get_settings");
-      showForm("Configuración de LANIP",payload.fields,async values=>{
+      showForm(window.LanctlI18n.t("LANCTL.UI.VIEW.LANIP_SETTINGS"),payload.fields,async values=>{
         const changed=Object.fromEntries(payload.fields.filter(field=>String(field.value??"")!==values[field.key]).map(field=>[field.key,values[field.key]|| (field.key==="projectsDirectory"?"auto":"")]));
         if(Object.keys(changed).length) message((await call("save_settings",changed)).message);
       });
@@ -215,18 +216,30 @@ document.addEventListener("keydown",event=>{
   if(event.key==="F5") {event.preventDefault(); $("#scan-network").click();}
 });
 
-// Coalesce notifications; never replace an editor or an in-flight operation.
+// Notifications are hints: reconcile selection even if a notification was lost.
+// Never replace an editor, a modal or an in-flight operation.
+let desktopSyncInFlight=false,lastSelectionCheck=0;
+window.addEventListener("focus",()=>{window.desktopDataChanged=true;});
 setInterval(async()=>{
-  if(!window.desktopDataChanged || !desktopReady || desktopBusy || editorDirty() || document.querySelector("dialog[open]")) return;
-  window.desktopDataChanged=false;
+  if(!desktopReady || !inventorySnapshot || desktopBusy || desktopSyncInFlight || editorDirty() || document.querySelector("dialog[open]")) return;
+  desktopSyncInFlight=true;
+  const context=JSON.stringify(state.projectContext);
+  const blocked=()=>desktopBusy || editorDirty() || document.querySelector("dialog[open]") || JSON.stringify(state.projectContext)!==context;
   try {
-    const selectedProject=$("#project-select").value;
-    const payload=await call(window.pywebview?.api?.sync_project?"sync_project":"list_devices",$("#device-search").value);
-    if(desktopBusy || editorDirty() || document.querySelector("dialog[open]") || $("#project-select").value!==selectedProject) {
-      window.desktopDataChanged=true; return;
+    if(!window.desktopDataChanged){
+      if(Date.now()-lastSelectionCheck<5000 || !window.pywebview?.api?.project_selection)return;
+      lastSelectionCheck=Date.now();
+      const selection=await call("project_selection");
+      if(JSON.stringify(selection.projectContext)===context)return;
+      window.desktopDataChanged=true;
+      if(blocked())return;
     }
+    window.desktopDataChanged=false;
+    const payload=await call(window.pywebview?.api?.sync_project?"sync_project":"list_devices",$("#device-search").value);
+    if(blocked()) {window.desktopDataChanged=true;return;}
     if(payload.projects)renderProjects(payload);
     renderInventory(payload);
   }
   catch(error) { window.desktopDataChanged=true; message(error.message,true); }
+  finally {desktopSyncInFlight=false;}
 },1000);

@@ -1,5 +1,5 @@
 -- Autocompletado de LANCTL para Clink 1.3.23 o posterior.
--- Compatible con LANCTL 0.3.4-alpha.1.
+-- Compatible con LANCTL 0.3.4-alpha.2.
 -- Desarrollo: clink installscripts <ruta>\packaging\clink
 -- Instalación: <directorio-de-instalación>\clink\lanctl.lua
 
@@ -641,7 +641,7 @@ for _, command in ipairs(root_commands) do
 end
 local suite_launchers = {
     "post-install" .. clink.argmatcher():addflags({"-h","--help","/?","--first-scan"}):nofiles(),
-    "setup-defaults" .. clink.argmatcher():addflags({"-h","--help","/?","--theme" .. values({"graphite","midnight","forest","violet","light"}),"--plugins" .. history_value("all, none o IDs separados por comas")}):nofiles(),
+    "setup-defaults" .. clink.argmatcher():addflags({"-h","--help","/?","--theme" .. values({"graphite","midnight","forest","violet","light"}),"--plugins" .. history_value("all, none o IDs separados por comas"),"--language" .. history_value("Código de idioma incluido"),"--change-language"}):nofiles(),
     "completions" .. values({"install","uninstall"}),
     "backend" .. backend,
     "lanip" .. configure_lanip(clink.argmatcher()),

@@ -6,7 +6,9 @@ import argparse
 import json
 import sys
 
-from lanctl.core.settings_catalog import CATEGORIES
+from lanctl.core.settings_catalog import CATEGORIES as CATEGORIES
+from lanctl.core.settings_catalog import category_labels
+from lanctl.shared.i18n import t
 
 
 def register_catalog_options(command):
@@ -14,30 +16,35 @@ def register_catalog_options(command):
     action.add_argument(
         "--menu",
         action="store_true",
-        help="Editor interactivo por categorías de programa y proyecto.",
+        help=t("LANCTL.UI.HELP.INTERACTIVE_PROGRAM_AND_PROJECT_EDITOR_ORGANIZED_BY_CATEGORY"),
     )
     action.add_argument(
         "--catalog",
         action="store_true",
-        help="Lista preferencias comunes y CLI por categorías, con valor y estado editable.",
+        help=t(
+            "LANCTL.UI.HELP.LIST_COMMON_AND_CLI_PREFERENCES_BY_CATEGORY_WITH_VALUES_AND_EDITABILITY"
+        ),
     )
     action.add_argument(
-        "--get", metavar="RUTA", help="Consulta un ajuste por su ruta, por ejemplo ip.workers."
+        "--get",
+        metavar="RUTA",
+        help=t("LANCTL.UI.HELP.QUERY_A_SETTING_BY_PATH_FOR_EXAMPLE_IP_WORKERS"),
     )
     action.add_argument(
         "--set",
         nargs=2,
         metavar=("RUTA", "VALOR"),
-        help="Modifica una preferencia común o CLI; listas y booleanos usan JSON.",
+        help=t("LANCTL.UI.HELP.CHANGE_A_COMMON_OR_CLI_PREFERENCE_LISTS_AND_BOOLEANS_USE_JSON"),
     )
     command.add_argument(
         "--scope",
         choices=("program", "project"),
         default="program",
-        help="Ámbito de configuración (predeterminado: program).",
+        help=t("LANCTL.UI.HELP.CONFIGURATION_SCOPE_DEFAULT_PROGRAM"),
     )
     command.add_argument(
-        "--category", help="Filtra el catálogo por categoría, por ejemplo network o monitor."
+        "--category",
+        help=t("LANCTL.UI.HELP.FILTER_THE_CATALOG_BY_CATEGORY_FOR_EXAMPLE_NETWORK_OR_MONITOR"),
     )
 
 
@@ -80,7 +87,7 @@ def _print_entries(entries):
     for entry in entries:
         category = entry["category"]
         if category != previous:
-            print(f"\n[{category}] {CATEGORIES.get(category, category)}")
+            print(f"\n[{category}] {category_labels().get(category, category)}")
             previous = category
         state = f" [solo lectura: {entry['readOnly']}]" if entry["readOnly"] else ""
         print(f"  {entry['path']} = {json.dumps(entry['value'], ensure_ascii=False)}{state}")
@@ -89,7 +96,7 @@ def _print_entries(entries):
 def configuration_menu():
     try:
         while True:
-            print("\nConfiguración LANCTL\n1. Programa completo\n2. Proyecto activo\n0. Volver")
+            print(t("LANCTL.UI.BLOCK.LANCTL_SETTINGS_1_ENTIRE_PROGRAM_2_ACTIVE_PROJECT_0_BACK"))
             choice = input("> ").strip()
             if choice in {"0", "", "q"}:
                 return 0
@@ -104,8 +111,8 @@ def configuration_menu():
             while True:
                 categories = list(dict.fromkeys(entry["category"] for entry in entries))
                 for number, category in enumerate(categories, 1):
-                    print(f"{number}. {CATEGORIES.get(category, category)} ({category})")
-                selection = input("Categoría (0: volver): ").strip()
+                    print(f"{number}. {category_labels().get(category, category)} ({category})")
+                selection = input(t("LANCTL.UI.PROMPT.CATEGORY_0_BACK")).strip()
                 if selection in {"0", "", "q"}:
                     break
                 if not selection.isdigit() or not 1 <= int(selection) <= len(categories):
@@ -119,7 +126,7 @@ def configuration_menu():
                         print(
                             f"{number}. {entry['path']} = {json.dumps(entry['value'], ensure_ascii=False)}{state}"
                         )
-                    selected = input("Ajuste (0: volver): ").strip()
+                    selected = input(t("LANCTL.UI.PRESENTATION.SETTING_BACK")).strip()
                     if selected in {"0", "", "q"}:
                         break
                     if not selected.isdigit() or not 1 <= int(selected) <= len(subset):
@@ -136,18 +143,20 @@ def configuration_menu():
                     )
 
                     expected = project_identity(load_config())
-                    text = input("Nuevo valor (JSON para listas/booleanos; vacío: cancelar): ")
+                    text = input(
+                        t("LANCTL.UI.PROMPT.NEW_VALUE_JSON_FOR_LISTS_BOOLEANS_EMPTY_CANCEL")
+                    )
                     if not text:
                         continue
                     try:
                         with project_operation():
                             require_project(expected)
                             _set(scope, entry["path"], text)
-                        print("Configuración guardada.")
+                        print(t("LANCTL.UI.PROMPT.SETTINGS_SAVED"))
                     except (ValueError, OSError) as error:
-                        print(f"No se ha podido guardar: {error}")
+                        print(t("LANCTL.UI.MESSAGE.COULD_NOT_SAVE_VALUE", value0=f"{error}"))
     except (EOFError, KeyboardInterrupt):
-        print("\nConfiguración cerrada.")
+        print(t("LANCTL.UI.BLOCK.SETTINGS_CLOSED"))
         return 0
 
 
@@ -187,7 +196,7 @@ def dispatch_settings(args):
         if args.category:
             raise ValueError("--category filtra consultas, no modificaciones")
         _set(args.scope, *args.set)
-        print("Configuración guardada.")
+        print(t("LANCTL.UI.PROMPT.SETTINGS_SAVED"))
         return 0
     entries = _entries(args.scope)
     if args.category:

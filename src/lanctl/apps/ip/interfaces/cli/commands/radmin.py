@@ -15,38 +15,43 @@ from lanctl.apps.ip.infrastructure.protocols.radmin import (
 from lanctl.apps.ip.interfaces.cli.commands.open import run_open
 from lanctl.core.config import load_config
 from lanctl.core.database import DeviceDatabase
+from lanctl.shared.i18n import t
 
 
 def register_radmin_command(commands: argparse._SubParsersAction) -> None:
     config = load_config()
-    command = commands.add_parser("radmin", help="Configura, comprueba o abre Radmin Viewer.")
-    command.add_argument("selector", help="IP, MAC o alias del elemento.")
+    command = commands.add_parser(
+        "radmin", help=t("LANCTL.UI.HELP.CONFIGURE_CHECK_OR_OPEN_RADMIN_VIEWER")
+    )
+    command.add_argument("selector", help=t("LANCTL.UI.HELP.ELEMENT_IP_MAC_OR_ALIAS"))
     command.add_argument("action", choices=("probe", "configure", "open"))
     command.add_argument("--mode", choices=MODES)
     command.add_argument("--port", type=int)
     command.add_argument(
-        "--executable", help="Ruta por dispositivo; usa 'auto' para detección automática."
+        "--executable", help=t("LANCTL.UI.HELP.PER_DEVICE_PATH_USE_AUTO_FOR_AUTOMATIC_DETECTION")
     )
-    command.add_argument("--through", help="Servidor intermedio HOST:PUERTO.")
+    command.add_argument("--through", help=t("LANCTL.UI.HELP.INTERMEDIATE_SERVER_HOST_PORT"))
     command.add_argument(
-        "--fullscreen", action="store_true", help="Abre control o vista a pantalla completa."
+        "--fullscreen",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.OPEN_FULL_SCREEN_CONTROL_OR_VIEW"),
     )
     command.add_argument(
         "--color-depth",
         type=int,
         choices=COLOR_DEPTHS,
-        help="Profundidad de color de Radmin (1, 2, 4, 8, 16 o 24 bits).",
+        help=t("LANCTL.UI.HELP.RADMIN_COLOR_DEPTH_1_2_4_8_16_OR_24_BITS"),
     )
     command.add_argument(
         "--updates",
         type=int,
-        help="Máximo de actualizaciones de pantalla por segundo (1-120).",
+        help=t("LANCTL.UI.HELP.MAXIMUM_SCREEN_UPDATES_PER_SECOND_1_120"),
     )
-    command.add_argument("--phonebook", help="Phonebook .rpb administrado por Radmin.")
+    command.add_argument("--phonebook", help=t("LANCTL.UI.HELP.RADMIN_MANAGED_RPB_PHONEBOOK"))
     command.add_argument(
         "--phonebook-id",
         type=int,
-        help="Identificador de entrada dentro del phonebook de Radmin.",
+        help=t("LANCTL.UI.HELP.ENTRY_IDENTIFIER_WITHIN_THE_RADMIN_PHONEBOOK"),
     )
     command.add_argument("--database", default=config["database"])
     command.add_argument("--store", default=config["credentials"])

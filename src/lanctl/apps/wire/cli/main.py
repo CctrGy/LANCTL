@@ -12,6 +12,7 @@ from lanctl.core.config import load_config
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.core.projects.console_session import physical_console_session
 from lanctl.core.session import coordinated_launcher
+from lanctl.shared.i18n import initialize_language, t
 
 
 def configure_utf8_stdio() -> None:
@@ -26,102 +27,153 @@ def configure_utf8_stdio() -> None:
 def build_parser() -> LANCTLArgumentParser:
     parser = LANCTLArgumentParser(
         prog="LANWIRE",
-        description="Gestión física, IDF, cableado y topología de la suite LANCTL.",
+        description=t(
+            "LANCTL.UI.TEXT.PHYSICAL_MANAGEMENT_IDF_WIRING_AND_TOPOLOGY_FOR_THE_LANCTL_SUITE"
+        ),
     )
     parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
-        help="Muestra la versión común de la suite y termina.",
+        help=t("LANCTL.UI.TEXT.SHOW_THE_COMMON_SUITE_VERSION_AND_EXIT"),
     )
     parser.add_argument(
         "--database",
         default=load_config().get("physicalDatabase", DEFAULT_DATABASE_PATH),
         metavar="ARCHIVO.db",
-        help="Base física IDF; por defecto usa physical/idf.db en la raíz compartida.",
+        help=t(
+            "LANCTL.UI.TEXT.PHYSICAL_IDF_DATABASE_DEFAULTS_TO_PHYSICAL_IDF_DB_IN_THE_SHARED_ROOT"
+        ),
     )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--gui", action="store_true", help="Abre la interfaz gráfica de escritorio.")
     mode.add_argument(
-        "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
+        "--gui", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_DESKTOP_GRAPHICAL_INTERFACE")
     )
     mode.add_argument(
-        "--cli", "-cli", action="store_true", help="Abre la consola interactiva de LANWIRE."
+        "-tui",
+        "--tui",
+        action="store_true",
+        help=t("LANCTL.UI.TEXT.OPEN_THE_FULL_SCREEN_INTERFACE"),
+    )
+    mode.add_argument(
+        "--cli",
+        "-cli",
+        action="store_true",
+        help=t("LANCTL.UI.TEXT.OPEN_THE_LANWIRE_INTERACTIVE_CONSOLE"),
     )
 
     subcommands = parser.add_subparsers(dest="command", metavar="COMANDO")
-    subcommands.add_parser("tui", help="Abre la interfaz de pantalla completa.")
-    subcommands.add_parser("cli", help="Abre la consola interactiva.")
-    subcommands.add_parser("help", help="Muestra la ayuda de comandos de LANWIRE.")
-    list_command = subcommands.add_parser("list", aliases=["ls"], help="Lista los identificadores.")
-    list_command.add_argument("prefix", nargs="?", help="Filtra por prefijo IDF.")
-    subcommands.add_parser("seed", help="Carga la topología inicial de pruebas.")
-    show = subcommands.add_parser("show", help="Muestra un identificador.")
-    show.add_argument("idf", help="Identificador físico que se desea consultar.")
-    add = subcommands.add_parser("add", help="Genera el siguiente IDF.")
-    add.add_argument("prefix", help="Prefijo del tipo de elemento físico.")
+    subcommands.add_parser("tui", help=t("LANCTL.UI.TEXT.OPEN_THE_FULL_SCREEN_INTERFACE"))
+    subcommands.add_parser("cli", help=t("LANCTL.UI.TEXT.OPEN_THE_INTERACTIVE_CONSOLE"))
+    subcommands.add_parser("help", help=t("LANCTL.UI.TEXT.SHOW_LANWIRE_COMMAND_HELP"))
+    list_command = subcommands.add_parser(
+        "list", aliases=["ls"], help=t("LANCTL.UI.TEXT.LIST_IDENTIFIERS")
+    )
+    list_command.add_argument("prefix", nargs="?", help=t("LANCTL.UI.TEXT.FILTER_BY_IDF_PREFIX"))
+    subcommands.add_parser("seed", help=t("LANCTL.UI.TEXT.LOAD_THE_INITIAL_TEST_TOPOLOGY"))
+    show = subcommands.add_parser("show", help=t("LANCTL.UI.TEXT.SHOW_AN_IDENTIFIER"))
+    show.add_argument("idf", help=t("LANCTL.UI.TEXT.PHYSICAL_IDENTIFIER_TO_QUERY"))
+    add = subcommands.add_parser("add", help=t("LANCTL.UI.TEXT.GENERATE_THE_NEXT_IDF"))
+    add.add_argument("prefix", help=t("LANCTL.UI.TEXT.PHYSICAL_ELEMENT_TYPE_PREFIX"))
     add.add_argument(
-        "--digits", type=int, choices=range(2, 6), help="Cantidad de dígitos del contador (2 a 5)."
+        "--digits",
+        type=int,
+        choices=range(2, 6),
+        help=t("LANCTL.UI.TEXT.NUMBER_OF_COUNTER_DIGITS_2_TO_5"),
     )
     add.add_argument(
-        "-more", "--more", type=int, default=1, metavar="N", help="Crea N IDF consecutivos."
+        "-more",
+        "--more",
+        type=int,
+        default=1,
+        metavar="N",
+        help=t("LANCTL.UI.TEXT.CREATE_N_CONSECUTIVE_IDFS"),
     )
-    idf = subcommands.add_parser("idf", help="Crea identificadores con perfil físico completo.")
+    idf = subcommands.add_parser(
+        "idf", help=t("LANCTL.UI.TEXT.CREATE_IDENTIFIERS_WITH_A_COMPLETE_PHYSICAL_PROFILE")
+    )
     idf_actions = idf.add_subparsers(dest="idf_action", required=True)
-    idf_list = idf_actions.add_parser("list", help="Lista prefijos o los IDF de uno de ellos.")
-    idf_list.add_argument("prefix", nargs="?", help="Prefijo cuyos elementos se listan.")
-    idf_actions.add_parser("types", help="Lista los perfiles físicos disponibles.")
-    idf_show = idf_actions.add_parser("show", help="Consulta un prefijo o IDF.")
-    idf_show.add_argument("code", help="Prefijo o IDF concreto.")
-    idf_edit = idf_actions.add_parser("edit", help="Edita un prefijo o los datos de un IDF.")
-    idf_edit.add_argument("code", help="Prefijo o IDF concreto.")
-    idf_edit.add_argument("data", nargs="*", metavar="CAMPO=VALOR", help="Datos del IDF.")
-    idf_edit.add_argument(
-        "-type", dest="element_type", default="", help="Nuevo perfil del prefijo."
+    idf_list = idf_actions.add_parser(
+        "list", help=t("LANCTL.UI.TEXT.LIST_PREFIXES_OR_THE_IDFS_OF_A_PREFIX")
     )
-    idf_edit.add_argument("-name", default="", help="Nombre del prefijo.")
-    idf_edit.add_argument("-alias", default="", help="Alias del prefijo.")
-    idf_edit.add_argument("-description", default="", help="Descripción del prefijo.")
-    idf_delete = idf_actions.add_parser("delete", aliases=["del"], help="Elimina un IDF.")
-    idf_delete.add_argument("code", help="IDF concreto; no elimina prefijos.")
-    idf_new = idf_actions.add_parser("new", help="Asigna un perfil físico a un prefijo.")
-    idf_add = idf_actions.add_parser("add", help="Crea un IDF del perfil asignado al prefijo.")
+    idf_list.add_argument(
+        "prefix", nargs="?", help=t("LANCTL.UI.TEXT.PREFIX_WHOSE_ELEMENTS_ARE_LISTED")
+    )
+    idf_actions.add_parser("types", help=t("LANCTL.UI.TEXT.LIST_AVAILABLE_PHYSICAL_PROFILES"))
+    idf_show = idf_actions.add_parser("show", help=t("LANCTL.UI.TEXT.QUERY_A_PREFIX_OR_IDF"))
+    idf_show.add_argument("code", help=t("LANCTL.UI.TEXT.SPECIFIC_PREFIX_OR_IDF"))
+    idf_edit = idf_actions.add_parser("edit", help=t("LANCTL.UI.TEXT.EDIT_A_PREFIX_OR_IDF_DATA"))
+    idf_edit.add_argument("code", help=t("LANCTL.UI.TEXT.SPECIFIC_PREFIX_OR_IDF"))
+    idf_edit.add_argument(
+        "data", nargs="*", metavar="CAMPO=VALOR", help=t("LANCTL.UI.TEXT.IDF_DATA")
+    )
+    idf_edit.add_argument(
+        "-type", dest="element_type", default="", help=t("LANCTL.UI.TEXT.NEW_PREFIX_PROFILE")
+    )
+    idf_edit.add_argument("-name", default="", help=t("LANCTL.UI.TEXT.PREFIX_NAME"))
+    idf_edit.add_argument("-alias", default="", help=t("LANCTL.UI.TEXT.PREFIX_ALIAS"))
+    idf_edit.add_argument("-description", default="", help=t("LANCTL.UI.TEXT.PREFIX_DESCRIPTION"))
+    idf_delete = idf_actions.add_parser(
+        "delete", aliases=["del"], help=t("LANCTL.UI.TEXT.DELETE_AN_IDF")
+    )
+    idf_delete.add_argument("code", help=t("LANCTL.UI.TEXT.SPECIFIC_IDF_DOES_NOT_DELETE_PREFIXES"))
+    idf_new = idf_actions.add_parser(
+        "new", help=t("LANCTL.UI.TEXT.ASSIGN_A_PHYSICAL_PROFILE_TO_A_PREFIX")
+    )
+    idf_add = idf_actions.add_parser(
+        "add", help=t("LANCTL.UI.TEXT.CREATE_AN_IDF_USING_THE_ASSIGNED_PREFIX_PROFILE")
+    )
     for action_parser in (idf_new, idf_add):
-        action_parser.add_argument("code", help="Prefijo para new o IDF exacto para add.")
-        action_parser.add_argument("-name", default="", help="Nombre del registro.")
-        action_parser.add_argument("-alias", default="", help="Alias opcional.")
         action_parser.add_argument(
-            "-description", "-descriptionn", default="", help="Descripción opcional."
+            "code", help=t("LANCTL.UI.TEXT.PREFIX_FOR_NEW_OR_EXACT_IDF_FOR_ADD")
         )
-    idf_new.add_argument("-type", required=True, dest="element_type", help="Perfil físico.")
-    reserve = subcommands.add_parser("reserve", help="Reserva un IDF.")
-    reserve.add_argument("idf", help="IDF exacto que se desea reservar.")
+        action_parser.add_argument("-name", default="", help=t("LANCTL.UI.TEXT.RECORD_NAME"))
+        action_parser.add_argument("-alias", default="", help=t("LANCTL.UI.TEXT.OPTIONAL_ALIAS"))
+        action_parser.add_argument(
+            "-description",
+            "-descriptionn",
+            default="",
+            help=t("LANCTL.UI.TEXT.OPTIONAL_DESCRIPTION"),
+        )
+    idf_new.add_argument(
+        "-type", required=True, dest="element_type", help=t("LANCTL.UI.TEXT.PHYSICAL_PROFILE")
+    )
+    reserve = subcommands.add_parser("reserve", help=t("LANCTL.UI.TEXT.RESERVE_AN_IDF"))
+    reserve.add_argument("idf", help=t("LANCTL.UI.TEXT.EXACT_IDF_TO_RESERVE"))
     reserve.add_argument(
-        "data", nargs="*", metavar="CLAVE=VALOR", help="Datos iniciales opcionales."
+        "data", nargs="*", metavar="CLAVE=VALOR", help=t("LANCTL.UI.TEXT.OPTIONAL_INITIAL_DATA")
     )
     element = subcommands.add_parser(
-        "element", help="Consulta o actualiza los datos y puertos de un elemento."
+        "element", help=t("LANCTL.UI.TEXT.QUERY_OR_UPDATE_AN_ELEMENT_S_DATA_AND_PORTS")
     )
-    element.add_argument("idf", help="IDF que se desea consultar o actualizar.")
+    element.add_argument("idf", help=t("LANCTL.UI.TEXT.IDF_TO_QUERY_OR_UPDATE"))
     element.add_argument(
-        "data", nargs="*", metavar="CAMPO=VALOR", help="Campos físicos que se desean modificar."
+        "data", nargs="*", metavar="CAMPO=VALOR", help=t("LANCTL.UI.TEXT.PHYSICAL_FIELDS_TO_MODIFY")
     )
-    delete = subcommands.add_parser("delete", aliases=["del"], help="Elimina un IDF.")
-    delete.add_argument("idf", help="IDF que se desea eliminar.")
-    subcommands.add_parser("graph", aliases=["map"], help="Muestra la topología física.")
-    prefix = subcommands.add_parser("prefix", help="Gestiona juegos de letras.")
+    delete = subcommands.add_parser(
+        "delete", aliases=["del"], help=t("LANCTL.UI.TEXT.DELETE_AN_IDF")
+    )
+    delete.add_argument("idf", help=t("LANCTL.UI.TEXT.IDF_TO_DELETE"))
+    subcommands.add_parser(
+        "graph", aliases=["map"], help=t("LANCTL.UI.TEXT.SHOW_THE_PHYSICAL_TOPOLOGY")
+    )
+    prefix = subcommands.add_parser("prefix", help=t("LANCTL.UI.TEXT.MANAGE_LETTER_SETS"))
     prefix_commands = prefix.add_subparsers(dest="prefix_action", required=True)
-    prefix_commands.add_parser("list", aliases=["ls"], help="Lista las definiciones.")
-    prefix_show = prefix_commands.add_parser("show", help="Muestra una definición.")
-    prefix_show.add_argument("letters", help="Letras del prefijo.")
-    prefix_set = prefix_commands.add_parser("set", help="Crea o actualiza una definición.")
-    prefix_set.add_argument("letters", help="Letras del prefijo.")
-    prefix_set.add_argument("name", help="Nombre descriptivo del tipo.")
-    prefix_set.add_argument("description", nargs="?", default="", help="Descripción opcional.")
-    prefix_delete = prefix_commands.add_parser(
-        "delete", aliases=["del"], help="Elimina una definición."
+    prefix_commands.add_parser("list", aliases=["ls"], help=t("LANCTL.UI.TEXT.LIST_DEFINITIONS"))
+    prefix_show = prefix_commands.add_parser("show", help=t("LANCTL.UI.TEXT.SHOW_A_DEFINITION"))
+    prefix_show.add_argument("letters", help=t("LANCTL.UI.TEXT.PREFIX_LETTERS"))
+    prefix_set = prefix_commands.add_parser(
+        "set", help=t("LANCTL.UI.TEXT.CREATE_OR_UPDATE_A_DEFINITION")
     )
-    prefix_delete.add_argument("letters", help="Letras del prefijo que se desea eliminar.")
+    prefix_set.add_argument("letters", help=t("LANCTL.UI.TEXT.PREFIX_LETTERS"))
+    prefix_set.add_argument("name", help=t("LANCTL.UI.TEXT.DESCRIPTIVE_TYPE_NAME"))
+    prefix_set.add_argument(
+        "description", nargs="?", default="", help=t("LANCTL.UI.TEXT.OPTIONAL_DESCRIPTION")
+    )
+    prefix_delete = prefix_commands.add_parser(
+        "delete", aliases=["del"], help=t("LANCTL.UI.TEXT.DELETE_A_DEFINITION")
+    )
+    prefix_delete.add_argument("letters", help=t("LANCTL.UI.TEXT.PREFIX_LETTERS_TO_DELETE"))
     return parser
 
 
@@ -135,7 +187,7 @@ def run_cli(database_path: str) -> int:
 def _console(session):
     processor = None
     print(f"LANWIRE CLI {__version__}")
-    print("Escribe 'help' para listar comandos y 'exit' para salir.")
+    print(t("LANCTL.WIRE.CONSOLE.INTRO"))
     while True:
         with session.operation():
             pass
@@ -215,6 +267,7 @@ def _command_parts(args) -> list[str]:
 
 @coordinated_launcher("lanwire")
 def main(argv: list[str] | None = None) -> int:
+    initialize_language()
     configure_utf8_stdio()
     arguments = list(sys.argv[1:] if argv is None else argv)
     arguments = normalize_help_arguments(arguments)
@@ -253,7 +306,7 @@ def _run(args):
     result = processor.execute_parts(_command_parts(args))
     for line in result.lines:
         print(line)
-    return 1 if result.lines and result.lines[0].startswith("Error") else 0
+    return 1 if result.lines and result.lines[0].startswith(t("LANCTL.UI.TEXT.ERROR")) else 0
 
 
 if __name__ == "__main__":

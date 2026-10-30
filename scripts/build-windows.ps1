@@ -1,5 +1,5 @@
 [CmdletBinding()] param(
-    [string]$Version = '0.3.4-alpha.1',
+    [string]$Version = '0.3.4-alpha.2',
     [switch]$SkipInstaller,
     [switch]$AllowDirty,
     [string]$SigningCertificateThumbprint = '',
@@ -54,6 +54,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'LANIP GUI requires GUI dependencies: pip install -e .[gui]' }
     & $Python scripts/verify-version.py $Version
     if ($LASTEXITCODE -ne 0) { throw 'Build version does not match the application version' }
+    & $Python tools/generate_installer_languages.py --check
+    if ($LASTEXITCODE -ne 0) { throw 'Invalid or stale installer language catalog' }
     $VersionInfo = Join-Path $Root 'build\windows-version-info.generated.txt'
     & $Python scripts/generate-windows-version-info.py $Version $Revision $VersionInfo
     if ($LASTEXITCODE -ne 0) { throw 'Windows version metadata generation failed' }

@@ -15,6 +15,7 @@ from lanctl.core.credentials import CredentialStore
 from lanctl.core.parser import LANCTLArgumentParser, normalize_help_arguments
 from lanctl.core.secret_input import read_secret
 from lanctl.core.session import coordinated_launcher
+from lanctl.shared.i18n import initialize_language, t
 
 
 def configure_utf8_stdio() -> None:
@@ -28,99 +29,136 @@ def configure_utf8_stdio() -> None:
 def build_parser() -> LANCTLArgumentParser:
     config = load_config()
     parser = LANCTLArgumentParser(
-        prog="LANACCESS", description="Gestiona credenciales cifradas del entorno LANCTL."
+        prog="LANACCESS",
+        description=t("LANCTL.UI.TEXT.MANAGE_ENCRYPTED_CREDENTIALS_IN_THE_LANCTL_ENVIRONMENT"),
     )
     parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
-        help="Muestra la versión común de la suite y termina.",
+        help=t("LANCTL.UI.TEXT.SHOW_THE_COMMON_SUITE_VERSION_AND_EXIT"),
     )
-    parser.add_argument("--database", default=config["database"], help="Base de elementos LANCTL.")
     parser.add_argument(
-        "--store", default=config["credentials"], help="Almacén cifrado de credenciales."
+        "--database", default=config["database"], help=t("LANCTL.UI.TEXT.LANCTL_ELEMENT_DATABASE")
+    )
+    parser.add_argument(
+        "--store",
+        default=config["credentials"],
+        help=t("LANCTL.UI.TEXT.ENCRYPTED_CREDENTIAL_STORE"),
     )
     parser.add_argument(
         "--cipher",
         choices=("auto", "dpapi", "portable"),
         default="auto",
-        help="Proveedor de cifrado; portable pide contraseña.",
+        help=t("LANCTL.UI.TEXT.ENCRYPTION_PROVIDER_PORTABLE_PROMPTS_FOR_A_PASSWORD"),
     )
     parser.add_argument(
         "--scope",
         choices=("program", "windows", "project"),
         default="program",
-        help="Ubicación; no cambia permisos ni copia secretos automáticamente.",
+        help=t("LANCTL.UI.TEXT.LOCATION_DOES_NOT_CHANGE_PERMISSIONS_OR_COPY_SECRETS_AUTOMATICALLY"),
     )
     parser.add_argument(
-        "--project-dir", help="Directorio del proyecto para su almacén independiente."
+        "--project-dir", help=t("LANCTL.UI.TEXT.PROJECT_DIRECTORY_FOR_ITS_INDEPENDENT_STORE")
     )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--gui", action="store_true", help="Abre la interfaz gráfica de escritorio.")
     mode.add_argument(
-        "-tui", "--tui", action="store_true", help="Abre la interfaz de pantalla completa."
+        "--gui", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_DESKTOP_GRAPHICAL_INTERFACE")
     )
-    mode.add_argument("--cli", "-cli", action="store_true", help="Abre la consola interactiva.")
+    mode.add_argument(
+        "-tui",
+        "--tui",
+        action="store_true",
+        help=t("LANCTL.UI.TEXT.OPEN_THE_FULL_SCREEN_INTERFACE"),
+    )
+    mode.add_argument(
+        "--cli", "-cli", action="store_true", help=t("LANCTL.UI.TEXT.OPEN_THE_INTERACTIVE_CONSOLE")
+    )
     commands = parser.add_subparsers(dest="command")
     commands.add_parser(
         "remote-setup",
-        help="Crea la primera cuenta remota del servicio en Windows (requiere administrador).",
+        help=t(
+            "LANCTL.UI.TEXT.CREATE_THE_FIRST_REMOTE_SERVICE_ACCOUNT_ON_WINDOWS_ADMINISTRATOR_REQUIRED"
+        ),
     )
-    commands.add_parser("list", aliases=["ls"], help="Lista metadatos; nunca secretos.")
-    show = commands.add_parser("show", help="Muestra metadatos de una credencial.")
-    show.add_argument("credential_id", help="Identificador de la credencial.")
-    set_command = commands.add_parser("set", help="Crea o actualiza una credencial.")
-    set_command.add_argument("element", help="IP, MAC, alias o ID del dispositivo.")
-    set_command.add_argument("protocol", help="Protocolo asociado, por ejemplo ssh.")
-    set_command.add_argument("--username", "-user", required=True, help="Usuario remoto.")
-    delete = commands.add_parser("delete", aliases=["del"], help="Elimina una credencial.")
-    delete.add_argument("credential_id", help="Identificador de la credencial.")
+    commands.add_parser(
+        "list", aliases=["ls"], help=t("LANCTL.UI.TEXT.LIST_METADATA_NEVER_SECRETS")
+    )
+    show = commands.add_parser("show", help=t("LANCTL.UI.TEXT.SHOW_CREDENTIAL_METADATA"))
+    show.add_argument("credential_id", help=t("LANCTL.UI.TEXT.CREDENTIAL_IDENTIFIER"))
+    set_command = commands.add_parser("set", help=t("LANCTL.UI.TEXT.CREATE_OR_UPDATE_A_CREDENTIAL"))
+    set_command.add_argument("element", help=t("LANCTL.UI.TEXT.DEVICE_IP_MAC_ALIAS_OR_ID"))
+    set_command.add_argument(
+        "protocol", help=t("LANCTL.UI.TEXT.ASSOCIATED_PROTOCOL_FOR_EXAMPLE_SSH")
+    )
+    set_command.add_argument(
+        "--username", "-user", required=True, help=t("LANCTL.UI.TEXT.REMOTE_USERNAME")
+    )
+    delete = commands.add_parser(
+        "delete", aliases=["del"], help=t("LANCTL.UI.TEXT.DELETE_A_CREDENTIAL")
+    )
+    delete.add_argument("credential_id", help=t("LANCTL.UI.TEXT.CREDENTIAL_IDENTIFIER"))
     credential = commands.add_parser(
-        "credential", help="Gestión, transporte y recuperación de credenciales."
+        "credential", help=t("LANCTL.UI.TEXT.CREDENTIAL_MANAGEMENT_TRANSPORT_AND_RECOVERY")
     )
     actions = credential.add_subparsers(dest="credential_action", required=True)
-    actions.add_parser("list", help="Lista metadatos.")
+    actions.add_parser("list", help=t("LANCTL.UI.TEXT.LIST_METADATA"))
     for action in ("show", "delete"):
-        child = actions.add_parser(action, help=f"{action} por identificador.")
+        child = actions.add_parser(
+            action, help=t("LANCTL.ACCESS.CREDENTIAL.ACTION_HELP", action=action)
+        )
         child.add_argument("credential_id")
-    child = actions.add_parser("set", help="Guarda y vincula una credencial.")
+    child = actions.add_parser("set", help=t("LANCTL.UI.TEXT.SAVE_AND_LINK_A_CREDENTIAL"))
     child.add_argument("element")
     child.add_argument("protocol")
     child.add_argument("--username", required=True)
     for action in ("export", "import"):
-        child = actions.add_parser(action, help="Transporta un almacén cifrado; nunca texto plano.")
+        child = actions.add_parser(
+            action, help=t("LANCTL.UI.TEXT.TRANSPORT_AN_ENCRYPTED_STORE_NEVER_PLAINTEXT")
+        )
         child.add_argument("file")
-    child = actions.add_parser("copy", help="Copia a otro almacén y verifica; origen conservado.")
+    child = actions.add_parser(
+        "copy", help=t("LANCTL.UI.TEXT.COPY_TO_ANOTHER_STORE_AND_VERIFY_PRESERVE_THE_SOURCE")
+    )
     child.add_argument("file")
     child.add_argument("--target-cipher", choices=("dpapi", "portable"), default="portable")
     child = actions.add_parser(
-        "recover", help="Repara referencias ausentes; no elimina ni sobrescribe secretos."
+        "recover",
+        help=t("LANCTL.UI.TEXT.REPAIR_MISSING_REFERENCES_DO_NOT_DELETE_OR_OVERWRITE_SECRETS"),
     )
     child.add_argument(
-        "--yes", action="store_true", help="Aplica reparaciones; por defecto sólo diagnostica."
+        "--yes",
+        action="store_true",
+        help=t("LANCTL.UI.TEXT.APPLY_REPAIRS_DIAGNOSE_ONLY_BY_DEFAULT"),
     )
-    commands.add_parser("doctor", help="Comprueba vínculos y permisos sin cambiar datos.")
-    settings = commands.add_parser("settings", help="Muestra o selecciona el almacén compartido.")
+    commands.add_parser(
+        "doctor", help=t("LANCTL.UI.TEXT.CHECK_LINKS_AND_PERMISSIONS_WITHOUT_CHANGING_DATA")
+    )
+    settings = commands.add_parser(
+        "settings", help=t("LANCTL.UI.TEXT.SHOW_OR_SELECT_THE_SHARED_STORE")
+    )
     settings.add_argument("action", choices=("show", "use-store"), nargs="?", default="show")
     settings.add_argument("file", nargs="?")
     settings.add_argument(
         "--yes",
         action="store_true",
-        help="Confirma cambiar el almacén configurado sin mover secretos.",
+        help=t("LANCTL.UI.TEXT.CONFIRM_CHANGING_THE_CONFIGURED_STORE_WITHOUT_MOVING_SECRETS"),
     )
-    protocol = commands.add_parser("protocol", help="Resumen por protocolos del almacén.")
+    protocol = commands.add_parser("protocol", help=t("LANCTL.UI.TEXT.STORE_PROTOCOL_SUMMARY"))
     protocol.add_argument("action", choices=("list", "configure"), default="list", nargs="?")
     protocol.add_argument("element", nargs="?")
     protocol.add_argument("protocol", nargs="?")
-    protocol.add_argument("--port", type=int, help="Puerto 1-65535.")
-    protocol.add_argument("--driver", help="Driver del protocolo.")
-    user = commands.add_parser("user", help="Usuarios del acceso remoto; no cuentas de Windows.")
+    protocol.add_argument("--port", type=int, help=t("LANCTL.UI.TEXT.PORT_1_65535"))
+    protocol.add_argument("--driver", help=t("LANCTL.UI.TEXT.PROTOCOL_DRIVER"))
+    user = commands.add_parser(
+        "user", help=t("LANCTL.UI.TEXT.REMOTE_ACCESS_USERS_NOT_WINDOWS_ACCOUNTS")
+    )
     user.add_argument("action", choices=("list", "add", "enable", "disable", "delete"))
     user.add_argument("username", nargs="?")
     user.add_argument(
         "--role", choices=("viewer", "operator", "manager", "administrator"), default="viewer"
     )
-    user.add_argument("--yes", action="store_true", help="Confirma eliminación.")
+    user.add_argument("--yes", action="store_true", help=t("LANCTL.UI.TEXT.CONFIRM_DELETION"))
     return parser
 
 
@@ -128,8 +166,8 @@ class AccessManager(CredentialService):
     """Compatible CLI adapter: obtain secrets interactively, then call the service."""
 
     def set(self, selector: str, protocol: str, username: str) -> str:
-        password = read_secret("Contraseña (no se mostrará): ")
-        confirmation = read_secret("Repite la contraseña: ")
+        password = read_secret(t("LANCTL.UI.PROMPT.PASSWORD_NOT_DISPLAYED"))
+        confirmation = read_secret(t("LANCTL.UI.PROMPT.REPEAT_PASSWORD"))
         if not password:
             raise ValueError("la contraseña no puede estar vacía")
         if password != confirmation:
@@ -139,9 +177,16 @@ class AccessManager(CredentialService):
 
 def _print_rows(rows: list[dict[str, str]]) -> None:
     if not rows:
-        print("No hay credenciales guardadas.")
+        print(t("LANCTL.UI.PROMPT.NO_SAVED_CREDENTIALS"))
         return
-    print(f"{'ID':<30} {'ELEMENTO':<24} {'PROTOCOLO':<12} USUARIO")
+    print(
+        t(
+            "LANCTL.UI.SUMMARY.VALUE_VALUE_VALUE_USERNAME",
+            value0=f"{'ID':<30}",
+            value1=f"{'ELEMENTO':<24}",
+            value2=f"{'PROTOCOLO':<12}",
+        )
+    )
     for row in rows:
         print(
             f"{row['credentialId']:<30} {row.get('element', row['deviceId'])[:24]:<24} "
@@ -169,8 +214,16 @@ def _tui_loop(manager, screen):
         size = max(1, shutil.get_terminal_size((100, 30)).lines - 11)
         pages = max(1, (len(rows) + size - 1) // size)
         page = min(page, pages - 1)
-        table = Table(title=f"LANACCESS {__version__} · Credenciales", expand=True)
-        for heading in ("ID", "Elemento", "Protocolo", "Usuario"):
+        table = Table(
+            title=t("LANCTL.UI.DETAIL.LANACCESS_VALUE_CREDENTIALS", value0=f"{__version__}"),
+            expand=True,
+        )
+        for heading in (
+            "ID",
+            t("LANCTL.UI.TEXT.ELEMENT"),
+            t("LANCTL.UI.TEXT.PROTOCOL"),
+            t("LANCTL.UI.TEXT.USERNAME"),
+        ):
             table.add_column(heading, no_wrap=True)
         for row in rows[page * size : (page + 1) * size]:
             table.add_row(
@@ -183,7 +236,11 @@ def _tui_loop(manager, screen):
             Group(
                 table,
                 Text(
-                    f"Página {page + 1}/{pages} · N/B páginas | L Refrescar | A Añadir | E Eliminar | C Comando | D Diagnóstico | Q Salir"
+                    t(
+                        "LANCTL.UI.MESSAGE.PAGE_VALUE_VALUE_N_B_PAGES_L_REFRESH_A_ADD_E_DELETE_C_COMMAND_D_DIAGNOSTICS_Q_QUIT",
+                        value0=f"{page + 1}",
+                        value1=f"{pages}",
+                    )
                 ),
                 Text(
                     "credential export/import ARCHIVO · credential recover · protocol list · user list · settings"
@@ -191,7 +248,7 @@ def _tui_loop(manager, screen):
             )
         )
         try:
-            action = input("Opción: ").strip().casefold()
+            action = input(t("LANCTL.UI.PROMPT.OPTION")).strip().casefold()
         except (EOFError, KeyboardInterrupt):
             return 0
         if action in {"q", "quit", "exit"}:
@@ -204,27 +261,36 @@ def _tui_loop(manager, screen):
                 from lanctl.apps.access.vault_service import audit_bindings
 
                 print(json.dumps(audit_bindings(manager), indent=2))
-                input("Pulsa Intro para continuar…")
+                input(t("LANCTL.UI.PROMPT.PRESS_ENTER_TO_CONTINUE"))
             elif action == "c":
-                _interactive_command(manager, input("Comando LANACCESS: "))
-                input("Pulsa Intro para continuar…")
+                _interactive_command(manager, input(t("LANCTL.UI.PRESENTATION.ACCESS_COMMAND")))
+                input(t("LANCTL.UI.PROMPT.PRESS_ENTER_TO_CONTINUE"))
             elif action in {"a", "add", "set"}:
-                selector = input("Elemento: ").strip()
-                protocol = input("Protocolo: ").strip()
-                username = input("Usuario: ").strip()
-                print(f"Guardada: {manager.set(selector, protocol, username)}")
-                input("Pulsa Intro para continuar…")
+                selector = input(t("LANCTL.UI.PRESENTATION.ELEMENT")).strip()
+                protocol = input(t("LANCTL.UI.PRESENTATION.PROTOCOL")).strip()
+                username = input(t("LANCTL.UI.PRESENTATION.USER")).strip()
+                print(
+                    t(
+                        "LANCTL.UI.DETAIL.SAVED_VALUE",
+                        value0=f"{manager.set(selector, protocol, username)}",
+                    )
+                )
+                input(t("LANCTL.UI.PROMPT.PRESS_ENTER_TO_CONTINUE"))
             elif action in {"e", "delete", "del"}:
-                identifier = input("ID de credencial: ").strip()
-                print("Eliminada." if manager.delete(identifier) else "No encontrada.")
-                input("Pulsa Intro para continuar…")
+                identifier = input(t("LANCTL.UI.PRESENTATION.CREDENTIAL_ID")).strip()
+                print(
+                    t("LANCTL.UI.PRESENTATION.DELETED")
+                    if manager.delete(identifier)
+                    else t("LANCTL.UI.PROMPT.NOT_FOUND")
+                )
+                input(t("LANCTL.UI.PROMPT.PRESS_ENTER_TO_CONTINUE"))
         except (OSError, ValueError) as error:
             from lanctl.core.errors import errors
 
             errors.from_exception(
                 error, origin="LANCTL.Access.TUI.Action", code="ACCESS.TUI.ACTION_FAILED", level=42
             )
-            input("Pulsa Intro para continuar…")
+            input(t("LANCTL.UI.PROMPT.PRESS_ENTER_TO_CONTINUE"))
 
 
 def run_cli(manager: AccessManager) -> int:
@@ -269,7 +335,7 @@ def _interactive_command(manager, command):
         )
     except SystemExit as exc:
         if exc.code:
-            print("Comando no válido; consulta --help")
+            print(t("LANCTL.UI.PROMPT.INVALID_COMMAND_SEE_HELP"))
 
 
 def _main(argv: list[str] | None = None) -> int:
@@ -337,18 +403,24 @@ def _main(argv: list[str] | None = None) -> int:
         print(json.dumps(row, indent=2, ensure_ascii=False))
         return 0
     if args.command == "set":
-        print(f"Guardada: {manager.set(args.element, args.protocol, args.username)}")
+        print(
+            t(
+                "LANCTL.UI.DETAIL.SAVED_VALUE",
+                value0=f"{manager.set(args.element, args.protocol, args.username)}",
+            )
+        )
         return 0
     if args.command in {"delete", "del"}:
         if not manager.delete(args.credential_id):
             raise ValueError(f"credencial no encontrada: {args.credential_id}")
-        print("Eliminada.")
+        print(t("LANCTL.UI.PRESENTATION.DELETED"))
         return 0
     return run_cli(manager)
 
 
 @coordinated_launcher("lanaccess")
 def main(argv: list[str] | None = None) -> int:
+    initialize_language()
     from lanctl.core.errors import errors
 
     try:
@@ -368,7 +440,9 @@ def _extended_command(manager, args):
         cipher = getattr(args, "target_cipher", "portable")
         password = None
         if cipher == "portable":
-            password = read_secret("Contraseña del destino (mínimo 12 caracteres): ")
+            password = read_secret(
+                t("LANCTL.UI.PROMPT.DESTINATION_PASSWORD_AT_LEAST_12_CHARACTERS")
+            )
             if password != read_secret("Repite la contraseña del destino: "):
                 raise ValueError("las contraseñas no coinciden")
         target = CredentialStore(args.file, cipher=cipher, password=password)
@@ -461,7 +535,7 @@ def _user_command(args):
     if not args.username:
         raise ValueError("indica el usuario remoto")
     if args.action == "add":
-        password = read_secret("Contraseña del usuario remoto: ")
+        password = read_secret(t("LANCTL.UI.PROMPT.REMOTE_USER_PASSWORD"))
         if password != read_secret("Repite la contraseña: "):
             raise ValueError("las contraseñas no coinciden")
         auth.add_user(args.username, roles=(args.role,), password=password)

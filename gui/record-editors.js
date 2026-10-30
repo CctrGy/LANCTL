@@ -11,7 +11,7 @@
     retained = { id, filter: filterState() };
   }
   function scopedCall(expected, method, ...args) {
-    if (context() !== expected) return Promise.reject(new Error("El proyecto cambió. Recarga la ficha."));
+    if (context() !== expected) return Promise.reject(new Error(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_PROJECT_CHANGED_RELOAD_THE_RECORD")));
     return call(method, ...args);
   }
   function note(text) {
@@ -31,20 +31,20 @@
     base.render();
     if ($("#canvas [data-id]") && retained && retained.filter === filterState() &&
         !base.records().some(r => idOf(r) === retained.id)) {
-      const message = note("Se mantiene visible el elemento que acabas de editar, aunque ya no coincida con el filtro.");
+      const message = note(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_ELEMENT_YOU_JUST_EDITED_REMAINS_VISIBLE_EVEN_IF_IT_NO_LONGER_MATCHES_THE_FILTER"));
       message.className = "muted record-editor-retained";
       $("#canvas").prepend(message);
     }
   };
 
   function credentialEditor(r) {
-    if (state.locked) return message("Desbloquea el almacén antes de editar.", true);
-    const expected = context(), username = field("Usuario", "username", r.username);
+    if (state.locked) return message(window.LanctlI18n.t("LANCTL.UI.VIEW.UNLOCK_THE_STORE_BEFORE_EDITING"), true);
+    const expected = context(), username = field(window.LanctlI18n.t("LANCTL.UI.TEXT.USERNAME"), "username", r.username);
     username.querySelector("input").required = true;
-    const change = field("Cambiar contraseña", "rotate", "", "checkbox");
+    const change = field(window.LanctlI18n.t("LANCTL.UI.VIEW.CHANGE_PASSWORD"), "rotate", "", "checkbox");
     change.className = "record-secret-toggle";
-    const password = field("Nueva contraseña", "password", "", "password");
-    const confirmation = field("Repetir contraseña", "confirmation", "", "password");
+    const password = field(window.LanctlI18n.t("LANCTL.UI.VIEW.NEW_PASSWORD"), "password", "", "password");
+    const confirmation = field(window.LanctlI18n.t("LANCTL.UI.TEXT.REPEAT_PASSWORD"), "confirmation", "", "password");
     const toggle = change.querySelector("input"), inputs = [
       password.querySelector("input"), confirmation.querySelector("input")
     ];
@@ -58,9 +58,9 @@
     }
     toggle.onchange = visibility;
     visibility();
-    showForm("Credencial · " + r.element, [
+    showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.CREDENTIAL") + r.element, [
       note(`${r.element} · ${r.protocol.toUpperCase()} · ${r.credentialId}`),
-      note("El equipo y el protocolo identifican esta credencial. La contraseña actual permanece oculta y se conserva salvo que elijas cambiarla."),
+      note(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_DEVICE_AND_PROTOCOL_IDENTIFY_THIS_CREDENTIAL_THE_CURRENT_PASSWORD_REMAINS_HIDDEN_AND_IS_PRE")),
       username, change, password, confirmation
     ], async values => {
       const changes = { username: values.username };
@@ -77,18 +77,18 @@
   };
 
   async function monitorEditor(r) {
-    const token = ++request, expected = context(), loading = note("Cargando datos guardados…");
-    showForm("Equipo · " + r.name, [loading]);
+    const token = ++request, expected = context(), loading = note(window.LanctlI18n.t("LANCTL.UI.VIEW.LOADING_SAVED_DATA"));
+    showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.DEVICE_05DBAF67") + r.name, [loading]);
     try {
       let record = (await scopedCall(expected, "monitor_device", r.id)).device;
       if (token !== request || !loading.isConnected || !$("#detail").open || context() !== expected) return;
       const fields = [
-        field("Nombre", "name", record.editable.name),
-        field("Alias", "alias", record.editable.alias),
-        field("Dirección IP", "ip", record.editable.ip),
-        field("Descripción", "description", record.editable.description, "textarea")
+        field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.NAME"), "name", record.editable.name),
+        field(window.LanctlI18n.t("LANCTL.UI.WORD.ALIAS"), "alias", record.editable.alias),
+        field(window.LanctlI18n.t("LANCTL.UI.TEXT.IP_ADDRESS"), "ip", record.editable.ip),
+        field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.DESCRIPTION"), "description", record.editable.description, "textarea")
       ];
-      const observations = note(`Presencia: ${r.presence} · Salud: ${r.health} · Latencia: ${r.latency == null ? "Sin medición" : r.latency + " ms"}`);
+      const observations = note( window.LanctlI18n.t("LANCTL.UI.WEB.OBSERVATIONS",{value0:(r.presence),value1:(r.health),value2:(r.latency == null ? window.LanctlI18n.t("LANCTL.UI.TEXT.NO_MEASUREMENT") : r.latency + " ms")}));
       const groups = document.createElement("div");
       function changedFields() {
         return Object.fromEntries(fields.map(f => f.querySelector("input,textarea"))
@@ -96,18 +96,18 @@
           .map(input => [input.name, input.value]));
       }
       function paintGroups() {
-        groups.replaceChildren(note("Los cambios de pertenencia se aplican con Añadir o Retirar. Los grupos protegidos son de lectura."));
+        groups.replaceChildren(note(window.LanctlI18n.t("LANCTL.UI.VIEW.MEMBERSHIP_CHANGES_APPLY_WITH_ADD_OR_REMOVE_PROTECTED_GROUPS_ARE_READ_ONLY")));
         const available = record.groupCatalog.filter(g => g.editable && !record.groups.includes(g.name));
-        const choice = field("Añadir a un grupo", "group", available[0]?.name || "", "text",
+        const choice = field(window.LanctlI18n.t("LANCTL.UI.VIEW.ADD_TO_A_GROUP"), "group", available[0]?.name || "", "text",
           available.map(g => [g.name, g.name]));
-        const add = wireAction("Añadir", () => changeGroup("add", choice.querySelector("select").value));
+        const add = wireAction(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.ADD"), () => changeGroup("add", choice.querySelector("select").value));
         add.disabled = !available.length;
         groups.append(choice, add);
         for (const name of record.groups) {
           const row = document.createElement("div"); row.className = "row";
           const editable = record.groupCatalog.find(g => g.name === name)?.editable === true;
-          row.append(note(name + (editable ? "" : " · Protegido")));
-          if (editable) row.append(wireAction("Retirar de " + name, () => changeGroup("remove", name)));
+          row.append(note(name + (editable ? "" : window.LanctlI18n.t("LANCTL.UI.FRAGMENT.PROTECTED"))));
+          if (editable) row.append(wireAction(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.REMOVE_FROM") + name, () => changeGroup("remove", name)));
           groups.append(row);
         }
       }
@@ -115,7 +115,7 @@
       async function changeGroup(action, name) {
         if (changingGroup) return;
         if (Object.keys(changedFields()).length) {
-          $("#detail-error").textContent = "Guarda o descarta los datos editados antes de cambiar grupos.";
+          window.LanctlI18n.bindText($("#detail-error"),"LANCTL.UI.VIEW.SAVE_OR_DISCARD_EDITED_DATA_BEFORE_CHANGING_GROUPS");
           return;
         }
         changingGroup = true;
@@ -135,14 +135,14 @@
         }
       }
       paintGroups();
-      showForm("Equipo · " + r.name, [
+      showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.DEVICE_05DBAF67") + r.name, [
         wireTabs([
-          ["Datos", [note("Identidad: " + r.id), ...fields]],
-          ["Grupos", [groups]],
-          ["Observaciones", [observations, note("Las mediciones, el estado y los eventos los produce el monitor; no se editan manualmente.")]]
+          [window.LanctlI18n.t("LANCTL.UI.WORD.DATA"), [note(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.IDENTITY") + r.id), ...fields]],
+          [window.LanctlI18n.t("LANCTL.UI.TEXT.GROUPS"), [groups]],
+          [window.LanctlI18n.t("LANCTL.UI.WORD.NOTES"), [observations, note(window.LanctlI18n.t("LANCTL.UI.VIEW.MEASUREMENTS_STATE_AND_EVENTS_ARE_PRODUCED_BY_THE_MONITOR_THEY_ARE_NOT_EDITED_MANUALLY"))]]
         ])
       ], async () => {
-        if (changingGroup) throw Error("Espera a que termine el cambio de grupo.");
+        if (changingGroup) throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.WAIT_FOR_THE_GROUP_CHANGE_TO_FINISH"));
         await scopedCall(expected, "monitor_update", r.id, record.revision, changedFields());
         keepSelection(r.id);
       });

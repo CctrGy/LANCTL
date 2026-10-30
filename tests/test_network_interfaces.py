@@ -254,3 +254,59 @@ def test_first_scan_enumeration_failure_has_no_default_interface(monkeypatch, tm
     assert options["requested"] and options["networks"] == []
     assert not options["interfaceSelectionAvailable"]
     assert options["routing"] == "unavailable"
+
+
+def test_linux_cache_uses_ip_without_net_tools(monkeypatch):
+    monkeypatch.setattr(lan_scanner.platform, "system", lambda: "Linux")
+    run = Mock(
+        return_value=SimpleNamespace(
+            returncode=0, stdout="10.20.1.9 dev eth0 lladdr aa:bb:cc:dd:ee:ff STALE"
+        )
+    )
+    monkeypatch.setattr(lan_scanner.subprocess, "run", run)
+    scanner = lan_scanner.LanScanner(
+        ipaddress.IPv4Network("10.20.1.0/24"), workers=1, timeout=0.1, max_hosts=256
+    )
+    assert scanner._read_arp_table() == {"10.20.1.9": "AA:BB:CC:DD:EE:FF"}
+    assert run.call_args.args[0] == ["ip", "-4", "neigh", "show"]
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        FileNotFoundError("missing"),
+        lan_scanner.subprocess.TimeoutExpired("ip", 10),
+        SimpleNamespace(returncode=1, stdout=""),
+    ],
+)
+def test_unavailable_cache_does_not_abort_scan(monkeypatch, failure):
+    monkeypatch.setattr(lan_scanner.platform, "system", lambda: "Linux")
+    run = (
+        Mock(side_effect=failure) if isinstance(failure, Exception) else Mock(return_value=failure)
+    )
+    monkeypatch.setattr(lan_scanner.subprocess, "run", run)
+    scanner = lan_scanner.LanScanner(
+        ipaddress.IPv4Network("10.20.1.0/30"), workers=1, timeout=0.1, max_hosts=256
+    )
+    monkeypatch.setattr(scanner, "_parallel_discovery", lambda *args: ({"10.20.1.1"}, {}))
+    monkeypatch.setattr(scanner, "_include_local_device", lambda records: None)
+    records = scanner.scan(resolve_names=False)
+    assert "10.20.1.1" in [record.ip for record in records]
+
+
+def test_linux_cache_falls_back_to_arp(monkeypatch):
+    monkeypatch.setattr(lan_scanner.platform, "system", lambda: "Linux")
+    run = Mock(
+        side_effect=[
+            FileNotFoundError("ip"),
+            SimpleNamespace(
+                returncode=0, stdout="host (10.20.1.9) at aa:bb:cc:dd:ee:ff [ether] on eth0"
+            ),
+        ]
+    )
+    monkeypatch.setattr(lan_scanner.subprocess, "run", run)
+    scanner = lan_scanner.LanScanner(
+        ipaddress.IPv4Network("10.20.1.0/24"), workers=1, timeout=0.1, max_hosts=256
+    )
+    assert scanner._read_arp_table() == {"10.20.1.9": "AA:BB:CC:DD:EE:FF"}
+    assert run.call_args.args[0] == ["arp", "-a"]

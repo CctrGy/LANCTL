@@ -28,6 +28,7 @@ datas = collect_data_files("manuf") + [
     ("bundled/lanctl.network.wol.lcp", "bundled"),
     ("bundled/lanctl.lab.network-emulator.lcp", "bundled"),
     ("bundled/plugin-catalog.json", "bundled"),
+    ("bundled/languages", "bundled/languages"),
     ("assets/lanctl-icon-v3.png", "assets"),
     ("assets/launcher-icons", "assets/launcher-icons"),
     ("assets/device-icons", "assets/device-icons"),

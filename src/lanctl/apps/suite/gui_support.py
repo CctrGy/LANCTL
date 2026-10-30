@@ -17,6 +17,7 @@ _PROJECT_ACTIONS = frozenset(
         "project_state",
         "request_close",
         "update_device",
+        "create_device",
         "delete_device",
         "undo_edit",
         "redo_edit",
@@ -33,6 +34,7 @@ _PROJECT_ACTIONS = frozenset(
         "save_settings",
         "save_setting",
         "save_catalog_setting",
+        "save_catalog_settings",
         "save_launcher_setting",
         "wire_create",
         "wire_organization",
@@ -65,12 +67,17 @@ _PROJECT_ACTIONS = frozenset(
 class GuiSupportMixin:
     """Explicit RPC surface used by all six native GUI windows."""
 
-    def project_call(self, expected, method, arguments):
+    def project_call(self, expected, method, action_arguments=None, *, arguments=None):
         """Version 1 additive RPC envelope for actions from a displayed project.
 
         Existing RPC methods remain callable by legacy clients. The native GUI
         sends the identity rendered with its data, never a backend-only cache.
+        ``arguments`` remains a keyword-only alias for Python callers. It must
+        not be a positional parameter: pywebview uses those names to generate
+        JavaScript functions, where it would shadow the native arguments object.
         """
+        if action_arguments is None:
+            action_arguments = arguments
 
         def operation():
             from lanctl.core.project_context import project_operation, require_project
@@ -78,7 +85,7 @@ class GuiSupportMixin:
             if (
                 not isinstance(method, str)
                 or method not in _PROJECT_ACTIONS
-                or not isinstance(arguments, list)
+                or not isinstance(action_arguments, list)
             ):
                 raise ValueError("Operación de proyecto no permitida")
             target = getattr(self, method, None)
@@ -90,7 +97,7 @@ class GuiSupportMixin:
             try:
                 with project_operation():
                     require_project(expected)
-                    return target(*arguments)
+                    return target(*action_arguments)
             finally:
                 self._lock.release()
 
@@ -295,6 +302,7 @@ class GuiSupportMixin:
         def read():
             from lanctl.core.activity import ActivityStore
             from lanctl.core.config import load_config
+            from lanctl.core.coordination import Coordinator
 
             self._require_monitor_view()
             project = None if all_projects else load_config().get("activeProject") or ""
@@ -308,9 +316,18 @@ class GuiSupportMixin:
                     row["message"] = envelope.get("message", "")
                     row["error"] = envelope["error"]
             sessions = sorted({row["session"] for row in rows})
+            metadata = {item["id"]: item for item in ActivityStore().session_metadata()}
+            live = {item["id"]: item for item in Coordinator().sessions()}
+            details = []
+            for identifier in sessions:
+                item = {"id": identifier, **metadata.get(identifier, {})}
+                if identifier in live:
+                    item["started"] = live[identifier]["started"]
+                details.append(item)
             return {
                 "records": [r for r in rows if not session or r["session"] == session],
                 "sessions": sessions,
+                "sessionDetails": details,
                 "project": project,
             }
 

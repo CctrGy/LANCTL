@@ -81,7 +81,7 @@ class ExtensionTests(unittest.TestCase):
         self.assertIn("50.0%", rendered)
         self.assertIn("100.0%", rendered)
         self.assertIn("Search:", rendered)
-        self.assertIn("[founds: 1/26]", rendered)
+        self.assertIn("[found: 1/26]", rendered)
         self.assertNotIn("DNS", rendered)
         self.assertTrue(rendered.endswith("\r"))
 
@@ -99,7 +99,7 @@ class ExtensionTests(unittest.TestCase):
         progress.found("192.168.1.17")
         progress.found("192.168.1.17", "90:11:95:A0:5B:32")
         progress.found("192.168.1.99")
-        self.assertIn("[founds: 1/2]", tty.getvalue())
+        self.assertIn("[found: 1/2]", tty.getvalue())
 
     def test_expressive_queries_are_combined_without_eval(self):
         device = Device(

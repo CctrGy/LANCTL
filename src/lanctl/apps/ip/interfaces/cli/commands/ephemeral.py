@@ -19,6 +19,7 @@ from lanctl.core.config import load_config
 from lanctl.core.console import ok
 from lanctl.core.output import write_records
 from lanctl.core.progress import ScanProgress
+from lanctl.shared.i18n import t
 
 
 def register_ephemeral_command(commands: argparse._SubParsersAction) -> None:
@@ -26,10 +27,11 @@ def register_ephemeral_command(commands: argparse._SubParsersAction) -> None:
     command = commands.add_parser(
         "ephemeral",
         aliases=["-e"],
-        help="Escanea activos sin leer ni guardar ningún inventario.",
+        help=t("LANCTL.UI.HELP.SCAN_ACTIVE_HOSTS_WITHOUT_READING_OR_SAVING_ANY_INVENTORY"),
         description=(
-            "Ejecuta el descubrimiento real en una sesión aislada en memoria. "
-            "No abre, modifica ni guarda proyectos o bases de dispositivos."
+            t(
+                "LANCTL.UI.HELP.PERFORM_ACTUAL_DISCOVERY_IN_AN_ISOLATED_IN_MEMORY_SESSION_DOES_NOT_OPEN_MODIFY_OR_SAVE_PROJECTS"
+            )
         ),
     )
     profiles = command.add_mutually_exclusive_group()
@@ -45,33 +47,42 @@ def register_ephemeral_command(commands: argparse._SubParsersAction) -> None:
         "--range",
         dest="network",
         default=config.get("range"),
-        help="Rango CIDR que se explorará solo durante esta ejecución.",
+        help=t("LANCTL.UI.HELP.CIDR_RANGE_TO_EXPLORE_ONLY_DURING_THIS_EXECUTION"),
     )
     command.add_argument(
-        "--resolve-names", action="store_true", help="Resuelve nombres sin almacenarlos."
+        "--resolve-names",
+        action="store_true",
+        help=t("LANCTL.UI.HELP.RESOLVE_NAMES_WITHOUT_STORING_THEM"),
     )
-    command.add_argument("--ports", help="Puertos TCP opcionales, por ejemplo 22,80,443.")
-    command.add_argument("--json", action="store_true", help="Devuelve la sesión como JSON.")
     command.add_argument(
-        "--workers", type=int, default=config.get("workers", 64), help="Sondeos simultáneos."
+        "--ports", help=t("LANCTL.UI.HELP.OPTIONAL_TCP_PORTS_FOR_EXAMPLE_22_80_443")
+    )
+    command.add_argument(
+        "--json", action="store_true", help=t("LANCTL.UI.HELP.RETURN_THE_SESSION_AS_JSON")
+    )
+    command.add_argument(
+        "--workers",
+        type=int,
+        default=config.get("workers", 64),
+        help=t("LANCTL.UI.HELP.CONCURRENT_PROBES"),
     )
     command.add_argument(
         "--timeout",
         type=float,
         default=config.get("timeout", 0.8),
-        help="Tiempo máximo base por sondeo, en segundos.",
+        help=t("LANCTL.UI.HELP.BASE_TIMEOUT_PER_PROBE_IN_SECONDS"),
     )
     command.add_argument(
         "--max-hosts",
         type=int,
         default=config.get("maxHosts", 4096),
-        help="Límite defensivo de direcciones autorizadas.",
+        help=t("LANCTL.UI.HELP.DEFENSIVE_LIMIT_ON_AUTHORIZED_ADDRESSES"),
     )
     command.add_argument(
         "--scan-order",
         choices=("ascending", "descending", "random"),
         default=config.get("scanOrder", "ascending"),
-        help="Orden de exploración de las direcciones.",
+        help=t("LANCTL.UI.HELP.ADDRESS_EXPLORATION_ORDER"),
     )
     command.set_defaults(
         handler=run_ephemeral,
@@ -210,10 +221,19 @@ def run_ephemeral(args: argparse.Namespace) -> int:
             }
             print(json.dumps(payload, indent=2, ensure_ascii=False))
         else:
-            print("\nLANIP · ESCANEO EFÍMERO")
-            print("Los resultados existen únicamente durante esta ejecución y no se almacenarán.\n")
+            print(t("LANCTL.UI.STATUS.LANIP_EPHEMERAL_SCAN"))
+            print(
+                t("LANCTL.UI.BLOCK.RESULTS_EXIST_ONLY_DURING_THIS_EXECUTION_AND_WILL_NOT_BE_STORED")
+            )
             write_records(
                 rows, output_format="table", columns=columns, active_rows=[True] * len(rows)
             )
-            ok("EFÍMERO", f"Activos: {len(rows)} | Guardados: 0 | Duración: {elapsed:.2f} s")
+            ok(
+                t("LANCTL.UI.STATUS.EPHEMERAL"),
+                t(
+                    "LANCTL.UI.MESSAGE.ACTIVE_VALUE_SAVED_0_DURATION_VALUE_S",
+                    value0=f"{len(rows)}",
+                    value1=f"{elapsed:.2f}",
+                ),
+            )
     return 0
