@@ -184,24 +184,24 @@ def validate_value(path, value, default):
 
         return normalize_columns(value)
     if path == "tui.cliHeightPercent":
-        from lanctl.apps.ip.interfaces.tui.layout import normalize_cli_percent
+        from lanctl.shared.tui_layout import normalize_cli_percent
 
         return normalize_cli_percent(value)
     if path == "tui.panelLayout":
-        from lanctl.apps.ip.interfaces.tui.layout import normalize_panel_layout
+        from lanctl.shared.tui_layout import normalize_panel_layout
 
         return normalize_panel_layout(value)
     if path.startswith("tui.columnWidths."):
-        from lanctl.apps.ip.interfaces.tui.layout import normalize_column_spec
+        from lanctl.shared.tui_layout import normalize_column_spec
 
         return normalize_column_spec(path.rsplit(".", 1)[1], value)
     if path.startswith("tui.keyBindings.") and value is not None:
-        from lanctl.apps.ip.interfaces.tui.keyboard import CONFIGURABLE_TUI_KEYS
+        from lanctl.shared.tui_keyboard import CONFIGURABLE_TUI_KEYS
 
         if value not in CONFIGURABLE_TUI_KEYS:
             raise ValueError(f"Tecla TUI no válida: {value}")
     if path == "tui.footerButtons":
-        from lanctl.apps.ip.interfaces.tui.keyboard import FOOTER_ACTIONS
+        from lanctl.shared.tui_keyboard import FOOTER_ACTIONS
 
         if any(action not in FOOTER_ACTIONS for action in value):
             raise ValueError("Acción de barra TUI desconocida")

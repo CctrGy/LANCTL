@@ -296,7 +296,8 @@ class AccessTests(unittest.TestCase):
             adapter = LanctlCommandAdapter(AuthorizationService(store), runner=timeout)
             code, output = adapter.execute(user, "search switch")
             self.assertEqual(code, 124)
-            self.assertIn("agotado", output)
+            self.assertRegex(output, r"\[0e[0-9A-F]+\]")
+            self.assertNotIn("LANCTL.ACCESS.REMOTE", output)
 
     def test_remote_root_commands_are_internal_and_permission_checked(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -162,6 +162,7 @@
   let prepared = false;
   function invalidate() {
     prepared = false;
+    report.querySelector(".report-state").textContent = "";
     report
       .querySelectorAll('[data-report="export"],[data-report="github"],[data-report="copy"]')
       .forEach((b) => (b.disabled = true));
@@ -284,19 +285,37 @@
     if (button.hasAttribute("data-monitor-report"))
       window.openLanmonView("report");
   });
+  let monitorRequestQueue = Promise.resolve();
+  function receiveMonitorRequest(request) {
+    if (!request || !["activity", "report", "logs"].includes(request.view) || typeof request.sourceSession !== "string") return;
+    monitorRequestQueue = monitorRequestQueue.then(async () => {
+      try {
+        for (let attempt = 0; !state.launcher && attempt < 100; attempt++)
+          await new Promise(resolve => setTimeout(resolve, 100));
+        if (state.launcher !== "lanmon") return;
+        const draft = report.open || prepared || [...report.querySelectorAll("textarea")].some(field => field.value.trim());
+        if (request.view === "report" && draft) {
+          if (!report.open) report.showModal();
+          window.LanctlI18n.bindText(report.querySelector(".report-state"), "LANCTL.MONITOR.VIEW.DRAFT_PRESERVED");
+          report.querySelector("textarea").focus();
+          return;
+        }
+        session = request.sourceSession;
+        await window.openLanmonView(request.view);
+        if (report.open) report.querySelector("textarea").focus();
+      } catch (error) {
+        report.querySelector(".report-state").textContent = error.message;
+        if (request.view === "report" && !report.open) report.showModal();
+      }
+    });
+    return monitorRequestQueue;
+  }
+  window.addEventListener("lanctl-monitor-view", event => receiveMonitorRequest(event.detail));
   window.addEventListener("pywebviewready", async () => {
     if (!window.pywebview?.api.monitor_view) return;
     try {
       const initial = await call("monitor_view");
-      if (initial.view) {
-        session = initial.sourceSession;
-        const timer = setInterval(() => {
-          if (state.launcher) {
-            clearInterval(timer);
-            window.openLanmonView(initial.view);
-          }
-        }, 100);
-      }
+      if (initial.view) await receiveMonitorRequest(initial);
     } catch (error) {
       console.warn(error.message);
     }

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+
 
 class InMemoryMetricsStore:
     def __init__(self):
@@ -12,11 +14,20 @@ class InMemoryMetricsStore:
 class InMemorySessionRepository:
     def __init__(self):
         self.rows = {}
+        self._lock = threading.RLock()
+
+    def transaction(self):
+        return self._lock
 
     def save(self, session):
-        self.rows[session.sessionId] = session
+        with self._lock:
+            self.rows[session.sessionId] = session
 
     def active(self):
+        with self._lock:
+            return self._active()
+
+    def _active(self):
         return next(
             (
                 x

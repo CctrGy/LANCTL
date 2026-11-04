@@ -1,5 +1,521 @@
 # Trabajo pendiente de LANCTL
 
+## Categoría especial: validación de firma y distribución — P40/P42
+
+Por indicación del usuario, P40/P42 se clasifican como **validación especial
+pendiente de firma autorizada**, separada de las tareas de implementación ordinaria.
+Ambos IDs corresponden a la misma incidencia y permanecen abiertos.
+
+- **Dependencia externa:** identidad del editor oficial, clave Ed25519 bajo su
+  custodia y autorización para firmar los cuatro plugins `trusted` del catálogo.
+- **Validación de cierre:** paquetes oficiales firmados y verificados, incorporados
+  a la distribución; instalación y activación reales, persistencia tras reinicio
+  y rechazo de paquetes alterados o editores revocados. Comprobar la distinción
+  entre firma válida, confianza del editor y permisos concedidos.
+- No crear una identidad oficial ficticia, conceder confianza automáticamente ni
+  desactivar comprobaciones para desbloquearlos. Conservar la evidencia y los
+  criterios originales de P40/P42 más abajo.
+
+## Opciones seleccionables en el instalador de terminal — 04/11/2026
+
+- [ ] **P120 · Media · Pendiente de diseño e implementación.** Ampliar el
+  instalador de terminal con un asistente interactivo que permita seleccionar
+  opciones equivalentes a las del instalador gráfico, aunque la primera entrega
+  no incluya todas. Ofrecer menús, casillas y campos manejables con el teclado,
+  navegación entre pasos y un resumen con confirmación antes de instalar.
+
+  **Opciones previstas:** idioma del asistente y del programa, componentes,
+  plugins y herramientas de red, instalación opcional de GUI, servicio LANMON,
+  completado de terminal y accesos directos compatibles con el equipo. Contemplar
+  configuración de la primera cuenta remota y apertura posterior o preparación
+  del primer escaneo cuando correspondan. El tema puede elegirse por nombre o
+  con una muestra textual, sin exigir la previsualización del asistente gráfico.
+  Definir y documentar qué opciones se incluyen en cada entrega; no mostrar como
+  funcionales controles que todavía no apliquen una opción real.
+
+  **Integración:** revisar `install.sh` y los demás puntos de instalación por
+  terminal afectados. Compartir validaciones y lógica de instalación con el
+  asistente gráfico, conservando argumentos y modos no interactivos existentes.
+  Funcionar sin escritorio y en sesiones SSH; detectar terminal interactiva y
+  ofrecer una alternativa textual si no se dispone de la biblioteca TUI elegida.
+  Instalar o explicar los requisitos necesarios sin introducir dependencias GUI.
+  No bloquear automatizaciones esperando respuestas cuando no hay terminal.
+
+  **Comportamiento:** conservar preferencias al actualizar, aplicar realmente
+  las selecciones y permitir cancelar o volver atrás antes de confirmar.
+  Solicitar elevación solo para las operaciones necesarias y mantener los datos
+  personales con su usuario. Ocultar contraseñas, restaurar la terminal al salir
+  o fallar y mostrar errores recuperables con su origen. Mantener recursos de
+  idioma separados del código y paridad inglés/español.
+
+  **Coordinación y cierre:** coordinar con P105/P106 (idiomas), P117 (GUI
+  opcional), P118 (accesos directos), P119 (preferencia de arranque) y P115
+  (certificación). Verificar selección y aplicación de opciones, actualización,
+  cancelación, errores, permisos, terminal pequeña, SSH y ausencia de escritorio;
+  comprobar que los modos por argumentos y no interactivos siguen funcionando.
+  Aplicar `DEVELOPMENT-CHECKLIST.md` y documentar diferencias por plataforma.
+  **Indicación:** solo registrar; implementación pendiente.
+
+## Preferencia de arranque sin argumentos en todos los launchers — 03/11/2026
+
+- [ ] **P119 · Media · Arranque compartido implementado en fuentes; integración de distribución y validación nativa pendientes.**
+  Unificar el arranque sin argumentos para que los seis ejecutables respeten
+  la preferencia persistente `startup.interface` (`cli`, `tui` o `gui`;
+  inicialmente `cli`). Es una ampliación del alcance original de P12, que
+  contemplaba solamente LANCTL; no reabrirla como si hubiera exigido ya esta
+  uniformidad. Conservar la prioridad de comandos e interfaces explícitos y
+  la ejecución no interactiva de ayuda, versión y servicios.
+
+  **Situación comprobada:** `core/session.py`, en `coordinated_launcher`,
+  transforma la preferencia en `--cli`, `--tui` o `--gui` solo cuando
+  `launcher == "lanctl"` y no hay argumentos. `startup.interface` se representa
+  internamente como `startupInterface` y se configura mediante
+  `lanctl settings --startup-interface cli|tui|gui`. Sin argumentos, LANIP,
+  LANWIRE, LANRACK y LANACCESS abren sus TUI sin consultar esa preferencia;
+  LANMON ejecuta `status` y termina. La documentación actual limita expresamente
+  la preferencia a LANCTL: actualizarla al ampliar el contrato, incluidos los
+  ejemplos y referencias CLI/web afectados. Revisar también el enrutamiento
+  `lanctl LAUNCHER` sin opciones para que coincida con el ejecutable directo.
+
+  **Coordinación:** corregir la clasificación de sesiones antes de crearlas.
+  Actualmente LANWIRE, LANRACK y LANACCESS sin argumentos ejecutan TUI pero
+  quedan registrados como CLI; el adaptador reconoce el TUI implícito solo
+  de LANIP. El modo registrado, los eventos y las capacidades de control deben
+  corresponder a la interfaz realmente abierta. Resolver la selección de modo
+  en un punto compartido, considerando reentrada desde consolas y sesiones
+  existentes sin duplicar sesiones ni aplicar la preferencia a comandos internos.
+
+  **Ejecutable y accesos directos:** distinguir el ejecutable principal sin
+  argumentos de un acceso con interfaz explícita. `LANCTL.exe` directamente
+  respeta la preferencia; el host `lanctl-window.exe` añade `--gui`, incluso
+  cuando no recibe argumentos. Los accesos Windows «LANCTL GUI», «LANCTL CLI»
+  y «LANCTL TUI» fuerzan su modo; el acceso de escritorio actual fuerza TUI.
+  Conservar los accesos identificados por modo y ofrecer un acceso genérico
+  «LANCTL» que siga la preferencia, coordinado con P118 y los instaladores.
+  Resolver terminal para CLI/TUI y apertura GUI sin consola innecesaria en
+  Windows/Linux; no asumir que cambiar la configuración altera argumentos de
+  accesos existentes. Documentar la diferencia en configuración y ayudas.
+
+  **GUI opcional:** coordinar con P117 el caso de preferencia GUI guardada pero
+  componente ausente. Definir una política comprensible y comprobable para el
+  arranque implícito, preservando la preferencia del usuario; `--gui` explícito
+  debe informar de la ausencia y de cómo instalar el componente. No confundir
+  un error real de arranque gráfico con la ausencia esperada del componente.
+  Mantener ámbitos de configuración, proyectos y permisos; textos y errores
+  mediante los sistemas compartidos de idiomas y diagnóstico.
+
+  **Evidencia de la revisión:** 70 pruebas y 360 subpruebas de
+  `tests/test_backlog_startup.py` y `tests/test_interface_preferences.py`
+  aprobadas. Las 18 combinaciones de preferencia/launcher se comprobaron en el
+  adaptador con dependencias simuladas; esto no certifica ventanas reales ni
+  doble clic en instalables. Las consecuencias completas del modo de sesión
+  incorrecto quedaron pendientes de evaluación.
+
+  **Criterio de cierre:** matriz de seis launchers × tres preferencias, tanto
+  directos como enrutados, con configuración persistida y datos temporales;
+  comprobar argumentos explícitos, comandos, ayuda/versión, servicios y reentrada.
+  Validar el modo real y registrado, instancias GUI existentes, preferencia
+  ausente/inválida y errores de lectura de configuración sin ocultarlos.
+  Recorrer terminal, doble clic, accesos genéricos y por modo en instalaciones
+  reales de Windows/Linux, con y sin GUI, tras actualización y en portable.
+  No iniciar escaneos ni servicios por el mero arranque de una interfaz.
+  **Indicación original:** solo registrar. Sustituida el 04/11/2026 por la
+  solicitud del usuario de continuar con la siguiente tarea de la lista.
+  **Avance del 04/11/2026:** el adaptador compartido aplica la preferencia a los
+  seis launchers antes de crear su sesión; el modo registrado coincide con el
+  argumento resuelto. Conserva comandos/modos explícitos, ayuda/versión y la
+  reentrada del mismo launcher. Pruebas del adaptador cubren 126 casos, incluidos
+  enrutamiento simulado, valores ausentes/inválidos y cierre de sesión; otras
+  70 pruebas y 360 subpruebas existentes pasan. No certifican ventanas reales.
+  Actualizadas ayudas bilingües y documentación. Pendientes: accesos genéricos,
+  terminal/doble clic en instalables y política de GUI ausente coordinada con
+  P117. La tarea permanece abierta; no se han generado instaladores.
+
+## Creación de accesos directos desde LANCTL — 03/11/2026
+
+- [ ] **P118 · Media · Pendiente de diseño e implementación.** Incorporar al
+  programa una herramienta para crear accesos directos a arranques específicos
+  de LANCTL y sus launchers, sin depender de volver a ejecutar el instalador.
+  Permitir guardar el acceso en un directorio elegido por el usuario y proponer
+  por defecto la carpeta del ejecutable de la distribución en uso.
+  Ejemplo solicitado: un acceso «LANCTL TUI» cuyo destino sea `lanctl.exe`
+  y cuyos argumentos sean `--tui`; prever igualmente CLI, GUI y otros launchers
+  compatibles con los parsers reales de esa versión.
+
+  **Interfaz propuesta:** acción «Crear acceso directo» dentro del programa,
+  con selector de aplicación/launcher, modo de inicio, nombre del acceso,
+  argumentos compatibles y selector de carpeta de destino. Mostrar antes de
+  crear una vista previa del ejecutable, argumentos, directorio de trabajo,
+  icono y archivo de acceso que se generará. Distinguir la carpeta donde se
+  guarda el acceso, el ejecutable al que apunta y el directorio de trabajo;
+  no deducir de este último un proyecto seleccionado ni cambiar el proyecto
+  o la configuración global por crear el acceso.
+
+  **Windows y Linux:** generar accesos nativos `.lnk` en Windows, separando
+  destino, argumentos, carpeta de trabajo e icono; usar lanzadores `.desktop`
+  en Linux, con argumentos correctamente serializados y comportamiento de
+  terminal adecuado. CLI/TUI deben disponer de terminal interactiva y la GUI
+  debe abrirse sin una consola adicional. Resolver los mecanismos de ejecución,
+  permisos o confianza que exija el escritorio Linux y explicar cualquier paso
+  manual necesario, sin prometer un comportamiento idéntico en todos los
+  gestores de archivos. No depender de Clink ni del archivo `.lua` para arrancar.
+
+  **Ruta predeterminada y permisos:** resolver la carpeta de los ejecutables
+  instalados o portables, no el directorio temporal de extracción ni el directorio
+  de trabajo del proceso. Esta ubicación es un valor predeterminado, no una
+  garantía de escritura: `Program Files`, `/opt/lanctl` u otras carpetas pueden
+  estar protegidas. Si no se puede escribir, informar y permitir elegir una
+  carpeta del usuario; no elevar automáticamente ni cambiar permisos del
+  directorio de instalación. No sustituir silenciosamente el destino elegido.
+
+  **Integridad y mantenimiento:** validar ejecutable, opciones, nombre y destino;
+  tratar rutas con espacios, Unicode, comillas y caracteres especiales según
+  cada formato, sin convertir entradas en comandos arbitrarios de shell.
+  No incluir contraseñas o tokens en los accesos. Comprobar colisiones y pedir
+  confirmación antes de reemplazar un archivo; creación cancelable y sin archivos
+  parciales. Definir detección y reparación de accesos propios cuando una
+  actualización o traslado portable cambie las rutas, sin modificar accesos
+  ajenos ni asumir que un acceso siempre seguirá siendo válido al moverlo.
+  No generar un `run.log` adicional para estos arranques.
+
+  **Coordinación:** reutilizar servicios y adaptadores de plataforma existentes,
+  iconos y mecanismos de arranque del instalador; mantener la lógica fuera de
+  una única interfaz. Coordinar con P92/P116 para recursos gráficos, P117 para
+  no ofrecer GUI cuando no esté instalada y P115 para certificación nativa.
+  Aplicar `DEVELOPMENT-CHECKLIST.md`: textos en recursos de idioma,
+  inglés/español, errores con origen y catálogo, documentación y pruebas.
+
+  **Criterio de cierre:** crear y abrir accesos CLI/TUI/GUI en Windows y Linux;
+  comprobar launchers y argumentos compatibles, icono y carpeta de trabajo,
+  persistencia y proyecto sin cambios, permisos insuficientes, destinos elegidos,
+  rutas especiales, cancelación, reemplazo y ejecutable ausente. Verificar
+  instalación nueva, actualización, distribución sin GUI y traslado portable;
+  documentar los límites de cada escritorio y comprobar que los accesos no
+  requieren elevación para el uso normal ni dejan procesos o terminales indebidos.
+  **Indicación:** solo registrar; implementación pendiente.
+
+## Instalación opcional de la interfaz gráfica — 03/11/2026
+
+- [ ] **P117 · Media · Pendiente de diseño e implementación.** Añadir a los
+  instaladores Windows y Linux una casilla **«Instalar interfaz gráfica (GUI)»**,
+  marcada por defecto en instalaciones nuevas. Al desmarcarla, instalar una
+  base CLI/TUI funcional sin el componente gráfico de escritorio ni sus
+  dependencias exclusivas. La selección debe controlar archivos reales, no
+  limitarse a ocultar accesos directos o impedir abrir la GUI.
+
+  **Empaquetado:** revisar `LANCTL.spec`, que incorpora módulos y recursos GUI
+  en los launchers de consola; separar base y componente gráfico al compilar.
+  En Inno Setup, asociar archivos, accesos y acciones al componente opcional.
+  En Linux, evaluar paquetes base/GUI o variantes equivalentes y retirar las
+  dependencias gráficas obligatorias del paquete base. Mantener una vía de
+  instalación por terminal para equipos sin escritorio: el asistente Linux
+  actual es gráfico y sus requisitos son independientes de la GUI instalada.
+  Definir también el alcance de los paquetes portables y actualizar los
+  scripts de distribución, metadatos y verificaciones de artefactos afectados.
+
+  **Comportamiento:** conservar la elección al actualizar; permitir añadir
+  posteriormente la GUI y retirarla de manera controlada al modificar la
+  instalación. No eliminar proyectos, credenciales ni preferencias del usuario,
+  ni bibliotecas compartidas con otros programas. Sin GUI, no crear accesos
+  gráficos ni ejecutar apertura automática o asistentes que la requieran;
+  revisar primer escaneo y configuración de acceso remoto y ofrecer recorridos
+  CLI/TUI cuando correspondan. Resolver `--gui` sin el componente mediante un
+  mensaje traducible que explique cómo instalarlo y un código de salida definido.
+  Separar GUI de escritorio y acceso web remoto: conservar los recursos web
+  necesarios para HTTPS sin imponer el runtime gráfico de escritorio.
+
+  **Compatibilidad y prioridad:** mejora compatible prevista en el camino a
+  1.0.0, después de los defectos de integridad y disponibilidad; no depende de
+  la reestructuración general de 2.0. Coordinar con P105/P106 y los instaladores
+  existentes. Mantener recursos de idioma separados del código, inglés/español,
+  contratos públicos y referencias de opciones de instalación/silenciosas.
+
+  **Criterio de cierre:** verificar instalaciones nuevas con la casilla marcada
+  y desmarcada en Windows y Linux; CLI/TUI de los seis launchers, ausencia real
+  de dependencias exclusivas de escritorio, manejo de `--gui`, accesos directos,
+  finalización y acceso web remoto. Probar actualización desde instalaciones
+  existentes, conservación de la elección, incorporación/retirada de GUI,
+  desinstalación, modo silencioso y fallos recuperables. Registrar tamaños de
+  instalación y dependencias antes/después sin prometer ahorros no medidos.
+  **Indicación:** solo registrar; implementación pendiente.
+
+## Iconos de archivos de proyectos y plugins — 03/11/2026
+
+- [ ] **P116 · Media · Pendiente de diseño e implementación.** Crear iconos
+  propios para archivos de proyecto (`.vlf`) y paquetes de plugins (`.lcp`),
+  coherentes con la identidad visual de LANCTL y diferenciables entre sí.
+  Conservar legibilidad en tamaños pequeños y contraste en fondos claros y
+  oscuros; no depender únicamente del color para distinguir los tipos.
+  Mantener fuentes vectoriales editables y generar los recursos necesarios
+  para Windows y Linux, incluidas resoluciones y escalas habituales.
+  Integrarlos en las asociaciones de archivos del instalador: icono de tipo
+  de archivo en Windows y tipos MIME/iconos de escritorio en Linux. Revisar
+  actualización, cachés y desinstalación sin alterar asociaciones ajenas;
+  documentar el alcance en distribuciones portables. El icono de un paquete
+  no acredita firma, confianza ni permisos de ejecución.
+  **Dependencias y prioridad:** coordinar identidad con P92 e integración con
+  P71/P72; ejecutar después de los defectos de integridad y disponibilidad y
+  antes de la certificación final de distribución P32/P115. No requiere
+  implementar primero el cambio de iconos por tema de P92.
+  **Criterio de cierre:** ambos tipos reconocibles en los exploradores de
+  Windows y Linux, a distintas escalas y con fondos claros/oscuros; comprobar
+  instalación nueva, actualización y retirada de registros propios. Conservar
+  el comportamiento vigente de apertura de proyectos e instalación de plugins.
+
+## Auditoría de ingeniería — 03/11/2026
+
+Registro inicial solicitado desde el chat AUDITOR-INGENIERO como planificación.
+Los avances posteriores se indican expresamente en cada entrada; el registro
+inicial por sí solo no implica una corrección implementada. Evidencias
+obtenidas sobre `experimental-gui`, commit `e48311f`, versión 0.3.4-alpha.2;
+revalidar el comportamiento al implementar si las fuentes han cambiado.
+Las prioridades P1/P2 siguientes expresan riesgo; P107–P115 identifican tareas
+del backlog, no IDs públicos del Core.
+
+**Objetivo de versión:** resolver los defectos de integridad y disponibilidad
+en el camino a 1.0.0, conservando la arquitectura vigente y compatibilidad.
+La reconstrucción amplia, cambios incompatibles de datos y reestructuración
+general se reservan para el estudio de 2.0 después de alcanzar 1.0.0.
+Las extracciones locales compatibles no requieren esperar a esa reconstrucción.
+
+- [x] **P107 · Alta (P1) · AUD-001 · Verificado. Rollback de importación y
+  escrituras concurrentes.** En `src/lanctl/core/persistence.py`, adquirir todos
+  los bloqueos de destino antes de capturar las instantáneas anteriores;
+  prevalidar el contenido completo antes de reemplazar archivos. La reproducción
+  intercaló una escritura cooperativa antes del bloqueo y un error posterior:
+  el rollback restauró el estado antiguo y perdió la escritura concurrente.
+  **Criterio de cierre:** regresión determinista entre procesos que conserve
+  el último estado protegido al fallar; comprobar destinos inicialmente ausentes,
+  liberación de locks y orden de adquisición. Coordinar con P109.
+  **Avance en fuentes (03/11/2026):** snapshots bajo todos los locks,
+  prevalidación completa de JSON y hash de los bytes importados. Regresión
+  determinista con escritor en otro proceso, rollback de destinos ausentes,
+  liberación entre procesos y adquisición ordenada. Las dos regresiones del
+  defecto fallan sobre HEAD anterior y pasan con la corrección. Véase
+  `BACKLOG-VERIFICATION.md`; no equivale a recuperación durable P109 ni a
+  certificación de instalables Windows/Linux.
+
+- [x] **P108 · Alta (P1) · AUD-002 · Verificado. Validación funcional de backups
+  y diagnóstico.** `restore_backup` acepta JSON sintácticamente válido sin
+  verificar el contrato del almacén: `{}` se restauró como base de dispositivos
+  y se diagnosticó válido, aunque `DeviceDatabase.load` exige una lista.
+  Leer una única instantánea bajo bloqueo y reutilizar validadores del almacén
+  antes de sustituirlo; distinguir validez sintáctica y funcional en diagnóstico.
+  **Criterio de cierre:** rechazar tipos, registros y versiones incompatibles
+  sin cambiar el destino; cubrir modificación concurrente del backup y formatos
+  históricos admitidos. Revisar también los destinos de `import_storage`.
+  **Avance en fuentes (03/11/2026):** restauración de una única instantánea
+  bajo bloqueo; validadores compartidos de dispositivos/grupos y reutilización
+  de los contratos físico, configuración y plugins. Rutas personalizadas
+  identificadas por configuración o mapa explícito, sin inferir por el nombre.
+  Diagnóstico añade `validation` para separar contrato funcional, sintaxis
+  solamente y contenido no comprobado. Importación prevalidada antes de escribir;
+  los destinos lógicos nuevos de P111 llevan su contrato. Compatibilidad
+  histórica, backup sustituido y bloqueo entre procesos cubiertos. Pendientes
+  suite completa limpia y certificación Windows/Linux; detalles en
+  `BACKLOG-VERIFICATION.md`.
+
+- [x] **P109 · Alta (P1) · AUD-003 · Verificado. Recuperación durable de
+  importaciones múltiples.** `import_storage` reemplaza archivos sucesivamente
+  y su rollback depende de capturar una excepción. Una terminación abrupta
+  después del primer reemplazo dejó dispositivos y grupos de generaciones
+  distintas, sin journal de recuperación. Añadir transacción durable y
+  recuperación antes de exponer los almacenes, aprovechando el patrón existente
+  de dispositivos/grupos; evaluar alternativas antes de elegir el formato.
+  **Criterio de cierre:** interrupciones reales en cada etapa, incluida la
+  recuperación, producen una generación coherente tras reiniciar; preservar
+  backups, hacer la recuperación idempotente y diagnosticar fallos de rollback.
+  **Avance en fuentes (03/11/2026, segunda tanda):** journal versionado,
+  snapshots con checksum, marcadores por destino y confirmación durable antes
+  de limpiar. Recuperación en lectores y bloqueos compartidos, incluidos
+  workspaces externos; convivencia con el journal devices/groups y rechazo
+  de lecturas de proyecto que intenten saltarse una recuperación fallida.
+  Probadas terminaciones reales al publicar journal/marcadores, sustituir
+  archivos, confirmar, limpiar y recuperar; rollback repetible y conservación
+  de evidencia si falla. Primera matriz: 306 pruebas y 595 subpruebas correctas.
+  Suite general final: 1.761 pruebas y 1.008 subpruebas correctas, 94 omitidas
+  y un aviso de hilo en plugins; no cierra P114. P107/P108/P109/P111 se marcan
+  corregidas en fuentes y verificadas en Linux; sigue pendiente la certificación
+  de distribución/Windows P32/P115. Ver `BACKLOG-VERIFICATION.md`.
+  P110 es la siguiente implementación prioritaria.
+
+- [x] **P110 · Alta (P1) · AUD-004 · Corregido en fuentes. Plazos y cierre de checks del
+  monitor.** En `apps/monitor/scheduler.py`, el timeout es un argumento del
+  handler y `shutdown(wait=True)` espera las tareas iniciadas. Un handler que
+  ignoraba 50 ms seguía activo tras 150 ms y bloqueaba el cierre hasta liberarlo.
+  Definir cancelación cooperativa, presupuesto temporal y tratamiento de
+  resultados tardíos; usar procesos cancelables solo cuando haga falta una
+  terminación forzosa. No presentar `wait=False` como terminación del trabajo.
+  **Criterio de cierre:** handlers lentos/no cooperativos, pool saturado,
+  cancelación y parada tienen comportamiento documentado y comprobado; una
+  tarea antigua no escribe resultados sobre una sesión cerrada o distinta.
+  **Preparación técnica (03/11/2026):** `_run_check` escribe métricas e
+  incidencias dentro del propio handler; `_check_failed` usa la sesión mutable
+  actual. Por tanto, descartar únicamente el resultado del Future no impide
+  escrituras tardías ni mezcla de sesiones. Separar medición de persistencia,
+  capturar generación/sesión y comprobarlas bajo la misma exclusión que la
+  escritura; invalidar antes de drenar. Incluir descubrimiento y mantenimiento,
+  que también producen efectos. Definir presupuesto monotónico desde la cola,
+  señal cooperativa y estado explícito de cierre pendiente para handlers
+  heredados; no olvidar hilos vivos ni anunciar cierre completo sin confirmarlo.
+  El aislamiento cancelable debe ejecutarse en la frontera de medición, no
+  intentando serializar el servicio completo con sus conexiones y locks.
+  Revisar también el permiso del pool ante fallo/concurrencia de `submit` y
+  `close`. Esta revisión inicial no cambió la ejecución de checks.
+  **Avance parcial posterior (03/11/2026):** admisión del pool protegida frente
+  a cierre concurrente y devolución de capacidad si el ejecutor rechaza el
+  envío. Los callbacks se registran fuera del lock de admisión y el drenado
+  no lo retiene. Tres regresiones nuevas y 33 pruebas relacionadas correctas.
+  Este cambio no acota por sí solo handlers activos ni cierra P110: siguen
+  pendientes presupuesto temporal, cancelación y aislamiento de efectos tardíos.
+  **Segundo avance parcial (03/11/2026, límite 21:45):** callbacks recibidos
+  cuando la tarea ya está cancelada, el scheduler detenido o el mismo ID
+  sustituido se descartan antes de notificar errores o reprogramar. Se libera
+  su marca de ejecución. El callback externo no queda bajo el lock añadido
+  para comprobar vigencia. Cuatro regresiones nuevas; 37 pruebas de monitor
+  correctas. No cancela un handler activo ni revoca efectos ya iniciados;
+  generación de sesión, plazos y drenado siguen pendientes y P110 permanece abierta.
+  **Tanda nocturna (04/11/2026):** presupuesto monotónico, invalidación de efectos
+  por sesión/generación y cierre pendiente implementados, con verificación parcial
+  descrita en BACKLOG-VERIFICATION.md. El hijo de arranque queda ligado al ID
+  esperado y no resucita sesiones canceladas ni adopta sustitutas (51 pruebas
+  relacionadas correctas). La publicación inicial ahora se ordena por transacción
+  frente a la parada y rechaza una sesión cancelada/sustituida antes de crear
+  el pool (54 pruebas relacionadas correctas). Queda completar documentación
+  y controles del protocolo. Los dueños nuevos anuncian parada cooperativa por
+  metadatos; stop/restart evitan SIGTERM y conservan el drenado (56 pruebas
+  relacionadas correctas). Contrato y límites documentados en MONITOR.md;
+  reinicio comprobado con drenado y timeout sin crear sustituto prematuro.
+  Mantenimiento SQLite ahora comprueba presupuesto y vigencia bajo el guard de
+  efectos en cada transacción de escritura; descubrimiento resuelve incidencias
+  bajo ese guard y emite historia fuera de la transacción. Dos regresiones con
+  parada externa en la frontera de escritura conservan datos sin agregar/borrar.
+  **Cierre funcional en fuentes (04/11):** 85 pruebas monitor/acceso/instalador
+  y 19 de adaptadores/scanner correctas (una omitida). Regresión de parada externa
+  antes de resolver incidencias de descubrimiento y publicación de stopping/error
+  ordenada bajo transacción. Controles de idiomas, errores, referencias, Ruff,
+  formato, higiene y diff correctos. Contrato y límites en MONITOR.md.
+  La suite general interrumpida por presión de memoria no certifica estos cambios;
+  se verifican grupos pequeños secuenciales. Certificación completa/nativa Windows
+  e instalables quedan en P115/P32. Los handlers heredados no cooperativos
+  conservan propietario y estado stopping; no se promete terminación forzosa.
+
+- [x] **P111 · Media (P2) · AUD-005 · Verificado, impacto condicionado por rutas.
+  Destinos estables de exportación/importación.** `export_storage` calcula
+  nombres respecto al ancestro común de los archivos presentes. Exportar solo
+  `database/devices.json` y `database/groups.json` eliminó `database/` de las
+  rutas; importar bajo otra raíz no reconstruyó esa disposición. Definir raíz
+  explícita o destinos lógicos versionados en el manifiesto, con tratamiento
+  documentado de exportaciones antiguas y rechazo de rutas inseguras.
+  **Criterio de cierre:** ida y vuelta con archivos opcionales ausentes,
+  raíces distintas y workspaces externos mantiene los destinos funcionales;
+  comprobar compatibilidad, migración y referencias CLI/web si cambian contratos.
+  **Avance en fuentes (03/11/2026):** manifiesto de exportación v2 con raíz
+  relativa explícita o destinos lógicos; CLI exporta destinos lógicos y resuelve
+  su importación con las rutas configuradas de la sesión, incluidos workspaces
+  externos. El ZIP no decide rutas absolutas. Se conserva la lectura v1 y su
+  disposición relativa histórica, sin adivinar directorios desaparecidos.
+  Comprobados opcionales ausentes, raíces distintas, destino externo, mapa
+  incompleto, alias duplicados y rutas inseguras. Quedan verificación general
+  y certificación nativa. Al cerrar ese primer bloque P109 seguía pendiente;
+  su avance posterior de recuperación durable figura en la entrada P109.
+
+- [x] **P112 · Media (P2) · AUD-006 · Corregido en fuentes; medido en Linux.
+  Acotar captura de salida remota.** En `apps/access/remote.py`,
+  `capture_output=True` acumula stdout/stderr antes de aplicar `MAX_OUTPUT`.
+  El límite de respuesta no limita la memoria de captura. Consumir ambos streams
+  incrementalmente con presupuesto agregado y política de truncamiento/parada;
+  contemplar limpieza y límites de disco si se usan temporales.
+  **Criterio de cierre:** medir memoria máxima con salida grande y solicitudes
+  concurrentes; verificar timeout, cancelación, ausencia de bloqueo de pipes y
+  tamaño final. No describirlo como DoS demostrado ni acceso no autenticado.
+  **Primer avance (04/11):** captura incremental no bloqueante de ambos pipes,
+  presupuesto agregado de bytes y descarte del exceso. Sin temporales ni hilos
+  lectores; grupo POSIX propio para limpiar descendientes. 31 pruebas de acceso
+  y captura correctas con 16 MiB de salida, timeout y cancelación. Pendientes
+  medición concurrente de memoria, Unicode/tamaño final y Windows. P112 abierta.
+  **Segundo avance:** el límite final incluye el marcador traducido y evita
+  excederse al decodificar bytes UTF-8 inválidos. Cancelación opcional del adaptador
+  con estado 130; timeout conserva código 124 e identidad de error. Cuatro mensajes
+  bilingües nuevos y regresiones con caracteres multibyte/bytes inválidos en en/es.
+  **Medición Linux:** dos solicitudes emiten 128 MiB, retienen 1 MiB cada una;
+  pico Python 3,29 MB y RSS máximo del padre 31.184 KiB en medición aislada.
+  Timeout limpia el descendiente que conserva pipes abiertos. Contrato y límites
+  documentados en ACCESS.md. **Cierre en fuentes (04/11):** 93 pruebas relacionadas
+  correctas; cancelación durante ejecución, timeout, Unicode, concurrencia,
+  limpieza POSIX y límites finales comprobados. Idiomas, catálogo, referencias,
+  Ruff, formato, higiene y diff correctos. Certificación nativa Windows e
+  instalables siguen en P115/P32; no se afirma limpieza de descendientes Windows.
+
+- [x] **P113 · Media (P2) · AUD-007 · Corregido en fuentes. Validadores compartidos fuera
+  de la TUI.** `core/settings_policy.py` y `core/settings_catalog.py` importan
+  validadores y constantes de teclado/layout desde `apps/ip/interfaces/tui`.
+  Extraer contratos y validadores puros a una capa compartida, conservando
+  adaptadores e importaciones públicas compatibles; documentar las excepciones
+  transitorias. No ampliar esta tarea a una reescritura del Core.
+  **Criterio de cierre:** validación equivalente desde CLI, TUI, GUI y contexto
+  sin interfaz; regresiones de imports históricos y comprobación automatizada
+  de las dependencias permitidas. No se demostró un fallo funcional por este
+  acoplamiento durante la auditoría.
+  **Cierre en fuentes (04/11):** contratos puros extraídos a shared/tui_layout.py
+  y shared/tui_keyboard.py. Core ya no importa módulos de interfaces; adaptadores
+  históricos TUI reexportan clases, constantes y validadores. La lectura del teclado
+  permanece en la TUI. 227 pruebas y 379 subpruebas correctas; proceso frío con
+  imports de interfaces prohibidos y comprobación AST de dependencias incluidos.
+  Referencias, catálogo, auditoría, Ruff/formato, higiene y diff correctos.
+  No se cambian valores aceptados, firmas, IDs ni textos visibles; P115/P32 conserva
+  certificación de distribución. Detalles y excepción de servicio en verificación.
+
+- [ ] **P114 · Media (P2) · Investigación pendiente. Fallo intermitente de hilo
+  en runtime de plugins.** En la selección de 139 pruebas de monitor/plugins,
+  `test_worker_exits_when_owner_dies_even_without_windows_job` falló durante
+  activación con `RuntimeError: can't start new thread`; pasó al repetir sola.
+  Investigar secuencia de pruebas, recursos, límites de memoria y limpieza de
+  procesos/hilos sin atribuir una causa antes de demostrarla ni relajar límites
+  de seguridad para ocultar el fallo.
+  **Criterio de cierre:** reproducción o evidencia suficiente de la causa,
+  ejecuciones repetidas en conjunto y aisladas y comprobación de terminación
+  del worker cuando muere el propietario; documentar dependencias del entorno.
+  **Avance (04/11):** inyección controlada de rechazo de hilo demuestra dos
+  huecos de limpieza del host: fallo del lector IPC antes de registrar el worker,
+  y join de watchdog no iniciado que ocultaba la excepción original. Corregidos
+  conservando límites; el hijo también reporta fallo de su watcher por IPC.
+  No demuestra la causa del rechazo intermitente original; P114 sigue abierta.
+  **Hallazgo posterior (04/11):** una nueva pasada reproduce rechazo de hilo
+  al activar el plugin con threads nativos. Sondeos muestran VmPeak hasta
+  130.568 KiB frente a RLIMIT_AS de 131.072 KiB, con RSS de unos 24 MiB.
+  Se limita a una arena glibc dentro del worker Linux, sin aumentar límites:
+  VmPeak medido baja a 73.228 KiB; 58 pruebas del runtime correctas. Mitigación
+  de reserva medida, no demostración exclusiva de causalidad. P114 permanece abierta.
+
+- [ ] **P115 · Media (P2) · Validación pendiente. Completar comprobaciones de
+  estabilidad y establecer medidas de rendimiento.** La auditoría fue por
+  muestreo en Python 3.14.4: 27 pruebas de persistencia/coordinación y 57 de acceso
+  pasaron; el bloque monitor/plugins tuvo el resultado descrito en P114.
+  Pasaron Ruff sobre `src`, higiene, catálogo de errores, referencias CLI/web
+  y `pip check`. No se ejecutaron suite completa, instaladores, Windows,
+  mediciones de carga ni auditoría actualizada de vulnerabilidades de dependencias.
+  **Validación dividida (04/11):** 162 archivos en procesos pytest separados,
+  secuenciales y supervisados por memoria: 1.854 pruebas correctas, 96 omitidas,
+  21 deseleccionadas y 1.008 subpruebas correctas, sin avisos. Se corrigió una
+  dependencia de caché de importación en el test de iconos frío, sin cambiar
+  producción. No equivale a una suite única con estado compartido; P114 y la
+  certificación Windows/instalables/rendimiento siguen pendientes.
+  **Última instantánea validada (04/11, 05:34 Madrid):** tras la mitigación
+  de reserva virtual descrita en P114, pasada nueva completa de 162 archivos,
+  con fuentes inmóviles: 1.864 pruebas y 1.008 subpruebas correctas, 96 omitidas,
+  21 deseleccionadas y cero avisos. Node de P97 habilitado. Sigue siendo una
+  validación por procesos separados, no una certificación de estado compartido.
+  Completar esas comprobaciones sobre las versiones soportadas y medir escaneo,
+  inventarios grandes y monitorización con cargas reproducibles: CPU, RAM,
+  latencia, concurrencia y tiempo de cierre. Proponer optimizaciones adicionales
+  solo a partir de cuellos de botella medidos.
+  **Criterio de cierre:** registrar versiones, plataforma, carga y resultados;
+  resolver o clasificar fallos y vulnerabilidades aplicables, cubrir instalación,
+  actualización y recuperación en Windows/Linux. Al implementar P107–P113,
+  preservar IDs públicos y contratos, actualizar referencias cuando corresponda
+  y regenerar/comprobar `errorList.txt` si cambian puntos de error.
+
 ## Elegir el idioma del programa desde el instalador — 27/10/2026
 
 - [ ] **P106 · Media · Implementada en fuentes; pendiente certificación de Setup.** Añadir una página del instalador con un
@@ -496,6 +1012,30 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   launcher, creación/edición/eliminación y escaneo nativo sin VLF, y posterior
   guardado verificados; controles habilitados en el entorno provisional con
   permisos y validaciones vigentes, conservando aislamiento y guardas.
+  **Auditoría en servicios (04/11):** matriz permanente de seis launchers sin VLF
+  para bootstrap, project_state mediante project_call y preferencias; LANIP crea,
+  edita y elimina manualmente, rechazando contexto obsoleto. Con sincronización
+  y cierre: 37 pruebas correctas, una omitida. No acredita puente Qt nativo.
+  El entorno actual usa los almacenes configurados y no tiene aislamiento
+  provisional explícito; workspace_is_dirty devuelve False sin projectWorkspace.
+  Por ello no basta habilitar botones: falta separar datos y coordinar P99.
+  **Base de aislamiento (04/11):** nuevo servicio explícito de workspace
+  provisional con UUID, inventarios vacíos independientes, rutas de monitor y
+  credenciales propias, hash inicial y reapertura sin reiniciar datos. No cambia
+  configuración ni se activa aún automáticamente en GUI: falta integrar selección,
+  guardado como VLF y ciclo compartido de último propietario con P99.
+  Guardado explícito del provisional a VLF implementado con locks, verificación
+  y reapertura comparando fingerprint de red/grupos/físico. Excluye credenciales
+  y logs privados, no activa ni limpia el origen y no sobrescribe destinos.
+  La integración de selección/último propietario y GUI sigue pendiente.
+  Registro provisional de propietarios enlazado a sesiones vivas del coordinador
+  y al usuario del SO; una reserva de cierre serializa solicitudes, bloquea
+  incorporaciones/escrituras cooperativas y puede cancelarse sin perder datos.
+  Falta confirmar el cierre nativo y conectar este protocolo con las ventanas.
+  Preparación/finalización del cierre añadidas al servicio: solo el último dueño
+  con cambios pide decisión; guardar verifica VLF, fallo permite cancelar/reintentar,
+  descarte retira el entorno activo conservando archivos para recuperación.
+  La ventana debe confirmar su destrucción antes de liberar al dueño; GUI pendiente.
 
 - [ ] **P99 · Alta · Pendiente.** Al cerrar la **última pestaña del entorno
   LANCTL**, si se está trabajando sin proyecto y existen modificaciones sin
@@ -541,6 +1081,24 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   cerrado, abierto detrás de otra ventana y minimizado, con y sin borrador;
   verificar formulario visible, foco y contexto del error correctos en Linux
   y Windows, sin pérdida de borradores ni envío automático del reporte.
+  **Avance en fuentes (04/11):** el segundo arranque de LANMON ahora entrega a
+  la instancia existente la vista pedida y sesión de origen, en vez de perder
+  el formulario al limitarse a enfocar la GUI. Comando local restringido a LANMON
+  GUI y al mismo principal. Receptor restaura/muestra ventana y solicita la vista;
+  el frontend conserva un borrador existente y avisa. 41 pruebas correctas, seis
+  omitidas, y sintaxis JS comprobada. Pendientes recorrido visual/foco nativo,
+  y borradores en navegador; P97 sigue abierta. El reporte ahora filtra por sesión
+  antes del límite de registros y conserva proyecto/launcher del origen aunque
+  LANMON esté mostrando otro proyecto. Regresiones con 501 registros posteriores
+  de otra sesión y conservación del catálogo de sesiones.
+  Si LANMON ya está preparado, la petición se entrega directamente y se espera
+  acuse, sin crear proceso duplicado. Un fallo de entrega vuelve a la GUI origen
+  como diagnóstico, en vez de quedar oculto en un segundo proceso. Comprobados
+  éxito/fallo con sesiones reales; foco/ventana nativa aún pendientes.
+  Las peticiones iniciales y recibidas se serializan en el frontend: dos
+  solicitudes simultáneas no cambian el origen del primer formulario. Lógica
+  de borrador abierto/cerrado y foco de campo comprobada con Node/DOM simulado,
+  sin certificar navegador o foco del sistema. Se elimina el timer extra de arranque.
 
 - [x] **P96 · Media · Corregida en fuentes y verificada en Chromium/Linux.**
   Solicitud original: Reubicar el botón **«Nuevo grupo»** de
@@ -1272,7 +1830,7 @@ indican por separado; las comprobaciones de backend se amplían en
   del CLI. Diferenciar campos editables y automáticos y comprobar persistencia.
 - [x] **P39.** Hacer que la terminal integrada ocupe el espacio disponible al
   redimensionar; solo la salida debe desplazarse, con entrada y pie visibles.
-- [ ] **P40.** Revisar con AUDITOR el diálogo de permisos de plugins y el bloqueo
+- [ ] **P40 · Validación especial · Pendiente de firma autorizada.** Revisar con AUDITOR el diálogo de permisos de plugins y el bloqueo
   por firma no válida (mDNS + SSDP Discovery). Distinguir permisos, firma y
   confianza del editor; relacionado con P34/P05. No asumir fallo del backend
   ni retirar validaciones de seguridad. Anotación enviada a AUDITOR.
@@ -1287,7 +1845,7 @@ indican por separado; las comprobaciones de backend se amplían en
 
 La confirmación de cambios sin guardar de LANCTL utiliza ahora un diálogo
 propio con botón principal verde lima, en lugar del aviso «Esta página dice».
-- [ ] **P42.** Seguimiento de P40: revisar permisos y firmas de plugins a partir del
+- [ ] **P42 · Validación especial · Seguimiento de P40.** Seguimiento de P40: revisar permisos y firmas de plugins a partir del
   bloqueo reportado al activar **LANCTL mDNS + SSDP Discovery**. Relacionado con
   P34 y con el antecedente de Wake-on-LAN de P05.
 
@@ -1866,6 +2424,16 @@ LANRACK y LANWIRE sin duplicar inventarios.
   real en un almacén temporal. No activa listeners ni firewall y no completa
   las cinco páginas de P71. Falta la comprobación humana del recorrido elevado
   del instalador definitivo; la instalación silenciosa lo omite.
+  **Corrección Linux (04/11):** QProcess separa stdout/stderr. La respuesta JSON
+  de creación de cuenta ya no se contamina con diagnósticos de autenticación/Qt;
+  stderr del helper no se registra ni se interpreta como éxito. Regresión Qt
+  con proceso real y almacén de cuenta temporal; sin elevar ni instalar paquetes.
+  No se atribuye a esta causa el fallo del portátil sin reproducir su instalable.
+  **Recorrido Linux (04/11):** selección explícita de instalación avanzada;
+  cuenta remota y su página omitidas del recorrido normal. Volver al modo normal
+  invalida esa selección efectiva y limpia contraseñas, conservando otras opciones.
+  Recursos bilingües del asistente extraídos a setup_messages.py. 26 pruebas
+  Linux/idiomas correctas; cinco páginas Windows y certificación siguen pendientes.
 
 ## Desinstalación completa de LANCTL — 17/10/2026
 
@@ -1895,6 +2463,19 @@ LANRACK y LANWIRE sin duplicar inventarios.
   reinstalación limpia, carpetas heredadas, servicio, cuenta distinta y rutas
   personalizadas, comprobando ausencia de restos propios y conservación de
   contenido ajeno.
+  **Base de inventario (04/11):** el instalador Linux registra cada acceso y
+  archivo de completado que escribe, con raíz, ruta relativa y SHA-256. Un
+  planificador compartido solo clasifica archivos registrados sin cambios dentro
+  de raíces proporcionadas por el llamador; conserva modificados/ajenos y rechaza
+  rutas inseguras/enlaces. No ejecuta borrados ni constituye desinstalación completa.
+  Pendientes inventario Windows/datos/proyectos, coordinación de servicios,
+  confirmación y ejecución con revalidación frente a carreras.
+  La escritura de accesos/completado Linux ahora conserva archivos ajenos o
+  modificados por el usuario, en vez de sobrescribirlos/adoptarlos en actualización;
+  solo actualiza recursos registrados intactos o contenido idéntico al generado.
+  El manifiesto se lee con límite de 1 MiB/4.096 archivos y rechaza huellas
+  inválidas, duplicados y JSON excesivo. La capacidad se verifica antes de
+  escribir el recurso; deseleccionar completado ya no lee todo el archivo ajeno.
 
 ## Sincronización global de proyecto — 18/10/2026
 

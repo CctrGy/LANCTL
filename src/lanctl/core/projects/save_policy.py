@@ -247,7 +247,11 @@ def workspace_fingerprint(settings: Mapping[str, Any]) -> str | None:
         groups = GroupDatabase(str(files[1]), database).load()
         device_rows = [device.to_dict() for device in devices]
         group_rows = [group.to_dict() for group in groups]
-    except ValueError:
+    except ValueError as error:
+        from lanctl.core.storage_import import ImportRecoveryError
+
+        if isinstance(error, ImportRecoveryError):
+            raise
         # Mantiene la detección de cambios incluso para un almacén antiguo o
         # parcialmente migrado; el guardado real seguirá validando su esquema.
         device_rows = json.loads(files[0].read_text(encoding="utf-8"))

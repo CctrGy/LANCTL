@@ -6,6 +6,7 @@ from time import monotonic
 from lanctl.apps.ip.infrastructure.services.element_scanner import ping_details
 from lanctl.apps.ip.infrastructure.services.lan_scanner import active_arp_mac
 
+from .execution import remaining_timeout
 from .models import CheckResult, CheckSpec
 
 
@@ -41,8 +42,8 @@ class CheckRegistry:
 def availability(target, timeout=0.8) -> CheckResult:
     started = monotonic()
     ip = target.ip
-    arp = bool(active_arp_mac(ip, timeout))
-    ping, latency, _ttl = ping_details(ip, timeout)
+    arp = bool(active_arp_mac(ip, remaining_timeout(timeout)))
+    ping, latency, _ttl = ping_details(ip, remaining_timeout(timeout))
     return CheckResult(
         "availability",
         target.device_id,
@@ -54,7 +55,7 @@ def availability(target, timeout=0.8) -> CheckResult:
 
 
 def ping(target, timeout=0.8) -> CheckResult:
-    success, latency, ttl = ping_details(target.ip, timeout)
+    success, latency, ttl = ping_details(target.ip, remaining_timeout(timeout))
     return CheckResult(
         "ping",
         target.device_id,
@@ -66,7 +67,7 @@ def ping(target, timeout=0.8) -> CheckResult:
 
 
 def arp(target, timeout=0.8) -> CheckResult:
-    mac = active_arp_mac(target.ip, timeout)
+    mac = active_arp_mac(target.ip, remaining_timeout(timeout))
     return CheckResult(
         "arp",
         target.device_id,
@@ -78,7 +79,7 @@ def arp(target, timeout=0.8) -> CheckResult:
 
 def tcp_port(target, port, timeout=0.8) -> CheckResult:
     try:
-        with socket.create_connection((target.ip, int(port)), timeout=timeout):
+        with socket.create_connection((target.ip, int(port)), timeout=remaining_timeout(timeout)):
             success = True
     except OSError:
         success = False

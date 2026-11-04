@@ -74,12 +74,18 @@ def run_database(args: argparse.Namespace) -> int:
         print(json.dumps(manifest, ensure_ascii=False, indent=2))
         return 0
     if args.export:
-        print(export_storage(_configured_paths(), args.export))
+        from lanctl.core.storage_validation import configured_contracts
+
+        destinations = {contract: path for path, contract in configured_contracts().items()}
+        print(export_storage(_configured_paths(), args.export, destinations=destinations))
         return 0
     if args.import_file:
         if not args.yes:
             raise ValueError("database --import requiere --yes y una copia externa confirmada")
-        imported = import_storage(args.import_file, data_root())
+        from lanctl.core.storage_validation import configured_contracts
+
+        destinations = {contract: path for path, contract in configured_contracts().items()}
+        imported = import_storage(args.import_file, data_root(), destinations=destinations)
         print(t("LANCTL.UI.MESSAGE.IMPORTED_AND_VERIFIED_VALUE_FILES", value0=f"{len(imported)}"))
         return 0
     if args.restore:

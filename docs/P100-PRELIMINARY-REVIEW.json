@@ -1,12 +1,12 @@
 {
   "scope": "Static explicit consumers and bundled catalogs; not full functional coverage",
-  "sourceFilesExamined": 344,
-  "catalogKeysPerLanguage": 2470,
+  "sourceFilesExamined": 353,
+  "catalogKeysPerLanguage": 2514,
   "catalogKeysMatch": true,
   "placeholderMismatches": [],
   "missingConsumerKeys": [],
-  "explicitConsumerReferences": 2893,
-  "referencedUniqueKeys": 2200,
+  "explicitConsumerReferences": 2971,
+  "referencedUniqueKeys": 2244,
   "unreferencedOrDynamicOnlyKeys": [
     "LANCTL.COMMON.ACTION.LIST",
     "LANCTL.COMMON.STATUS.ACTIVE",
@@ -669,6 +669,26 @@
       "key": "LANCTL.UI.PRESENTATION.CREDENTIAL_ID"
     },
     {
+      "file": "src/lanctl/apps/access/remote.py",
+      "line": 213,
+      "key": "LANCTL.ACCESS.REMOTE.RESULT"
+    },
+    {
+      "file": "src/lanctl/apps/access/remote.py",
+      "line": 194,
+      "key": "LANCTL.ACCESS.REMOTE.CANCELLED"
+    },
+    {
+      "file": "src/lanctl/apps/access/remote.py",
+      "line": 206,
+      "key": "LANCTL.ACCESS.REMOTE.TIMEOUT"
+    },
+    {
+      "file": "src/lanctl/apps/access/remote.py",
+      "line": 209,
+      "key": "LANCTL.ACCESS.REMOTE.TRUNCATED"
+    },
+    {
       "file": "src/lanctl/apps/ip/infrastructure/terminals/registry.py",
       "line": 36,
       "key": "LANCTL.UI.PROMPT.LANCTL_COLOR_LAYER_ACTIVE_USE_NATIVE_FOR_DIRECT_OPENSSH"
@@ -980,12 +1000,12 @@
     },
     {
       "file": "src/lanctl/apps/ip/interfaces/cli/commands/database.py",
-      "line": 83,
+      "line": 89,
       "key": "LANCTL.UI.MESSAGE.IMPORTED_AND_VERIFIED_VALUE_FILES"
     },
     {
       "file": "src/lanctl/apps/ip/interfaces/cli/commands/database.py",
-      "line": 94,
+      "line": 100,
       "key": "LANCTL.UI.MESSAGE.RESTORED_AND_VALIDATED_VALUE"
     },
     {
@@ -6600,88 +6620,98 @@
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 48,
+      "line": 55,
       "key": "LANCTL.MONITOR.COMMAND.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 52,
+      "line": 59,
       "key": "LANCTL.MONITOR.ACTION.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 75,
+      "line": 82,
       "key": "LANCTL.MONITOR.SESSIONS.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 80,
+      "line": 87,
       "key": "LANCTL.MONITOR.INCIDENTS.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 83,
+      "line": 90,
       "key": "LANCTL.MONITOR.LOCK.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 86,
+      "line": 93,
       "key": "LANCTL.MONITOR.DATABASE.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 89,
+      "line": 96,
       "key": "LANCTL.MONITOR.PROFILES.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 94,
+      "line": 101,
       "key": "LANCTL.MONITOR.ASSIGNMENTS.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 96,
+      "line": 103,
       "key": "LANCTL.MONITOR.PROFILE.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 101,
+      "line": 108,
       "key": "LANCTL.MONITOR.PRIORITY.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 104,
+      "line": 111,
       "key": "LANCTL.MONITOR.CHECK.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 106,
+      "line": 113,
       "key": "LANCTL.MONITOR.PRESENCE.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 107,
+      "line": 114,
       "key": "LANCTL.MONITOR.DISCOVERY.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 108,
+      "line": 115,
       "key": "LANCTL.MONITOR.SERVICES.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 109,
+      "line": 116,
       "key": "LANCTL.MONITOR.DEEP.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 110,
+      "line": 117,
       "key": "LANCTL.MONITOR.WORKERS.HELP"
     },
     {
       "file": "src/lanctl/apps/monitor/commands.py",
-      "line": 111,
+      "line": 118,
       "key": "LANCTL.MONITOR.TIMEOUT.HELP"
+    },
+    {
+      "file": "src/lanctl/apps/monitor/execution.py",
+      "line": 40,
+      "key": "LANCTL.MONITOR.EXECUTION.CANCELLED"
+    },
+    {
+      "file": "src/lanctl/apps/monitor/execution.py",
+      "line": 42,
+      "key": "LANCTL.MONITOR.EXECUTION.DEADLINE"
     },
     {
       "file": "src/lanctl/apps/monitor/interfaces.py",
@@ -6732,6 +6762,26 @@
       "file": "src/lanctl/apps/monitor/log_tui.py",
       "line": 145,
       "key": "LANCTL.MONITOR.LOG.TITLE"
+    },
+    {
+      "file": "src/lanctl/apps/monitor/scheduler.py",
+      "line": 132,
+      "key": "LANCTL.MONITOR.EXECUTION.INVALID_BUDGET"
+    },
+    {
+      "file": "src/lanctl/apps/monitor/scheduler.py",
+      "line": 96,
+      "key": "LANCTL.MONITOR.EXECUTION.SHUTDOWN_PENDING"
+    },
+    {
+      "file": "src/lanctl/apps/monitor/service.py",
+      "line": 84,
+      "key": "LANCTL.MONITOR.EXECUTION.ALREADY_RUNNING"
+    },
+    {
+      "file": "src/lanctl/apps/monitor/sessions.py",
+      "line": 40,
+      "key": "LANCTL.MONITOR.EXECUTION.CANCELLED"
     },
     {
       "file": "src/lanctl/apps/rack/cli.py",
@@ -6914,14 +6964,34 @@
       "key": "LANCTL.UI.TEXT.SETTINGS_SAVED"
     },
     {
+      "file": "src/lanctl/apps/suite/gui_support.py",
+      "line": 289,
+      "key": "LANCTL.MONITOR.VIEW.REQUESTED"
+    },
+    {
+      "file": "src/lanctl/apps/suite/gui_support.py",
+      "line": 270,
+      "key": "LANCTL.MONITOR.VIEW.INVALID"
+    },
+    {
+      "file": "src/lanctl/apps/suite/gui_support.py",
+      "line": 280,
+      "key": "LANCTL.MONITOR.VIEW.REQUESTED"
+    },
+    {
       "file": "src/lanctl/apps/suite/interfaces.py",
       "line": 14,
       "key": "LANCTL.SUITE.OVERVIEW.TEXT"
     },
     {
       "file": "src/lanctl/apps/suite/launcher_gui.py",
-      "line": 109,
+      "line": 110,
       "key": "LANCTL.UI.TEXT.NO_PROJECT"
+    },
+    {
+      "file": "src/lanctl/apps/suite/launcher_gui.py",
+      "line": 392,
+      "key": "LANCTL.MONITOR.VIEW.INVALID"
     },
     {
       "file": "src/lanctl/apps/suite/settings_form.py",
@@ -7894,6 +7964,16 @@
       "key": "LANCTL.COMMON.STATUS.ERROR"
     },
     {
+      "file": "src/lanctl/core/coordination.py",
+      "line": 252,
+      "key": "LANCTL.MONITOR.VIEW.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/coordination.py",
+      "line": 269,
+      "key": "LANCTL.MONITOR.VIEW.UNAVAILABLE"
+    },
+    {
       "file": "src/lanctl/core/coordination_cli.py",
       "line": 15,
       "key": "LANCTL.UI.HELP.LOCAL_COORDINATION_BETWEEN_LAUNCHERS"
@@ -7917,6 +7997,76 @@
       "file": "src/lanctl/core/coordination_cli.py",
       "line": 29,
       "key": "LANCTL.UI.HELP.FOLLOW_LIVE_EVENTS_CTRL_C_STOPS"
+    },
+    {
+      "file": "src/lanctl/core/database.py",
+      "line": 60,
+      "key": "LANCTL.STORAGE.ERROR.DEVICE_LIST"
+    },
+    {
+      "file": "src/lanctl/core/database.py",
+      "line": 64,
+      "key": "LANCTL.STORAGE.ERROR.DEVICE_RECORD"
+    },
+    {
+      "file": "src/lanctl/core/group_database.py",
+      "line": 120,
+      "key": "LANCTL.STORAGE.ERROR.GROUP_LIST"
+    },
+    {
+      "file": "src/lanctl/core/group_database.py",
+      "line": 124,
+      "key": "LANCTL.STORAGE.ERROR.GROUP_RECORD"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 27,
+      "key": "LANCTL.INSTALLATION.INVENTORY.UNSAFE_PATH"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 45,
+      "key": "LANCTL.INSTALLATION.INVENTORY.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 71,
+      "key": "LANCTL.INSTALLATION.INVENTORY.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 74,
+      "key": "LANCTL.INSTALLATION.INVENTORY.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 85,
+      "key": "LANCTL.INSTALLATION.INVENTORY.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 93,
+      "key": "LANCTL.INSTALLATION.INVENTORY.UNSAFE_PATH"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 146,
+      "key": "LANCTL.INSTALLATION.INVENTORY.UNSAFE_PATH"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 49,
+      "key": "LANCTL.INSTALLATION.INVENTORY.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 83,
+      "key": "LANCTL.INSTALLATION.INVENTORY.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/installation_inventory.py",
+      "line": 164,
+      "key": "LANCTL.INSTALLATION.INVENTORY.CONFLICT"
     },
     {
       "file": "src/lanctl/core/interactive_console.py",
@@ -8029,6 +8179,116 @@
       "key": "LANCTL.PARSER.SECTION.USAGE"
     },
     {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 152,
+      "key": "LANCTL.STORAGE.ERROR.EXPORT_LAYOUT"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 174,
+      "key": "LANCTL.STORAGE.ERROR.NO_FILES"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 180,
+      "key": "LANCTL.STORAGE.ERROR.DUPLICATE_TARGET"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 210,
+      "key": "LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 217,
+      "key": "LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 219,
+      "key": "LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 222,
+      "key": "LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 284,
+      "key": "LANCTL.STORAGE.ERROR.DESTINATIONS_REQUIRED"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 305,
+      "key": "LANCTL.STORAGE.ERROR.DUPLICATE_TARGET"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 163,
+      "key": "LANCTL.STORAGE.ERROR.NO_FILES"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 170,
+      "key": "LANCTL.STORAGE.ERROR.OUTSIDE_ROOT"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 236,
+      "key": "LANCTL.STORAGE.ERROR.UNSAFE_PATH"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 242,
+      "key": "LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 250,
+      "key": "LANCTL.STORAGE.ERROR.CONTRACT"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 252,
+      "key": "LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 157,
+      "key": "LANCTL.STORAGE.ERROR.CONTRACT"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 289,
+      "key": "LANCTL.STORAGE.ERROR.DESTINATION_MISSING"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 293,
+      "key": "LANCTL.STORAGE.ERROR.CONFLICT"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 299,
+      "key": "LANCTL.STORAGE.ERROR.UNSAFE_PATH"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 132,
+      "key": "LANCTL.STORAGE.DIAGNOSIS.SYNTAX_ONLY"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 113,
+      "key": "LANCTL.STORAGE.DIAGNOSIS.MISSING"
+    },
+    {
+      "file": "src/lanctl/core/persistence.py",
+      "line": 124,
+      "key": "LANCTL.STORAGE.DIAGNOSIS.NOT_FILE"
+    },
+    {
       "file": "src/lanctl/core/plugins/declarative_commands.py",
       "line": 72,
       "key": "LANCTL.UI.SUMMARY.VALUEVALUENETWORK_INVENTORY_SUMMARYVALUE"
@@ -8059,9 +8319,124 @@
       "key": "LANCTL.UI.HELP.ARGUMENTS_MANAGED_BY_THE_PLUGIN"
     },
     {
+      "file": "src/lanctl/core/plugins/registry.py",
+      "line": 16,
+      "key": "LANCTL.STORAGE.ERROR.REGISTRY_SCHEMA"
+    },
+    {
+      "file": "src/lanctl/core/plugins/registry.py",
+      "line": 19,
+      "key": "LANCTL.STORAGE.ERROR.REGISTRY_PLUGINS"
+    },
+    {
+      "file": "src/lanctl/core/plugins/registry.py",
+      "line": 22,
+      "key": "LANCTL.STORAGE.ERROR.REGISTRY_ENTRY"
+    },
+    {
+      "file": "src/lanctl/core/plugins/registry.py",
+      "line": 34,
+      "key": "LANCTL.STORAGE.ERROR.REGISTRY_AUTH"
+    },
+    {
       "file": "src/lanctl/core/progress.py",
       "line": 99,
       "key": "LANCTL.UI.DETAIL.SEARCH_VALUE_VALUE_VALUE_VALUE_FOUND_VALUE_VALUE"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 78,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 83,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 154,
+      "key": "LANCTL.PROJECT.PROVISIONAL.SAVE_MISMATCH"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 165,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 179,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 190,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 204,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 215,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 240,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 267,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 282,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 309,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 96,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 290,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 292,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/storage_import.py",
+      "line": 47,
+      "key": "LANCTL.STORAGE.ERROR.IMPORT_JOURNAL"
+    },
+    {
+      "file": "src/lanctl/core/storage_validation.py",
+      "line": 24,
+      "key": "LANCTL.STORAGE.ERROR.CONFLICT"
+    },
+    {
+      "file": "src/lanctl/core/storage_validation.py",
+      "line": 46,
+      "key": "LANCTL.STORAGE.ERROR.OBJECT"
+    },
+    {
+      "file": "src/lanctl/core/storage_validation.py",
+      "line": 53,
+      "key": "LANCTL.STORAGE.ERROR.CONTRACT"
     },
     {
       "file": "src/lanctl/core/terminal_ui.py",
@@ -9731,32 +10106,7 @@
     {
       "file": "gui/launcher.js",
       "line": 34,
-      "key": "LANCTL.UI.HEADING.DEVICES"
-    },
-    {
-      "file": "gui/launcher.js",
-      "line": 34,
-      "key": "LANCTL.UI.HTML.CURRENT_INVENTORY"
-    },
-    {
-      "file": "gui/launcher.js",
-      "line": 34,
-      "key": "LANCTL.UI.HTML.ONLINE"
-    },
-    {
-      "file": "gui/launcher.js",
-      "line": 34,
-      "key": "LANCTL.UI.HTML.LAST_OBSERVATION"
-    },
-    {
-      "file": "gui/launcher.js",
-      "line": 34,
-      "key": "LANCTL.UI.HEADING.NO_RESPONSE"
-    },
-    {
-      "file": "gui/launcher.js",
-      "line": 34,
-      "key": "LANCTL.UI.HTML.LAST_OBSERVATION"
+      "key": "LANCTL.MONITOR.EXECUTION.STOPPING"
     },
     {
       "file": "gui/launcher.js",
@@ -9775,382 +10125,417 @@
     },
     {
       "file": "gui/launcher.js",
-      "line": 34,
+      "line": 35,
+      "key": "LANCTL.UI.HEADING.DEVICES"
+    },
+    {
+      "file": "gui/launcher.js",
+      "line": 35,
+      "key": "LANCTL.UI.HTML.CURRENT_INVENTORY"
+    },
+    {
+      "file": "gui/launcher.js",
+      "line": 35,
+      "key": "LANCTL.UI.HTML.ONLINE"
+    },
+    {
+      "file": "gui/launcher.js",
+      "line": 35,
+      "key": "LANCTL.UI.HTML.LAST_OBSERVATION"
+    },
+    {
+      "file": "gui/launcher.js",
+      "line": 35,
+      "key": "LANCTL.UI.HEADING.NO_RESPONSE"
+    },
+    {
+      "file": "gui/launcher.js",
+      "line": 35,
+      "key": "LANCTL.UI.HTML.LAST_OBSERVATION"
+    },
+    {
+      "file": "gui/launcher.js",
+      "line": 35,
       "key": "LANCTL.UI.FRAGMENT.DEVICE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 34,
+      "line": 35,
       "key": "LANCTL.UI.FRAGMENT.PRESENCE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 34,
+      "line": 35,
       "key": "LANCTL.UI.FRAGMENT.HEALTH"
     },
     {
       "file": "gui/launcher.js",
-      "line": 34,
+      "line": 35,
       "key": "LANCTL.UI.FRAGMENT.LATENCY"
     },
     {
       "file": "gui/launcher.js",
-      "line": 34,
+      "line": 35,
       "key": "LANCTL.UI.HEADING.LATENCY"
     },
     {
       "file": "gui/launcher.js",
-      "line": 34,
+      "line": 35,
       "key": "LANCTL.UI.HTML.UP_TO_60_ACTUAL_SAMPLES"
     },
     {
       "file": "gui/launcher.js",
-      "line": 34,
+      "line": 35,
       "key": "LANCTL.UI.HTML.LOADING_SAMPLES"
     },
     {
       "file": "gui/launcher.js",
-      "line": 34,
+      "line": 35,
       "key": "LANCTL.UI.TEXT.NO_SAMPLES_RECORDED_FOR_THIS_DEVICE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 34,
+      "line": 35,
       "key": "LANCTL.UI.HTML.LATENCY_OF_STORED_SAMPLES"
     },
     {
       "file": "gui/launcher.js",
-      "line": 36,
+      "line": 37,
       "key": "LANCTL.INVENTORY.MANUAL.CANCEL"
     },
     {
       "file": "gui/launcher.js",
-      "line": 36,
+      "line": 37,
       "key": "LANCTL.UI.TEXT.CLOSE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 37,
+      "line": 38,
       "key": "LANCTL.UI.TEXT.THERE_ARE_UNSAVED_CHANGES_DISCARD_THEM"
     },
     {
       "file": "gui/launcher.js",
-      "line": 38,
+      "line": 39,
       "key": "LANCTL.UI.FRAGMENT.DETAILS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.VIEW.SWITCH_24_PORTS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.VIEW.SWITCH_5_PORTS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.WORD.ROUTER"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.VIEW.PC_1_PORT"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.VIEW.SERVER_2_PORTS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.TEXT.COPPER_CABLE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.TEXT.FIBER_CABLE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.VIEW.DAC_CABLE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.WORD.RACK"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.TEXT.TYPE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.VIEW.IDF_PREFIX"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.INVENTORY.MANUAL.NAME"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.WORD.ALIAS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.INVENTORY.MANUAL.DESCRIPTION"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.VIEW.UNITS_RACK_ONLY"
     },
     {
       "file": "gui/launcher.js",
-      "line": 39,
+      "line": 40,
       "key": "LANCTL.UI.TEXT.NEW_PHYSICAL_ELEMENT"
     },
     {
       "file": "gui/launcher.js",
-      "line": 40,
+      "line": 41,
       "key": "LANCTL.UI.FRAGMENT.EDIT"
     },
     {
       "file": "gui/launcher.js",
-      "line": 40,
+      "line": 41,
       "key": "LANCTL.INVENTORY.MANUAL.NAME"
     },
     {
       "file": "gui/launcher.js",
-      "line": 40,
+      "line": 41,
       "key": "LANCTL.UI.WORD.ALIAS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 40,
+      "line": 41,
       "key": "LANCTL.INVENTORY.MANUAL.DESCRIPTION"
     },
     {
       "file": "gui/launcher.js",
-      "line": 40,
+      "line": 41,
       "key": "LANCTL.UI.WORD.RACK"
     },
     {
       "file": "gui/launcher.js",
-      "line": 40,
+      "line": 41,
       "key": "LANCTL.UI.TEXT.NO_RACK"
     },
     {
       "file": "gui/launcher.js",
-      "line": 40,
+      "line": 41,
       "key": "LANCTL.UI.WORD.UNIT"
     },
     {
       "file": "gui/launcher.js",
-      "line": 41,
+      "line": 42,
       "key": "LANCTL.UI.TEXT.NOT_CONNECTED"
     },
     {
       "file": "gui/launcher.js",
-      "line": 41,
+      "line": 42,
       "key": "LANCTL.UI.FRAGMENT.ENDPOINTS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 41,
+      "line": 42,
       "key": "LANCTL.UI.VIEW.ENDPOINT_A"
     },
     {
       "file": "gui/launcher.js",
-      "line": 41,
+      "line": 42,
       "key": "LANCTL.UI.VIEW.ENDPOINT_B"
     },
     {
       "file": "gui/launcher.js",
-      "line": 42,
+      "line": 43,
       "key": "LANCTL.UI.FRAGMENT.EDIT_PORT"
     },
     {
       "file": "gui/launcher.js",
-      "line": 42,
+      "line": 43,
       "key": "LANCTL.UI.TEXT.PORT"
     },
     {
       "file": "gui/launcher.js",
-      "line": 42,
+      "line": 43,
       "key": "LANCTL.UI.TEXT.NEW_NAME"
     },
     {
       "file": "gui/launcher.js",
-      "line": 42,
+      "line": 43,
       "key": "LANCTL.UI.TEXT.POSITION"
     },
     {
       "file": "gui/launcher.js",
-      "line": 43,
+      "line": 44,
       "key": "LANCTL.UI.TEXT.FIRST_ADD_A_DEVICE_TO_THE_INVENTORY_WITH_LANIP"
     },
     {
       "file": "gui/launcher.js",
-      "line": 43,
+      "line": 44,
       "key": "LANCTL.UI.TEXT.UPDATE_CREDENTIAL"
     },
     {
       "file": "gui/launcher.js",
-      "line": 43,
+      "line": 44,
       "key": "LANCTL.UI.TEXT.NEW_CREDENTIAL"
     },
     {
       "file": "gui/launcher.js",
-      "line": 43,
+      "line": 44,
       "key": "LANCTL.UI.TEXT.DEVICE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 43,
+      "line": 44,
       "key": "LANCTL.UI.TEXT.PROTOCOL"
     },
     {
       "file": "gui/launcher.js",
-      "line": 43,
+      "line": 44,
       "key": "LANCTL.UI.TEXT.USERNAME"
     },
     {
       "file": "gui/launcher.js",
-      "line": 43,
+      "line": 44,
       "key": "LANCTL.UI.TEXT.PASSWORD"
     },
     {
       "file": "gui/launcher.js",
-      "line": 43,
+      "line": 44,
       "key": "LANCTL.UI.TEXT.REPEAT_PASSWORD"
     },
     {
       "file": "gui/launcher.js",
-      "line": 44,
+      "line": 45,
       "key": "LANCTL.UI.TEXT.STORE_PASSWORD"
     },
     {
       "file": "gui/launcher.js",
-      "line": 44,
+      "line": 45,
       "key": "LANCTL.UI.TEXT.REPEAT_PASSWORD_AT_LEAST_12_CHARACTERS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 44,
+      "line": 45,
       "key": "LANCTL.UI.TEXT.PREPARE_ENCRYPTED_STORE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 44,
+      "line": 45,
       "key": "LANCTL.UI.TEXT.UNLOCK_STORE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 45,
+      "line": 46,
       "key": "LANCTL.UI.TEXT.SEARCH_SETTINGS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 45,
+      "line": 46,
       "key": "LANCTL.UI.FRAGMENT.READ_ONLY"
     },
     {
       "file": "gui/launcher.js",
-      "line": 45,
+      "line": 46,
       "key": "LANCTL.UI.TEXT.SHARED_SETTING_VALIDATED_BEFORE_SAVING"
     },
     {
       "file": "gui/launcher.js",
-      "line": 45,
+      "line": 46,
       "key": "LANCTL.UI.TEXT.VALUE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 45,
+      "line": 46,
       "key": "LANCTL.UI.TEXT.ENABLED"
     },
     {
       "file": "gui/launcher.js",
-      "line": 45,
+      "line": 46,
       "key": "LANCTL.UI.TEXT.DISABLED"
     },
     {
       "file": "gui/launcher.js",
-      "line": 45,
+      "line": 46,
       "key": "LANCTL.UI.FRAGMENT.SETTINGS"
     },
     {
       "file": "gui/launcher.js",
-      "line": 46,
+      "line": 47,
       "key": "LANCTL.UI.FRAGMENT.DELETE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 46,
+      "line": 47,
       "key": "LANCTL.UI.FRAGMENT.THIS_OPERATION_MODIFIES_THE_ACTUAL_STORE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 46,
+      "line": 47,
       "key": "LANCTL.UI.TEXT.START_ACTUAL_MONITORING_FOR_THIS_PROJECT_IT_WILL_CONTINUE_AFTER_CLOSING_THE_WINDOW"
     },
     {
       "file": "gui/launcher.js",
-      "line": 46,
+      "line": 47,
       "key": "LANCTL.UI.TEXT.STOP_THIS_PROJECT_S_MONITORING_SESSION"
     },
     {
       "file": "gui/launcher.js",
-      "line": 46,
+      "line": 47,
       "key": "LANCTL.UI.TEXT.CHECK_THIS_PROJECT_S_DEVICES_NOW_NETWORK_PROBES_WILL_BE_SENT"
     },
     {
       "file": "gui/launcher.js",
-      "line": 46,
+      "line": 47,
+      "key": "LANCTL.MONITOR.EXECUTION.STOP_REQUESTED"
+    },
+    {
+      "file": "gui/launcher.js",
+      "line": 47,
       "key": "LANCTL.UI.FRAGMENT.OPERATION_COMPLETED"
     },
     {
       "file": "gui/launcher.js",
-      "line": 48,
+      "line": 49,
       "key": "LANCTL.UI.WORD.ACKNOWLEDGE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 48,
+      "line": 49,
       "key": "LANCTL.UI.TEXT.CLOSE_INCIDENT"
     },
     {
       "file": "gui/launcher.js",
-      "line": 48,
+      "line": 49,
       "key": "LANCTL.UI.TEXT.INCIDENT_UPDATED"
     },
     {
       "file": "gui/launcher.js",
-      "line": 48,
+      "line": 49,
       "key": "LANCTL.UI.WORD.INCIDENT"
     },
     {
       "file": "gui/launcher.js",
-      "line": 51,
+      "line": 52,
       "key": "LANCTL.UI.TEXT.CHANGES_SAVED_IN_THE_ACTUAL_STORE"
     },
     {
       "file": "gui/launcher.js",
-      "line": 52,
+      "line": 53,
       "key": "LANCTL.UI.TEXT.WAIT_FOR_THE_OPERATION_TO_FINISH_BEFORE_CLOSING"
     },
     {
       "file": "gui/launcher.js",
-      "line": 52,
+      "line": 53,
       "key": "LANCTL.UI.TEXT.THE_PROJECT_HAS_PENDING_CHANGES_SAVE_THEM_BEFORE_CLOSING"
     },
     {
@@ -10425,38 +10810,43 @@
     },
     {
       "file": "gui/monitor-support.js",
-      "line": 199,
+      "line": 200,
       "key": "LANCTL.UI.VIEW.FULL_REPORT_COPIED_TO_CLIPBOARD"
     },
     {
       "file": "gui/monitor-support.js",
-      "line": 200,
+      "line": 201,
       "key": "LANCTL.UI.VIEW.COULD_NOT_COPY_SELECT_THE_PREVIEW_TEXT_AND_PRESS_CTRL_C"
     },
     {
       "file": "gui/monitor-support.js",
-      "line": 231,
+      "line": 232,
       "key": "LANCTL.UI.VIEW.DRAFT_PREPARED_CHECK_THE_PREVIEW_BEFORE_CONTINUING"
     },
     {
       "file": "gui/monitor-support.js",
-      "line": 247,
+      "line": 248,
       "key": "LANCTL.UI.VIEW.EXPORT_CANCELLED"
     },
     {
       "file": "gui/monitor-support.js",
-      "line": 249,
+      "line": 250,
       "key": "LANCTL.UI.FRAGMENT.DIAGNOSTICS_EXPORTED"
     },
     {
       "file": "gui/monitor-support.js",
-      "line": 251,
+      "line": 252,
       "key": "LANCTL.UI.VIEW.FORM_OPENED_FOR_YOUR_REVIEW"
     },
     {
       "file": "gui/monitor-support.js",
-      "line": 252,
+      "line": 253,
       "key": "LANCTL.UI.VIEW.COULD_NOT_OPEN_THE_BROWSER"
+    },
+    {
+      "file": "gui/monitor-support.js",
+      "line": 299,
+      "key": "LANCTL.MONITOR.VIEW.DRAFT_PRESERVED"
     },
     {
       "file": "gui/physical-editor.js",

@@ -185,6 +185,11 @@ def _server_product(text: str) -> str:
     return match.group(1).strip()[:80] if match else ""
 
 
+def _probe_timeout(timeout):
+    checkpoint = getattr(timeout, "checkpoint", None)
+    return checkpoint() if callable(checkpoint) else timeout
+
+
 def identify_tcp_service(
     host: str,
     port: int,
@@ -195,9 +200,9 @@ def identify_tcp_service(
     mapped = _service(port)
     banner = b""
     response = b""
-    connection = connector((host, port), timeout=timeout)
+    connection = connector((host, port), timeout=_probe_timeout(timeout))
     try:
-        connection.settimeout(timeout)
+        connection.settimeout(_probe_timeout(timeout))
         with suppress(TimeoutError, OSError):
             banner = connection.recv(512)
 
@@ -211,6 +216,7 @@ def identify_tcp_service(
 
         probe_ports = {80, 81, 443, 554, 5000, 8000, 8080, 8081, 8443}
         if port in probe_ports:
+            connection.settimeout(_probe_timeout(timeout))
             request = b"OPTIONS * RTSP/1.0\r\nCSeq: 1\r\nUser-Agent: LANCTL\r\n\r\n"
             try:
                 connection.sendall(request)
@@ -315,18 +321,20 @@ def scan_tcp_ports(
     connector: Callable = socket.create_connection,
 ) -> list[OpenPort]:
     def inspect(port: int) -> OpenPort | None:
+        _probe_timeout(timeout)
         try:
-            connection = connector((host, port), timeout=timeout)
+            connection = connector((host, port), timeout=_probe_timeout(timeout))
             try:
                 banner = ""
                 if banners:
-                    connection.settimeout(timeout)
+                    connection.settimeout(_probe_timeout(timeout))
                     with suppress(TimeoutError, OSError):
                         banner = _sanitize_banner(connection.recv(256))
                 if identify:
                     try:
                         return identify_tcp_service(host, port, timeout, connector)
                     except OSError as error:
+                        _probe_timeout(timeout)
                         from lanctl.core.errors import errors
 
                         errors.from_exception(
@@ -440,16 +448,22 @@ class ElementScanner:
         manufacturer: str = "",
     ) -> ElementScanResult:
         started = monotonic()
+        _probe_timeout(self.timeout)
         reachable, latency, ttl = ping_details(host, self.timeout)
+        _probe_timeout(self.timeout)
         open_ports = scan_tcp_ports(host, ports, self.timeout, self.workers, banners, identify)
+        _probe_timeout(self.timeout)
         hostname = reverse_hostname(host, self.timeout)
+        _probe_timeout(self.timeout)
+        mac = observed_arp_mac(host)
+        _probe_timeout(self.timeout)
         return ElementScanResult(
             ip=host,
             reachable=reachable or bool(open_ports),
             latency_ms=latency,
             ttl=ttl,
             hostname=hostname,
-            observed_mac=observed_arp_mac(host),
+            observed_mac=mac,
             scanned_ports=len(ports),
             open_ports=open_ports,
             identification=identify_device(

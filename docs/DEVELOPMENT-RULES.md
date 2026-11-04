@@ -3,6 +3,27 @@
 Estas reglas son el contrato de trabajo del repositorio. Se aplican a código,
 documentación, plugins, automatizaciones, empaquetado y publicaciones.
 
+La [lista de verificaciones de desarrollo](DEVELOPMENT-CHECKLIST.md) forma parte
+de estas reglas. Se aplica antes, durante y después de crear o modificar código;
+al entregar se indican las comprobaciones realizadas y las pendientes. Los
+apartados condicionales se aplican según el alcance real del cambio.
+
+## Textos e idiomas
+
+- Todo texto nuevo o modificado de presentación debe utilizar el sistema de
+  idiomas: etiquetas, ayudas, validaciones, avisos y mensajes de error visibles.
+  No se añaden literales de interfaz fuera de los recursos de idioma.
+- Se reutilizan claves con el mismo significado y se crean claves nuevas cuando
+  cambia el significado. Se mantienen inglés y español y sus placeholders.
+- Las fuentes bilingües generan los archivos `.lang` y el fallback web; no se
+  editan manualmente las salidas generadas. Véase [LANG.md](LANG.md).
+- Los instaladores deben separar sus recursos de idioma del código operativo.
+  Si la plataforma exige otro formato, se documentan su fuente y su generación,
+  conservando independiente el idioma del asistente y el del programa.
+- Códigos e identificadores, comandos, trazas, registros canónicos y datos del
+  usuario no se traducen. La explicación presentada al usuario sí es traducible
+  y conserva asociado el diagnóstico original.
+
 ## Modelo de ramas
 
 - **`main` es exclusivamente la rama de trabajo.** Recibe el desarrollo

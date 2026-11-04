@@ -13,6 +13,7 @@ from pathlib import Path
 from lanctl.core.paths import application_path
 
 from .configuration import parse_duration
+from .execution import execution_effects, remaining_timeout
 from .models import CheckResult, Incident, MonitorSession
 from .outages import load_outages
 
@@ -70,8 +71,32 @@ class MonitorDatabase:
 
     @contextmanager
     def transaction(self):
-        with self.lock, self.connection:
-            yield self.connection
+        with self.lock:
+            nested = self.connection.in_transaction
+            savepoint = "lanctl_" + uuid.uuid4().hex if nested else None
+            self.connection.execute(f"SAVEPOINT {savepoint}" if nested else "BEGIN IMMEDIATE")
+            try:
+                yield self.connection
+            except BaseException:
+                if nested:
+                    self.connection.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+                    self.connection.execute(f"RELEASE SAVEPOINT {savepoint}")
+                else:
+                    self.connection.rollback()
+                raise
+            else:
+                try:
+                    if nested:
+                        self.connection.execute(f"RELEASE SAVEPOINT {savepoint}")
+                    else:
+                        self.connection.commit()
+                except BaseException:
+                    if nested:
+                        self.connection.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+                        self.connection.execute(f"RELEASE SAVEPOINT {savepoint}")
+                    else:
+                        self.connection.rollback()
+                    raise
 
     def _migrate(self):
         current = self.connection.execute("PRAGMA user_version").fetchone()[0]
@@ -109,6 +134,8 @@ class MonitorDatabase:
 
 
 class MetricsStore:
+    cooperative_maintenance = True
+
     def __init__(self, database: MonitorDatabase):
         self.db = database
 
@@ -135,16 +162,19 @@ class MetricsStore:
                 ),
             )
 
-    def aggregate(self, *, now=None, resolutions=(300, 3600)):
+    def aggregate(self, *, now=None, resolutions=(300, 3600), budget=None):
+        remaining_timeout(budget)
         written = 0
         outages = load_outages(self.db)
         for resolution in resolutions:
+            remaining_timeout(budget)
             rows = self.db.execute(
                 "SELECT device_id,CAST(strftime('%s',timestamp)/? AS INTEGER)*? bucket_epoch,AVG(presence)*100 availability,MIN(latency_ms) lmin,AVG(latency_ms) lavg,MAX(latency_ms) lmax,COUNT(*) count,SUM(CASE WHEN presence=0 THEN 1 ELSE 0 END) losses FROM samples WHERE check_type IN ('availability','ping','arp') GROUP BY device_id,bucket_epoch",
                 (resolution, resolution),
             ).fetchall()
-            with self.db.transaction():
+            with execution_effects(budget), self.db.transaction():
                 for row in rows:
+                    remaining_timeout(budget)
                     outage_count, outage_duration = outages.bucket(
                         row["device_id"], row["bucket_epoch"], resolution
                     )
@@ -172,15 +202,16 @@ class MetricsStore:
                     written += 1
         return written
 
-    def cleanup(self, retention, *, now=None, batch=10000):
+    def cleanup(self, retention, *, now=None, batch=10000, budget=None):
         current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
         raw = utc(current - timedelta(seconds=parse_duration(retention.get("rawSamples", "24h"))))
-        with self.db.transaction():
+        with execution_effects(budget), self.db.transaction():
             deleted = self.db.execute(
                 "DELETE FROM samples WHERE sample_id IN (SELECT sample_id FROM samples WHERE timestamp<? LIMIT ?)",
                 (raw, batch),
             ).rowcount
             for resolution, key in ((300, "fiveMinuteAggregates"), (3600, "hourlyAggregates")):
+                remaining_timeout(budget)
                 cutoff = utc(
                     current
                     - timedelta(
@@ -228,10 +259,11 @@ class SessionRepository:
             )
 
     def active(self):
-        row = self.db.execute(
-            "SELECT * FROM sessions WHERE status IN ('pending','active','stopping') ORDER BY started_at DESC LIMIT 1"
-        ).fetchone()
-        return _session(row) if row else None
+        with self.db.lock:
+            row = self.db.execute(
+                "SELECT * FROM sessions WHERE status IN ('pending','active','stopping') ORDER BY started_at DESC LIMIT 1"
+            ).fetchone()
+            return _session(row) if row else None
 
     def list(self):
         return [

@@ -144,3 +144,21 @@ Las eliminaciones remotas de elementos, grupos y proyectos requieren el permiso
 adicional `system.destructive`, reservado al rol `administrator`. Los roles
 `operator` y `manager` no reciben ese permiso aunque puedan modificar otros
 datos de su ámbito.
+
+## Límites de salida de comandos
+
+Los subcomandos autorizados se ejecutan sin shell y con stdin cerrado. La captura
+por defecto drena stdout y stderr incrementalmente, reteniendo como máximo 1 MiB
+agregado. El exceso se descarta hasta que el comando termina o vence su timeout;
+no se crea un archivo temporal ni un hilo lector por stream. La respuesta final
+incluye el marcador de truncamiento traducido dentro del límite de 1 MiB UTF-8.
+Se conserva stdout seguido de stderr; no se garantiza su orden cronológico mutuo.
+
+El timeout devuelve 124 y conserva el ID del diagnóstico. El adaptador admite
+un evento de cancelación opcional y devuelve 130; no presupone que desconectar
+un cliente proporcione ese evento. Al cancelar/expirar se cierran pipes y se
+recoge el proceso directo. En POSIX se limpia además el grupo de procesos creado
+para esa invocación, incluidos hijos que heredaron los pipes. La limpieza de
+árboles de procesos Windows requiere certificación nativa y no se afirma aquí.
+Los runners personalizados inyectados mantienen su contrato anterior: deben
+proporcionar sus propios límites de captura; el límite de respuesta sí se aplica.

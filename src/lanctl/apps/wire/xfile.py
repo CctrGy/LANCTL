@@ -146,6 +146,9 @@ def write_json(path: str | Path, value: Any, *, indent: int = 2) -> Path:
 
 def read(path: str | Path, default: T | None = None) -> Any | T:
     """Lee JSON para .json/.config/.lang/.db y texto para .txt/.log."""
+    from lanctl.core.storage_import import recover_for_paths
+
+    recover_for_paths((Path(path),))
     target = Path(path)
     if not target.exists():
         return default

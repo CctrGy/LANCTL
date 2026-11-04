@@ -101,7 +101,8 @@ compatibilidad LANCTL, capacidades, permisos solicitados/concedidos y firma.
 ## Inicio y ventanas
 
 En Configuración general, `startupInterface` elige `cli`, `tui` o `gui` cuando
-LANCTL arranca sin argumentos, tanto desde terminal como desde su ejecutable.
+cualquiera de los seis launchers arranca sin argumentos, desde terminal o desde
+su ejecutable. Los accesos con modo explícito conservan ese modo.
 El valor predeterminado sigue siendo `cli`; un argumento explícito tiene prioridad.
 `closeGuiOnLaunch` permite cerrar LANCTL después de confirmar que LANIP está
 disponible. Si la apertura falla, LANCTL conserva su ventana y muestra el error.

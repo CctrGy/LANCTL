@@ -28,7 +28,9 @@ class DeviceDatabase:
         # journal junto a esta base. Se recupera antes de exponer cualquiera
         # de las dos mitades, incluso si el consumidor abre primero devices.
         from lanctl.core.group_database import recover_device_group_transaction
+        from lanctl.core.storage_import import recover_for_paths
 
+        recover_for_paths((self.path,))
         recover_device_group_transaction(self.path)
         if not self.path.exists():
             self._revision = "missing"
@@ -45,18 +47,22 @@ class DeviceDatabase:
             raise ValueError(
                 f"la base de datos no está codificada como UTF-8: {self.path}"
             ) from error
-        if not isinstance(value, list):
-            # Es contenido externo inválido, no un uso incorrecto de la API.
-            raise ValueError(f"la base de datos debe contener una lista: {self.path}")
+        devices = self.validate_document(value, path=self.path)
+        self._revision = hashlib.sha256(raw).hexdigest()
+        return devices
 
+    @staticmethod
+    def validate_document(value, *, path="") -> list[Device]:
+        """Validate a decoded snapshot without reading or writing any store."""
+        from lanctl.shared.i18n import t
+
+        if not isinstance(value, list):
+            raise ValueError(t("LANCTL.STORAGE.ERROR.DEVICE_LIST", path=path))
         devices: list[Device] = []
         for item in value:
             if not isinstance(item, dict) or "IP" not in item or "MAC" not in item:
-                raise ValueError(
-                    f"cada registro de la base de datos debe tener al menos IP y MAC: {self.path}"
-                )
+                raise ValueError(t("LANCTL.STORAGE.ERROR.DEVICE_RECORD", path=path))
             devices.append(Device.from_dict(item))
-        self._revision = hashlib.sha256(raw).hexdigest()
         return devices
 
     @transactional_method

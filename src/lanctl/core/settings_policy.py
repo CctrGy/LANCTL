@@ -215,7 +215,7 @@ def prepare_program_changes(config, changes, context):
             raise ValueError(f"{path}: solo lectura. {reason}")
         _assign(document, path, validate_value(path, value, defaults[path]))
     if any(path.startswith("tui.keyBindings.") for path in expanded):
-        from lanctl.apps.ip.interfaces.tui.keyboard import validate_key_bindings
+        from lanctl.shared.tui_keyboard import validate_key_bindings
 
         validate_key_bindings(document["tui"]["keyBindings"])
     replacement = config_from_document(document)

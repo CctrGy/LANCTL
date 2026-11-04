@@ -291,7 +291,8 @@ Usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-l
 Options:
   -h, --help                  Show this help and exit.
   --startup-interface {cli,tui,gui}
-                              Preferred interface when opening LANCTL without arguments.
+                              Preferred interface when opening any LANCTL launcher without
+                              arguments.
   --close-gui-on-launch {on,off}
                               Close the main GUI when the requested launcher is available.
   -range CIDR                 Default LAN range, for example 192.168.1.1/24.

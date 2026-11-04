@@ -106,6 +106,17 @@ def test_shortcuts_and_completion_only_touch_selected_user_files(tmp_path):
     assert not (tmp_path / ".bashrc").exists()
 
 
+def test_deselect_completion_preserves_edits_even_with_installer_header(tmp_path):
+    selection = model.Selection()
+    model.write_shortcuts(selection, tmp_path)
+    completion = tmp_path / ".local/share/bash-completion/completions/lanctl"
+    edited = completion.read_text() + "\n# user's custom completion changes\n"
+    completion.write_text(edited)
+    selection.completion = False
+    model.write_shortcuts(selection, tmp_path)
+    assert completion.read_text() == edited
+
+
 def test_remote_accounts_require_root_and_reject_symlinks(tmp_path, monkeypatch):
     account = importlib.import_module("setup_account")
     monkeypatch.setattr(account.os, "geteuid", lambda: 1000)
@@ -206,6 +217,7 @@ def test_install_progress_is_async_and_failure_does_not_claim_success(qt_app, mo
 def test_remote_password_uses_stdin_and_is_cleared_after_delivery(qt_app, monkeypatch):
     gui = importlib.import_module("setup_gui")
     window = wizard()
+    window.checks["advanced"].setChecked(True)
     window.checks["remote_account"].setChecked(True)
     values = {
         "username": "tester",
@@ -240,6 +252,60 @@ def test_remote_password_uses_stdin_and_is_cleared_after_delivery(qt_app, monkey
     window.close()
 
 
+def test_account_json_is_not_corrupted_by_helper_stderr(qt_app, monkeypatch):
+    gui = importlib.import_module("setup_gui")
+    window = wizard()
+    monkeypatch.setattr(gui, "write_shortcuts", lambda *args: None)
+    window.selected = window.selection()
+    window.running = True
+    window.current_operation = "remote"
+    window.queue = []
+    script = (
+        "import json,sys; "
+        "sys.stderr.write('diagnostic-with-private-sentinel\\n'); "
+        "print(json.dumps({'created': True, 'username': 'test-admin'}))"
+    )
+    window.process.start(sys.executable, ["-c", script])
+    deadline = time.monotonic() + 5
+    while window.running and time.monotonic() < deadline:
+        qt_app.processEvents()
+        time.sleep(0.01)
+    assert window.completed and not window.running
+    assert json.loads(window.account_output)["created"] is True
+    assert "diagnostic-with-private-sentinel" not in window.log.toPlainText()
+    window.close()
+
+
+@pytest.mark.parametrize("advanced", [False, True])
+def test_standard_skips_account_and_advanced_preserves_explicit_selection(qt_app, advanced):
+    window = wizard()
+    window.show()
+    window.checks["advanced"].setChecked(advanced)
+    window.checks["remote_account"].setChecked(True)
+    for key, value in {
+        "username": "test-admin",
+        "password": "Long-test-password!",
+        "confirmation": "Long-test-password!",
+    }.items():
+        window.account_fields[key].setText(value)
+    visited = []
+    for _ in range(8):
+        visited.append(
+            next(key for key, page in window.pages_by_key.items() if page is window.currentPage())
+        )
+        if visited[-1] == "review":
+            break
+        window.next()
+    assert visited[-1] == "review"
+    assert ("account" in visited) is advanced
+    assert window.selection().remote_account is advanced
+    window.checks["advanced"].setChecked(False)
+    assert not window.selection().remote_account
+    if advanced:
+        assert not window.account_fields["password"].text()
+    window.close()
+
+
 def test_missing_process_and_bad_account_leave_wizard_recoverable(qt_app, monkeypatch):
     gui = importlib.import_module("setup_gui")
     window = wizard()
@@ -255,6 +321,7 @@ def test_missing_process_and_bad_account_leave_wizard_recoverable(qt_app, monkey
     assert not window.completed and not window.running
     assert window.button(gui.QWizard.WizardButton.CancelButton).isEnabled()
     window.checks["remote_account"].setChecked(True)
+    window.checks["advanced"].setChecked(True)
     window.restart()
     while window.currentPage() != window.pages_by_key["account"]:
         window.next()

@@ -8,6 +8,7 @@ import subprocess
 import sys
 import threading
 import time
+from concurrent.futures import CancelledError
 from dataclasses import asdict
 from pathlib import Path
 from typing import ClassVar
@@ -23,6 +24,12 @@ from lanctl.apps.monitor.configuration import (
 from lanctl.apps.monitor.database import IncidentRepository as SqlIncidentRepository
 from lanctl.apps.monitor.database import MetricsStore, MonitorDatabase
 from lanctl.apps.monitor.database import SessionRepository as SqlSessionRepository
+from lanctl.apps.monitor.execution import (
+    MonitorShutdownPending,
+    discovery_progress,
+    execution_effects,
+    remaining_timeout,
+)
 from lanctl.apps.monitor.incidents import IncidentManager
 from lanctl.apps.monitor.lifecycle import SingletonLock
 from lanctl.apps.monitor.models import MonitorTargetPlan
@@ -168,14 +175,27 @@ def _start_monitor(args, sessions, config, action):
         authority=args.authority,
         duration=seconds,
     )
-    process = _spawn_foreground(args)
+    process = _spawn_foreground(args, session_id=session.sessionId)
     return {**asdict(session), "processId": process.pid}
 
 
 def _stop_monitor(args, sessions):
     state = SingletonLock(application_path(args.lock)).status()
     if state.get("running"):
-        os.kill(state["pid"], signal.SIGTERM)
+        # The owner confirms the final state only after all accepted work drains.
+        active = sessions.repository.active()
+        if active is None:
+            if state.get("controlProtocol") != "session-request-v1":
+                os.kill(state["pid"], signal.SIGTERM)
+            return {"status": "stopping", "processId": state["pid"]}
+        active = sessions.request_stop()
+        if state.get("controlProtocol") == "session-request-v1":
+            return asdict(active)
+        try:
+            os.kill(state["pid"], signal.SIGTERM)
+        except ProcessLookupError:
+            return asdict(sessions.stop("cancelled", expected_session_id=active.sessionId))
+        return asdict(active)
     return asdict(sessions.stop("cancelled"))
 
 
@@ -596,7 +616,10 @@ def _restart_action(args, sessions):
         return {"status": "not-running", "message": "No hay un monitor activo que reiniciar"}
 
     old_pid = state["pid"]
-    os.kill(old_pid, signal.SIGTERM)
+    if state.get("controlProtocol") == "session-request-v1":
+        sessions.request_stop()
+    else:
+        os.kill(old_pid, signal.SIGTERM)
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline and lock.status().get("running"):
         time.sleep(0.1)
@@ -628,7 +651,7 @@ def _restart_action(args, sessions):
         active.authority,
         None,
     )
-    process = _spawn_foreground(args)
+    process = _spawn_foreground(args, session_id=replacement.sessionId)
     return {
         "status": "restarted",
         "previousPid": old_pid,
@@ -748,12 +771,14 @@ class InventoryAssignments:
             int(self.config.get("maxHosts", 4096)),
             monitor.get("scanOrder", self.config.get("scanOrder", "ascending")),
         )
+        remaining_timeout(timeout)
         records = scanner.scan(
             include_unknown=True,
             resolve_names=False,
             discovery="hybrid",
             include_arp_cache=True,
             attempts=1,
+            progress=discovery_progress(timeout),
         )
         seen = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         for record in records:
@@ -766,12 +791,19 @@ class InventoryAssignments:
                 record.discovery_methods = methods
                 record.last_discovery = "+".join(methods)
                 record.last_seen = seen
-        self.inventory.upsert(records)
+        with execution_effects(timeout):
+            self.inventory.upsert(records)
         return records
 
 
 def _run_foreground(args, sessions, stop_event=None, service_managed=False):
     active = sessions.repository.active()
+    expected = os.environ.get("LANCTL_MONITOR_SESSION_ID")
+    if expected and (active is None or active.sessionId != expected):
+        # A delayed child must never resurrect a cancelled run or adopt its successor.
+        return {"status": "cancelled", "sessionId": expected}
+    if expected and active.status == "stopping":
+        return asdict(sessions.stop("cancelled", expected_session_id=expected))
     if not active:
         project = args.project or load_config().get("activeProject") or "-"
         active = sessions.start(
@@ -806,12 +838,15 @@ def _run_foreground(args, sessions, stop_event=None, service_managed=False):
 
     get_plugin_manager().monitor_service = service
     failed = False
-    with SingletonLock(application_path(args.lock)):
+    with SingletonLock(application_path(args.lock), control_protocol="session-request-v1"):
         from lanctl.apps.access.runtime import AccessRuntime
 
         remote = AccessRuntime().start()
         try:
-            service.start(active, provider.monitor().profile)
+            try:
+                service.start(active, provider.monitor().profile, require_existing=True)
+            except CancelledError:
+                return {"status": "cancelled", "sessionId": active.sessionId}
             try:
                 service.foreground(stop_event=stop_event)
             except Exception as error:
@@ -820,9 +855,20 @@ def _run_foreground(args, sessions, stop_event=None, service_managed=False):
                 sessions.repository.save(active)
                 raise
             finally:
-                service.stop(
-                    "error" if failed else "cancelled" if stop_event.is_set() else "completed"
-                )
+                while True:
+                    try:
+                        service.stop(
+                            "error"
+                            if failed
+                            else "cancelled"
+                            if stop_event.is_set()
+                            else "completed"
+                        )
+                        break
+                    except MonitorShutdownPending:
+                        # Retain repositories/runtime until the owner really drains.
+                        # Legacy native handlers cannot be safely killed as threads.
+                        continue
         finally:
             remote.stop()
     return {"status": "completed", "sessionId": active.sessionId}
@@ -858,7 +904,7 @@ def _lanctl_command(*arguments):
     ]
 
 
-def _spawn_foreground(args):
+def _spawn_foreground(args, *, session_id=None):
     from lanctl.core.session_context import child_environment
 
     command = _lanctl_command(
@@ -874,10 +920,14 @@ def _spawn_foreground(args):
         args.lock,
     )
     flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if platform.system() == "Windows" else 0
+    environment = child_environment("lanmon", load_config())
+    environment.pop("LANCTL_MONITOR_SESSION_ID", None)
+    if session_id is not None:
+        environment["LANCTL_MONITOR_SESSION_ID"] = session_id
     return subprocess.Popen(
         command,
         creationflags=flags,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        env=child_environment("lanmon", load_config()),
+        env=environment,
     )

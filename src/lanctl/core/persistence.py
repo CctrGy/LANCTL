@@ -8,7 +8,7 @@ import tempfile
 import zipfile
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 from lanctl.core.file_transaction import atomic_write_json, locked_files
@@ -23,6 +23,7 @@ class StorageCheck:
     valid: bool
     kind: str
     detail: str = ""
+    validation: str = "not-checked"
 
 
 def create_backup(path: str | Path, *, directory: str | Path | None = None) -> Path:
@@ -40,76 +41,157 @@ def create_backup(path: str | Path, *, directory: str | Path | None = None) -> P
     try:
         with locked_files((source, target)):
             shutil.copy2(source, target)
+            with target.open("rb") as snapshot:
+                os.fsync(snapshot.fileno())
+            from lanctl.core.file_transaction import fsync_directory
+
+            fsync_directory(target_root)
+            fsync_directory(target_root.parent)
     except Exception:
         target.unlink(missing_ok=True)
         raise
     return target
 
 
-def restore_backup(path: str | Path, backup: str | Path) -> Path:
+def _contracts(values: dict[str | Path, str] | None) -> dict[Path, str]:
+    if values is None:
+        from lanctl.core.storage_validation import configured_contracts
+
+        return configured_contracts()
+    return {Path(path).resolve(): contract for path, contract in values.items()}
+
+
+def _validate_payload(path: Path, payload: bytes, contract: str | None) -> tuple[str, str]:
+    if contract or path.suffix.casefold() in {".json", ".registry"} or path.name == ".config":
+        value = json.loads(payload.decode("utf-8"))
+        if contract:
+            from lanctl.core.storage_validation import validate_document
+
+            validate_document(value, contract, path=path)
+            return "json", "functional"
+        return "json", "syntax-only"
+    return ("sqlite" if payload.startswith(b"SQLite format 3\x00") else "binary"), "not-checked"
+
+
+def restore_backup(path: str | Path, backup: str | Path, *, contract: str | None = None) -> Path:
     target, source = Path(path), Path(backup)
-    if not source.is_file():
-        raise FileNotFoundError(source)
-    if target.suffix.casefold() == ".json":
-        json.loads(source.read_text(encoding="utf-8"))
+    if contract is None:
+        contract = _contracts(None).get(target.resolve())
     with locked_files((target, source)):
         from lanctl.core.file_transaction import atomic_write_bytes
 
-        atomic_write_bytes(target, source.read_bytes())
+        # Validate and write exactly one protected snapshot, not two reads.
+        payload = source.read_bytes()
+        _validate_payload(target, payload, contract)
+        atomic_write_bytes(target, payload)
     return target
 
 
-def diagnose_storage(paths: list[str | Path]) -> list[StorageCheck]:
+def diagnose_storage(
+    paths: list[str | Path], *, contracts: dict[str | Path, str] | None = None
+) -> list[StorageCheck]:
+    from lanctl.shared.i18n import t
+
+    known = _contracts(contracts)
     checks: list[StorageCheck] = []
     resolved: set[str] = set()
     for value in paths:
         path = Path(value).resolve()
-        key = str(path).casefold()
+        key = os.path.normcase(str(path))
         if key in resolved:
             continue
         resolved.add(key)
-        if not path.exists():
-            checks.append(StorageCheck(str(path), False, False, "missing", "no existe"))
-            continue
-        if not path.is_file():
-            checks.append(StorageCheck(str(path), True, False, "unsupported", "no es un archivo"))
-            continue
         try:
-            payload = path.read_bytes()
-            if path.suffix.casefold() in {".json", ".registry"} or path.name == ".config":
-                json.loads(payload.decode("utf-8"))
-                kind = "json"
-            elif payload.startswith(b"SQLite format 3\x00"):
-                kind = "sqlite"
-            else:
-                kind = "binary"
+            with locked_files((path,)):
+                if not path.exists():
+                    checks.append(
+                        StorageCheck(
+                            str(path),
+                            False,
+                            False,
+                            "missing",
+                            t("LANCTL.STORAGE.DIAGNOSIS.MISSING"),
+                        )
+                    )
+                    continue
+                if not path.is_file():
+                    checks.append(
+                        StorageCheck(
+                            str(path),
+                            True,
+                            False,
+                            "unsupported",
+                            t("LANCTL.STORAGE.DIAGNOSIS.NOT_FILE"),
+                        )
+                    )
+                    continue
+                payload = path.read_bytes()
+                kind, validation = _validate_payload(path, payload, known.get(path))
+            detail = hashlib.sha256(payload).hexdigest()
+            if validation == "syntax-only":
+                detail = t("LANCTL.STORAGE.DIAGNOSIS.SYNTAX_ONLY") + "; sha256=" + detail
+            checks.append(StorageCheck(str(path), True, True, kind, detail, validation))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
             checks.append(
-                StorageCheck(str(path), True, True, kind, hashlib.sha256(payload).hexdigest())
+                StorageCheck(str(path), path.exists(), False, "corrupt", str(error), "failed")
             )
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
-            checks.append(StorageCheck(str(path), True, False, "corrupt", str(error)))
     return checks
 
 
-def export_storage(paths: list[str | Path], destination: str | Path) -> Path:
+def export_storage(
+    paths: list[str | Path],
+    destination: str | Path,
+    *,
+    source_root: str | Path | None = None,
+    destinations: dict[str, str | Path] | None = None,
+) -> Path:
     target = Path(destination)
-    files = [Path(path).resolve() for path in paths if Path(path).is_file()]
-    if not files:
-        raise ValueError("no hay archivos persistentes para exportar")
-    common = Path(__import__("os").path.commonpath([str(path.parent) for path in files]))
+    from lanctl.shared.i18n import t
+
+    if source_root is not None and destinations is not None:
+        raise ValueError(t("LANCTL.STORAGE.ERROR.EXPORT_LAYOUT"))
+    if destinations is not None:
+        entries = {name: Path(path).resolve() for name, path in destinations.items()}
+        for name in entries:
+            if name not in {"devices", "groups", "physical", "config", "plugins"}:
+                raise ValueError(t("LANCTL.STORAGE.ERROR.CONTRACT", contract=name))
+        entries = {name: path for name, path in entries.items() if path.is_file()}
+        layout = "logical"
+    else:
+        files = [Path(path).resolve() for path in paths if Path(path).is_file()]
+        if not files:
+            raise ValueError(t("LANCTL.STORAGE.ERROR.NO_FILES"))
+        common = (
+            Path(source_root).resolve()
+            if source_root is not None
+            else Path(os.path.commonpath([str(path.parent) for path in files]))
+        )
+        if any(not path.is_relative_to(common) for path in files):
+            raise ValueError(t("LANCTL.STORAGE.ERROR.OUTSIDE_ROOT"))
+        entries = {path.relative_to(common).as_posix(): path for path in files}
+        layout = "relative"
+    if not entries:
+        raise ValueError(t("LANCTL.STORAGE.ERROR.NO_FILES"))
+    files = list(entries.values())
+    if (
+        len({os.path.normcase(str(path)) for path in files}) != len(files)
+        or target.resolve() in files
+    ):
+        raise ValueError(t("LANCTL.STORAGE.ERROR.DUPLICATE_TARGET"))
     manifest: dict[str, Any] = {
-        "schemaVersion": STORAGE_SCHEMA_VERSION,
+        "schemaVersion": 2 if source_root is not None or destinations is not None else 1,
         "createdAt": datetime.now(timezone.utc).isoformat(),
         "files": {},
     }
+    if manifest["schemaVersion"] == 2:
+        manifest["layout"] = layout
     target.parent.mkdir(parents=True, exist_ok=True)
     with locked_files(tuple([*files, target])):
         with tempfile.NamedTemporaryFile(delete=False, dir=target.parent, suffix=".tmp") as stream:
             temporary = Path(stream.name)
         try:
             with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-                for path in files:
-                    name = path.relative_to(common).as_posix()
+                for name, path in entries.items():
                     payload = path.read_bytes()
                     archive.writestr(f"data/{name}", payload)
                     manifest["files"][name] = hashlib.sha256(payload).hexdigest()
@@ -121,54 +203,141 @@ def export_storage(paths: list[str | Path], destination: str | Path) -> Path:
     return target
 
 
+def _export_manifest(archive: zipfile.ZipFile) -> dict[str, Any]:
+    from lanctl.shared.i18n import t
+
+    if archive.namelist().count("manifest.json") != 1:
+        raise ValueError(t("LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"))
+    manifest = json.loads(archive.read("manifest.json"))
+    if (
+        not isinstance(manifest, dict)
+        or type(manifest.get("schemaVersion")) is not int
+        or manifest["schemaVersion"] not in (1, 2)
+    ):
+        raise ValueError(t("LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"))
+    if manifest["schemaVersion"] == 2 and manifest.get("layout") not in ("relative", "logical"):
+        raise ValueError(t("LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"))
+    files = manifest.get("files")
+    if not isinstance(files, dict) or not files:
+        raise ValueError(t("LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"))
+    for name, checksum in files.items():
+        if (
+            not isinstance(name, str)
+            or not name
+            or not Path(name).parts
+            or ":" in name
+            or "\x00" in name
+            or "\\" in name
+            or Path(name).is_absolute()
+            or PureWindowsPath(name).drive
+            or ".." in Path(name).parts
+            or Path(name).as_posix() != name
+        ):
+            raise ValueError(t("LANCTL.STORAGE.ERROR.UNSAFE_PATH", path=name))
+        if (
+            not isinstance(checksum, str)
+            or len(checksum) != 64
+            or any(char not in "0123456789abcdef" for char in checksum)
+        ):
+            raise ValueError(t("LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"))
+        if manifest.get("layout") == "logical" and name not in {
+            "devices",
+            "groups",
+            "physical",
+            "config",
+            "plugins",
+        }:
+            raise ValueError(t("LANCTL.STORAGE.ERROR.CONTRACT", contract=name))
+        if archive.namelist().count(f"data/{name}") != 1:
+            raise ValueError(t("LANCTL.STORAGE.ERROR.EXPORT_MANIFEST"))
+    return manifest
+
+
 def verify_export(path: str | Path) -> dict[str, Any]:
     with zipfile.ZipFile(path) as archive:
-        manifest = json.loads(archive.read("manifest.json"))
-        if manifest.get("schemaVersion") != STORAGE_SCHEMA_VERSION:
-            raise ValueError("versión de exportación incompatible")
-        for name, expected in manifest.get("files", {}).items():
+        manifest = _export_manifest(archive)
+        for name, expected in manifest["files"].items():
             actual = hashlib.sha256(archive.read(f"data/{name}")).hexdigest()
             if actual != expected:
                 raise ValueError(f"hash incorrecto en la exportación: {name}")
     return manifest
 
 
-def import_storage(path: str | Path, destination_root: str | Path) -> list[Path]:
+def import_storage(
+    path: str | Path,
+    destination_root: str | Path,
+    *,
+    contracts: dict[str | Path, str] | None = None,
+    destinations: dict[str, str | Path] | None = None,
+) -> list[Path]:
     """Importa una exportación validada con rollback de todos los destinos."""
 
+    known = _contracts(contracts)
     source = Path(path)
     root = Path(destination_root).resolve()
     manifest = verify_export(source)
-    names = list(manifest.get("files", {}))
+    from lanctl.shared.i18n import t
+
+    names = list(manifest["files"])
+    logical = manifest["schemaVersion"] == 2 and manifest["layout"] == "logical"
+    if logical and destinations is None:
+        raise ValueError(t("LANCTL.STORAGE.ERROR.DESTINATIONS_REQUIRED"))
     targets: list[Path] = []
     for name in names:
-        pure = Path(name)
-        target = (root / pure).resolve()
-        if pure.is_absolute() or ".." in pure.parts or not target.is_relative_to(root):
-            raise ValueError(f"ruta no segura en la importación: {name}")
+        if logical:
+            if name not in destinations:
+                raise ValueError(t("LANCTL.STORAGE.ERROR.DESTINATION_MISSING", name=name))
+            target = Path(destinations[name]).resolve()
+            # A supplied map binds the contract, including external workspaces.
+            if target in known and known[target] != name:
+                raise ValueError(t("LANCTL.STORAGE.ERROR.CONFLICT", path=target))
+            known[target] = name
+        else:
+            pure = Path(name)
+            target = (root / pure).resolve()
+            if pure.is_absolute() or ".." in pure.parts or not target.is_relative_to(root):
+                raise ValueError(t("LANCTL.STORAGE.ERROR.UNSAFE_PATH", path=name))
         targets.append(target)
-    previous = {target: target.read_bytes() if target.is_file() else None for target in targets}
-    with zipfile.ZipFile(source) as archive, locked_files(tuple(targets)):
-        try:
-            for name, target in zip(names, targets):
-                payload = archive.read(f"data/{name}")
-                if target.suffix.casefold() in {".json", ".registry"}:
-                    json.loads(payload.decode("utf-8"))
-                target.parent.mkdir(parents=True, exist_ok=True)
-                if target.exists():
-                    create_backup(target, directory=root / "import-backups")
-                from lanctl.core.file_transaction import atomic_write_bytes
+    if (
+        len({os.path.normcase(str(target)) for target in targets}) != len(targets)
+        or source.resolve() in targets
+    ):
+        raise ValueError(t("LANCTL.STORAGE.ERROR.DUPLICATE_TARGET"))
+    # Read and validate every payload before touching any destination. Recheck
+    # hashes on these exact bytes: verification and import must not use different
+    # snapshots if the archive is replaced between opening it and verification.
+    payloads: list[bytes] = []
+    with zipfile.ZipFile(source) as archive:
+        for name, target in zip(names, targets):
+            payload = archive.read(f"data/{name}")
+            if hashlib.sha256(payload).hexdigest() != manifest["files"][name]:
+                raise ValueError(f"hash incorrecto en la exportación: {name}")
+            _validate_payload(target, payload, known.get(target))
+            payloads.append(payload)
+    from lanctl.core.storage_import import commit_import
 
-                atomic_write_bytes(target, payload)
-        except Exception:
-            from lanctl.core.file_transaction import atomic_write_bytes
+    if logical:
+        pair_paths = [
+            Path(destinations[name]).resolve()
+            for name in ("devices", "groups")
+            if name in destinations
+        ]
+    else:
+        pair_paths = [path for path, contract in known.items() if contract in {"devices", "groups"}]
+    if not any(target in pair_paths for target in targets):
+        pair_paths = []
 
-            for target, payload in previous.items():
-                if payload is None:
-                    target.unlink(missing_ok=True)
-                else:
-                    atomic_write_bytes(target, payload)
-            raise
+    def prepare():
+        from lanctl.core.group_database import recover_device_group_transaction
+
+        for path, contract in known.items():
+            if contract == "devices" and path in pair_paths:
+                recover_device_group_transaction(path)
+        for target in targets:
+            if target.is_file():
+                create_backup(target, directory=root / "import-backups")
+
+    commit_import(root, targets, payloads, prepare=prepare, companions=pair_paths)
     return targets
 
 

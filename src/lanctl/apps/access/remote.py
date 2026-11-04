@@ -4,7 +4,10 @@ import json
 import os
 import shlex
 import subprocess
+from concurrent.futures import CancelledError
 from typing import ClassVar
+
+from .remote_process import bounded_run
 
 READ_COMMANDS = {
     "search": "inventory.read",
@@ -135,7 +138,7 @@ class LanctlCommandAdapter:
     def __init__(self, authorization, timeout=60, runner=None):
         self.authorization = authorization
         self.timeout = timeout
-        self.runner = runner or subprocess.run
+        self.runner = runner or bounded_run
 
     @staticmethod
     def command(arguments: list[str]) -> list[str]:
@@ -143,7 +146,9 @@ class LanctlCommandAdapter:
 
         return ip_command(*arguments)
 
-    def execute(self, user, command: str) -> tuple[int, str]:
+    def execute(self, user, command: str, *, cancel_event=None) -> tuple[int, str]:
+        from lanctl.shared.i18n import t
+
         arguments = parse_remote_command(command)
         permission = required_permission(arguments)
         self.authorization.require(user, permission)
@@ -166,6 +171,13 @@ class LanctlCommandAdapter:
         environment.update(PYTHONUTF8="1", PYTHONIOENCODING="utf-8", LANCTL_REMOTE_SETTINGS="1")
         environment["LANCTL_REMOTE_PROJECT_SETTINGS"] = "1" if project_settings else "0"
         try:
+            if cancel_event is not None and cancel_event.is_set():
+                raise CancelledError()
+            options = (
+                {"max_output": MAX_OUTPUT, "cancel_event": cancel_event}
+                if self.runner is bounded_run
+                else {}
+            )
             completed = self.runner(
                 self.command(arguments),
                 shell=False,
@@ -176,7 +188,10 @@ class LanctlCommandAdapter:
                 timeout=self.timeout,
                 env=environment,
                 stdin=subprocess.DEVNULL,
+                **options,
             )
+        except CancelledError:
+            return 130, t("LANCTL.ACCESS.REMOTE.CANCELLED")
         except subprocess.TimeoutExpired as error:
             from lanctl.core.errors import errors
 
@@ -188,12 +203,16 @@ class LanctlCommandAdapter:
                 details={"timeout": self.timeout},
                 print_output=False,
             )
-            return 124, f"Tiempo de ejecucion agotado. [{event.error_id}]"
+            return 124, t("LANCTL.ACCESS.REMOTE.TIMEOUT", error_id=event.error_id)
         output = (completed.stdout or "") + (completed.stderr or "")
-        if len(output.encode("utf-8")) > MAX_OUTPUT:
-            output = output.encode("utf-8")[:MAX_OUTPUT].decode("utf-8", "ignore")
-            output += "\n[Salida truncada]"
-        return int(completed.returncode), output.rstrip() or f"Resultado: {completed.returncode}"
+        if getattr(completed, "truncated", False) or len(output.encode("utf-8")) > MAX_OUTPUT:
+            marker = ("\n" + t("LANCTL.ACCESS.REMOTE.TRUNCATED")).encode("utf-8")[:MAX_OUTPUT]
+            available = max(0, MAX_OUTPUT - len(marker))
+            output = output.encode("utf-8")[:available].decode("utf-8", "ignore")
+            output += marker.decode("utf-8", "ignore")
+        return int(completed.returncode), output.rstrip() or t(
+            "LANCTL.ACCESS.REMOTE.RESULT", code=completed.returncode
+        )
 
     @staticmethod
     def _root(arguments: list[str]) -> tuple[int, str]:

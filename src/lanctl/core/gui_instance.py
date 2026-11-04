@@ -22,7 +22,7 @@ def allow_foreground(pid):
         ctypes.windll.user32.AllowSetForegroundWindow(int(pid))
 
 
-def focus_gui(coordinator, launcher, *, timeout=30):
+def focus_gui(coordinator, launcher, *, timeout=30, monitor_view=None, source_session=""):
     """Wait for a ready GUI and an acknowledged focus request, never spawn one."""
     deadline = time.monotonic() + timeout
     command = None
@@ -35,7 +35,13 @@ def focus_gui(coordinator, launcher, *, timeout=30):
                     and session["controls"]
                 ):
                     allow_foreground(session["pid"])
-                    command = coordinator.enqueue(session["id"], "view", "gui")
+                    command = (
+                        coordinator.enqueue_monitor_view(
+                            session["id"], monitor_view, source_session
+                        )
+                        if launcher == "lanmon" and monitor_view is not None
+                        else coordinator.enqueue(session["id"], "view", "gui")
+                    )
                     break
         else:
             with coordinator.connection() as db:
@@ -81,7 +87,14 @@ class GuiInstance:
                 with _guard:
                     _active.discard(self.key)
                 raise
-        focus_gui(self.coordinator, self.launcher, timeout=self.timeout)
+        options = {}
+        view = os.environ.get("LANCTL_GUI_VIEW", "")
+        if self.launcher == "lanmon" and view in {"activity", "report", "logs"}:
+            options = {
+                "monitor_view": view,
+                "source_session": os.environ.get("LANCTL_GUI_SOURCE_SESSION", ""),
+            }
+        focus_gui(self.coordinator, self.launcher, timeout=self.timeout, **options)
         return False
 
     def __exit__(self, *_args):

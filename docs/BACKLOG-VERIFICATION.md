@@ -3185,3 +3185,1046 @@ y 1.008 subpruebas correctas; una prueba falla**. La prueba pendiente es
 `RuntimeError: can't start new thread`. La repetición individual reproduce el
 fallo; no se ha omitido la prueba ni relajado el aislamiento. Debe resolverse
 antes de certificar la integración o una versión estable.
+
+
+## P107 — rollback y escritor concurrente (03/11/2026)
+
+Cambio en fuentes, rama temporal `codex/p107-import-concurrency`. Se conservaron
+los cambios previos de README, backlog, reglas y checklist. Sin commit, fusión,
+publicación ni modificación de ramas estables o datos personales.
+
+- `import_storage` lee y valida todos los payloads antes de tocar destinos;
+  comprueba sus hashes contra el manifiesto sobre los mismos bytes que escribe.
+  Captura los estados anteriores únicamente después de adquirir todos los locks.
+- Regresión determinista: otro proceso escribe cooperativamente justo antes de
+  adquirir los locks; se inyecta un fallo al tercer reemplazo. El rollback
+  conserva esa escritura y elimina el segundo destino inicialmente ausente.
+  Un proceso posterior puede adquirir todos los locks. Otra prueba verifica
+  orden lexicográfico pese al orden inverso del manifiesto.
+- Evidencia de reproducción: ambas regresiones (escritor concurrente y JSON
+  inválido al final) fallan con `persistence.py` de HEAD anterior: restaura
+  `["old"]` sobre `["concurrent"]` y escribe antes de validar el último JSON.
+  Se restauró inmediatamente la fuente corregida y se repitieron las pruebas.
+- Idiomas: no cambia presentación ni añade mensajes con significado nuevo; se
+  reutiliza el diagnóstico de hash existente. IDs y firmas públicas conservados.
+  Catálogo regenerado por desplazamiento/adición de puntos de error.
+- Verificación dirigida: `.venv/bin/python -m pytest -q tests/test_persistence.py
+  tests/test_file_transaction.py tests/test_audit_integrity.py`: 36 passed.
+  Ruff global y formato global: correctos (578 archivos). Catálogo (1664 puntos),
+  referencias CLI/web, higiene y `git diff --check`: correctos. Se regeneró
+  `reference/catalog.js`, incluyendo la documentación local previa pendiente.
+- Alcance: Linux, Python del entorno local, directorios temporales. No se ha
+  reconstruido ni certificado un instalable; no hay evidencia Windows nueva.
+  Un cierre abrupto sigue requiriendo P109. Un fallo del propio rollback sigue
+  requiriendo diagnóstico y recuperación durable; P107 no cierra ese riesgo.
+
+### Diseño conjunto para P108/P111/P109 (pendiente de implementar)
+
+Orden de implementación: P108, contrato P111 y después transacción P109.
+
+1. P108: extraer validadores puros desde los lectores de cada almacén y hacer
+   que lector, restore, import y diagnóstico compartan el contrato. No basta
+   inferir dispositivos por nombre: hay rutas configuradas arbitrarias.
+   Validar una única instantánea del backup dentro del bloqueo, antes de escribir;
+   separar sintaxis válida de contrato funcional conocido/desconocido. Conservar
+   formatos históricos realmente admitidos, sin aceptar versiones futuras.
+2. P111: añadir un manifiesto nuevo, conservando lectura de v1. Usar destinos
+   lógicos versionados y resolverlos mediante un mapa explícito proporcionado
+   por el servicio llamante (database, groups, physical, configuración y registry).
+   El destino externo de un workspace se resuelve por configuración/contexto,
+   nunca por una ruta absoluta incluida en el ZIP. Rechazar destinos duplicados,
+   alias resueltos a un mismo archivo y rutas inseguras. Para archivos genéricos,
+   exigir una raíz explícita estable; no calcularla a partir de archivos presentes.
+   v1 conserva su semántica relativa histórica, sin adivinar `database/`.
+   Actualizar CLI/web cuando el contrato y sus opciones estén implementados.
+3. P109: una vez fijado el mapa de destinos, journal versionado con snapshots
+   anteriores verificados, escritura atómica y fsync antes del primer reemplazo.
+   Decidir abortar o confirmar mediante un punto durable único; conservar journal
+   hasta completar recuperación y fsync de directorios. Resolver integración con
+   el journal devices/groups y recuperar antes de cualquier lector/escritor,
+   incluidos launchers: recuperar solo al volver a importar sería insuficiente.
+   No aceptar destinos arbitrarios procedentes de un journal sin validarlos.
+   Probar con procesos terminados realmente después de cada escritura y también
+   durante recuperación; repetir recuperación para comprobar idempotencia.
+
+P40/P42: persiste el bloqueo externo ya registrado por falta de editor y paquetes
+firmados autorizados. No se han creado firmas ni identidades de confianza.
+
+Resultado de suite general del bloque P107: 1690 passed, 94 skipped,
+21 deselected, 1008 subtests passed y 1 failed (108,72 s).
+`test_worker_exits_when_owner_dies_even_without_windows_job` falla durante
+activación con `RuntimeError: can't start new thread`, antes de probar la muerte
+del propietario. También falló aislada con las fuentes corregidas; una ejecución
+con `persistence.py` anterior pasó. Esta diferencia no basta para atribuir o
+excluir causalidad: queda investigación pendiente, sin declarar suite limpia
+ni certificar el candidato. No se relajaron límites ni se omitió la prueba.
+
+## P108/P111 — validación de snapshots y destinos estables (03/11/2026)
+
+Implementación retomada por el chat principal tras detener TASK y pausar su
+coordinación automática. Se conservan los cambios anteriores y la rama temporal
+`codex/p107-import-concurrency`; sin commit, publicación ni modificación de datos
+reales. Hora de corte acordada: 21:00 Europe/Madrid del 03/11/2026; no se abre
+otro bloque desde las 20:50. P109 queda como siguiente implementación prioritaria.
+
+### Comportamiento y contratos
+
+- `restore_backup` adquiere los locks de origen/destino, lee una única
+  instantánea, valida y escribe esos mismos bytes. No reabre el backup tras
+  validarlo. Los errores no sustituyen el archivo de destino.
+- Validadores puros compartidos con `DeviceDatabase` y `GroupDatabase`;
+  reutilización del contrato IDF existente y de configuración. El registro de
+  plugins comparte su validador con el lector, conserva el inicializador `{}`
+  histórico y rechaza tipos/versiones inválidos. No ejecuta plugins al validar.
+- Las rutas se identifican por configuración o mapa explícito, incluidos
+  workspaces externos. No se identifica una base por su nombre. Diagnóstico
+  añade `validation` y explica que JSON desconocido solo acredita sintaxis.
+- Exportación v2 con raíz relativa explícita o destinos lógicos. CLI usa
+  destinos lógicos fijados a las rutas locales antes de importar; el ZIP no
+  elige rutas absolutas. Se rechazan mapas incompletos, alias de destino,
+  rutas inseguras y fuentes que coinciden con el propio ZIP.
+- La API previa sin opciones mantiene la exportación v1; la lectura v1 mantiene
+  sus rutas relativas históricas, sin reconstruir directorios por inferencia.
+  Un consumidor antiguo que solo soporte v1 rechazará v2. Documentado en
+  `docs/STORAGE.md`. Sin cambios de parsers ni IDs públicos del Core.
+- Importación prevalidada completa antes de escribir, incluidos contratos
+  lógicos. Se conserva P107. No se implementa todavía journal multialmacén ni
+  recuperación tras terminación abrupta: P109 sigue pendiente. Los contratos
+  desconocidos de archivos genéricos no se certifican funcionalmente.
+
+### Pruebas y controles
+
+Entorno local Linux, Python 3.14.4, datos y copias temporales.
+
+`python -m pytest -q tests/test_persistence.py tests/test_cli.py
+ tests/test_extensions.py tests/test_plugin_registry_migration.py
+ tests/test_config_isolation.py tests/test_physical_idf_database.py
+ tests/test_project_save_policy.py`: **209 passed, 5 subtests passed (4,76 s)**.
+
+Cubren rechazo de estructuras/registros/versiones, conservación exacta del
+archivo tras error, formatos históricos, cambio del backup antes y después de
+validarlo, exclusión de un escritor en otro proceso, distinción sintaxis/contrato,
+rutas configuradas arbitrarias, importación validada antes de cualquier escritura,
+round trip CLI real del servicio, opcionales ausentes, destinos externos,
+compatibilidad v1, mapas incompletos/duplicados y rutas inseguras.
+
+- Ruff global correcto; formato global: **580 archivos** conformes.
+- Catálogos inglés/español y fallback regenerados: **2.492 claves** por idioma;
+  manifiesto del instalador y auditoría de consumidores actualizados.
+- Catálogo de errores regenerado: **1.683 puntos**. Referencia web regenerada;
+  referencia CLI sin cambio de parser. Higiene y diff comprobados al cierre.
+- Sin cambios de interfaz visual que requieran recorrido de píxeles; instalables
+  y Windows no certificados en este bloque.
+
+La primera invocación con `.venv/bin/pytest -q` no pudo recolectar
+`test_web_reference.py` (`ModuleNotFoundError: tools`); se volvió a ejecutar
+mediante `.venv/bin/python -m pytest -q`, conforme al checklist. La ejecución
+integral comenzó antes de completar P111 y no corresponde a una fotografía
+final congelada; deberá repetirse sobre fuentes inmóviles. Se interrumpió
+expresamente con SIGINT para cerrar dentro del margen,
+con **12 failed, 1.214 passed, 61 skipped, 21 deselected, 1 warning,
+981 subtests passed (596,53 s)**. Los fallos reportados están en
+`tests/test_plugin_process_runtime.py`: activación/cierre por timeout y lectura
+de un PID vacío; no se declara suite limpia ni se atribuye causalidad a P108/P111.
+Durante la ejecución se observó RAM e intercambio prácticamente agotados
+(7.494/7.628 MiB y 4.325/4.325 MiB, respectivamente).
+
+Repetición aislada posterior de
+`test_inventory_projection_and_extension_return_are_transportable` y
+`test_worker_exits_when_owner_dies_even_without_windows_job`:
+**2 passed (0,99 s)**. Esto no resuelve P114 ni certifica ausencia de fugas;
+se conserva la investigación pendiente, sin relajar límites ni ocultar fallos.
+La ejecución integral terminó tras SIGINT; sus procesos de pytest, forkserver y
+resource tracker ya no estaban presentes al comprobar el cierre.
+
+
+## P109 — recuperación durable de importaciones múltiples (03/11/2026)
+
+Segunda tanda autorizada con límite de las **21:30 Europe/Madrid** del mismo
+03/11/2026 y condición de detener nuevas tareas al 20 % de cuota restante. Se
+mantiene TASK y su automatización detenidos; implementación directa en el chat
+principal, conservando cambios anteriores. La cuota expuesta es semanal Codex,
+no una cuota diaria de ChatGPT; la última consulta del bloque mantiene 91 %.
+
+### Implementación y límites
+
+- `core/storage_import.py`: journal versionado con snapshots anteriores,
+  checksums, marcadores por destino y fases `prepared`, `committed` y
+  `rolled-back`. Escrituras atómicas, fsync y sincronización de directorios
+  creados antes de sustituir datos; backups sincronizados y conservados.
+- Antes de `committed` se revierte el conjunto; después se conserva el conjunto
+  nuevo y se termina la limpieza. Una interrupción en la propia recuperación
+  permite repetirla, incluidos destinos inicialmente ausentes. Un rollback
+  fallido conserva journal/marcadores y la causa; diagnóstico con origen
+  `LANCTL.Storage.Import.Recovery`, código `STORAGE.IMPORT.RECOVERY_FAILED`.
+- Rutas canónicas, snapshots y correspondencia journal/marcador/destino se
+  verifican antes de restaurar. No se siguen journals o marcadores simbólicos.
+  Un destino sin marcador en fase preparada solo se admite sin escribirlo si
+  conserva exactamente su estado anterior; no se sobrescribe un cambio ajeno.
+  Los snapshots se mantienen en metadatos locales, no se imprimen en logs.
+- Bloqueos compartidos: recuperación antes de adquirirlos y nueva comprobación
+  tras esperar, liberando todos antes de recuperar el conjunto. Mantiene orden
+  determinista y reentrada; no se adquieren otros destinos mientras se conserva
+  un conjunto obsoleto durante el reintento de recuperación.
+- Lectores de dispositivos, grupos, configuración, plugins y físico recuperan
+  antes de abrir datos. La transacción previa devices/groups se resuelve antes
+  del snapshot cuando se proporciona el contexto de esas rutas. El fingerprint
+  de proyecto propaga `ImportRecoveryError` y no recurre a lectura directa.
+- Un cierre antes de terminar la publicación de marcadores no ha cambiado datos;
+  el journal huérfano de esa raíz se recoge al siguiente import o recuperación
+  explícita. Los cierres posteriores se recuperan al abrir destinos vinculados,
+  sin volver a ejecutar importación. Archivos `.lock` persistentes son normales.
+- No se certifican cortes eléctricos reales, Windows ni nuevos instaladores.
+  En Windows sigue aplicando el límite existente del adaptador de directorios.
+  Escritores externos que no usen las rutas y locks compartidos quedan fuera
+  del contrato. Documentación operativa: `docs/STORAGE.md`.
+
+### Verificación sobre fuentes finales inmóviles
+
+Linux, Python 3.14.4, procesos nuevos y datos temporales. Pruebas nuevas en
+`tests/test_storage_import_recovery.py`: terminaciones reales al publicar el
+journal, cada marcador, cada archivo, confirmación y limpieza; rutas internas y
+externas; otro cierre durante cada paso de recuperación y su limpieza; archivos
+originalmente ausentes; fallo del propio rollback y posterior reintento; marcador
+incompatible/checksum corrupto; lectores reales de los cinco almacenes; un
+escritor posterior; espera de lock durante importación que confirma o muere;
+convivencia con journal devices/groups y bloqueo del fallback del fingerprint.
+Se mantienen las regresiones deterministas P107, adaptando la interceptación
+al nuevo límite compartido de adquisición y al lock adicional del journal.
+
+`python -m pytest -q tests/test_storage_import_recovery.py
+ tests/test_persistence.py tests/test_file_transaction.py tests/test_cli.py
+ tests/test_config_isolation.py tests/test_plugin_registry_migration.py
+ tests/test_backlog_startup.py tests/test_help.py
+ tests/test_physical_project_persistence.py tests/test_physical_save_modes.py
+ tests/test_physical_idf_database.py tests/test_project_save_policy.py`:
+**306 passed, 595 subtests passed (17,75 s)**.
+
+Posteriormente se ejecuta `python -m pytest -q --maxfail=1` sobre las mismas
+fuentes, sin ediciones de código durante la ejecución. Recorre la suite completa
+sin alcanzar ningún fallo: **1.761 passed, 94 skipped, 21 deselected,
+1 warning, 1.008 subtests passed (117,04 s)**. Las deselecciones corresponden a
+la configuración existente; no se han añadido exclusiones ni relajado límites.
+El aviso es `PytestUnhandledThreadExceptionWarning` en
+`test_runtime_failure_never_reports_cleanup_success_or_allows_new_generation`:
+el watcher encuentra la excepción inyectada `OSError: termination unavailable`.
+Esta ejecución correcta no resuelve la intermitencia previa P114 ni elimina
+el aviso; ambos quedan pendientes de investigación.
+
+Ruff global correcto y **582 archivos** con formato conforme. Catálogos
+regenerados con **2.493 claves** inglés/español y manifiesto del instalador;
+auditoría, catálogo de **1.710 puntos de error** y referencia web regenerados.
+Controles de generados, CLI/web, higiene y diff se comprueban al cerrar el bloque.
+No cambian parsers, permisos, firmas públicas ni IDs `a.b.c.d`; el journal es un
+contrato interno versionado nuevo. Sin commit, push ni publicación.
+
+P107/P108/P109/P111 quedan corregidas en fuentes y verificadas en Linux; la
+certificación de distribución/Windows permanece en P32/P115. Se ha revisado
+P110 y documentado su separación necesaria entre medición y efectos. El avance
+posterior de admisión del pool figura a continuación y no anuncia terminación
+de handlers que sigan vivos.
+
+
+## P110 — avance parcial: admisión y capacidad del pool (03/11/2026)
+
+Corregidos dos problemas concretos de `MonitorWorkerPool` sin cambiar el contrato
+de los handlers: `executor.submit` rechazado dejaba adquirida una plaza del
+semáforo sin Future ni callback que la devolviera; `close` podía cerrar el
+executor mientras otro hilo ya había superado la comprobación de admisión.
+
+La comprobación/captura de capacidad y entrega al ejecutor se serializan con
+el cambio de estado cerrado. Si no se acepta el envío, se libera la capacidad
+y se propaga la excepción original. Registro de callbacks y espera de drenado
+fuera del lock de admisión para no bloquear un callback que cierre el pool.
+No se cambia el comportamiento de timeout, cancelación o persistencia del
+servicio: **P110 continúa pendiente**, especialmente para handlers no
+cooperativos y escrituras tardías sobre sesiones cerradas o sustituidas.
+
+`python -m pytest -q tests/test_monitor_pool_admission.py tests/test_monitor.py
+ tests/test_monitor_integration.py tests/test_monitor_data.py`:
+**33 passed (0,90 s)**. Las tres regresiones nuevas comprueban reutilización de
+la plaza tras rechazo, orden de admisión/cierre con eventos y cierre desde un
+callback sin retener el lock. Todos los hilos de prueba se liberan y esperan;
+no se deja ningún handler artificial ejecutándose al cerrar.
+
+Una invocación inicial incluyó por error el nombre inexistente
+`tests/test_monitor_operations.py` y no recolectó pruebas; se corrigió la lista
+antes de ejecutar la comprobación anterior. No se ocultaron fallos ni se
+alteraron exclusiones del proyecto.
+
+Ruff global correcto y **583 archivos** con formato conforme. Catálogo de errores
+regenerado: **1.711 puntos**, auditoría de idiomas y referencia web regeneradas.
+Sin nuevos textos de presentación, parsers ni contratos públicos; sin commit,
+push o publicación. La suite general final sobre estas fuentes se registra
+abajo al terminar, antes del corte de las 21:30 Europe/Madrid.
+
+Resultado general final tras el avance del pool:
+`python -m pytest -q --maxfail=1` termina la suite completa con **1.764 passed,
+94 skipped, 21 deselected y 1.008 subtests passed (142,19 s)**. No hay fallos
+ni avisos en esta ejecución; esto no explica ni cierra los fallos/avisos de
+plugins observados en ejecuciones anteriores (P114). Código sin ediciones
+durante la comprobación. Identidad de los dos componentes nuevos/modificados
+centrales de esta tanda (SHA-256):
+
+- `core/storage_import.py`: `6aca1badba21cb263c1414945f22193c42a47b3e0991d35a24a9f342a8cb1153`.
+- `apps/monitor/scheduler.py`: `8245227c28f7ebaba25fa7c13a0539e6441aa55b6da7142c904ae934adb2bb8c`.
+
+Controles finales correctos: Ruff/formato global, catálogo de errores,
+referencias CLI/web, catálogos y manifiesto de idiomas, auditoría de consumidores,
+higiene y diff normal/preparado. Sin nuevos instalables ni certificación Windows.
+El código queda guardado en la rama temporal; no se prepara ni publica un commit.
+La siguiente tarea sigue siendo completar P110 (plazos, cancelación y efectos
+asociados a la generación de sesión); la corrección de admisión no la cierra.
+
+
+## P110 — segundo avance parcial: callbacks obsoletos (03/11/2026)
+
+Tanda autorizada hasta las **21:45 Europe/Madrid**. Al iniciar eran las 21:38 y
+la cuota disponible expuesta seguía al 91 %. No se reanuda TASK ni su automatización.
+
+El scheduler comprueba bajo su lock si la tarea fue cancelada, se canceló el
+scheduler o se sustituyó el objeto asociado al mismo ID. Un callback recibido
+cuando ya es obsoleto libera `inflight` y termina antes de notificar errores,
+modificar los contadores de fallo o reprogramar esa tarea. La entrega del callback
+externo queda fuera del lock añadido para esa comprobación; no se introduce una
+espera de cancelación sobre un callback externo no cooperativo.
+
+**Límite explícito:** la comprobación protege callbacks que ya son obsoletos al
+llegar. No revoca un callback que ya superó esa frontera, ni cancela el handler
+activo o sus escrituras internas. Por ello P110 conserva el trabajo de
+presupuesto temporal, generación de sesión, separación de medición/persistencia
+y cierre confirmado. No se presenta este avance como solución completa de P110.
+
+`python -m pytest -q tests/test_monitor_cancelled_callbacks.py
+ tests/test_monitor_pool_admission.py tests/test_monitor.py
+ tests/test_monitor_integration.py tests/test_monitor_data.py`:
+**37 passed (0,92 s)**. Regresiones nuevas para cancelación individual, global,
+sustitución del mismo ID y cancelación desde otro hilo solicitada por el manejador
+de errores. Se comprueba ausencia de notificación obsoleta, liberación de
+`inflight`, ausencia de reprogramación y finalización de los hilos de prueba.
+
+Sin nuevos textos de presentación ni cambios de parser, contrato de handlers,
+permisos o IDs públicos. Catálogo, auditoría y referencia web regenerados.
+La suite general final se ejecuta sobre código inmóvil y se registra al terminar;
+si alcanza el margen de cierre, se interrumpirá sin declararla validada.
+
+Cierre de la tanda 21:45: Ruff global y formato (**584 archivos**) correctos;
+catálogo de **1.711 puntos**, referencias CLI/web, idiomas/manifiesto, auditoría,
+higiene y diffs correctos. La suite general `python -m pytest -q --maxfail=1`
+se interrumpió expresamente con SIGINT antes del límite horario, sin completarse.
+Durante su teardown pytest produjo `KeyError` en el stash de la fixture
+`tmp_path`, después del `KeyboardInterrupt` en `glob`; no entregó un resumen
+numérico final utilizable. Esta ejecución no certifica la suite general de este
+último cambio ni se interpreta como un fallo funcional demostrado del monitor.
+Las **37 pruebas relacionadas** anteriores sí terminaron correctamente.
+P110 sigue abierta. No se generaron instaladores ni se publicaron cambios.
+
+## P110 — recuperación tras presión de memoria (04/11/2026)
+
+El kernel registra un OOM global el 03/11 a las 22:33:54 y la terminación de
+un proceso ChatGPT. No demuestra qué componente originó toda la presión de
+memoria. La ejecución general anterior perdió su sesión y no tiene un resultado
+final recuperable: no se declara validada. Al retomar había aproximadamente
+1,4 GiB disponibles y 4,0 de 4,2 GiB de swap ocupados. Se sustituyen las suites
+completas y navegadores por grupos secuenciales pequeños, con salida a archivo.
+
+Se corrige la salida de `MonitorService.foreground`: al confirmar la parada
+sale del bucle sin esperar una señal adicional. No sale mientras siga pendiente
+el drenado. Regresión y grupo de presupuesto/cancelación/admisión:
+**30 passed (0,70 s)**; registro `/tmp/lanctl-monitor-recovery-tests.log`.
+Ruff y formato de ambos archivos correctos, catálogo regenerado con **1.731
+puntos**, diff sin errores. P110 permanece abierta: faltan revisar el arranque
+concurrente/parada y completar la verificación de los cambios de esta tanda.
+No se certifican instaladores ni Windows. No se modifican procesos del usuario.
+
+### P110 — hijo de arranque retrasado (04/11/2026, 00:35 Madrid)
+
+Arranque y reinicio pasan por entorno privado el ID de la sesión prevista al
+proceso hijo. Si llega después de cancelar esa sesión o de crear otra, termina
+sin crear ni adoptar sesiones; si encuentra su sesión ya en `stopping`, confirma
+su cancelación sin arrancar sondas. La llamada directa a foreground sin ese
+entorno conserva su comportamiento anterior. El entorno heredado se limpia antes
+de construir uno nuevo. No se añade una opción pública ni texto visible.
+
+Regresiones para sesión ausente, sustituta y parada solicitada, junto a monitor
+e integración: **51 passed (0,95 s)**, salida guardada en
+`/tmp/lanctl-monitor-startup-tests.log`. Ruff/formato y diff correctos; catálogo
+regenerado, 1.731 puntos. Grupo secuencial pequeño, sin navegador ni suite general.
+**Parcial:** aún debe protegerse la ventana entre leer la sesión y publicarla
+activa en `MonitorService.start`; esta corrección no cierra P110.
+
+### P110 — publicación de sesión frente a parada concurrente (04/11, 00:45)
+
+`SessionManager.activate` comprueba la sesión vigente y publica su estado bajo
+la misma transacción que ordena las solicitudes de parada (BEGIN IMMEDIATE en
+SQLite, lock en memoria). El foreground exige que siga existiendo su sesión;
+si fue parada o sustituida entre la lectura inicial y el inicio del servicio,
+termina cancelado antes de crear el pool. Se elimina la posterior escritura
+incondicional de `active`, que podía sobrescribir `stopping`. Una parada posterior
+a esta publicación conserva su estado y revoca las mediciones mediante las
+comprobaciones de generación/sesión ya implementadas.
+
+Tres regresiones con dos conexiones SQLite y una copia de sesión obsoleta:
+parada solicitada, cancelación confirmada y sesión sustituta. Comprueban estados
+sin cambios, ausencia de pool y de evento de inicio. Grupo secuencial monitor,
+ejecución e integración: **54 passed (0,84 s)**; registro
+`/tmp/lanctl-monitor-activation-tests.log`. Ruff/formato de cuatro archivos y
+diff correctos; catálogo generado y comprobado, **1.732 puntos**. Se reutiliza
+la traducción de cancelación; sin parser ni IDs públicos nuevos. La API `start`
+conserva argumentos previos y añade únicamente un keyword opcional.
+
+P110 sigue abierta hasta documentar el protocolo global y completar comprobaciones
+por grupos. No se ha repetido la suite completa: la swap continúa llena.
+
+### P110 — protocolo cooperativo del dueño (04/11, 00:55 Madrid)
+
+Los procesos foreground nuevos anuncian `session-request-v1` en el lock cuya
+identidad ya se verifica. Stop/restart solicitan la parada en SQLite y no envían
+SIGTERM al dueño nuevo: en Windows esa señal podría terminarlo sin drenado. Los
+dueños anteriores conservan el mecanismo heredado. Reinicio mantiene su espera
+por salida real antes de crear sustituto. Se documentan presupuesto, persistencia,
+propiedad del trabajo pendiente y límites de handlers arbitrarios en MONITOR.md.
+
+Regresión del recorrido stop → estado stopping → ciclo del dueño → cancelación
+confirmada, prohibiendo señales; lock real con/sin protocolo anunciado. Grupo
+secuencial: **56 passed (0,84 s)**, registro
+`/tmp/lanctl-monitor-protocol-tests.log`. Ruff correcto; 25 archivos con formato
+conforme; catálogo regenerado, 1.732 puntos; diff correcto. Sin navegador ni suite
+completa. Pendiente completar los grupos de controles y verificar reinicio con
+el nuevo protocolo; P110 sigue abierta y no se certifica ejecución nativa Windows.
+
+### P110 — reinicio y controles por grupos (04/11, 01:05 Madrid)
+
+Regresiones de reinicio cooperativo: espera al drenado real antes de crear y
+pasar el ID del sustituto; si el dueño no confirma salida en cinco segundos,
+conserva stopping y no crea otro. Sin señales ni procesos reales en estas pruebas.
+Grupo monitor completo relacionado: **70 passed (1,03 s)**, registro
+`/tmp/lanctl-monitor-final-group.log`. Grupo scanner/idiomas/Clink/instalador:
+**64 passed, 6 subtests passed (4,52 s)**, registro
+`/tmp/lanctl-monitor-adapters-group.log`. Ambos secuenciales y sin navegador.
+
+Ruff correcto y formato corregido en una línea de la prueba; 25 archivos
+conformes. Idiomas (2.500 claves), manifiesto instalador, referencias CLI/web,
+catálogo (1.732 puntos), higiene y diff correctos. La auditoría P100 detectó su
+informe obsoleto y se regenera, sin cambiar clasificaciones manuales.
+
+**No cierre:** al revisar los efectos restantes se detecta que mantenimiento
+comprueba vigencia antes de aggregate/cleanup, pero no mantiene la exclusión de
+publicación durante la escritura; descubrimiento resuelve su incidencia con
+state lock, sin la transacción frente a otro proceso. Deben usar el guard de
+efectos y tener regresiones antes de cerrar P110. No se confunden los controles
+correctos con haber resuelto estas ventanas. Sigue pendiente la suite general
+por la presión de memoria ya documentada.
+
+### P110 — mantenimiento y descubrimiento (04/11, 01:15 Madrid)
+
+MetricsStore declara mantenimiento cooperativo: aggregate/cleanup aceptan budget
+opcional (llamadas previas compatibles) y entran en execution_effects antes de
+sus transacciones de escritura. Las lecturas de cálculo quedan fuera de state
+lock; los checkpoints entre resoluciones/filas evitan nuevas escrituras fuera de
+presupuesto. El servicio pasa presupuesto solo a adaptadores que anuncian esa
+capacidad, conservando adaptadores heredados y sus límites documentados.
+Descubrimiento resuelve su incidencia bajo el guard transaccional y emite historia
+fuera de SQLite. La resolución final de mantenimiento usa el mismo guard.
+
+Dos regresiones con dos conexiones SQLite solicitan parada justo antes de la
+frontera de escritura: no se crean agregados ni se borran muestras. Grupo
+monitor execution/data/integration: **47 passed (0,61 s)**, registro
+`/tmp/lanctl-monitor-effects-tests.log`. Ruff correcto; ajustado formato de una
+línea. Catálogo regenerado (1.732 puntos), diff correcto. Sin suite completa ni
+navegador. Se mantienen controles finales pendientes y P110 abierta.
+
+### P110 — cierre funcional en fuentes (04/11, 01:25 Madrid)
+
+Regresión adicional de descubrimiento con dos conexiones: una parada externa
+justo antes de la resolución no cierra la incidencia ni genera evento de éxito.
+La publicación de stopping y de su diagnóstico pendiente también comprueba el
+propietario y escribe bajo la misma transacción, evitando recrear un estado
+activo entre lectura y escritura desde otro proceso.
+
+Código final: grupo monitor/checks/cancelación/admisión/SQLite/acceso/componente
+instalador **85 passed (3,17 s)** en `/tmp/lanctl-p110-final-monitor.log`.
+Adaptadores GUI sin navegador y scanner **19 passed, 1 skipped (1,07 s)** en
+`/tmp/lanctl-p110-final-adapters.log`. La omisión corresponde al entorno nativo;
+no se interpreta como prueba superada. Grupos ejecutados secuencialmente.
+
+Ruff y formato (25 archivos), catálogo generado/comprobado (1.732 puntos), higiene,
+diff, idiomas (2.500 claves), manifiesto, referencias CLI/web y auditoría de
+consumidores regenerada/comprobada correctos. Sin textos nuevos en esta última
+fase. Contrato de presupuesto, dueño, parada cooperativa y límites documentado
+en MONITOR.md. P110 se marca corregida en fuentes por sus criterios específicos.
+No se declara suite general superada tras OOM, certificación Windows ni nuevo
+instalable: esas verificaciones siguen en P115/P32. Un handler arbitrario que
+ignore cancelación conserva propietario/stopping, sin anunciar cierre falso;
+plugins con escrituras fuera de adaptadores cooperativos requieren aislamiento.
+No se ha publicado, fusionado ni enviado ningún cambio. Siguiente prioridad P112.
+
+## P112 — captura incremental, primer avance (04/11, 01:35 Madrid)
+
+El runner remoto por defecto drena stdout/stderr con pipes no bloqueantes y
+retiene como máximo 1 MiB agregado, descartando exceso hasta salida/timeout.
+Conserva runners inyectados. Sin temporales ni hilos lectores. POSIX usa grupo
+propio; Windows requiere certificar pipes no bloqueantes de Python 3.12+.
+Pruebas reales: 16 MiB en ambos streams reteniendo 64 KiB, salida pequeña y
+retorno, timeout y cancelación con hijo recogido/pipes cerrados. Con test_access:
+31 passed (6,05 s), registro /tmp/lanctl-p112-initial-tests.log. Ruff corregido,
+formato, catálogo e higiene comprobados. P112 abierta: medir concurrencia y
+memoria, Unicode/tamaño final, descendientes y controles nativos pendientes.
+No se ejecutó suite completa ni navegador; permisos/autenticación conservados.
+
+### P112 — tamaño final, idiomas y cancelación (04/11, 01:45 Madrid)
+
+La respuesta final incluye el marcador dentro de MAX_OUTPUT, también cuando
+la sustitución de UTF-8 inválido amplía el texto decodificado. El adaptador pasa
+el límite al runner y admite cancel_event opcional, devuelve 130 al cancelar;
+timeout conserva 124 e ID de diagnóstico. Cuatro recursos bilingües nuevos;
+catálogos/manifiesto generados (2.504 claves). Regresiones de Unicode multibyte
+y bytes inválidos con límite de 128 bytes, inglés y español instalados en tmp.
+
+La prueba de timeout anterior asumía un literal español aunque el catálogo por
+defecto fuese inglés: falló tras traducirlo. Se reemplaza esa suposición por
+comprobar estado recuperable e identidad de error; los nuevos casos verifican
+los idiomas con catálogos aislados. No se cambia la selección del usuario.
+P112 permanece abierta para medición concurrente y comprobación de descendientes.
+Resultado del grupo tras el ajuste: **35 passed (6,27 s)**, registro
+`/tmp/lanctl-p112-output-tests.log`. Ruff correcto; idiomas/manifiesto,
+catálogo de 1.736 puntos, higiene y diff correctos. Auditoría regenerada/comprobada.
+
+### P112 — medición concurrente y descendientes Linux (04/11, 01:55 Madrid)
+
+Dos comandos simultáneos emiten **128 MiB** entre stdout/stderr, con buffers
+pequeños en los hijos; cada resultado retiene exactamente **1 MiB**. Prueba con
+tracemalloc: pico Python **3.282.141 bytes**, por debajo del límite de regresión
+16 MiB. Medición aislada adicional: **3.284.044 bytes** de pico Python; máximo RSS
+del padre **26.380 → 31.184 KiB**, máximo RSS de un hijo **26.696 KiB** según
+getrusage. Estos máximos describen esta carga, no son una garantía del RSS total
+para cualquier comando ni una suma instantánea de todos los procesos.
+JSON: `/tmp/lanctl-p112-memory-measurement.json`.
+
+Prueba Linux con padre terminado e hijo manteniendo pipes: alcanza el timeout,
+limpia el grupo y no deja un descendiente ejecutándose (se admite zombie hasta
+que init lo recoja). Grupo de captura: **10 passed (1,05 s)** en
+`/tmp/lanctl-p112-memory-tests.log`. Documentado contrato y límites en ACCESS.md.
+P112 conserva pendiente la revisión final y certificación Windows; no se vuelve
+a lanzar una suite general con la swap ocupada.
+
+### P112 — cierre en fuentes (04/11, 02:05 Madrid)
+
+La cancelación del runner se verifica ahora durante la ejecución, mediante evento
+activado después de crear el hijo; se comprueban hijo recogido, pipes cerrados
+y temporizador de prueba finalizado. Grupo final access/edges/salida CLI/settings
+remotos/captura: **93 passed (17,76 s)** en
+`/tmp/lanctl-p112-final-access.log`. Sin navegador, suite completa ni paralelismo
+entre grupos; solo la medición específica usa dos capturas simultáneas pequeñas.
+
+Ruff, formato (4 archivos), idiomas (2.504 claves), manifiesto/fallback, referencias
+CLI/web, auditoría de consumidores, catálogo (1.736 puntos), higiene y diff
+correctos. Sin nuevos parsers ni permisos. Se conserva el runner inyectado y se
+explica que su memoria depende de su implementación. P112 corregida en fuentes;
+las garantías locales medibles se detallan arriba. Windows necesita certificación
+nativa P115/P32 y no se afirma limpieza de todos sus descendientes. La presión
+de memoria global anterior no se atribuye a esta ruta sin evidencia.
+
+Fuentes primarias consultadas para la revisión de pipes Windows:
+- https://docs.python.org/3.13/library/os.html#os.set_blocking
+- https://github.com/python/cpython/issues/101881
+- https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile
+
+Estas referencias describen soporte de la plataforma, no sustituyen una prueba
+nativa de LANCTL. No se cambian rutas de fallback para capturar sin límite.
+Siguiente bloque: contexto/autorización P90/P88/P103 y entorno provisional P98/P99.
+
+## P90/P88/P103/P98/P99 — auditoría conjunta sin proyecto (04/11, 02:15)
+
+Nuevo test_no_project_actions.py: bootstrap, project_state por project_call y
+preferencias en seis launchers sin VLF; LANIP hace alta/edición/eliminación manual,
+MAC opcional y guarda de contexto obsoleto conservando datos. No exige proyecto
+para esas acciones ni cambia configuración personal. Pruebas con almacenes tmp.
+Junto a project_sync y desktop_close_project: **37 passed, 1 skipped (2,88 s)**
+en `/tmp/lanctl-no-project-matrix.log`. Ruff y formato correctos; diff limpio.
+
+No se ejecuta navegador ni Qt nativo por la presión de memoria. P90 sigue
+pendiente de su matriz nativa, P88/P103 mantienen su evidencia previa en fuentes.
+Se confirma en código una carencia distinta: sin projectWorkspace,
+workspace_is_dirty devuelve False, y la configuración sin VLF conserva almacenes
+locales existentes. No hay todavía un entorno provisional explícito aislado ni
+el diálogo de último propietario P99. Habilitar acciones o cambiar ese booleano
+sin aislar almacenes podría confundir inventario histórico con modificaciones
+nuevas. Próximo trabajo: contrato de entorno provisional compartido y guardado,
+sin tocar datos reales ni reinterpretar configuración privada como datos VLF.
+
+## P98/P99 — base explícita de entorno provisional (04/11, 02:25 Madrid)
+
+Nuevo core/projects/provisional.py prepara un workspace UUID vacío e independiente
+con red/grupos/físico, monitor y rutas privadas propias; devuelve configuración
+de operación sin guardarla globalmente ni copiar inventario histórico. Metadata
+versionada con fingerprint inicial compatible con detección existente de cambios.
+Reapertura explícita comparte datos; documentos incompletos/versiones desconocidas
+fallan sin reiniciar archivos. Se rechazan enlaces que salgan del directorio.
+
+Tres regresiones iniciales: aislamiento/configuración base intacta, reapertura y
+cambios pendientes, versión desconocida/archivo faltante sin recreación. Primer
+resultado: 3 passed (0,07 s). Un mensaje bilingüe nuevo; 2.505 claves generadas,
+catálogo regenerado (1.739 puntos), Ruff/formato correctos. No se activa aún en
+GUI, por lo que no redirige datos del usuario ni se presenta como P98/P99 completo.
+Faltan guardado/reapertura VLF y coordinación de selección, operaciones y último
+propietario. Se preservan todos los cambios locales de otras tareas.
+
+### P98/P99 — guardado verificable del provisional (04/11, 02:35 Madrid)
+
+save_provisional_project guarda bajo locks una instantánea VLF sin dispositivos
+reservados añadidos implícitamente. Verifica el archivo y lo materializa aparte,
+comparando fingerprint de red/grupos/físico con el origen. Nunca cambia selección
+ni marca limpio el provisional: permanece disponible ante cancelación/reintento.
+Sobrescritura de destino prohibida. Credenciales y auditorías privadas se excluyen
+explícitamente mediante rutas temporales vacías; no altera sus archivos originales.
+
+Regresión de ida/vuelta con dispositivo manual sin MAC, grupo y switch físico,
+vault centinela ausente del ZIP y conservado en origen; fallo con destino existente
+conserva destino y datos. Los primeros intentos de prueba usaron capitalización
+incorrecta de grupo/API de lectura física y después una inserción dejó tres líneas
+en el test incorrecto: corregidos; no eran fallos funcionales del guardado.
+Mensaje bilingüe de verificación; 2.506 claves y catálogo 1.740 puntos generados.
+La integración con GUI, selección y cierre concurrente sigue pendiente; no se
+activa automáticamente este servicio ni se considera cerrada P98/P99.
+Resultado final del grupo provisional/workspace/físico: **27 passed,
+1 deselected (1,50 s)** en `/tmp/lanctl-provisional-save-tests.log`.
+Ruff, formato, higiene y diff correctos; auditoría e idiomas comprobados.
+
+### P98/P99 — propietarios y reserva de cierre (04/11, 02:45 Madrid)
+
+El servicio provisional registra propietarios por ID de sesión viva del
+coordinador, vinculado al principal real del SO. Una reserva con token exclusivo
+serializa cierres y conserva al propietario hasta confirmar cierre nativo. Otras
+incorporaciones y escrituras que usan provisional_operation quedan bloqueadas;
+cancelar con el token correcto restaura el trabajo, sin borrar datos. Se depuran
+referencias a sesiones muertas; la consulta se hace bajo lock de metadata.
+
+Regresiones: cierre intermedio con datos y cancelación, token obsoleto rechazado,
+dos solicitudes concurrentes con un único ganador, propietario desconocido y
+último propietario tras retirar peer. Se corrigió el nombre del método de cierre
+del coordinador en una prueba inicial. Mensaje bilingüe nuevo (2.507 claves).
+Protocolo parcial: falta finalización del cierre y conexión GUI; no bloquea
+escrituras antiguas que aún no pasan por este adaptador. P98/P99 abiertas.
+
+### P98/P99 — decisión y confirmación del cierre (04/11, 02:55 Madrid)
+
+Servicio de cierre en dos fases: preparar decisión sin liberar dueño y confirmar
+tras cierre nativo correcto. Intermedios conservan cambios compartidos; último
+con cambios exige guardar o descartar. Guardado se ejecuta fuera del lock simple
+de metadata, evitando invertir el orden del conjunto de locks de almacenamiento;
+la reserva bloquea escrituras cooperativas mientras tanto. Guarda fingerprint
+del VLF verificado y lo compara antes de confirmar. Fallo deja propietario/datos
+y permite cancelar. Descarte marca el entorno cerrado, sin borrar archivos ajenos
+ni destruir el origen recuperable. Incorporarse a un entorno cerrado se rechaza.
+
+Pruebas: dos propietarios, cierre intermedio sin pregunta, último con decisión,
+guardado y descarte, rechazo de confirmación prematura, fallo de destino existente
+y continuación tras cancelar. P98/P99 continúan abiertas: estas APIs no están
+conectadas aún a las ventanas ni a su selector de destino. No se representa una
+simulación de cierre nativo como certificación de Qt ni de Windows.
+Grupo provisional/propietarios: **11 passed (0,25 s)** en
+`/tmp/lanctl-provisional-close.log`; Ruff/formato, catálogo generado (1.752 puntos),
+auditoría e higiene comprobados, diff correcto. Sin navegador ni suite general.
+
+### P98/P99 — validación del protocolo antes de activarlo (04/11, 03:05)
+
+Se rechazan schemaVersion desconocida, principal ajeno y tipos inválidos del
+registro de propietarios antes de escribir metadata. Tres regresiones conservan
+el documento inválido byte a byte. No se migra ni se reinicia corrupción.
+
+La activación automática GUI queda intencionadamente sin conectar mientras falten
+una selección compartida por usuario, protección del cambio a VLF y el recorrido
+nativo de cierre/selector. Activarla ahora redirigiría almacenes antes de tener
+ese recorrido completo. La integración necesita tratar la reconciliación de
+Session, PROJECT_KEYS y los tres cierres JS existentes de forma conjunta; un
+simple booleano dirty o un cambio global de rutas no cumple P98/P99. Se mantienen
+las pruebas nativas aplazadas por memoria y se permite avanzar en bloques
+independientes del instalador sin presentar el provisional como terminado.
+Grupo provisional final: **14 passed (0,29 s)** en
+`/tmp/lanctl-provisional-guards.log`; Ruff/formato, catálogo (1.752 puntos), higiene
+y diff correctos. P98/P99 siguen abiertas y sin cambios automáticos de rutas.
+
+## P71.4 — respuesta de cuenta preliminar y canales de proceso (04/11, 03:15)
+
+Se detecta una causa de falso fallo en el instalador Linux: QProcess fusionaba
+stderr con stdout, pero command_finished exigía JSON puro para confirmar la
+cuenta. Un diagnóstico de pkexec/Qt podía invalidar una respuesta de creación
+correcta. Se separan canales, se drena stderr y se descarta para el helper de
+cuenta, sin copiar contenido potencialmente privado al log. Los demás pasos
+conservan stderr visible en su registro. JSON inválido sigue siendo fallo.
+
+Regresión con QProcess real y Qt widgets offscreen, stderr centinela y stdout
+JSON de éxito; confirma finalización y ausencia del centinela en el log. Grupo
+inicial cuenta/envío por stdin/autenticación existente: **3 passed, 8 deselected
+(0,45 s)**. No se usa navegador, WebEngine, elevación ni instalación real.
+Ruff/formato correctos y catálogo regenerado (1.752 puntos). P71 sigue abierta;
+no demuestra que éste sea el fallo del portátil ni certifica el instalable.
+
+### P71 — recorrido normal/avanzado del instalador Linux (04/11, 03:25)
+
+La bienvenida permite elegir explícitamente modo avanzado. En modo normal no se
+ofrece crear cuenta remota ni se visita su página; aunque quedara marcada una
+selección anterior, el plan efectivo y su resumen no crean cuenta. Al volver a
+normal se limpian los campos de contraseña; opciones no sensibles se conservan.
+Modo avanzado mantiene el formulario opcional y sus validaciones existentes.
+
+Los mensajes bilingües del asistente se trasladan sin cambiar claves a
+packaging/linux/setup_messages.py, independiente del código operativo y del idioma
+del programa. Import estático conserva empaquetado por PyInstaller; no se compila
+un instalable aquí. Las pruebas de solicitudes de cuenta ahora seleccionan
+explícitamente avanzado, acorde al nuevo contrato.
+
+Recorrido Qt offscreen normal/avanzado hasta revisión, cuenta omitida/presente,
+plan efectivo y limpieza de secretos; con idiomas: **26 passed (1,45 s)**,
+`/tmp/lanctl-installer-advanced.log`. Ruff/formato, catálogo (1.752 puntos), higiene
+y diff correctos. P71 sigue parcial: no completa las cinco páginas Windows,
+listeners SSH/HTTPS ni la certificación del instalable. No elevación real ni
+navegadores; solo widgets Qt de pruebas temporales.
+
+## P72 — inventario de recursos y planificación sin borrado (04/11, 03:35)
+
+Nuevo installation_inventory registra archivos concretos creados por instalador,
+con esquema, raíz, ruta relativa y hash. write_shortcuts Linux registra accesos
+por aplicación, escritorio elegido por xdg-user-dir y completado Bash, bajo
+~/.local/state/lanctl/installation-files.json. No explora perfiles ajenos ni datos
+personales existentes para inferir propiedad por nombre.
+
+El planificador recibe raíces permitidas de un resolvedor externo al manifiesto;
+rechaza paths relativos, escapes, symlinks/junctions y esquemas desconocidos.
+Clasifica archivos intactos, modificados, ausentes e inseguros. **No borra nada**:
+la ejecución posterior deberá revalidar bajo las garantías de la plataforma y
+no tratar un manifiesto editable por un usuario como autorización elevada.
+
+Regresiones: archivos propios intactos frente a modificados/ajenos, manipulación
+../, redirección simbólica y esquema inválido conservado. Junto al instalador:
+**16 passed (0,70 s)** en `/tmp/lanctl-installation-inventory.log`. Ruff/formato,
+idiomas (2.509 claves), catálogo (1.755 puntos) generados. P72 sigue abierta:
+faltan Windows, datos/proyectos, servicios y el recorrido de eliminación completa.
+No se ejecuta desinstalador ni se elimina contenido del usuario.
+
+### P71/P72 — conservar integración personalizada al actualizar (04/11, 03:45)
+
+El instalador Linux escribe accesos/completado con el servicio de inventario:
+si un archivo existente no coincide con el contenido generado ni con su huella
+registrada anterior, conserva el archivo y devuelve un conflicto recuperable.
+Las actualizaciones propias intactas sí se aplican y actualizan el inventario.
+Hashes calculados en streaming, sin leer archivos ajenos enteros en memoria.
+Bloqueo conjunto de archivo y manifiesto; no se concede al manifiesto editable
+capacidad de desinstalar como administrador.
+
+Regresión de archivo ajeno conservado, instalación nueva, actualización propia
+y edición de usuario conservada. Se mantienen pruebas Qt Linux y selección de
+completado. No se ejecuta desinstalación ni se considera P72 cerrada; continúa
+pendiente la ejecución segura multiplataforma y el resto de recursos/datos.
+También se corrige la deselección de completado: conservar el encabezado LANCTL
+ya no autoriza a borrar una versión editada por el usuario. Solo se retira el
+archivo registrado cuyo hash sigue intacto. Regresión específica con el encabezado
+y cambios añadidos. Resultado final: **18 passed (grupo instalador/inventario)**,
+registro `/tmp/lanctl-installer-preserve-files.log`; Ruff/formato, 2.510 claves,
+catálogo (1.757 puntos), higiene y diff comprobados.
+
+## P114 — limpieza al rechazar hilos de arranque (04/11, 03:55 Madrid)
+
+Sin agotar RAM se inyecta RuntimeError en Thread.start. Se reproducen huecos del
+host: crear el lector IPC podía fallar antes de registrar el proceso para cleanup;
+fallar el watchdog dejaba un objeto Thread sin iniciar cuyo join ocultaba el fallo
+original. Ahora se registra propiedad antes de crear el lector, se incluye su
+arranque en el guard de limpieza y se admite ausencia de lector/watchdog iniciado.
+El worker incluye inicio del watcher en su frontera de errores IPC, conservando
+causa y cerrando su conexión si no puede iniciar el hilo.
+
+Tres regresiones: fallo de lector y watchdog con procesos reales recogidos,
+conexiones/referencias retiradas y RuntimeError original conservado; fallo de
+watcher hijo reportado antes de activar plugin. **3 passed (0,13 s)** en
+`/tmp/lanctl-plugin-start-cleanup.log`. No se cambian límites de memoria/tiempo,
+permisos ni política de aislamiento. No prueba la causa del rechazo intermitente
+original; P114 continúa abierta. Se evita ejecutar un conjunto grande de plugins
+bajo la presión de memoria global actual.
+
+## P97 — petición de reporte a LANMON ya abierto (04/11, 04:05 Madrid)
+
+Causa concreta en fuentes: GuiInstance detectaba el segundo arranque y enviaba
+solo `view=gui`; se perdían LANCTL_GUI_VIEW y LANCTL_GUI_SOURCE_SESSION. Ahora
+forwardea vista/origen por un comando local monitor-view validado para destino
+LANMON GUI vivo y origen del mismo principal. No admite comandos de shell ni
+payload de reporte; conserva la autorización de foco Windows existente.
+
+El receptor restaura/muestra ventana y notifica al frontend con JSON serializado.
+El frontend abre la vista y conserva borrador/origen ya existentes con aviso,
+sin abrir GitHub ni publicar nada. Tres mensajes bilingües; 2.513 claves.
+Regresiones de entrega/ack a sesión real, rechazo de origen ajeno/destino erróneo
+y forward del segundo arranque. Con coordinación/startup/soporte: **41 passed,
+6 skipped (3,82 s)**, `/tmp/lanctl-monitor-view-delivery.log`. Ruff/formato y
+sintaxis Node correctos; catálogo 1.760 puntos, higiene y diff correctos.
+
+**Parcial:** no se prueba foco real/minimización ni borrador visual con navegador
+por memoria. Falta verificar origen perteneciente a otro proyecto y solicitud
+cuando desaparece la sesión de origen. Un ack significa recepción del comando,
+no certifica permiso del gestor de ventanas para robar foco. P97 abierta.
+
+### P97 — origen de reporte entre proyectos y límite de actividad (04/11, 04:15)
+
+monitor_activity aplica el filtro de sesión en SQL antes del límite de 500, sin
+excluir esa sesión por el proyecto mostrado actualmente en LANMON. Mantiene el
+catálogo de otras sesiones visible. prepare_report incorpora el proyecto obtenido
+de los registros del origen, sin aceptar un proyecto arbitrario del formulario.
+
+Dos regresiones: origen LANIP/proyecto A, monitor mostrando proyecto B, con/sin
+501 registros posteriores de otra sesión. Comprueban error/origen original,
+launcher y proyecto del reporte y catálogo de sesiones conservado. Con soporte
+GUI: **15 passed, 6 skipped (grupo)** en `/tmp/lanctl-monitor-report-context.log`.
+Ruff/formato y catálogo regenerado. P97 sigue abierta para visualización de
+borradores, foco nativo y origen que desaparezca antes de recibir la solicitud.
+No se inicia navegador ni se publica reporte; todos los proyectos son temporales.
+
+## P113 — validadores fuera de las interfaces (04/11, 04:25 Madrid)
+
+Se extrae layout puro a shared/tui_layout.py y preferencias de teclas/footer a
+shared/tui_keyboard.py. settings_policy/catalog importan esas capas compartidas.
+Los módulos históricos LANIP TUI reexportan los mismos objetos; decodificación
+Windows/POSIX, terminal y etiquetas propias permanecen en su adaptador. Se
+conservan firmas, formatos, constantes y comportamiento de validación.
+
+Pruebas: alias históricos; auditoría AST de todos los imports directos Core y
+los contratos compartidos; proceso frío con MetaPathFinder que prohíbe imports
+de interfaces y valida layout/teclas/duplicados. Primer test pasó un porcentaje
+string al catálogo tipado, que ya requería int: corregida la entrada del test,
+sin relajar el validador. Contratos/TUI/preferencias: **151 passed, 379 subtests
+passed (4,36 s)** en `/tmp/lanctl-p113-contracts.log`. Settings CLI/política/GUI:
+**76 passed (0,92 s)** en `/tmp/lanctl-p113-settings.log`.
+
+Ruff y formato (7 archivos), catálogo generado (1.760 puntos), auditoría de idiomas
+regenerada/comprobada, referencias CLI/web, higiene y diff correctos. No nuevos
+textos ni cambios de traducción: literales preexistentes conservados, P100 mantiene
+su alcance. No se repite suite general ni navegador por memoria.
+
+Excepción transitoria explícita: settings_catalog.set_program_value sigue siendo
+un adaptador compatible al servicio apps.suite.settings; no importa una interfaz
+TUI/GUI. P113 no exige reescribir todos los servicios del Core. La prueba AST
+comprueba imports directos; el proceso frío comprueba el recorrido de validación
+seleccionado, sin afirmar cubrir todo import dinámico posible. P113 corregida en
+fuentes; compilación/certificación multiplataforma siguen en P115/P32.
+
+## P115 — validación amplia con memoria acotada por proceso (04/11, 04:35)
+
+Para evitar otra suite monolítica bajo presión de RAM se inicia una pasada de
+los 162 archivos test_*.py, cada uno en un pytest separado y en serie. Respeta
+el filtro normal not legacy_gui. Salidas por archivo y estado recuperable en
+`/tmp/lanctl-group-validation/`. El supervisor detiene solo sus procesos si
+MemAvailable baja de 500 MiB durante una prueba (650 MiB antes de iniciar otra),
+si un archivo supera 90 s o si el bloque supera 15 min. No relaja límites de
+plugins ni inicia navegadores opt-in. La pasada aún no se declara completada.
+
+Primer fallo, con fuentes inmóviles: test_gui_window_icons simulaba sys.platform
+Darwin antes de una importación perezosa de urllib; un archivo frío intentaba
+cargar _scproxy en Linux. El conjunto anterior lo ocultaba por caché de imports.
+Se inicializa urllib con la plataforma nativa antes de simular el destino del
+icono, conservando todas las aserciones. Archivo aislado corregido: **12 passed,
+12 skipped (0,18 s)** en `/tmp/lanctl-gui-window-icons-cold.log`. No es evidencia
+de un fallo de LANCTL en macOS (plataforma no soportada) ni cambia producción.
+Fallo original conservado como `test_gui_window_icons.first-failure.log` y
+`state-first-failure.json`; se reanuda desde ese archivo, sin repetir los grupos
+anteriores. La corrección afecta solo al test; resultados de ambos bloques se
+identificarán como validación dividida, no una suite única en el mismo proceso.
+
+Controles globales previos: Ruff correcto, **601 archivos** con formato conforme,
+idiomas (2.513 claves), manifiesto, auditoría, catálogo (1.760 puntos), referencias
+CLI/web, higiene, diff y pip check correctos. Sintaxis Node de todos los JS GUI
+correcta. Durante cada bloque no se modifica código de aplicación ni pruebas.
+
+### P115 — resultado de validación dividida (04/11, 04:45 Madrid)
+
+Completados los **162 archivos**: **1.854 passed, 96 skipped, 21 deselected y
+1.008 subtests passed**. Cero avisos en los resúmenes y sin patrones de warnings,
+excepciones de hilo o resource_tracker en los logs finales. El único código 5
+corresponde a test_gui.py: sus 20 casos legacy_gui están deseleccionados por la
+política normal; no es un archivo con fallo oculto. El otro caso deseleccionado
+figura en su archivo. No hubo parada por el supervisor de memoria/tiempo.
+
+Primero se completaron 43 archivos; el test frío de iconos se corrigió como se
+detalla arriba y se reanudaron los restantes. No se modificó producción entre
+ambos bloques. El último bloque tardó **115,99 s**, con fuentes de aplicación,
+pruebas, JS y asistente Linux inmóviles durante su ejecución. SHA-256 del conjunto
+final: `ac6bf12fca20525cf437d4a061e61a2fed84b9eeee4a9dbbbd5e34d158becc2d`.
+Resultados detallados: `/tmp/lanctl-group-validation/state.json` y
+`/tmp/lanctl-group-validation/aggregate.json`; logs separados en ese directorio.
+
+Esta evidencia valida todos los archivos seleccionados en procesos aislados;
+**no sustituye una suite monolítica para detectar contaminación de estado entre
+archivos** ni certifica Windows, instalables, foco GUI nativo o carga prolongada.
+P114 sigue abierta por su causa intermitente original; P115/P32 conservan sus
+pendientes. La RAM global no se fuerza a agotarse y no se relajan límites del
+runtime. Solo se detienen/recogen procesos propios de prueba.
+
+### P97 — reutilización directa y fallo visible (04/11, 04:55 Madrid)
+
+open_monitor reutiliza una sesión LANMON GUI preparada del mismo coordinador:
+espera su acuse con focus_gui y no crea un proceso duplicado. Si el receptor
+rechaza/falla, la GUI de origen recibe diagnóstico con errorId. La ruta de
+arranque sigue disponible si no hay instancia preparada, conservando el forward
+ante la carrera de dos arranques. El mensaje ahora indica petición enviada,
+sin afirmar visibilidad/foco que el gestor de ventanas no haya certificado.
+
+Dos regresiones con sesiones reales y Popen prohibido: recepción correcta y
+fallo sintético del receptor expuesto al llamador. Con soporte GUI: **17 passed,
+6 skipped (3,85 s)** en `/tmp/lanctl-monitor-ready-reuse.log`. Ruff/formato,
+idiomas (2.514 claves), catálogo (1.760 puntos), auditoría e higiene comprobados.
+Estos cambios son posteriores a la pasada dividida de 162 archivos; se verifican
+con el grupo afectado y no se presentan como parte de aquella instantánea.
+P97 sigue abierta para recorrido visual/foco nativo y conservación de borradores
+comprobada en navegador. Sin proceso GUI adicional ni navegador en estas pruebas.
+
+### P97 — cola frontend y borrador, sin navegador (04/11, 05:05 Madrid)
+
+Un adaptador DOM ligero ejecuta el script real monitor-support.js en Node. Al
+revisar simultaneidad se detecta que dos listeners async podían decidir abrir
+antes de recibir actividad y mezclar el origen. Se serializan las peticiones en
+una Promise queue y se utiliza también para la vista inicial, eliminando el timer
+de sondeo extra de arranque. El input invalida avisos/preview obsoletos.
+
+Comprobados arranque con sesión inicial, dos peticiones concurrentes conservando
+el primer origen, borrador cerrado que se reabre sin sobrescribir texto/origen,
+aviso de conservación, foco de campo y rechazo de vista arbitraria. El test no
+usa un browser ni demuestra layout, APIs nativas o permisos de foco. El wrapper
+pytest usa Node disponible o LANCTL_NODE_EXECUTABLE y es opcional sin Node.
+Grupo con Node habilitado: **18 passed, 6 skipped (grupo)**,
+`/tmp/lanctl-monitor-view-frontend.log`. Las seis omisiones son comprobaciones
+nativas existentes; el comportamiento Node sí se ejecuta. P97 permanece abierta.
+No nuevos recursos de texto ni cambios de contrato/IDs; sintaxis JS, Ruff y diff
+correctos. La prueba no sustituye el recorrido de Linux/Windows minimizado/detrás.
+
+### P71/P72 — memoria y corrupción del inventario (04/11, 05:15 Madrid)
+
+Lectura incremental limitada a 1 MiB y máximo de 4.096 recursos; JSON profundo,
+UTF-8 inválido, huellas mal formadas y registros duplicados fallan sin reiniciar
+el manifiesto. La escritura valida capacidad antes de crear/reemplazar el recurso
+y registra la huella del contenido generado, sin adoptar una edición concurrente.
+La deselección de completado usa el inventario, sin leer enteros archivos ajenos.
+
+Cinco regresiones nuevas: tamaño, profundidad, digest, duplicados y capacidad
+rechazada antes de tocar recursos. Con instalador Linux: **23 passed (grupo)**
+en `/tmp/lanctl-inventory-bounds.log`. Ruff/formato, catálogo e higiene comprobados;
+sin nuevos textos. P72 sigue parcial: esto no implementa eliminación completa,
+no concede confianza elevada al manifiesto y no prueba todas las carreras Windows.
+
+### P115 — pasada final sobre la última instantánea (04/11, inicio 05:18 Madrid)
+
+Tras los ajustes posteriores de P97 y del inventario se inicia una pasada nueva,
+sin reanudar prefijos: los 162 archivos en serie, con Node habilitado para la
+regresión frontend y los mismos umbrales de memoria/tiempo. Estado y logs en
+`/tmp/lanctl-final-validation/`. Incluye la fixture CJS en la huella de fuentes.
+No se modifica código ni pruebas durante la pasada; resultado aún pendiente.
+Controles globales finales correctos: Ruff/formato (601 archivos), idiomas
+(2.514 claves), manifiesto, auditoría, catálogo (1.765 puntos), referencias,
+higiene, diff y pip check. No navegador ni instalador real.
+
+### P114/P115 — nuevo fallo y reserva virtual del allocator (04/11, 05:25–05:30)
+
+La segunda pasada final se detuvo realmente en test_plugin_process_runtime.py,
+tras 103 archivos correctos: `test_revocation_interrupts_callback_and_native_threads`
+falló al activar con `RuntimeError: can't start new thread` (1 failed, 2 passed).
+Log y estado se conservan en `/tmp/lanctl-final-validation/`; esa pasada **no se
+presenta completada**. No se repite a ciegas para ocultarlo ni se aumenta el
+presupuesto de memoria.
+
+Sondeo controlado de los tres primeros casos, dos pares default/MALLOC_ARENA_MAX=1:
+RSS de workers aproximadamente 24 MiB; VmPeak default **130.552–130.568 KiB**,
+muy cerca del límite de dirección virtual de **131.072 KiB (128 MiB)**. Con una
+arena, pico **65.012–73.224 KiB**. Esas cuatro ejecuciones pasaron: identifican
+una reserva transitoria y su reducción, **no reproducen por sí solas el fallo**.
+Datos previos: `/tmp/lanctl-p114-memory-probe-before.json`.
+
+Mitigación de consumo medido: solo dentro del worker Linux, antes de iniciar
+hilos, mallopt(M_ARENA_MAX,1) limita arenas de glibc. No modifica el entorno del
+padre ni el RLIMIT_AS del manifiesto; otras libc conservan su allocator. Puede
+incrementar contención de malloc entre hilos; no se afirma rendimiento idéntico.
+Parámetro y firma contrastados con malloc.h local y el
+[manual de glibc](https://sourceware.org/glibc/manual/latest/html_node/Malloc-Tunable-Parameters.html).
+
+El primer ajuste omitió importar ctypes; Ruff y pruebas lo detectaron antes de
+entrega y se corrigió. Después: **58 passed (6,52 s)** en
+`/tmp/lanctl-plugin-allocator-validation.log`. Dos regresiones prueban que el
+presupuesto sigue exactamente en 128 MiB con/sin soporte de mallopt. Cuatro
+sondeos posteriores pasan, con VmPeak máximo **73.228 KiB** incluso sin variable
+de entorno: `/tmp/lanctl-p114-memory-probe.json` y su log after.
+
+P114 sigue abierta: la presión de dirección virtual es una hipótesis compatible
+con los datos y se mitiga su reserva medida, no se declara causa única de todas
+las fallas de hilo ni del OOM global de ChatGPT. Se inicia una última pasada
+nueva completa por archivos en `/tmp/lanctl-final-allocator-validation/`, sobre
+fuentes congeladas. Su resultado todavía no se anticipa.
+
+### P115 — última instantánea validada, sin reanudar prefijos (04/11, 05:34)
+
+La nueva pasada completa tras la mitigación de allocator termina correctamente:
+**162 archivos, 1.864 passed, 96 skipped, 21 deselected y 1.008 subtests passed**.
+Cero avisos y sin patrones de excepción de hilo/resource_tracker en los logs.
+El único exit 5 es test_gui.py con 20 legacy_gui deseleccionados explícitamente.
+Node habilitado para P97; los tests de navegador/nativos opt-in siguen omitidos.
+
+Duración **153,49 s**, con fuentes inmóviles de principio a fin. Huella SHA-256
+(código, tests Python/CJS, JS GUI y asistente Linux):
+`9ce08d8f29ee4be0419ec767513909e2614d0a683a376492f66a4cce285a5270`.
+Estado y agregado: `/tmp/lanctl-final-allocator-validation/state.json` y
+`/tmp/lanctl-final-allocator-validation/aggregate.json`; logs separados allí.
+El fallo anterior de la otra instantánea permanece conservado y documentado,
+no se reemplaza ni se trata como una pasada correcta.
+
+No hubo parada por el supervisor ni aumento de límites para obtener verde.
+La evidencia es de procesos separados: no acredita orden/estado compartido de
+una suite monolítica, Windows, instalables o carga sostenida. P114 conserva la
+investigación causal y P115/P32 la certificación pendiente. P98/P99 y P71/P72
+siguen explícitamente parciales; el provisional no se activa automáticamente.
+La lista conserva **36 entradas abiertas** tras cerrar P110, P112 y P113 en
+fuentes. No hay commit, push, fusión, release ni instalable nuevo.
+
+## Cierre de la tanda nocturna (04/11/2026, antes de las 06:00 Madrid)
+
+Desde las 05:40 no se inicia implementación nueva. Pasadas y procesos propios de
+prueba terminados; supervisores verificados inactivos. Automatización de esta
+tanda eliminada mediante la app a las 05:45 aproximadamente: no habrá reanudación
+automática al día siguiente. No se detienen procesos persistentes del usuario.
+
+Cerradas en fuentes en esta tanda: **P110, P112 y P113**. Avances parciales:
+P98/P99 (servicio provisional sin activación GUI), P71/P72 (instalador Linux,
+cuenta y conservación/inventario de archivos), P97 (entrega, cola y borradores,
+sin certificación de foco nativo), P114 (limpieza y mitigación de reserva virtual,
+causa aún abierta). P115/P32 mantienen Windows, instalables y validación nativa.
+Quedan 36 entradas abiertas: 32 P, 3 REF y una revisión visual.
+
+Las correcciones de P107/P108/P109/P111 anteriores se conservan. Código y
+resultados guardados en la rama temporal codex/p107-import-concurrency, sin
+commit, push, merge o release. No se ha sustituido el programa instalado por un
+binario nuevo. El detalle de la última pasada correcta y el fallo previo están
+arriba; ninguna de las tareas parciales se presenta como terminada.
+
+
+## P119 — selección compartida de interfaz al arrancar (04/11/2026)
+
+Solicitud actual del usuario: continuar con la siguiente tarea del backlog.
+Sustituye para P119 la indicación original de solo registrar. Se conserva el
+árbol local existente; no se modifican ramas estables ni se publica nada.
+
+`coordinated_launcher` resuelve la preferencia implícita para los seis launchers
+antes de registrar sesión; elimina el caso especial de TUI implícita de LANIP.
+Valores ausentes o inválidos usan CLI; comandos y modos explícitos no cambian,
+igual que ayuda/versión y reentrada del mismo launcher. Ayudas inglés/español
+y documentación de interfaces, presentación y configuración actualizadas.
+
+Validación secuencial por la presión de memoria del equipo: 126 pruebas nuevas
+del adaptador, con rutas simuladas, seis launchers, tres modos, valores inválidos
+y ausentes, comandos, servicio foreground, bypass y reentrada. Pruebas existentes
+`test_backlog_startup.py` y `test_interface_preferences.py`: 70 correctas y 360
+subpruebas. No son pruebas de ventanas reales ni de binarios instalados.
+
+P119 permanece parcial: falta integración de accesos genéricos/terminal, política
+de GUI no instalada coordinada con P117 y certificación nativa Windows/Linux.
+No se generan instaladores. Idiomas y referencias CLI/web regenerados; catálogo
+de errores regenerado por desplazamiento de líneas, sin nuevos IDs ni puntos.
+
+Controles finales del bloque: Ruff y formato de los cuatro Python afectados,
+2514 claves por idioma, referencias CLI/web, catálogo de 1765 puntos, higiene
+y `git diff --check` correctos. Casos adicionales verifican argv del ejecutable,
+reutilización de GUI existente y fallo de lectura de configuración con su origen.
+No se ejecuta suite completa ni pruebas nativas por este cambio acotado.

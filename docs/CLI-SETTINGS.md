@@ -80,7 +80,8 @@ o `forcedView`. Esta operación reutiliza la validación y aplicación del backe
 remoto existente. Los flags clásicos de `settings` siguen disponibles; no se
 mezclan con `--menu`, `--catalog`, `--get` o `--set` en una misma llamada.
 
-La preferencia de inicio solo se aplica sin argumentos. `lanctl --cli`,
+La preferencia de inicio se aplica a los seis launchers sin argumentos,
+también al enrutarlos mediante `lanctl LAUNCHER`. `lanctl --cli`,
 `lanctl --tui`, `lanctl --gui` y los comandos explícitos conservan prioridad.
 Los valores anteriores sin sección `startup` conservan el inicio CLI y la GUI
 principal abierta. Son campos aditivos del esquema de configuración existente.

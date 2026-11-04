@@ -1,8 +1,8 @@
 # LANCTL — GUI experimental
 
 > **PROTOTIPO EXPERIMENTAL — NO ES UNA VERSIÓN ESTABLE.**
-> Rama `experimental-gui`, versión **0.3.4-alpha.2**. Para pruebas de la GUI en
-> Windows x64: [descargas e instrucciones](docs/RELEASE-0.3.4-alpha.2.md).
+> Rama `experimental-gui`, versión **0.3.4-alpha.3**. Para pruebas de la GUI en
+> Windows x64: [descargas e instrucciones](docs/RELEASE-0.3.4-alpha.3.md).
 > La versión estable sigue disponible en [Releases](https://github.com/CctrGy/LANCTL/releases/latest).
 
 Interfaces de los seis launchers: [CLI y TUI](docs/LAUNCHER-INTERFACES.md).
@@ -24,8 +24,8 @@ La [LANCTL Reference](reference/index.html) ofrece un índice web con búsqueda,
 sintaxis, opciones y ejemplos de todos los launchers y comandos, además de
 proyectos VLF, plugins LCP y el catálogo de documentación.
 
-> Versión de esta rama: **0.3.4-alpha.2**, GUI experimental, no estable.
-> Consulta las [notas de prueba](docs/RELEASE-0.3.4-alpha.2.md).
+> Versión de esta rama: **0.3.4-alpha.3**, GUI experimental, no estable.
+> Consulta las [notas de prueba](docs/RELEASE-0.3.4-alpha.3.md).
 > Conserva copias de seguridad; no utilices el programa como única fuente de inventario.
 
 ### Cambios de 0.3.3
@@ -64,6 +64,9 @@ Los binarios publicados son autocontenidos y no requieren Python.
 Las normas de ramas, compatibilidad, errores, distribución del código y
 publicación de instaladores están centralizadas en
 [`docs/DEVELOPMENT-RULES.md`](docs/DEVELOPMENT-RULES.md).
+La [lista de verificaciones de desarrollo](docs/DEVELOPMENT-CHECKLIST.md) detalla
+qué implementar y comprobar al crear o modificar código, incluidos idiomas,
+errores, datos, interfaces y pruebas.
 Las herramientas externas de análisis y arquitectura se explican en
 [`docs/DEVELOPMENT-TOOLS.md`](docs/DEVELOPMENT-TOOLS.md).
 
@@ -421,11 +424,11 @@ plan sin ejecutar). Consulta [repositoryTerminal](repositoryTerminal/README.md)
 para requisitos y ejemplos. No cambia la versión ni realiza Git/push.
 
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.4-alpha.2
+.\scripts\build-windows.ps1 -Version 0.3.4-alpha.3
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.4-alpha.2
+./scripts/build-linux.sh 0.3.4-alpha.3
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.

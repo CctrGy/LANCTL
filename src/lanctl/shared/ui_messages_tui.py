@@ -171,8 +171,8 @@ TUI_MESSAGES = {
         "Interfaz inicial LANCTL",
     ),
     "LANCTL.UI.SCREEN.PREFERRED_INTERFACE_WHEN_STARTING_LANCTL_WITHOUT_ARGUMENTS": (
-        "Preferred interface when starting LANCTL without arguments.",
-        "Interfaz preferida al iniciar LANCTL sin argumentos.",
+        "Preferred interface when starting any LANCTL launcher without arguments.",
+        "Interfaz preferida al iniciar cualquier launcher de LANCTL sin argumentos.",
     ),
     "LANCTL.UI.SCREEN.CLOSE_LANCTL_AFTER_CONFIRMING_THAT_THE_OTHER_GUI_IS_AVAILABLE": (
         "Close LANCTL after confirming that the other GUI is available.",

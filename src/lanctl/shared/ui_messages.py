@@ -17,6 +17,50 @@ from lanctl.shared.ui_messages_web import WEB_MESSAGES
 from lanctl.shared.ui_messages_words import WORD_MESSAGES
 
 UI_MESSAGES = {
+    "LANCTL.MONITOR.VIEW.REQUESTED": (
+        "The requested view was sent to LANMON",
+        "Se ha enviado a LANMON la vista solicitada",
+    ),
+    "LANCTL.MONITOR.VIEW.INVALID": ("Unknown LANMON view", "Vista de LANMON desconocida"),
+    "LANCTL.MONITOR.VIEW.UNAVAILABLE": (
+        "The source or destination session is unavailable",
+        "La sesión de origen o destino no está disponible",
+    ),
+    "LANCTL.MONITOR.VIEW.DRAFT_PRESERVED": (
+        "Another report was requested; your existing draft and its source were preserved",
+        "Se ha solicitado otro reporte; se han conservado tu borrador y su origen",
+    ),
+    "LANCTL.INSTALLATION.INVENTORY.CONFLICT": (
+        "An installation resource was modified or belongs to the user; it was preserved",
+        "Un recurso de instalación se ha modificado o pertenece al usuario; se ha conservado",
+    ),
+    "LANCTL.INSTALLATION.INVENTORY.UNSAFE_PATH": (
+        "The installation resource path is not safe; no resources were removed",
+        "La ruta del recurso de instalación no es segura; no se ha eliminado ningún recurso",
+    ),
+    "LANCTL.INSTALLATION.INVENTORY.INVALID": (
+        "The installation resource inventory is invalid; no resources were removed",
+        "El inventario de recursos de instalación no es válido; no se ha eliminado ningún recurso",
+    ),
+    "LANCTL.PROJECT.PROVISIONAL.BUSY": (
+        "The provisional workspace is closing; finish or cancel the pending close first",
+        "El entorno provisional se está cerrando; termina o cancela primero el cierre pendiente",
+    ),
+    "LANCTL.PROJECT.PROVISIONAL.SAVE_MISMATCH": (
+        "The saved project does not match the provisional workspace; the source data was retained",
+        "El proyecto guardado no coincide con el entorno provisional; se han conservado los datos de origen",
+    ),
+    "LANCTL.PROJECT.PROVISIONAL.INVALID": (
+        "The provisional workspace is incomplete or invalid; no data was reset",
+        "El entorno provisional está incompleto o no es válido; no se han reiniciado sus datos",
+    ),
+    "LANCTL.ACCESS.REMOTE.CANCELLED": ("Command cancelled", "Comando cancelado"),
+    "LANCTL.ACCESS.REMOTE.TIMEOUT": (
+        "Execution time limit exceeded. [{error_id}]",
+        "Tiempo de ejecucion agotado. [{error_id}]",
+    ),
+    "LANCTL.ACCESS.REMOTE.TRUNCATED": ("[Output truncated]", "[Salida truncada]"),
+    "LANCTL.ACCESS.REMOTE.RESULT": ("Result: {code}", "Resultado: {code}"),
     "LANCTL.UI.TEXT.SAVE": ("Save", "Guardar"),
     "LANCTL.UI.TEXT.CLOSE": ("Close", "Cerrar"),
     "LANCTL.UI.TEXT.CONTINUE": ("Continue", "Continuar"),
@@ -2404,5 +2448,156 @@ UI_MESSAGES.update(
             "{value0} · Permissions: {value1}. Granted: {value2}.",
             "{value0} · Permisos: {value1}. Concedidos: {value2}.",
         ),
+    }
+)
+
+UI_MESSAGES.update(
+    {
+        "LANCTL.STORAGE.ERROR.DEVICE_LIST": (
+            "The device database must contain a list: {path}",
+            "La base de dispositivos debe contener una lista: {path}",
+        ),
+        "LANCTL.STORAGE.ERROR.DEVICE_RECORD": (
+            "Every device record must include IP and MAC: {path}",
+            "Cada registro de dispositivos debe incluir IP y MAC: {path}",
+        ),
+        "LANCTL.STORAGE.ERROR.GROUP_LIST": (
+            "The group database must contain a list",
+            "La base de grupos debe contener una lista",
+        ),
+        "LANCTL.STORAGE.ERROR.GROUP_RECORD": (
+            "Every group record must include a name",
+            "Cada registro de grupos debe incluir un nombre",
+        ),
+        "LANCTL.STORAGE.ERROR.OBJECT": (
+            "The store must contain a JSON object: {path}",
+            "El almacén debe contener un objeto JSON: {path}",
+        ),
+        "LANCTL.STORAGE.ERROR.CONTRACT": (
+            "Unsupported storage contract: {contract}",
+            "Contrato de almacenamiento no compatible: {contract}",
+        ),
+        "LANCTL.STORAGE.DIAGNOSIS.SYNTAX_ONLY": (
+            "Valid JSON syntax; functional contract not checked",
+            "Sintaxis JSON válida; contrato funcional sin comprobar",
+        ),
+    }
+)
+
+UI_MESSAGES.update(
+    {
+        "LANCTL.STORAGE.ERROR.REGISTRY_SCHEMA": (
+            "Unsupported plugin registry schema",
+            "Schema de registro no compatible",
+        ),
+        "LANCTL.STORAGE.ERROR.REGISTRY_PLUGINS": (
+            "Plugins must be a JSON object",
+            "Plugins debe ser un objeto JSON",
+        ),
+        "LANCTL.STORAGE.ERROR.REGISTRY_ENTRY": (
+            "Invalid plugin registry entry: {entry_id}",
+            "Entrada de registro no válida: {entry_id}",
+        ),
+        "LANCTL.STORAGE.ERROR.REGISTRY_AUTH": (
+            "Invalid plugin authorization: {entry_id}",
+            "Autorización de plugin no válida: {entry_id}",
+        ),
+    }
+)
+
+UI_MESSAGES.update(
+    {
+        "LANCTL.STORAGE.ERROR.CONFLICT": (
+            "Conflicting storage contracts for {path}",
+            "Contratos de almacenamiento incompatibles para {path}",
+        ),
+        "LANCTL.STORAGE.DIAGNOSIS.MISSING": ("Does not exist", "No existe"),
+        "LANCTL.STORAGE.DIAGNOSIS.NOT_FILE": ("Not a file", "No es un archivo"),
+    }
+)
+
+UI_MESSAGES.update(
+    {
+        "LANCTL.STORAGE.ERROR.EXPORT_LAYOUT": (
+            "Choose an explicit root or logical destinations, not both",
+            "Elige una raíz explícita o destinos lógicos, no ambos",
+        ),
+        "LANCTL.STORAGE.ERROR.NO_FILES": (
+            "No persistent files to export",
+            "No hay archivos persistentes para exportar",
+        ),
+        "LANCTL.STORAGE.ERROR.OUTSIDE_ROOT": (
+            "An export source is outside the explicit root",
+            "Un origen de exportación está fuera de la raíz explícita",
+        ),
+        "LANCTL.STORAGE.ERROR.DUPLICATE_TARGET": (
+            "Storage destinations overlap or include the archive itself",
+            "Los destinos de almacenamiento coinciden entre sí o con el archivo de exportación",
+        ),
+        "LANCTL.STORAGE.ERROR.EXPORT_MANIFEST": (
+            "Invalid or unsupported export manifest",
+            "Manifiesto de exportación inválido o no compatible",
+        ),
+        "LANCTL.STORAGE.ERROR.UNSAFE_PATH": (
+            "Unsafe import path: {path}",
+            "Ruta no segura en la importación: {path}",
+        ),
+        "LANCTL.STORAGE.ERROR.DESTINATIONS_REQUIRED": (
+            "Logical exports require an explicit destination map",
+            "Las exportaciones lógicas requieren un mapa explícito de destinos",
+        ),
+        "LANCTL.STORAGE.ERROR.DESTINATION_MISSING": (
+            "No destination was provided for {name}",
+            "No se ha proporcionado un destino para {name}",
+        ),
+    }
+)
+
+UI_MESSAGES.update(
+    {
+        "LANCTL.STORAGE.ERROR.IMPORT_JOURNAL": (
+            "The pending import journal or its destination markers are invalid; recovery is required before accessing these stores",
+            "El journal de importación pendiente o sus marcadores de destino no son válidos; es necesario recuperar antes de acceder a estos almacenes",
+        ),
+    }
+)
+
+UI_MESSAGES.update(
+    {
+        "LANCTL.MONITOR.EXECUTION.CANCELLED": (
+            "The monitor check was cancelled",
+            "El check de monitorización se ha cancelado",
+        ),
+        "LANCTL.MONITOR.EXECUTION.DEADLINE": (
+            "The monitor check exceeded its queue/execution deadline",
+            "El check de monitorización superó su plazo de espera y ejecución",
+        ),
+        "LANCTL.MONITOR.EXECUTION.SHUTDOWN_PENDING": (
+            "Monitor shutdown is pending: {count} accepted tasks or callbacks remain active",
+            "La detención del monitor está pendiente: siguen activas {count} tareas o callbacks aceptados",
+        ),
+        "LANCTL.MONITOR.EXECUTION.ALREADY_RUNNING": (
+            "Stop and drain the current monitor session before starting another",
+            "Detén y espera el cierre de la sesión actual del monitor antes de iniciar otra",
+        ),
+    }
+)
+
+UI_MESSAGES.update(
+    {
+        "LANCTL.MONITOR.EXECUTION.INVALID_BUDGET": (
+            "The monitor execution budget must be between 0.05 and 120 seconds",
+            "El presupuesto de ejecución del monitor debe estar entre 0,05 y 120 segundos",
+        ),
+    }
+)
+
+UI_MESSAGES.update(
+    {
+        "LANCTL.MONITOR.EXECUTION.STOP_REQUESTED": (
+            "Stop requested; waiting for active checks to finish",
+            "Detención solicitada; esperando a que terminen las comprobaciones activas",
+        ),
+        "LANCTL.MONITOR.EXECUTION.STOPPING": ("Stopping", "Deteniéndose"),
     }
 )

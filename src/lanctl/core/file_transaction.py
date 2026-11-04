@@ -142,7 +142,7 @@ def lock_path(path: str | Path) -> Path:
 
 @contextmanager
 def locked_file(path: str | Path, *, timeout: float = 15.0) -> Iterator[None]:
-    with InterProcessLock(lock_path(path), timeout=timeout):
+    with locked_files((path,), timeout=timeout):
         yield
 
 
@@ -162,15 +162,26 @@ def locked_files(
         InterProcessLock(lock_path(unique_paths[key]), timeout=timeout)
         for key in sorted(unique_paths)
     ]
-    acquired: list[InterProcessLock] = []
-    try:
-        for lock in locks:
-            lock.acquire()
-            acquired.append(lock)
-        yield
-    finally:
-        for lock in reversed(acquired):
-            lock.release()
+    from lanctl.core.storage_import import pending, recover_for_paths
+
+    while True:
+        recover_for_paths(tuple(unique_paths.values()))
+        acquired: list[InterProcessLock] = []
+        retry = False
+        try:
+            for lock in locks:
+                lock.acquire()
+                acquired.append(lock)
+            # An importer may have started and died while this reader waited.
+            retry = pending(tuple(unique_paths.values()))
+            if not retry:
+                yield
+                return
+        finally:
+            for lock in reversed(acquired):
+                lock.release()
+        if not retry:
+            return
 
 
 def transactional_method(method):

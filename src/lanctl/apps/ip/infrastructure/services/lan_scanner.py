@@ -218,7 +218,9 @@ class LanScanner:
         except BaseException:
             for future in futures:
                 future.cancel()
-            executor.shutdown(wait=False, cancel_futures=True)
+            executor.shutdown(
+                wait=bool(getattr(progress, "wait_for_workers", False)), cancel_futures=True
+            )
             raise
         else:
             executor.shutdown()
@@ -270,7 +272,9 @@ class LanScanner:
         except BaseException:
             for future in futures:
                 future.cancel()
-            executor.shutdown(wait=False, cancel_futures=True)
+            executor.shutdown(
+                wait=bool(getattr(progress, "wait_for_workers", False)), cancel_futures=True
+            )
             raise
         else:
             executor.shutdown()

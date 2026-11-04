@@ -244,6 +244,36 @@ class Coordinator:
             )
         return identifier
 
+    def enqueue_monitor_view(self, target, view, source_session=""):
+        """Local additive GUI command; no shell, plugin payload or report content."""
+        from lanctl.shared.i18n import t
+
+        if view not in {"activity", "report", "logs"} or not isinstance(source_session, str):
+            raise ValueError(t("LANCTL.MONITOR.VIEW.INVALID"))
+        identifier = uuid4().hex
+        with self.connection() as db:
+            db.execute("BEGIN IMMEDIATE")
+            target_row = db.execute(
+                "SELECT 1 FROM sessions WHERE id=? AND owner=? AND launcher='lanmon' AND mode='gui' AND controls=1 AND heartbeat>=?",
+                (target, self.owner, time.time() - SESSION_TTL),
+            ).fetchone()
+            source_row = (
+                None
+                if not source_session
+                else db.execute(
+                    "SELECT 1 FROM sessions WHERE id=? AND owner=?",
+                    (source_session, self.owner),
+                ).fetchone()
+            )
+            if not target_row or (source_session and not source_row):
+                raise ValueError(t("LANCTL.MONITOR.VIEW.UNAVAILABLE"))
+            value = json.dumps({"view": view, "sourceSession": source_session})
+            db.execute(
+                "INSERT INTO commands VALUES (?,?,?,?,?,'queued',?,NULL)",
+                (identifier, target, self.owner, "monitor-view", value, time.time()),
+            )
+        return identifier
+
     def claim(self, target):
         with self.connection() as db:
             db.execute("BEGIN IMMEDIATE")

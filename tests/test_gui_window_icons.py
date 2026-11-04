@@ -53,6 +53,9 @@ def test_gui_start_selects_backend_compatible_icon(
 ):
     # Import first: changing sys.platform should affect icon selection only.
     importlib.import_module(module_name)
+    # A cold file run may first reach urllib inside a lazy GUI dependency.
+    # Initialize its native-platform backend before simulating the icon target.
+    importlib.import_module("urllib.request")
     monkeypatch.setattr(sys, "platform", platform)
     path = start_desktop(module_name, api_name)
     suffix = "ico" if platform == "win32" else "png"

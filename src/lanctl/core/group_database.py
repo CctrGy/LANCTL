@@ -99,6 +99,9 @@ class GroupDatabase:
         self.devices = devices
 
     def load(self) -> list[Group]:
+        from lanctl.core.storage_import import recover_for_paths
+
+        recover_for_paths((self.path, self.devices.path))
         recover_device_group_transaction(self.devices.path)
         if not self.path.exists():
             return [Group("BASIC", "Elementos basicos de la LAN", editable=False)]
@@ -106,9 +109,21 @@ class GroupDatabase:
             value = json.loads(self.path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as error:
             raise ValueError(f"base de grupos JSON no válida: {self.path}") from error
+        return self.validate_document(value)
+
+    @staticmethod
+    def validate_document(value) -> list[Group]:
+        """Validate a decoded snapshot without recovery or filesystem access."""
+        from lanctl.shared.i18n import t
+
         if not isinstance(value, list):
-            raise ValueError("la base de grupos debe contener una lista")
-        return [Group.from_dict(item) for item in value]
+            raise ValueError(t("LANCTL.STORAGE.ERROR.GROUP_LIST"))
+        groups: list[Group] = []
+        for item in value:
+            if not isinstance(item, dict) or "name" not in item:
+                raise ValueError(t("LANCTL.STORAGE.ERROR.GROUP_RECORD"))
+            groups.append(Group.from_dict(item))
+        return groups
 
     def _write(self, groups: list[Group]) -> None:
         atomic_write_json(self.path, [group.to_dict() for group in groups])

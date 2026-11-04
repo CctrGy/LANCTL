@@ -641,6 +641,9 @@ def _load_config() -> dict:
     if os.environ.get("LANCTL_CANONICAL_HELP") == "1":
         return _document_to_legacy(deepcopy(DOCUMENT_DEFAULTS))
 
+    from lanctl.core.storage_import import recover_for_paths
+
+    recover_for_paths((CONFIG_PATH,))
     if not CONFIG_PATH.exists():
         from lanctl.core.errors import errors
 

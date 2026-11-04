@@ -261,9 +261,23 @@ class GuiSupportMixin:
     def open_monitor(self, view="activity"):
         def launch():
             from lanctl.apps.suite.processes import launcher_command, process_options
+            from lanctl.core.coordination import Coordinator
+            from lanctl.core.gui_instance import focus_gui
+            from lanctl.core.session import current_session
+            from lanctl.shared.i18n import t
 
             if view not in {"activity", "report", "logs"}:
-                raise ValueError("Vista de LANMON desconocida")
+                raise ValueError(t("LANCTL.MONITOR.VIEW.INVALID"))
+            source = current_session()
+            coordinator = source.coordinator if source else Coordinator()
+            if any(
+                row["launcher"] == "lanmon" and row["mode"] == "gui" and row["controls"]
+                for row in coordinator.sessions()
+            ):
+                focus_gui(
+                    coordinator, "lanmon", monitor_view=view, source_session=self._gui_session
+                )
+                return {"message": t("LANCTL.MONITOR.VIEW.REQUESTED"), "session": self._gui_session}
             options = process_options(context_launcher="lanmon")
             options["env"]["LANCTL_GUI_VIEW"] = view
             options["env"]["LANCTL_GUI_SOURCE_SESSION"] = self._gui_session
@@ -272,7 +286,7 @@ class GuiSupportMixin:
                 **options,
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
             )
-            return {"message": "LANMON abierto", "session": self._gui_session}
+            return {"message": t("LANCTL.MONITOR.VIEW.REQUESTED"), "session": self._gui_session}
 
         return self._support_reply(launch)
 
@@ -305,8 +319,19 @@ class GuiSupportMixin:
             from lanctl.core.coordination import Coordinator
 
             self._require_monitor_view()
-            project = None if all_projects else load_config().get("activeProject") or ""
-            rows = ActivityStore().query(limit=500, project=project, latest=True)
+            visible_project = load_config().get("activeProject") or ""
+            project = None if all_projects or session else visible_project
+            store = ActivityStore()
+            rows = store.query(limit=500, project=project, session=session or None, latest=True)
+            catalog_rows = (
+                store.query(
+                    limit=500, project=None if all_projects else visible_project, latest=True
+                )
+                if session
+                else rows
+            )
+            if session and rows:
+                project = rows[-1]["project"]
             for row in rows:
                 try:
                     envelope = json.loads(row["message"])
@@ -315,7 +340,7 @@ class GuiSupportMixin:
                 if isinstance(envelope, dict) and isinstance(envelope.get("error"), dict):
                     row["message"] = envelope.get("message", "")
                     row["error"] = envelope["error"]
-            sessions = sorted({row["session"] for row in rows})
+            sessions = sorted({row["session"] for row in [*rows, *catalog_rows]})
             metadata = {item["id"]: item for item in ActivityStore().session_metadata()}
             live = {item["id"]: item for item in Coordinator().sessions()}
             details = []
@@ -400,6 +425,7 @@ class GuiSupportMixin:
                 plugins=plugins,
                 context={
                     "session": values.get("session", ""),
+                    "project": activity.get("project"),
                 },
                 anonymize=values.get("anonymize", True) is not False,
             )

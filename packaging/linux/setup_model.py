@@ -121,6 +121,9 @@ def install_command(package: Path, selection: Selection) -> list[str]:
 
 def write_shortcuts(selection: Selection, home: Path) -> None:
     """User-only integration; no shell startup file or global PATH is rewritten."""
+    from lanctl.core.installation_inventory import plan_owned_file_cleanup, write_installed_file
+
+    manifest = home / ".local/state/lanctl/installation-files.json"
     applications = home / ".local/share/applications"
     applications.mkdir(parents=True, exist_ok=True)
     entries = [("lanctl", "LANCTL", "/opt/lanctl/lanctl --gui", False)]
@@ -142,7 +145,8 @@ def write_shortcuts(selection: Selection, home: Path) -> None:
             f"[Desktop Entry]\nType=Application\nName={title}\nExec={command}\n"
             f"Terminal={str(terminal).lower()}\nCategories=Network;Utility;\n"
         )
-        (applications / f"{slug}-setup.desktop").write_text(content)
+        application_file = applications / f"{slug}-setup.desktop"
+        write_installed_file(manifest, applications, application_file, content)
         if slug == "lanctl" and selection.desktop:
             # xdg-user-dir respects localized Desktop directories.
             result = subprocess.run(
@@ -156,12 +160,15 @@ def write_shortcuts(selection: Selection, home: Path) -> None:
             if not desktop.is_absolute() or desktop == home or not desktop.is_dir():
                 raise ValueError("No desktop directory is configured")
             target = desktop / "LANCTL.desktop"
-            target.write_text(content)
+            write_installed_file(manifest, desktop, target, content)
             target.chmod(0o755)
     completion = home / ".local/share/bash-completion/completions/lanctl"
     if selection.completion:
         completion.parent.mkdir(parents=True, exist_ok=True)
-        completion.write_text(
+        write_installed_file(
+            manifest,
+            completion.parent,
+            completion,
             "# LANCTL installer: native Bash completion (Clink is Windows-only).\n"
             "_lanctl_setup_complete() {\n"
             "  local words='--gui --cli --tui --help --version lanip lanwire lanrack "
@@ -169,7 +176,9 @@ def write_shortcuts(selection: Selection, home: Path) -> None:
             "  COMPREPLY=()\n"
             "  if (( COMP_CWORD == 1 )); then\n"
             '    mapfile -t COMPREPLY < <(compgen -W "$words" -- "${COMP_WORDS[COMP_CWORD]}")\n'
-            "  fi\n}\ncomplete -F _lanctl_setup_complete lanctl\n"
+            "  fi\n}\ncomplete -F _lanctl_setup_complete lanctl\n",
         )
-    elif completion.is_file() and "# LANCTL installer:" in completion.read_text():
-        completion.unlink()
+    elif completion.is_file():
+        plan = plan_owned_file_cleanup(manifest, allowed_roots=[completion.parent])
+        if str(completion) in plan["removable"]:
+            completion.unlink()

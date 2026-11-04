@@ -939,6 +939,9 @@ class PluginManager:
             raise ValueError(f"no es compatible con LANCTL {__version__}")
 
     def _read_registry(self) -> dict:
+        from lanctl.core.storage_import import recover_for_paths
+
+        recover_for_paths((self.registry_path,))
         if not self.registry_path.exists():
             return {}
         try:
@@ -949,27 +952,9 @@ class PluginManager:
                 if data == {}:
                     data = {"schemaVersion": 1, "plugins": {}}
                     atomic_write_json(self.registry_path, data)
-            if not isinstance(data, dict) or data.get("schemaVersion") != 1:
-                raise ValueError("schema de registro no compatible")
-            values = data.get("plugins")
-            if not isinstance(values, dict):
-                raise ValueError("plugins debe ser un objeto")
-            for key, entry in values.items():
-                if not isinstance(entry, dict):
-                    raise ValueError(f"entrada no válida: {key}")
-                PluginState(entry.get("state", "DISABLED"))
-                granted = entry.get("granted", [])
-                if (
-                    not isinstance(granted, list)
-                    or not all(isinstance(p, str) for p in granted)
-                    or not isinstance(entry.get("trusted", False), bool)
-                    or any(
-                        not isinstance(entry.get(k, ""), str)
-                        for k in ("checksum", "signature", "error", "version")
-                    )
-                ):
-                    raise ValueError(f"autorización no válida: {key}")
-            return values
+            from lanctl.core.plugins.registry import validate_registry
+
+            return validate_registry(data)
         except (ValueError, OSError) as error:
             from lanctl.core.errors import errors
 

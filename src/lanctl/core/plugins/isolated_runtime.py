@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import atexit
+import ctypes
 import importlib.machinery
 import importlib.util
 import json
@@ -223,9 +224,30 @@ class _IsolatedApi:
         _send_message(self.connection, ("CALL", method, arguments))
 
 
+def _configure_worker_allocator() -> bool:
+    """Bound glibc arena reservations inside this child, before starting threads.
+
+    Extra allocator arenas can reserve 64 MiB each against RLIMIT_AS despite
+    low resident usage. Other libc implementations retain their own allocator.
+    This changes neither the manifest budget nor the parent's environment.
+    """
+    if sys.platform != "linux":
+        return False
+    try:
+        mallopt = getattr(ctypes.CDLL(None), "mallopt", None)
+    except OSError:
+        return False
+    if mallopt is None:
+        return False
+    mallopt.argtypes = (ctypes.c_int, ctypes.c_int)
+    mallopt.restype = ctypes.c_int
+    return mallopt(-8, 1) == 1  # glibc M_ARENA_MAX, declared in malloc.h
+
+
 def _apply_memory_limit(megabytes: int) -> None:
     if sys.platform == "win32":
         return
+    _configure_worker_allocator()
     try:
         import resource
 
@@ -335,10 +357,10 @@ def _watch_parent():
 def _worker(
     connection, plugin_id: str, entry: str, memory_mb: int, max_calls: int, settings=None
 ) -> None:
-    _apply_memory_limit(memory_mb)
-    _watch_parent()
     module: ModuleType | None = None
     try:
+        _apply_memory_limit(memory_mb)
+        _watch_parent()
         _install_security_policy(connection, Path(entry).resolve().parent)
         # El arranque mediante ``spawn`` puede ser sensiblemente más lento que
         # el presupuesto concedido al código del plugin (especialmente en
@@ -525,8 +547,7 @@ class IsolatedPluginRuntime:
             parent.close()
             raise
         child.close()
-        reader = _MessageReader(parent)
-        self.process, self._connection, self._reader = process, parent, reader
+        self.process, self._connection, self._reader = process, parent, None
         _RUNTIMES.add(self)
         # El presupuesto del manifiesto limita exclusivamente la carga y la
         # activación del plugin. El bootstrap de multiprocessing es trabajo del
@@ -534,6 +555,8 @@ class IsolatedPluginRuntime:
         startup_deadline = time.monotonic() + max(5.0, self.timeout)
         activation_deadline: float | None = None
         try:
+            reader = _MessageReader(parent)
+            self._reader = reader
             self._job_handle = _windows_memory_job(process.pid, self.memory_mb)
             while True:
                 deadline = activation_deadline or startup_deadline
@@ -583,7 +606,7 @@ class IsolatedPluginRuntime:
                     raise ValueError("mensaje IPC inesperado durante la activación")
                 if not process.is_alive():
                     raise RuntimeError("el proceso aislado terminó durante la activación")
-        except Exception:
+        except BaseException:
             self.stop()
             raise
 
@@ -602,12 +625,13 @@ class IsolatedPluginRuntime:
         process, connection = self.process, self._connection
         self._watchdog_stop.set()
         if self._watchdog_thread and self._watchdog_thread is not threading.current_thread():
-            self._watchdog_thread.join(1)
+            if self._watchdog_thread.ident is not None:
+                self._watchdog_thread.join(1)
             self._watchdog_thread = None
         if process.is_alive():
             with suppress(EOFError, OSError, ValueError):
                 _send_message(connection, ["STOP"])
-                if self._reader.poll(min(self.timeout, 0.2)):
+                if self._reader is not None and self._reader.poll(min(self.timeout, 0.2)):
                     self._reader.receive()
         process.join(min(self.timeout, 0.2))
         if process.is_alive():
@@ -620,7 +644,8 @@ class IsolatedPluginRuntime:
             # Keep ownership and allow an explicit retry; a finished cleanup
             # thread alone is never evidence that executable code has stopped.
             raise RuntimeError("no se ha confirmado la terminación del plugin aislado")
-        self._reader.close()
+        if self._reader is not None:
+            self._reader.close()
         self._reader = None
         connection.close()
         self.process = self._connection = None

@@ -283,8 +283,8 @@ CLI_MESSAGES = {
         "Consulta o modifica la configuración persistente de LANCTL.",
     ),
     "LANCTL.UI.HELP.PREFERRED_INTERFACE_WHEN_OPENING_LANCTL_WITHOUT_ARGUMENTS": (
-        "Preferred interface when opening LANCTL without arguments.",
-        "Interfaz preferida al abrir LANCTL sin argumentos.",
+        "Preferred interface when opening any LANCTL launcher without arguments.",
+        "Interfaz preferida al abrir cualquier launcher de LANCTL sin argumentos.",
     ),
     "LANCTL.UI.HELP.CLOSE_THE_MAIN_GUI_WHEN_THE_REQUESTED_LAUNCHER_IS_AVAILABLE": (
         "Close the main GUI when the requested launcher is available.",

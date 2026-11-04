@@ -1,5 +1,6 @@
 """Native desktop host for the four specialized applications."""
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -383,7 +384,20 @@ def run_gui(launcher, **options):
     def remote_action(command):
         if not loaded.wait(10):
             raise TimeoutError("La GUI todavía no está disponible")
-        if command.get("action") in {"data-changed", "refresh"}:
+        if command.get("action") == "monitor-view" and launcher == "lanmon":
+            request = json.loads(command["value"])
+            if request.get("view") not in {"activity", "report", "logs"} or not isinstance(
+                request.get("sourceSession"), str
+            ):
+                raise ValueError(t("LANCTL.MONITOR.VIEW.INVALID"))
+            window.restore()
+            window.show()
+            window.evaluate_js(
+                "window.dispatchEvent(new CustomEvent('lanctl-monitor-view',{detail:"
+                + json.dumps(request)
+                + "}));void 0"
+            )
+        elif command.get("action") in {"data-changed", "refresh"}:
             window.evaluate_js("window.launcherDataChanged=true")
         elif command.get("action") == "view" and command.get("value") == "gui":
             window.restore()

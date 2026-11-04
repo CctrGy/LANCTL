@@ -349,7 +349,7 @@ def coordinated_launcher(launcher):
                 from lanctl.core.session_context import consume_context
 
                 config = consume_context(launcher, load_config())
-                if launcher == "lanctl" and not arguments:
+                if not arguments:
                     preferred = config.get("startupInterface", "cli")
                     if preferred not in {"cli", "tui", "gui"}:
                         preferred = "cli"
@@ -360,7 +360,6 @@ def coordinated_launcher(launcher):
                     if "--gui" in arguments
                     else "tui"
                     if any(word in {"--tui", "-tui"} for word in arguments)
-                    or (launcher == "lanip" and not arguments)
                     else "backend"
                     if "foreground" in arguments
                     else "cli"

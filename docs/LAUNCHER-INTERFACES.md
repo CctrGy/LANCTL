@@ -9,10 +9,13 @@ LANWIRE, LANRACK, LANACCESS y LANMON: [interfaces gráficas](LAUNCHER-GUI.md).
 LANCTL incorpora `--gui` para proyectos, plugins, preferencias y terminales:
 véase [centro gráfico de LANCTL](LANCTL-GUI.md).
 
-Sin argumentos, LANCTL usa la preferencia global `startup.interface` (`cli` por
+Sin argumentos, los seis launchers usan la preferencia global `startup.interface` (`cli` por
 defecto). Se configura con `lanctl settings --startup-interface cli|tui|gui`.
 Un comando o interfaz explícitos siempre tienen prioridad. La preferencia no
-cambia el arranque predeterminado de los launchers especializados.
+se aplica a comandos internos ni a la reentrada en una sesión del mismo launcher.
+`lanctl lanip` y los demás enrutamientos sin opciones respetan la misma selección
+que el ejecutable directo. Los accesos con `--cli`, `--tui` o `--gui` fuerzan
+su modo; el host gráfico `lanctl-window.exe` fuerza GUI.
 
 Las instancias comparten [coordinación local](COORDINATION.md): sesiones,
 una selección de proyecto común, tareas, eventos y órdenes de refresco dirigidas.
@@ -68,7 +71,8 @@ lanmon --tui
 En la consola raíz se escribe `lanip --tui`, `lanwire --cli`, `settings`,
 `plugin list` o `language list`. `help settings` muestra las opciones compartidas.
 Los números 1–5 abren las aplicaciones en TUI. `exit` vuelve al llamador.
-LANCTL sin argumentos abre su CLI propio: ya no abre el inventario de LANIP.
+Con la preferencia predeterminada `cli`, LANCTL sin argumentos abre su consola
+propia; las preferencias `tui` y `gui` abren la interfaz correspondiente.
 La entrada raíz no escanea ni inicia servicios al abrirse.
 
 Comandos básicos dentro de la consola raíz:

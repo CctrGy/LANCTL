@@ -9,15 +9,18 @@ from pathlib import Path
 class SingletonLock:
     """Lock singleton que verifica PID y tiempo de creación del proceso."""
 
-    def __init__(self, path):
+    def __init__(self, path, *, control_protocol=None):
         self.path = Path(path)
         self.owned = False
         self.identity = None
+        self.control_protocol = control_protocol
 
     def acquire(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         identity = _process_identity(os.getpid())
         record = {"pid": os.getpid(), "identity": identity}
+        if self.control_protocol is not None:
+            record["controlProtocol"] = self.control_protocol
         try:
             fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except FileExistsError:
@@ -67,7 +70,10 @@ class SingletonLock:
             return {"running": False, "stale": False, "unverified": True, "pid": pid}
         if current != identity:
             return {"running": False, "stale": True, "pid": pid}
-        return {"running": True, "verified": True, "pid": pid, "identity": identity}
+        state = {"running": True, "verified": True, "pid": pid, "identity": identity}
+        if record.get("controlProtocol") is not None:
+            state["controlProtocol"] = record["controlProtocol"]
+        return state
 
     def _read(self):
         if not self.path.exists():

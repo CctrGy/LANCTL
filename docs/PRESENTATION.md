@@ -15,8 +15,9 @@ En la distribución instalada se puede usar directamente el ejecutable dedicado:
 lanip.exe demo --output .\LANCTL-demo --format all --force
 ```
 
-`lanmon.exe` abre directamente las funciones de monitorización; sin argumentos
-muestra el estado (`lanctl monitor status`).
+`lanmon.exe` sin argumentos abre la interfaz configurada en `startup.interface`,
+igual que los otros cinco launchers. Para consultar el estado sin abrir una
+interfaz interactiva, utilizar `lanctl monitor status` o `lanmon status`.
 
 Archivos creados:
 
