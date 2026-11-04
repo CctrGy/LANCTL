@@ -1,6 +1,45 @@
 """Reviewed bilingual help messages for advanced commands and shared services."""
 
 CLI_MESSAGES = {
+    "LANCTL.SHORTCUT.HELP": (
+        "Preview or create a desktop shortcut.",
+        "Previsualizar o crear un acceso directo.",
+    ),
+    "LANCTL.SHORTCUT.LAUNCHER": ("Application to launch.", "Aplicación que se abrirá."),
+    "LANCTL.SHORTCUT.MODE": ("Explicit interface mode.", "Modo de interfaz explícito."),
+    "LANCTL.SHORTCUT.NAME": (
+        "Shortcut name (without extension).",
+        "Nombre del acceso (sin extensión).",
+    ),
+    "LANCTL.SHORTCUT.DISTRIBUTION": (
+        "Executable directory; required when running from sources.",
+        "Carpeta de ejecutables; obligatoria al ejecutar desde fuentes.",
+    ),
+    "LANCTL.SHORTCUT.DESTINATION": (
+        "Shortcut folder; defaults to the executable directory.",
+        "Carpeta del acceso; por defecto, la de ejecutables.",
+    ),
+    "LANCTL.SHORTCUT.WORKING": (
+        "Working directory; does not select a project.",
+        "Directorio de trabajo; no selecciona un proyecto.",
+    ),
+    "LANCTL.SHORTCUT.ICON": ("Optional icon file.", "Archivo de icono opcional."),
+    "LANCTL.SHORTCUT.CREATE": (
+        "Create after showing the plan; never replace existing files.",
+        "Crear tras mostrar el plan; nunca sustituir archivos existentes.",
+    ),
+    "LANCTL.SHORTCUT.CREATED": (
+        "Shortcut created: {path}. On Linux, your desktop may require allowing launch.",
+        "Acceso creado: {path}. En Linux, tu escritorio puede requerir permitir su ejecución.",
+    ),
+    "LANCTL.SHORTCUT.PREVIEW": (
+        "Preview only. Repeat with --create to create this shortcut.",
+        "Solo vista previa. Repite con --create para crear este acceso.",
+    ),
+    "LANCTL.SHORTCUT.FAILED": (
+        "Could not create the shortcut. Check the original diagnostic, paths and permissions.",
+        "No se pudo crear el acceso. Revisa el diagnóstico original, las rutas y los permisos.",
+    ),
     "LANCTL.UI.HELP.LOCAL_COORDINATION_BETWEEN_LAUNCHERS": (
         "Local coordination between launchers.",
         "Coordinación local entre launchers.",

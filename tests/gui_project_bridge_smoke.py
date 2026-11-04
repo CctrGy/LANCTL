@@ -3,8 +3,11 @@
 Run: QT_QPA_PLATFORM=offscreen QTWEBENGINE_DISABLE_SANDBOX=1 \
      python tests/gui_project_bridge_smoke.py
 Uses temporary data and closes only its own windows. No network scan is run.
+For a smaller native check, add --launcher lanip (or another launcher).
+Single-launcher mode does not certify cross-window synchronization.
 """
 
+import argparse
 import json
 import os
 import tempfile
@@ -24,6 +27,18 @@ def wait_for(check, timeout=20):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--launcher",
+        choices=("lanctl", "lanip", "lanwire", "lanrack", "lanaccess", "lanmon"),
+        help="Check one native window only; omit for the original six-window context checks.",
+    )
+    args = parser.parse_args()
+    selected = (
+        (args.launcher,)
+        if args.launcher
+        else ("lanctl", "lanip", "lanwire", "lanrack", "lanaccess", "lanmon")
+    )
     with tempfile.TemporaryDirectory(prefix="lanctl-bridge-") as directory:
         os.environ["LANCTL_DATA_DIR"] = directory
         marker = Path(directory) / "config/migration-v2.complete"
@@ -38,10 +53,17 @@ def main():
         from lanctl.core.resources import bundled_path
 
         with patch("lanctl.apps.ip.interfaces.gui.main.local_ipv4", return_value="127.0.0.1"):
-            apis = [("lanctl", SuiteApi()), ("lanip", DesktopApi())]
-            apis.extend(
-                (name, LauncherApi(name)) for name in ("lanwire", "lanrack", "lanaccess", "lanmon")
-            )
+            apis = [
+                (
+                    name,
+                    SuiteApi()
+                    if name == "lanctl"
+                    else DesktopApi()
+                    if name == "lanip"
+                    else LauncherApi(name),
+                )
+                for name in selected
+            ]
         windows = []
         for name, api in apis:
             page = "suite" if name == "lanctl" else "index" if name == "lanip" else "launcher"
@@ -95,47 +117,49 @@ def main():
                     )
                     assert not rejected["ok"], (name, rejected)
                     results.append(name)
-                # P103: selection converges even without RootInterfaceAgent notifications.
-                from lanctl.core.config import load_config
-                from lanctl.core.database import DeviceDatabase
+                if args.launcher is None:
+                    # P103: selection converges even without RootInterfaceAgent notifications.
+                    from lanctl.core.config import load_config
+                    from lanctl.core.database import DeviceDatabase
 
-                suite = apis[0][1]
-                lanip_window = next(window for name, window in windows if name == "lanip")
-                for label in ("Native First", "Native Second"):
-                    created = suite.create_project(label, directory)
-                    assert created["ok"], created
-                    path = load_config()["activeProject"]
-                    DeviceDatabase(load_config()["database"]).add_manual_device(alias=label)
-                    wait_for(
-                        lambda: lanip_window.evaluate_js(
-                            "state.projectContext[0]===" + json.dumps(path)
-                        )
-                    )
-                    # Inventory may be read in the same snapshot just before the add.
-                    lanip_window.evaluate_js("window.desktopDataChanged=true")
-                    wait_for(
-                        lambda: lanip_window.evaluate_js(
-                            "state.devices.some(d=>d.alias===" + json.dumps(label) + ")"
-                        )
-                    )
-                    for other_name, other_window in windows:
-                        if other_name in {"lanctl", "lanip"}:
-                            continue
+                    suite = apis[0][1]
+                    lanip_window = next(window for name, window in windows if name == "lanip")
+                    for label in ("Native First", "Native Second"):
+                        created = suite.create_project(label, directory)
+                        assert created["ok"], created
+                        path = load_config()["activeProject"]
+                        DeviceDatabase(load_config()["database"]).add_manual_device(alias=label)
                         wait_for(
-                            lambda other_window=other_window: other_window.evaluate_js(
+                            lambda: lanip_window.evaluate_js(
                                 "state.projectContext[0]===" + json.dumps(path)
                             )
                         )
-                    assert suite.save_project()["ok"]
-                # P94: real Qt page opens the integrated settings catalog.
-                suite_window = next(window for name, window in windows if name == "lanctl")
-                settings = invoke(
-                    suite_window,
-                    "(async()=>{await openSettingsWindow();return {"
-                    "open:document.querySelector('#suite-settings').open,"
-                    "count:document.querySelectorAll('#suite-settings .ss-card').length}})()",
-                )
-                assert settings["open"] and settings["count"] > 50, settings
+                        # Inventory may be read in the same snapshot just before the add.
+                        lanip_window.evaluate_js("window.desktopDataChanged=true")
+                        wait_for(
+                            lambda: lanip_window.evaluate_js(
+                                "state.devices.some(d=>d.alias===" + json.dumps(label) + ")"
+                            )
+                        )
+                        for other_name, other_window in windows:
+                            if other_name in {"lanctl", "lanip"}:
+                                continue
+                            wait_for(
+                                lambda other_window=other_window: other_window.evaluate_js(
+                                    "state.projectContext[0]===" + json.dumps(path)
+                                )
+                            )
+                        assert suite.save_project()["ok"]
+                if "lanctl" in selected:
+                    # P94: real Qt page opens the integrated settings catalog.
+                    suite_window = next(window for name, window in windows if name == "lanctl")
+                    settings = invoke(
+                        suite_window,
+                        "(async()=>{await openSettingsWindow();return {"
+                        "open:document.querySelector('#suite-settings').open,"
+                        "count:document.querySelectorAll('#suite-settings .ss-card').length}})()",
+                    )
+                    assert settings["open"] and settings["count"] > 50, settings
             except Exception as exc:
                 failures.append(str(exc))
             finally:
@@ -144,8 +168,19 @@ def main():
 
         webview.start(verify, gui="qt")
         assert not failures, failures
-        assert len(results) == 6, results
-        print(json.dumps({"passed": results, "checks": "real pages, RPC and context guards"}))
+        assert len(results) == len(selected), results
+        print(
+            json.dumps(
+                {
+                    "passed": results,
+                    "checks": "real pages, RPC and context guards",
+                    "crossWindowChecked": args.launcher is None,
+                    "settingsChecked": "lanctl" in selected,
+                    "scanChecked": False,
+                    "closeDecisionsChecked": False,
+                }
+            )
+        )
 
 
 if __name__ == "__main__":

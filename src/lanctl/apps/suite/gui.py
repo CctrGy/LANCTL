@@ -15,6 +15,7 @@ from lanctl.apps.suite.processes import (
     open_system_cli,
     process_options,
 )
+from lanctl.apps.suite.shortcuts_gui import ShortcutGuiMixin
 from lanctl.core.config import load_config
 from lanctl.core.plugins.manager import get_plugin_manager
 from lanctl.core.plugins.settings import PluginSettings
@@ -23,7 +24,7 @@ from lanctl.core.resources import bundled_path
 from lanctl.shared.i18n import initialize_language, t, translate_label
 
 
-class SuiteApi(GuiSupportMixin):
+class SuiteApi(ShortcutGuiMixin, GuiSupportMixin):
     def __init__(self):
         # Compatibility adapter until shared desktop project/settings UI moves out of LANIP.
         # Only explicitly forwarded methods are exported through this WebView.

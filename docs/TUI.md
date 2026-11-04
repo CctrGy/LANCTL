@@ -11,6 +11,12 @@ directamente `PLUGINS`, `PROJECTS` o `SETTINGS`, por ejemplo
 a ese TUI de inventario. La pantalla se adapta automáticamente a
 terminales estrechas; se recomienda un mínimo de 80×24 para la demostración.
 
+En Linux, las flechas y RePág/AvPág se leen directamente del terminal sin
+precargar los bytes de las siguientes teclas. Una secuencia incompleta o no
+reconocida no se interpreta como `Esc`: no debe cerrar el inventario al navegar.
+La rueda depende de las teclas que envíe el emulador de terminal; los reportes
+de ratón no reconocidos se ignoran, sin cerrar la TUI ni insertarse en el prompt.
+
 ## Teclas principales
 
 | Tecla | Acción |

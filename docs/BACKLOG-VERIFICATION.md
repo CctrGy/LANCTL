@@ -1,5 +1,29 @@
 # Comprobación del backlog
 
+## P122 — cierre al navegar en LANIP TUI (04/11/2026)
+
+- Reproducción previa en PTY POSIX con entrada de texto real: dos flechas abajo
+  consecutivas daban `ESC` en la primera lectura; `select` indicaba que no había
+  más entrada aunque `[` seguía en el búfer de Python. La orden Esc llega a
+  `_begin_close`, que puede finalizar normalmente sin registrar una excepción.
+- Corrección en `apps/ip/interfaces/tui/keyboard.py`: lectura sin precarga y
+  decodificación por carácter; secuencias CSI/SS3 desconocidas o incompletas no
+  se convierten en Esc ni dejan sus parámetros en el prompt.
+- `tests/test_tui_posix_navigation.py` usa pseudoterminales reales. Incluye
+  proceso TUI con datos/rutas temporales y sondeo desactivado: selección
+  1 → 26 → 15 de 40 dispositivos, salida solo tras Esc y restauración de modo
+  canónico/pantalla. No es una prueba del binario instalado ni de red.
+- 113 pruebas y 19 subpruebas aprobadas en la selección de navegación POSIX,
+  TUI, render, componentes y preferencias compartidas. Ruff y formato de los
+  archivos Python afectados, catálogo de errores regenerado/comprobado,
+  referencias CLI/web, higiene y `git diff --check` correctos.
+- No hay textos de producto nuevos ni cambios de permisos, datos o contratos.
+  Se conserva el lector Windows y se prueban sus contratos existentes; no se
+  ha realizado un recorrido nativo Windows ni la suite completa.
+- El `lanip` del sistema apunta a `/opt/lanctl/lanip`: requiere reconstrucción
+  y actualización para incorporar esta corrección. Pendiente confirmar la
+  plataforma/versión del incidente del usuario y verificar su instalable.
+
 ## P69 — separación de preferencias por interfaz y launcher (22/10/2026)
 
 Validación y planificación antes de implementar:
@@ -4228,3 +4252,228 @@ Controles finales del bloque: Ruff y formato de los cuatro Python afectados,
 y `git diff --check` correctos. Casos adicionales verifican argv del ejecutable,
 reutilización de GUI existente y fallo de lectura de configuración con su origen.
 No se ejecuta suite completa ni pruebas nativas por este cambio acotado.
+
+
+## P118 — servicio inicial de accesos Linux (04/11/2026)
+
+- Alcance autorizado: siguiente tarea tras P119; servicio interno compartido,
+  sin cambiar preferencias, proyectos, credenciales ni instalación del equipo.
+  Se conservó el árbol previo limpio en `codex/p107-import-concurrency`.
+- `src/lanctl/core/shortcuts.py`: planificación separada de publicación;
+  `.desktop` con escape de valores y Exec según
+  https://specifications.freedesktop.org/desktop-entry/latest/exec-variables.html
+  y https://specifications.freedesktop.org/desktop-entry/latest/value-types.html.
+  Solo seis launchers y tres switches explícitos; sin comandos de shell libres.
+- Archivo completo y ejecutable antes de publicarlo mediante enlace duro en el
+  mismo directorio. Colisiones, incluidos symlinks, se rechazan sin sustituir.
+  Los errores originales de archivos/permisos se propagan; no hay elevación.
+- Idiomas: sin interfaz pública nueva; códigos técnicos internos únicamente.
+  El futuro adaptador debe traducirlos y conservar su origen. No se cambiaron
+  parsers, IDs públicos, configuración, dependencias ni catálogos de idioma.
+- `.venv/bin/python -m pytest -q tests/test_shortcuts.py`: **38 passed**.
+  Matriz seis launchers × tres modos, validaciones, GUI ausente declarada por
+  llamador, ejecutable ausente, colisiones, fallo de publicación y temporales.
+  `desktop-file-validate` pasó. Gio abrió un ejecutable temporal inofensivo y
+  confirmó argv y cwd con espacios, Unicode, comillas, `$` y acentos graves.
+- Hallazgo: Gio rechaza ejecutables con `%` incluso con escape `%%` aceptado
+  por el validador; el servicio rechaza estas rutas expresamente. No se ocultó
+  el fallo ni se declaró compatibilidad. `=` también se rechaza según norma.
+- Limitaciones: no es una herramienta de usuario aún. Faltan integración de
+  interfaz, Windows, disponibilidad GUI real, resolución de distribución,
+  reemplazo/reparación y confianza del escritorio. No se adaptó todavía el
+  instalador; no se generaron ni certificaron binarios. Las pruebas nativas
+  usan un grabador temporal, no abren ventanas LANCTL reales.
+- RAM disponible inicial 492 MB y swap llena: pruebas ligeras secuenciales;
+  sin suite general, builds ni procesos de implementación en segundo plano.
+- Controles finales: Ruff y formato de ambos Python correctos; catálogo de
+  errores regenerado y verificado (**1773 puntos**); referencias CLI/web e
+  higiene correctas; `git diff --check` limpio. Sin commits, push ni releases.
+
+## P118 — adaptador CLI Linux (04/11/2026)
+
+- `lanctl shortcut` disponible en el parser raíz: vista previa sin escritura;
+  `--create` confirma la creación sin sobrescritura ni preguntas bloqueantes.
+  Opciones: launcher, modo explícito, nombre, distribución, destino, directorio
+  de trabajo e icono. No admite argumentos libres ni modifica proyectos.
+- Distribución compilada: `application_directory()` usa ejecutable real. Desde
+  fuentes exige carpeta explícita; no usa Python ni cwd como destino implícito.
+  GUI ausente detectada por módulo `webview`; pendiente inventario P117 y
+  comprobación de todos los runtimes gráficos nativos. Windows se rechaza.
+- Nuevas ayudas, resultado y error general en fuente bilingüe; excepción
+  conservada con origen `LANCTL.Suite.Shortcut.Create`. Recursos y referencias
+  CLI/web regenerados, Clink actualizado. Sin cambios de IDs públicos del Core.
+- `.venv/bin/python -m pytest -q tests/test_shortcuts_cli.py
+  tests/test_shortcuts.py tests/test_clink.py`: **55 passed, 6 subtests passed**.
+  Incluye despacho real del parser raíz, vista previa, creación, colisión,
+  ausencia de GUI, fuentes sin distribución, ruta compilada y plataforma ajena.
+- Ruff y formato correctos. Catálogo de errores regenerado/verificado: 1778
+  puntos. Catálogos de idioma (2526 claves por idioma), recursos de instalador,
+  auditoría de idiomas, referencias e higiene comprobados. Se regeneró la
+  auditoría al quedar obsoleta por los nuevos consumidores y números de línea.
+- Sin build, instalación, publicación ni pruebas amplias por presión de memoria.
+  Permanecen pendientes pantalla GUI/TUI, Windows, reparación, reemplazo
+  confirmado e integración/certificación de instalables. P118 continúa abierta.
+
+
+## P92 — propuesta escrita de iconos por tema (04/11/2026)
+
+Trabajo documental de bajo consumo en `codex/p92-icon-theme-proposal`.
+Se conservaron todos los cambios locales preexistentes, incluidos P118 y sus
+recursos de idioma. Sin cambios operativos, de recursos gráficos o de datos.
+
+- Revisados SVG LANCTL/LANIP, presets GUI, aplicación/cancelación de tokens,
+  CSS de tarjetas, favicons, puntos de entrada, adaptador Windows, spec e Inno.
+- Entrega: `ICON-THEME-PROPOSAL.md`, variantes A/B, recomendación, límites de
+  compilación/sistema y coordinación con P116/P71/P72. P92 sigue abierta para
+  decisión y muestra visual. P116 no se declara implementada.
+- Cálculo sRGB mediante biblioteca estándar sobre los cinco presets: el verde
+  fijo ofrece 1,26:1 sobre fondo claro y 12,63:1 sobre su placa; acentos propios
+  de los presets superan 5:1 contra fondo y superficie. No certifica todos los
+  estados, plugins, trazos, accesibilidad o plataformas.
+- Idiomas, catálogo de errores, IDs, persistencia y permisos: no aplica cambio,
+  al tratarse de documentación sin textos operativos nuevos.
+- Pruebas funcionales/suite general: no ejecutadas; sin cambios de código.
+  Referencias CLI/web (`--check`), higiene y `git diff --check`: correctos.
+  Referencia web regenerada para incorporar el documento nuevo.
+
+## P118 — formulario GUI Linux y confirmación (04/11/2026)
+
+- Se revisaron backlog y reglas actualizados; se conservaron P121 y documentos
+  nuevos de otros trabajos, sin reinterpretarlos como autorización de migración.
+- `ShortcutGuiMixin` expone opciones, selección nativa de carpetas/icono, vista
+  previa y creación mediante el servicio compartido. `SuiteApi` hereda el mixin;
+  RPC bajo su frontera existente de errores y bloqueo. Mensaje visible traducido
+  con errorId/errorDetails originales conservados. Sin proyecto requerido.
+- `suite-shortcuts.js` y acción de barra abren formulario con aplicación, modo,
+  nombre y rutas. Opciones GUI ausente filtradas por disponibilidad declarada.
+  Vista previa con ejecutable, argumentos, directorio de trabajo, icono y archivo;
+  confirmación local mediante diálogo existente. Contenido insertado con
+  textContent, sin interpretar rutas o nombres como HTML. Campos y botones
+  traducidos en inglés/español; foco inicial en nombre y cancelación del diálogo.
+- Un único token por API, validado y consumido antes de escribir. Nueva vista
+  previa invalida la anterior, incluso si la validación falla. No sobrescribe
+  archivos ni enlaces; reintentar necesita nueva vista previa. Cerrar/cancelar
+  sin confirmar no escribe. El token no se persiste.
+- Pruebas ligeras: servicio/CLI/GUI **63 passed**; suite GUI existente **22
+  passed**. Incluyen RPC SuiteApi real sin proyecto, diagnóstico original,
+  datos inválidos, GUI ausente, colisiones, token anterior/reutilizado y selector
+  cancelado. Formulario ejecutado en Node con DOM simulado: selección, selector
+  cancelado, vista previa, confirmación y formulario cerrado durante espera.
+  Comprobación de sintaxis Node para `suite.js` y `suite-shortcuts.js` correcta.
+- Se preservaron fuentes y recursos añadidos previamente; LANCTL.spec empaqueta
+  el directorio gui completo, incluido el archivo nuevo. No hay build real.
+- Pendientes: revisión visual, atajos y lector de pantalla en ventana nativa,
+  terminales reales, componente/inventario P117, Windows, reemplazo/reparación,
+  portables/instalados y certificación. No se abrió navegador por RAM disponible
+  inicial ~400 MB y swap llena. No se afirma certificación de GUI por el DOM.
+- Controles finales: Ruff/formato y `git diff --check` correctos; catálogos
+  inglés/español con 2536 claves, recursos de instalador y auditoría de idiomas
+  comprobados; errorList regenerado/verificado (1784 puntos), referencias CLI/web
+  e higiene correctas. Sin commits, push, releases ni procesos propios pendientes.
+
+## P118 — adaptador Windows en fuentes (04/11/2026)
+
+- Se mantiene alcance P118, backlog actualizado y trabajo ajeno conservado.
+  `core/shortcuts_windows.py` planifica destinos Shell Link nativos: consola
+  `.exe` para CLI/TUI; `lanctl-window.exe` para GUI, conforme al host existente.
+  Ejecutable, argumentos, cwd, nombre e icono separados. Nombres reservados,
+  rutas de entorno ambiguas y ejecutables/host/iconos ausentes se rechazan.
+- WScript.Shell mediante Windows PowerShell del sistema (sin búsqueda en cwd o
+  PATH), script fijo y JSON ASCII por stdin. Sin interpolación de rutas en código
+  ni elevación. Referencia del mecanismo:
+  https://learn.microsoft.com/en-us/troubleshoot/windows-client/admin-development/create-desktop-shortcut-with-wsh
+- COM guarda en carpeta temporal del destino. Readback verifica destino,
+  argumentos y cwd; solo después se publica mediante rename Windows, que rechaza
+  destinos existentes. Fallos de permisos, proceso, timeout o ausencia de salida
+  conservan su excepción; no publican un archivo parcial y limpian temporales.
+- Despacho compartido `plan_shortcut/create_shortcut` conectado a CLI y GUI.
+  Se actualizan ayudas y textos para ambas plataformas, preservando sus claves.
+- `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q
+  tests/test_shortcuts_windows.py`: **39 passed, 1 skipped**. Matriz 6×3 de
+  planificación, iconos/cwd/destino, nombres inválidos, transporte JSON separado
+  del script, limpieza ante error/timeout y colisión sin invocar PowerShell.
+  La prueba omitida ejecuta COM y verifica un link real únicamente en Windows.
+- Las 39 pruebas locales usan ejecutables y Shell Link simulados; no demuestran
+  que COM, PowerShell, consola o GUI funcionen en una instalación Windows real.
+  P118 permanece parcial; sustitución, reparación y certificación pendientes.
+- Presión de memoria: RAM disponible bajó de 415 MB a 96 MB, swap llena. Se
+  desactivó únicamente la carga automática de plugins pytest para estas pruebas
+  de stdlib. No se abrió navegador ni se compiló; la validación amplia de los
+  adaptadores CLI/GUI modificados queda pendiente por recursos. No se cancelaron
+  ni cerraron procesos ajenos para ganar memoria.
+- Controles finales: Ruff y formato correctos; catálogos inglés/español (2536
+  claves), recursos del instalador y auditoría de idiomas verificados; catálogo
+  de errores regenerado/verificado (1799 puntos), referencias CLI/web e higiene
+  correctas; `git diff --check` limpio. Las fixtures de accesos Linux quedan
+  marcadas por plataforma para no simular ejecutables Linux en CI Windows.
+  Sin build, commit, publicación ni procesos propios pendientes.
+
+## Revalidación P118 y orden operativo (04/11/2026)
+
+- Estado previo: implementación Windows parcial y 39 pruebas locales correctas;
+  se revalida el árbol actual, no se dan por vigentes automáticamente los pases
+  históricos de adaptadores previos a conectar el despacho Windows.
+- RAM inicial 218 MiB disponibles, swap llena; cuota Codex aplicable restante
+  98 %. Comprobación secuencial, plugins pytest automáticos desactivados y
+  `ulimit -v 196608` (192 MiB de espacio virtual):
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q
+  tests/test_shortcuts.py tests/test_shortcuts_cli.py tests/test_shortcuts_gui.py`.
+  Resultado: **61 passed, 2 failed, 100.76 s**.
+- Fallos: `test_gio_preserves_special_executable_path` agota 5 s;
+  `test_form_preview_confirmation_and_cancel_without_browser` agota 10 s y
+  stderr de Node contiene `Fatal process out of memory: SegmentedTable`.
+  El límite virtual heredado impide las reservas de V8: fue una elección
+  incorrecta para esta prueba y no se repetirá así. No confundir esta evidencia
+  con prueba de un fallo del formulario. La causa del timeout Gio no queda
+  aislada; requiere repetir con recursos adecuados. No se amplían timeouts ni
+  se eliminan casos para obtener un pase artificial.
+- Ambos subprocess.run terminaron tras timeout; el proceso pytest finalizó con
+  código 1. RAM final 121 MiB disponibles, swap llena. No se lanzan nuevos
+  procesos de prueba. No se cierran procesos ajenos para ganar memoria.
+- Backlog conserva P118 parcial y resultados fallidos explícitos. Se añade orden
+  operativo separado del orden cronológico: puente/contexto, provisional/cierre,
+  instalador seguro, integridad/disponibilidad y después accesos/componentes e
+  idiomas/diseño según dependencias. P40/P42 mantienen categoría especial.
+- Solo documentación en este bloque posterior a la revalidación; no cambian
+  código, idiomas, puntos de error, parsers ni artefactos. No hay build, commit,
+  push ni publicación. El objetivo de gestión y las tareas pendientes continúan.
+
+## P90/P88 — preparación del recorrido nativo por launcher (04/11/2026)
+
+- Revisión actual de `GuiSupportMixin.project_call` y del generador instalado
+  de pywebview: los parámetros posicionales exportados son expected, method y
+  action_arguments. El alias Python arguments sigue siendo keyword-only. La
+  fuente de pywebview genera funciones JS que serializan el objeto arguments;
+  conservar el cambio evita sombrearlo. Esta lectura estática no prueba el
+  envío de una llamada nativa ni la matriz funcional completa.
+- El smoke Qt existente abría seis ventanas de una vez. Se añade `--launcher`
+  con las seis opciones para construir y abrir solo la API/ventana elegida;
+  omitirlo conserva el comportamiento anterior de seis ventanas y P88/P103.
+  Los recursos y directorio de datos siguen siendo temporales, sin escaneo real.
+- El JSON de resultado diferencia `crossWindowChecked`, `settingsChecked`,
+  `scanChecked` y `closeDecisionsChecked`. Las dos últimas son False: el smoke
+  no comprueba esos recorridos y no debe presentarse como cierre total de P90.
+- `python tests/gui_project_bridge_smoke.py --help`: salida 0 y seis opciones.
+  `--launcher invalid`: salida 2 antes de crear datos o importar Qt/webview.
+  Ambas comprobaciones se ejecutaron con límite virtual 64 MiB, exclusivamente
+  sobre el parser stdlib; no se aplica ese límite a Qt/Node. Ruff y formato
+  correctos. Sin prueba nativa: RAM disponible inicial 127 MiB, swap llena.
+- Idiomas/referencias de producto/catálogo de errores: no aplica al cambio;
+  solo se modifica un script opt-in de pruebas, no los comandos distribuidos,
+  mensajes de aplicación, contratos o puntos de error del código de producto.
+  No se regeneran catálogos que no han cambiado ni se certifica GUI.
+
+Matriz que falta ejecutar con recursos adecuados:
+
+| Recorrido | Herramienta/cobertura disponible | Estado de este corte |
+| --- | --- | --- |
+| Arranque y project_state sin VLF en cada launcher | Smoke con --launcher, seis ejecuciones separadas | Preparado; no ejecutado |
+| Rechazo de contexto obsoleto y destino RPC privado | Smoke por launcher, mantiene las guardas | Preparado; no ejecutado |
+| Cambio entre dos VLF y convergencia de seis ventanas | Smoke sin --launcher | Conservar ejecución conjunta; pendiente |
+| Apertura de ajustes LANCTL | Smoke LANCTL o conjunto | Preparado; no ejecutado |
+| Escaneo nativo sin VLF y con proyecto | No lo cubre este smoke | Pendiente |
+| Guardado/reapertura con datos y cambios pendientes | Cobertura parcial de guardado en smoke conjunto | Completar recorrido nativo |
+| Cierre con guardar, descartar y cancelar; último propietario | No lo cubre este smoke; coordinar P98/P99 | Pendiente |
+
+P90/P88 permanecen abiertas. No se lanzaron navegadores, Qt, builds o nuevas
+suites pesadas. Sin cambios sobre procesos ajenos, instalaciones o datos reales.

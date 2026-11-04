@@ -1,5 +1,10 @@
 # Idiomas de LANCTL
 
+La [revisión del almacenamiento y empaquetado](LANGUAGE-STORAGE-REVIEW.md)
+describe las duplicaciones actuales y una propuesta de recursos compartidos.
+Es un análisis pendiente de implementación; el comportamiento vigente se
+documenta a continuación.
+
 LANCTL utiliza catálogos JSON con extensión `.lang`. Las claves son contratos
 estables, por ejemplo `LANCTL.CORE.APP.CANCELLED`, y no el texto original.
 

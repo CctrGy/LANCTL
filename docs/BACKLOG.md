@@ -1,5 +1,25 @@
 # Trabajo pendiente de LANCTL
 
+## Cierre inesperado al navegar por LANIP TUI — 04/11/2026
+
+- [ ] **P122 · Alta · Corregido en fuentes; pendiente comprobación del instalable
+  del usuario.** Reproducido en un pseudoterminal POSIX: `TextIOWrapper.read(1)`
+  precargaba el resto de una flecha; `select` no veía ya bytes en el descriptor,
+  el lector devolvía `ESC` y `_begin_close` cerraba el inventario normalmente,
+  sin excepción ni código de error visible. También se interpretaban como Esc
+  secuencias no reconocidas o incompletas. Esto explica un cierre al navegar
+  en Linux; el usuario no ha confirmado aún plataforma ni versión instalada.
+  `tui/keyboard.py` lee caracteres sin precarga, conserva Unicode y consume las
+  secuencias CSI/SS3 completas; una secuencia desconocida no solicita el cierre.
+  Esc explícito conserva su función. No se añade soporte general de ratón.
+  **Verificación:** regresiones con PTY real para flechas consecutivas, páginas,
+  Unicode, secuencias incompletas/reportes no admitidos y Esc; recorrido del
+  bucle TUI con 40 dispositivos temporales, sin sondeo de red, comprobando scroll,
+  permanencia y restauración de terminal al salir. Mantener pruebas previas.
+  **Criterio de cierre:** reconstruir/probar el artefacto correspondiente y
+  confirmar el caso del usuario; Windows mantiene su lector independiente y
+  requiere reproducción propia si el incidente procede de esa plataforma.
+
 ## Categoría especial: validación de firma y distribución — P40/P42
 
 Por indicación del usuario, P40/P42 se clasifican como **validación especial
@@ -15,6 +35,110 @@ Ambos IDs corresponden a la misma incidencia y permanecen abiertos.
 - No crear una identidad oficial ficticia, conceder confianza automáticamente ni
   desactivar comprobaciones para desbloquearlos. Conservar la evidencia y los
   criterios originales de P40/P42 más abajo.
+
+## Orden operativo de continuación — revisión del 04/11/2026
+
+La posición de una tarea nueva en este documento no implica mayor prioridad.
+Conservar las condiciones y evidencias originales; una implementación en fuentes
+no cierra las verificaciones nativas o de distribución.
+
+1. **P90 y contexto P88/P103:** completar la matriz pendiente del puente GUI y
+   del proyecto real; P103 se usa como contexto, sin reabrir su corrección.
+2. **P98/P99 conjuntamente:** integrar el entorno provisional compartido,
+   guardado a VLF y cierre confirmado del último propietario. Ya existe base
+   en servicios; falta conectarla al ciclo real de ventanas sin perder datos.
+3. **P71/P72:** cuenta inicial y retirada segura del instalador, conservando
+   datos y separando las comprobaciones de fuentes de las de instalables.
+4. **P114/REF-P34-migration, REF-P47-interface, P97:** atender integridad,
+   disponibilidad y diagnósticos según dependencias y reproducción disponible.
+5. **P118/P119/P117/P120:** terminar accesos, preferencia y componentes del
+   instalador coordinadamente. P118 tiene implementación parcial y dos fallos
+   de revalidación bajo presión de recursos; falta certificación nativa.
+6. **P100/P94, P116/P92 y P121:** idiomas y diseño conservando contratos;
+   P92 requiere decisión visual y P121 define una migración todavía pendiente.
+   Continuar REF-P50-session/P50 cuando sus dependencias estén resueltas.
+
+P115/P32 son verificación transversal; P40/P42 permanecen en validación especial
+por firma autorizada. No rehacer P107/P108/P109/P110/P111/P112 por aparecer
+referenciadas en registros históricos: revisar su estado vigente antes de actuar.
+La presión de memoria limita la ejecución local; no se deben sustituir controles
+nativos por pruebas simuladas para declarar una tarea cerrada.
+
+## Idiomas como paquetes .lang con JSON por launcher — 04/11/2026
+
+- [ ] **P121 · Media · Pendiente de diseño e implementación.** Rediseñar el
+  formato de distribución de idiomas para que cada archivo `.lang` sea un
+  **contenedor ZIP**, con extensión propia, que agrupe los textos de los
+  distintos launchers y sus metadatos. Ejemplo solicitado: `español.lang`
+  contiene `lanctl.json`, `lanip.json`, `lanwire.json`, `lanmon.json`,
+  `lanrack.json` e `info.json`. Completar la suite con `lanaccess.json` y añadir
+  `shared.json` para textos comunes y del Core, evitando duplicarlos entre
+  aplicaciones. Inglés y español deben utilizar el mismo formato. Establecer
+  ZIP como formato interno; no depender de RAR ni de descompresores externos.
+
+  **Estructura propuesta:**
+
+  ```text
+  español.lang (ZIP)
+  ├── info.json
+  ├── shared.json
+  ├── lanctl.json
+  ├── lanip.json
+  ├── lanwire.json
+  ├── lanmon.json
+  ├── lanrack.json
+  └── lanaccess.json
+  ```
+
+  **Contrato:** `info.json` debe declarar versión del formato del paquete,
+  código del idioma, nombres visible/nativo, versión de la traducción, autor,
+  compatibilidad con LANCTL e inventario de archivos. Identificar el idioma
+  por sus metadatos (`es`, `en`, etc.), no por el nombre del archivo. Definir
+  el esquema de cada JSON y conservar secciones CLI/TUI/GUI cuando procedan.
+  Mantener las claves públicas existentes al mover textos entre módulos;
+  distinguir versión del contenedor, esquema del catálogo y versión del programa.
+
+  **Carga y almacenamiento:** leer los miembros del ZIP sin extracción
+  permanente y cargar los recursos compartidos y del launcher necesario.
+  Mantener un único paquete por idioma para instalar, exportar y actualizar.
+  Separar los paquetes oficiales de solo lectura de idiomas/personalizaciones
+  del usuario. Documentar precedencias entre personalización, catálogo oficial,
+  idioma base e inglés de respaldo, y el aviso mínimo si no se pueden cargar
+  recursos. No confundir idioma predeterminado, seleccionado y de respaldo.
+
+  **Revisión del empaquetado:** coordinar con el análisis de
+  `LANGUAGE-STORAGE-REVIEW.md` la reducción de catálogos completos repetidos en
+  cada ejecutable y del fallback web, preservando arranque sin conexión,
+  diagnósticos canónicos, validación de parámetros y compatibilidad de etiquetas
+  antiguas. Empaquetar JSON en ZIP por sí solo no elimina las tablas bilingües
+  compiladas: definir qué fuentes quedan para generación y cuáles necesita el
+  runtime, y medir los cambios sin prometer ahorros no comprobados.
+
+  **Validación y actualización:** comprobar metadatos, compatibilidad, archivos
+  declarados, claves y placeholders, duplicados y límites de tamaño/cantidad y
+  descompresión. Rechazar rutas fuera del paquete, enlaces y miembros inesperados
+  o ambiguos. Definir archivos obligatorios y traducciones parciales; diferenciar
+  una clave sin traducción de un paquete corrupto. Validar el conjunto antes de
+  reemplazar un idioma y actualizarlo de forma atómica, conservando la versión
+  anterior ante fallos y las personalizaciones. Un hash no acredita por sí solo
+  la identidad del traductor o la confianza en el paquete.
+
+  **Migración e integración:** crear una versión nueva del contrato de paquete y
+  detectar los `.lang` JSON v1/v2 existentes para conservar su lectura o permitir
+  conversión explícita, sin pérdida ni sobrescritura silenciosa. Actualizar gestor,
+  comandos `language`, generadores, manifiestos/hashes, auditorías, exportación,
+  recursos GUI e instaladores Windows/Linux/terminal. Revisar las extensiones
+  `language` de plugins sin romper permisos ni catálogos publicados. Coordinar con
+  P100, P105/P106, P117 y P120; mantener extensible el listado de idiomas.
+
+  **Criterio de cierre:** instalar, listar, seleccionar, validar y exportar
+  paquetes inglés/español; comprobar cada launcher y CLI/TUI/GUI, textos comunes,
+  carga selectiva, fallback y conservación de claves. Verificar archivos antiguos,
+  traducciones personalizadas, paquetes parciales o inválidos, duplicados,
+  compatibilidad, cancelación y fallos de actualización. Probar usuario/servicio,
+  instalados/portables, ausencia de red y builds reales Windows/Linux. Aplicar
+  `DEVELOPMENT-CHECKLIST.md` y documentar el formato y las herramientas de autoría.
+  **Indicación:** solo registrar; implementación pendiente.
 
 ## Opciones seleccionables en el instalador de terminal — 04/11/2026
 
@@ -133,7 +257,7 @@ Ambos IDs corresponden a la misma incidencia y permanecen abiertos.
 
 ## Creación de accesos directos desde LANCTL — 03/11/2026
 
-- [ ] **P118 · Media · Pendiente de diseño e implementación.** Incorporar al
+- [ ] **P118 · Media · Servicio y adaptadores CLI/GUI implementados en fuentes; validación Windows y distribución pendientes.** Incorporar al
   programa una herramienta para crear accesos directos a arranques específicos
   de LANCTL y sus launchers, sin depender de volver a ejecutar el instalador.
   Permitir guardar el acceso en un directorio elegido por el usuario y proponer
@@ -192,7 +316,58 @@ Ambos IDs corresponden a la misma incidencia y permanecen abiertos.
   instalación nueva, actualización, distribución sin GUI y traslado portable;
   documentar los límites de cada escritorio y comprobar que los accesos no
   requieren elevación para el uso normal ni dejan procesos o terminales indebidos.
-  **Indicación:** solo registrar; implementación pendiente.
+  **Avance 04/11/2026:** el usuario autoriza continuar la siguiente tarea tras
+  P119. Se implementa `core/shortcuts.py`: plan previo con ejecutable, modo,
+  destino, directorio de trabajo e icono opcional, seis launchers y modos
+  explícitos CLI/TUI/GUI; creación Linux atómica sin sobrescritura ni elevación,
+  con limpieza de temporales y conservación de errores originales de E/S.
+  No admite argumentos libres ni altera preferencias o proyectos. 38 pruebas
+  pasan, incluida validación `desktop-file-validate` y apertura mediante Gio de
+  un ejecutable temporal que registra argumentos y directorio de trabajo.
+  Rutas con espacios, Unicode, comillas, `$` y acentos graves comprobadas.
+  Se rechaza `%` en la ruta ejecutable: Gio no abre ese caso aunque el validador
+  acepte el archivo. También se rechaza `=` conforme a Desktop Entry.
+
+  **Segundo avance 04/11/2026:** comando Linux `lanctl shortcut` conectado al
+  parser público, con vista previa JSON por defecto y escritura explícita con
+  `--create`. Permite launcher, modo, nombre, destino, directorio de trabajo e
+  icono. Ayudas/estados en inglés y español. Resuelve la carpeta de ejecutables
+  compilados sin usar extracción/cwd; en fuentes exige `--distribution`. Detecta
+  ausencia del módulo GUI. Diagnóstico con origen propio y excepción conservada;
+  Clink y referencias regenerados. 55 pruebas y 6 subpruebas pasan.
+
+  **Tercer avance 04/11/2026:** acción «Crear acceso directo» en LANCTL GUI
+  con aplicación, modo, nombre, selectores de carpetas/icono, vista previa y
+  confirmación local. La creación utiliza un token de vista previa de un solo
+  uso, invalida borradores anteriores y mantiene el diagnóstico original junto
+  al mensaje traducido. No exige proyecto. La cancelación del selector conserva
+  el valor del campo; cancelar la confirmación no crea archivos. Formulario
+  probado con DOM ligero sin navegador; revisión visual nativa pendiente.
+
+  **Cuarto avance 04/11/2026:** adaptador Windows `.lnk` implementado en
+  fuentes y conectado a CLI/GUI. Usa WScript.Shell mediante PowerShell del
+  sistema, código fijo y datos JSON por stdin; destino, argumentos, carpeta e
+  icono separados. GUI apunta a `lanctl-window.exe`; CLI/TUI a cada launcher
+  con switch explícito. Valida nombres reservados de Windows y existencia de
+  ejecutables/iconos. Guardado temporal, comprobación de propiedades antes de
+  publicar y rename Windows sin sustitución. Sin elevación. 39 pruebas pasan
+  en Linux (planificación y transporte simulados), 1 comprobación COM nativa
+  omitida por plataforma. No equivale a una validación Windows.
+
+  **Revalidación limitada 04/11/2026:** tras conectar Windows, 61 pruebas
+  Python de servicio/adaptadores pasan; otras 2 comprobaciones con procesos
+  externos fallan en esta ejecución. Gio agota 5 s y Node informa de falta de
+  memoria bajo un límite heredado de espacio virtual de 192 MiB, seguido de
+  timeout. No se retiran pruebas ni se considera verde el conjunto: repetir
+  ambas en un entorno con recursos adecuados, sin ese límite para Node.
+  Los pases históricos anteriores se conservan como históricos, no como prueba
+  de que esta revalidación completa haya pasado. RAM disponible al terminar:
+  121 MiB, swap llena; no iniciar navegador, builds ni suites amplias.
+
+  **Pendiente:** completar el inventario GUI real, validación Windows `.lnk`, iconos,
+  reemplazo confirmado, reparación y recorridos nativos completos. El servicio
+  está expuesto por CLI/GUI en fuentes, pero aún no integrado en los instaladores.
+  P118 sigue abierta y no se certifica distribución por estas pruebas.
 
 ## Instalación opcional de la interfaz gráfica — 03/11/2026
 
@@ -1186,7 +1361,7 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   filtros/reportes asociados al mismo ID; comprobar sesiones simultáneas,
   históricas sin fecha y presentación de zona horaria.
 
-- [ ] **P92 · Propuesta de diseño · Pendiente de decisión.** Evaluar si el
+- [ ] **P92 · Propuesta escrita preparada; decisión visual pendiente.** Evaluar si el
   cambio de tema debe adaptar el color o la variante de los iconos que
   identifican LANCTL y sus aplicaciones. El usuario plantea su conveniencia
   y pregunta si también puede cambiar el icono con el programa compilado;
@@ -1200,7 +1375,11 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   requiere normalmente reconstruir y volver a firmar cuando corresponda.
   Los accesos directos/lanzadores tienen mecanismos propios y cachés del SO;
   no asumir actualización automática de todos los iconos al cambiar el tema.
-  **Siguiente paso:** proponer variantes y alcance, conservando identidad y
+  **Avance 04/11/2026:** revisión de fuentes, variantes A/B y contraste de los
+  cinco temas en [ICON-THEME-PROPOSAL.md](ICON-THEME-PROPOSAL.md). Se recomienda
+  adaptar símbolos internos con tokens y conservar los iconos del sistema.
+  No se han modificado recursos ni aprobado un recoloreado general.
+  **Siguiente paso:** elegir variante y revisar una muestra visual, conservando identidad y
   contraste; si se aprueba, validar el cambio de tema en ejecución y en
   distribuciones compiladas de Windows y Linux, con límites documentados.
 
@@ -1274,6 +1453,18 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   cancelar según el flujo aplicable, además de cierres con otras ventanas
   abiertas. Añadir regresiones del puente sin relajar las guardas de contexto
   de proyecto; coordinar la validación con P99.
+
+  **Preparación de verificación 04/11/2026:** el script nativo existente
+  `tests/gui_project_bridge_smoke.py` admite ahora `--launcher` para abrir
+  únicamente una ventana de prueba. Sin el argumento conserva las seis ventanas
+  y las comprobaciones compartidas P88/P103. Su resultado distingue contexto
+  entre ventanas y ajustes, y declara explícitamente que no prueba escaneo ni
+  decisiones de cierre. `--help` (salida 0), opción inválida (salida 2), Ruff y
+  formato comprobados sin importar Qt ni abrir ventanas. El recorrido nativo
+  modificado no se ha ejecutado: RAM disponible 127 MiB y swap llena.
+  Esto facilita dividir la comprobación del puente, pero no sustituye la matriz
+  funcional ni permite cerrar P90/P88. Guardar/descartar/cancelar y escaneo nativo
+  continúan pendientes, junto con el recorrido de sincronización entre ventanas.
 
   **Contexto separado:** el informe incluye fallos anteriores de arranque con
   petición de instalar `.[gui]` y una advertencia TUI al consultar ARP. Después

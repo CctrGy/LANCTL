@@ -1,6 +1,25 @@
 """Reviewed bilingual dynamic interface messages. Technical values are not localized."""
 
 GUI_MESSAGES = {
+    "LANCTL.SHORTCUT.TITLE": ("Create shortcut", "Crear acceso directo"),
+    "LANCTL.SHORTCUT.PREVIEW_BUTTON": ("Review shortcut", "Revisar acceso"),
+    "LANCTL.SHORTCUT.CREATE_BUTTON": ("Create", "Crear"),
+    "LANCTL.SHORTCUT.CONFIRM": (
+        "Create the shortcut with these values?",
+        "¿Crear el acceso con estos datos?",
+    ),
+    "LANCTL.SHORTCUT.UNSUPPORTED": (
+        "Shortcut creation is available on Windows and Linux.",
+        "La creación de accesos está disponible en Windows y Linux.",
+    ),
+    "LANCTL.SHORTCUT.BROWSE": ("Browse…", "Examinar…"),
+    "LANCTL.SHORTCUT.EXECUTABLE": ("Executable", "Ejecutable"),
+    "LANCTL.SHORTCUT.ARGUMENTS": ("Arguments", "Argumentos"),
+    "LANCTL.SHORTCUT.TARGET": ("Shortcut file", "Archivo del acceso"),
+    "LANCTL.SHORTCUT.NOTE": (
+        "Review before creating. Existing files are never replaced. You may need to allow launching in your desktop.",
+        "Revisa los datos antes de crear. No se sustituyen archivos existentes. Puede que debas permitir su ejecución en tu escritorio.",
+    ),
     "LANCTL.UI.VIEW.INTERFACE_APPEARANCE": ("Interface appearance", "Apariencia de la interfaz"),
     "LANCTL.UI.VIEW.GUI_PREFERENCES": ("GUI preferences:", "Preferencias GUI:"),
     "LANCTL.UI.VIEW.CODE": ("Code", "Código"),

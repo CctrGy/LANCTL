@@ -34,3 +34,6 @@ dialog{max-height:calc(100dvh - 32px);overflow:auto}
 #terminal-latest{margin-left:auto;font-size:11px}
 
 .project-directory-path{overflow-wrap:anywhere;user-select:text;font-family:monospace}
+
+/* Keep shortcut preview paths readable without changing their contents. */
+#confirmation-message { white-space: pre-wrap; overflow-wrap: anywhere; }

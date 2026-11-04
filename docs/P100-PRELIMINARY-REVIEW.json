@@ -1,12 +1,12 @@
 {
   "scope": "Static explicit consumers and bundled catalogs; not full functional coverage",
-  "sourceFilesExamined": 353,
-  "catalogKeysPerLanguage": 2514,
+  "sourceFilesExamined": 358,
+  "catalogKeysPerLanguage": 2536,
   "catalogKeysMatch": true,
   "placeholderMismatches": [],
   "missingConsumerKeys": [],
-  "explicitConsumerReferences": 2971,
-  "referencedUniqueKeys": 2244,
+  "explicitConsumerReferences": 2982,
+  "referencedUniqueKeys": 2253,
   "unreferencedOrDynamicOnlyKeys": [
     "LANCTL.COMMON.ACTION.LIST",
     "LANCTL.COMMON.STATUS.ACTIVE",
@@ -25,6 +25,19 @@
     "LANCTL.PARSER.ERROR.INVALID_CHOICE",
     "LANCTL.PLUGIN.LOG.ACTION",
     "LANCTL.PROJECT.PATH.DEFAULT",
+    "LANCTL.SHORTCUT.ARGUMENTS",
+    "LANCTL.SHORTCUT.BROWSE",
+    "LANCTL.SHORTCUT.CONFIRM",
+    "LANCTL.SHORTCUT.CREATE_BUTTON",
+    "LANCTL.SHORTCUT.DESTINATION",
+    "LANCTL.SHORTCUT.DISTRIBUTION",
+    "LANCTL.SHORTCUT.EXECUTABLE",
+    "LANCTL.SHORTCUT.ICON",
+    "LANCTL.SHORTCUT.NOTE",
+    "LANCTL.SHORTCUT.PREVIEW_BUTTON",
+    "LANCTL.SHORTCUT.TARGET",
+    "LANCTL.SHORTCUT.UNSUPPORTED",
+    "LANCTL.SHORTCUT.WORKING",
     "LANCTL.TUI.TAB.APPEARANCE",
     "LANCTL.TUI.TAB.COLUMNS",
     "LANCTL.TUI.TAB.EXIT",
@@ -286,6 +299,11 @@
       "expression": "f'LANCTL.INVENTORY.MANUAL.{key}'"
     },
     {
+      "file": "src/lanctl/apps/suite/shortcuts_cli.py",
+      "line": 33,
+      "expression": "f'LANCTL.SHORTCUT.{key}'"
+    },
+    {
       "file": "src/lanctl/apps/wire/tui/help.py",
       "line": 141,
       "expression": "entry.description"
@@ -321,20 +339,21 @@
       "expression": "key"
     }
   ],
-  "residualPythonHtmlCandidates": 397,
+  "residualPythonHtmlCandidates": 398,
   "residualDispositions": {
     "DESIGN_PREVIEW": 21,
     "EXPLICIT_BINDING": 37,
     "FORMATTED_DATA_OR_SCHEMA": 198,
     "ORIGINAL_DIAGNOSTIC": 13,
+    "REVIEW": 1,
     "SCHEMA_KEY": 14,
     "TECHNICAL_OR_NAME": 109,
     "TRANSLATED_METADATA": 5
   },
-  "unclassifiedCandidates": 0,
+  "unclassifiedCandidates": 1,
   "residualByOwner": {
     "LANACCESS": 12,
-    "LANCTL": 13,
+    "LANCTL": 14,
     "LANIP": 287,
     "LANMON": 5,
     "LANRACK": 6,
@@ -6945,22 +6964,22 @@
     },
     {
       "file": "src/lanctl/apps/suite/gui.py",
-      "line": 197,
+      "line": 198,
       "key": "LANCTL.UI.SCREEN.PROJECT_METADATA_SAVED"
     },
     {
       "file": "src/lanctl/apps/suite/gui.py",
-      "line": 302,
+      "line": 303,
       "key": "LANCTL.UI.TEXT.SETTINGS_SAVED"
     },
     {
       "file": "src/lanctl/apps/suite/gui.py",
-      "line": 314,
+      "line": 315,
       "key": "LANCTL.UI.TEXT.SETTINGS_SAVED"
     },
     {
       "file": "src/lanctl/apps/suite/gui.py",
-      "line": 347,
+      "line": 348,
       "key": "LANCTL.UI.TEXT.SETTINGS_SAVED"
     },
     {
@@ -6997,6 +7016,56 @@
       "file": "src/lanctl/apps/suite/settings_form.py",
       "line": 58,
       "key": "LANCTL.UI.SCREEN.COMFORTABLE"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_cli.py",
+      "line": 16,
+      "key": "LANCTL.SHORTCUT.HELP"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_cli.py",
+      "line": 21,
+      "key": "LANCTL.SHORTCUT.LAUNCHER"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_cli.py",
+      "line": 24,
+      "key": "LANCTL.SHORTCUT.MODE"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_cli.py",
+      "line": 26,
+      "key": "LANCTL.SHORTCUT.NAME"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_cli.py",
+      "line": 34,
+      "key": "LANCTL.SHORTCUT.CREATE"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_cli.py",
+      "line": 76,
+      "key": "LANCTL.SHORTCUT.CREATED"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_cli.py",
+      "line": 78,
+      "key": "LANCTL.SHORTCUT.PREVIEW"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_cli.py",
+      "line": 86,
+      "key": "LANCTL.SHORTCUT.FAILED"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_gui.py",
+      "line": 19,
+      "key": "LANCTL.SHORTCUT.FAILED"
+    },
+    {
+      "file": "src/lanctl/apps/suite/shortcuts_gui.py",
+      "line": 109,
+      "key": "LANCTL.SHORTCUT.CREATED"
     },
     {
       "file": "src/lanctl/apps/wire/cli/commands.py",
@@ -7860,42 +7929,42 @@
     },
     {
       "file": "src/lanctl/bootstrap/lanctl.py",
-      "line": 84,
+      "line": 87,
       "key": "LANCTL.UI.TEXT.INITIALIZE_INSTALLATION_PREFERENCES_WITHOUT_OVERWRITING_EXISTING_ONES"
     },
     {
       "file": "src/lanctl/bootstrap/lanctl.py",
-      "line": 92,
+      "line": 95,
       "key": "LANCTL.UI.TEXT.INITIAL_THEME"
     },
     {
       "file": "src/lanctl/bootstrap/lanctl.py",
-      "line": 97,
+      "line": 100,
       "key": "LANCTL.UI.TEXT.ALL_NONE_OR_COMMA_SEPARATED_OPTIONAL_PLUGIN_IDS"
     },
     {
       "file": "src/lanctl/bootstrap/lanctl.py",
-      "line": 100,
+      "line": 103,
       "key": "LANCTL.UI.TEXT.LANGUAGE_CODE_INCLUDED_IN_THIS_DISTRIBUTION"
     },
     {
       "file": "src/lanctl/bootstrap/lanctl.py",
-      "line": 105,
+      "line": 108,
       "key": "LANCTL.UI.TEXT.EXPLICITLY_CHANGE_THE_LANGUAGE_OF_AN_EXISTING_INSTALLATION"
     },
     {
       "file": "src/lanctl/bootstrap/lanctl.py",
-      "line": 109,
+      "line": 112,
       "key": "LANCTL.UI.TEXT.REGISTER_OR_REMOVE_CLINK_COMPLETION_FOR_THE_CURRENT_USER"
     },
     {
       "file": "src/lanctl/bootstrap/lanctl.py",
-      "line": 113,
+      "line": 116,
       "key": "LANCTL.UI.TEXT.OPEN_LANIP_AS_THE_NORMAL_USER_AFTER_INSTALLATION"
     },
     {
       "file": "src/lanctl/bootstrap/lanctl.py",
-      "line": 118,
+      "line": 121,
       "key": "LANCTL.UI.TEXT.PREPARE_RANGE_CONFIRMATION_DO_NOT_START_PROBES"
     },
     {
@@ -12895,122 +12964,122 @@
     },
     {
       "file": "gui/suite.js",
-      "line": 267,
+      "line": 268,
       "key": "LANCTL.UI.VIEW.NO_OPERATIONS_RECORDED_IN_THIS_SESSION"
     },
     {
       "file": "gui/suite.js",
-      "line": 267,
+      "line": 268,
       "key": "LANCTL.UI.VIEW.SESSION_ACTIVITY"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.VIEW.VERSION"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.TEXT.SYSTEM"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.WORD.ARCHITECTURE"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.TEXT.PROJECT"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.TEXT.NO_PROJECT"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.WORD.INTERFACE"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.VIEW.LOCAL_GUI_PYWEBVIEW"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.WORD.FILES"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.VIEW.VLF_PROJECTS_LCP_PLUGINS"
     },
     {
       "file": "gui/suite.js",
-      "line": 269,
+      "line": 270,
       "key": "LANCTL.UI.VIEW.SYSTEM_INFORMATION"
     },
     {
       "file": "gui/suite.js",
-      "line": 299,
+      "line": 300,
       "key": "LANCTL.UI.FRAGMENT.GUI_OPEN"
     },
     {
       "file": "gui/suite.js",
-      "line": 300,
+      "line": 301,
       "key": "LANCTL.UI.FRAGMENT.GUI_CLOSED_OR_DISCONNECTED"
     },
     {
       "file": "gui/suite.js",
-      "line": 316,
+      "line": 317,
       "key": "LANCTL.UI.VIEW.CHANGES_ARE_SHARED_WITH_OTHER_INTERFACES_AND_VALIDATED_BEFORE_SAVING"
     },
     {
       "file": "gui/suite.js",
-      "line": 319,
+      "line": 320,
       "key": "LANCTL.UI.VIEW.JSON_VALUE"
     },
     {
       "file": "gui/suite.js",
-      "line": 319,
+      "line": 320,
       "key": "LANCTL.UI.TEXT.VALUE"
     },
     {
       "file": "gui/suite.js",
-      "line": 330,
+      "line": 331,
       "key": "LANCTL.UI.TEXT.SEARCH_FOR_AN_OPTION"
     },
     {
       "file": "gui/suite.js",
-      "line": 330,
+      "line": 331,
       "key": "LANCTL.UI.TEXT.SEARCH_SETTINGS"
     },
     {
       "file": "gui/suite.js",
-      "line": 336,
+      "line": 337,
       "key": "LANCTL.UI.FRAGMENT.READ_ONLY"
     },
     {
       "file": "gui/suite.js",
-      "line": 348,
+      "line": 349,
       "key": "LANCTL.UI.TEXT.PROJECT"
     },
     {
       "file": "gui/suite.js",
-      "line": 354,
+      "line": 355,
       "key": "LANCTL.UI.VIEW.SHARED_PROJECT_AND_STORAGE_OPTIONS"
     },
     {
       "file": "gui/suite.js",
-      "line": 354,
+      "line": 355,
       "key": "LANCTL.UI.VIEW.LAUNCHER_OPTIONS_GROUPED_BY_TOPIC"
     },
     {
       "file": "gui/suite.js",
-      "line": 355,
+      "line": 356,
       "key": "LANCTL.UI.FRAGMENT.SETTINGS_FOR"
     },
     {
@@ -15137,6 +15206,11 @@
       "file": "gui/suite.html",
       "line": 7,
       "key": "LANCTL.UI.TEXT.SETTINGS_B25ACB56"
+    },
+    {
+      "file": "gui/suite.html",
+      "line": 7,
+      "key": "LANCTL.SHORTCUT.TITLE"
     },
     {
       "file": "gui/suite.html",

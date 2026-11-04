@@ -137,6 +137,7 @@ window.LANCTL_REFERENCE = {
         "settings",
         "language",
         "backend",
+        "shortcut",
         "setup-defaults",
         "completions",
         "post-install"
@@ -145,7 +146,7 @@ window.LANCTL_REFERENCE = {
         "verified": "0.3.4-alpha.3"
       },
       "description": "Root orchestrator for the LANCTL suite applications.",
-      "details": "Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [-web | -github | -reference] [--admin]\n              LAUNCHER ...\n\nRoot orchestrator for the LANCTL suite applications.\n\nArguments:\n  LAUNCHER\n    lanip (ip)             Logical inventory, discovery, IP, MAC and services.\n    lanwire (wire)         Wiring, ports, panels and physical topology.\n    lanrack (rack)         Technical rooms, racks, rack units and equipment.\n    lanaccess (access)     Users, credentials and remote access.\n    lanmon (monitor)       Monitoring, events, incidents and history.\n    plugin                 Shared suite administration.\n    settings               Shared suite administration.\n    language               Shared suite administration.\n    backend                Shared suite administration.\n    setup-defaults         Initialize installation preferences without overwriting existing ones.\n    completions            Register or remove Clink completion for the current user.\n    post-install           Open LANIP as the normal user after installation.\n\nOptions:\n  -h, --help               Show this help and exit.\n  --version                Show the common suite version and exit.\n  --cli, -cli              Open the main console.\n  -tui, --tui              Open the main TUI.\n  --gui                    Open the LANCTL graphical hub.\n  -web, --web              Show and open the official website.\n  -github, --github        Show and open the official GitHub.\n  -reference, --reference  Show and open the official reference.\n  --admin                  Explicitly request UAC for an installed launcher on Windows.",
+      "details": "Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [-web | -github | -reference] [--admin]\n              LAUNCHER ...\n\nRoot orchestrator for the LANCTL suite applications.\n\nArguments:\n  LAUNCHER\n    lanip (ip)             Logical inventory, discovery, IP, MAC and services.\n    lanwire (wire)         Wiring, ports, panels and physical topology.\n    lanrack (rack)         Technical rooms, racks, rack units and equipment.\n    lanaccess (access)     Users, credentials and remote access.\n    lanmon (monitor)       Monitoring, events, incidents and history.\n    plugin                 Shared suite administration.\n    settings               Shared suite administration.\n    language               Shared suite administration.\n    backend                Shared suite administration.\n    shortcut               Preview or create a desktop shortcut.\n    setup-defaults         Initialize installation preferences without overwriting existing ones.\n    completions            Register or remove Clink completion for the current user.\n    post-install           Open LANIP as the normal user after installation.\n\nOptions:\n  -h, --help               Show this help and exit.\n  --version                Show the common suite version and exit.\n  --cli, -cli              Open the main console.\n  -tui, --tui              Open the main TUI.\n  --gui                    Open the LANCTL graphical hub.\n  -web, --web              Show and open the official website.\n  -github, --github        Show and open the official GitHub.\n  -reference, --reference  Show and open the official reference.\n  --admin                  Explicitly request UAC for an installed launcher on Windows.",
       "docs": [
         "CLI-REFERENCE.md",
         "CLI.md"
@@ -11173,6 +11174,24 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.4-alpha.3"
       },
+      "description": "Fecha: 04/11/2026. Estado: propuesta preparada; decisión visual e implementación pendientes. Alcance de esta entrega: revisión de fuentes y contraste de colores, sin modificar recursos gráficos, preferencias, instaladores ni asociaciones.",
+      "details": "Documento mantenido en docs/ICON-THEME-PROPOSAL.md.",
+      "docs": [
+        "ICON-THEME-PROPOSAL.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-icon-theme-proposal",
+      "kind": "document",
+      "name": "ICON-THEME-PROPOSAL.md",
+      "title": "P92 — propuesta de iconos por tema",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/ICON-THEME-PROPOSAL.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.4-alpha.3"
+      },
       "description": "Este subsistema está destinado a la futura interfaz gráfica. No registra comandos en CLI ni TUI.",
       "details": "Documento mantenido en docs/ICONS.md.",
       "docs": [
@@ -11245,7 +11264,7 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.4-alpha.3"
       },
-      "description": "LANCTL utiliza catálogos JSON con extensión `.lang`. Las claves son contratos estables, por ejemplo `LANCTL.CORE.APP.CANCELLED`, y no el texto original.",
+      "description": "La [revisión del almacenamiento y empaquetado](LANGUAGE-STORAGE-REVIEW.md) describe las duplicaciones actuales y una propuesta de recursos compartidos. Es un análisis pendiente de implementación; el comportamiento vigente se documenta a continuación.",
       "details": "Documento mantenido en docs/LANG.md.",
       "docs": [
         "LANG.md"
@@ -11257,6 +11276,24 @@ window.LANCTL_REFERENCE = {
       "name": "LANG.md",
       "title": "Idiomas de LANCTL",
       "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/LANG.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.4-alpha.3"
+      },
+      "description": "Revisión de las fuentes y del empaquetado actual. Se inspeccionaron los recursos del binario Linux local y se reprodujo la creación/selección de catálogos en directorios temporales. No se ha inspeccionado un `.exe` Windows concreto ni se ha cambiado el comportamiento de ejecución, la configuración o los idiomas del usuario. El contenido previsto para Windows se deduce de `LANCTL.spec`.",
+      "details": "Documento mantenido en docs/LANGUAGE-STORAGE-REVIEW.md.",
+      "docs": [
+        "LANGUAGE-STORAGE-REVIEW.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-language-storage-review",
+      "kind": "document",
+      "name": "LANGUAGE-STORAGE-REVIEW.md",
+      "title": "Revisión del almacenamiento de idiomas — 04/11/2026",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/LANGUAGE-STORAGE-REVIEW.md"
     },
     {
       "category": "Archivos de documentación",
@@ -11836,7 +11873,7 @@ window.LANCTL_REFERENCE = {
     }
   ],
   "meta": {
-    "entryCount": 194,
+    "entryCount": 196,
     "name": "LANCTL Reference",
     "repository": "https://github.com/CctrGy/LANCTL",
     "version": "0.3.4-alpha.3"

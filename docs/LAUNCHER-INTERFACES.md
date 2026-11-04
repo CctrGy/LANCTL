@@ -133,3 +133,51 @@ otra interfaz; las opciones históricas de rutas conservan su ruta administrativ
 Estas excepciones no se aplican a `--set`, formularios ni sesiones remotas.
 Los permisos LANACCESS y la transacción de recuperación se conservan; incluso
 una solicitud remota sin cambios de valor debe superar la autorización.
+
+### Creación de accesos Linux desde CLI (P118, entrega parcial)
+
+`lanctl shortcut --mode tui --name "LANCTL TUI"` muestra un plan JSON sin
+escribir. Repetir con `--create` crea el `.desktop`, sin reemplazar archivos
+existentes. `--launcher lanip` permite elegir otra aplicación. `--destination`
+selecciona dónde guardar el acceso; `--working-directory` es independiente y no
+selecciona un proyecto. `--icon` admite un archivo de icono opcional.
+
+En distribuciones compiladas, la carpeta predeterminada es la del ejecutable
+real (`sys.executable`), nunca el directorio de extracción. Desde fuentes debe
+indicarse `--distribution /ruta/a/los/ejecutables`; no se crean accesos al Python
+del entorno virtual. Por defecto el archivo se guarda junto a esos ejecutables;
+si la carpeta está protegida, elegir un destino del usuario: no hay elevación ni
+redirección silenciosa. CLI/TUI solicitan terminal; GUI no solicita consola.
+La disponibilidad de GUI se comprueba por su módulo de escritorio; la futura
+separación de componentes P117 necesitará integrar su inventario definitivo.
+
+No hay preguntas que bloqueen SSH o scripts: la vista previa es el paso de
+revisión; omitir `--create` cancela sin cambios. Se devuelve 0 al completar la
+vista previa o creación y 2 ante un fallo. No se aceptan argumentos libres,
+credenciales, reemplazo ni reparación. Las rutas ejecutables con `%` se rechazan
+por incompatibilidad comprobada con Gio; `=` no es válido según Desktop Entry.
+Según el escritorio puede ser necesario permitir el lanzamiento manualmente.
+La certificación nativa y de instalables permanece pendiente; esta entrega
+no modifica instaladores ni certifica su comportamiento.
+
+La GUI de LANCTL incluye **Crear acceso directo** en su barra de opciones.
+El formulario permite elegir aplicación, modo, nombre, carpetas e icono;
+**Revisar acceso** muestra los valores resueltos antes de confirmar **Crear**.
+Cancelar la confirmación no escribe; una creación consume la vista previa y
+los errores requieren revisar de nuevo antes de reintentar. En otras plataformas se indica que la función no está disponible. No exige un proyecto seleccionado.
+El formulario y sus RPC tienen pruebas automatizadas ligeras; queda pendiente
+la revisión visual y de navegación en ventanas nativas Windows/Linux.
+
+El adaptador Windows está implementado en fuentes y usa el mismo comando y
+formulario para generar `.lnk`. Los modos CLI/TUI apuntan al launcher `.exe`
+con `--cli`/`--tui`; GUI usa `lanctl-window.exe` y el identificador del launcher.
+Se reutilizan los iconos de terminal o del launcher cuando existen; se admite
+icono elegido por el usuario. Windows valida nombres reservados y rechaza `%`
+en las rutas que WSH podría interpretar como variables de entorno.
+
+La creación requiere Windows PowerShell del sistema y WScript.Shell disponibles;
+si una política corporativa los bloquea, devuelve el diagnóstico sin intentar
+eludirla. Los datos se pasan como JSON por stdin, separados del código fijo.
+Se crea primero un archivo privado, se verifican sus propiedades y se publica
+sin sustituir archivos existentes. Esta implementación todavía requiere pruebas
+nativas de Windows y validación en distribuciones instaladas y portables.

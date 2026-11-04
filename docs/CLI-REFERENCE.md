@@ -22,6 +22,7 @@ Arguments:
     settings               Shared suite administration.
     language               Shared suite administration.
     backend                Shared suite administration.
+    shortcut               Preview or create a desktop shortcut.
     setup-defaults         Initialize installation preferences without overwriting existing ones.
     completions            Register or remove Clink completion for the current user.
     post-install           Open LANIP as the normal user after installation.

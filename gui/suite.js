@@ -255,6 +255,7 @@ $("#project").addEventListener("change",async e=>{try{if(!e.target.value){e.targ
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;
   try{
+    if(b.dataset.action==="shortcut"){await window.openShortcutForm();return;}
     if(b.dataset.settingsScope)return await generalSettings(b.dataset.settingsScope);
     if(b.dataset.page){await navigate(b.dataset.page);return;}
     if(b.dataset.launcherSettings)return await launcherSettings(b.dataset.launcherSettings);

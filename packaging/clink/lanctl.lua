@@ -642,6 +642,7 @@ end
 local suite_launchers = {
     "post-install" .. clink.argmatcher():addflags({"-h","--help","/?","--first-scan"}):nofiles(),
     "setup-defaults" .. clink.argmatcher():addflags({"-h","--help","/?","--theme" .. values({"graphite","midnight","forest","violet","light"}),"--plugins" .. history_value("all, none o IDs separados por comas"),"--language" .. history_value("Código de idioma incluido"),"--change-language"}):nofiles(),
+    "shortcut" .. clink.argmatcher():addflags({"-h","--help","/?","--launcher" .. values({"lanctl","lanip","lanwire","lanrack","lanaccess","lanmon"}),"--mode" .. values({"cli","tui","gui"}),"--name" .. history_value("Nombre del acceso"),"--distribution" .. dir_arg,"--destination" .. dir_arg,"--working-directory" .. dir_arg,"--icon" .. file_arg,"--create"}):nofiles(),
     "completions" .. values({"install","uninstall"}),
     "backend" .. backend,
     "lanip" .. configure_lanip(clink.argmatcher()),

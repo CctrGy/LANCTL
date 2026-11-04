@@ -79,6 +79,9 @@ def build_parser() -> LANCTLArgumentParser:
             name, help=t("LANCTL.UI.TEXT.SHARED_SUITE_ADMINISTRATION"), add_help=False
         )
         child.add_argument("arguments", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
+    from lanctl.apps.suite.shortcuts_cli import register_shortcut_command
+
+    register_shortcut_command(launchers)
     setup = launchers.add_parser(
         "setup-defaults",
         help=t(
@@ -146,6 +149,10 @@ def main(argv: list[str] | None = None) -> int:
     initialize_language()
     configure_utf8_stdio()
     arguments = normalize_help_arguments(list(sys.argv[1:] if argv is None else argv))
+    if arguments and arguments[0] == "shortcut":
+        from lanctl.apps.suite.shortcuts_cli import run_shortcut
+
+        return run_shortcut(build_parser().parse_args(arguments))
     if arguments and arguments[0] == "backend":
         from lanctl.core.coordination_cli import run
 

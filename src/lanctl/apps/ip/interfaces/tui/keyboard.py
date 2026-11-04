@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import codecs
+import io
 import os
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -142,7 +144,24 @@ POSIX_ESCAPE_KEYS = {
 }
 
 POSIX_ESCAPE_TIMEOUT = 0.15
-POSIX_ESCAPE_MAX_LENGTH = max(map(len, POSIX_ESCAPE_KEYS))
+POSIX_ESCAPE_MAX_LENGTH = 64
+
+
+def _read_posix_character(stream) -> str:
+    """Read without TextIO read-ahead so select sees the remaining key bytes."""
+
+    try:
+        descriptor = stream.fileno()
+    except (AttributeError, io.UnsupportedOperation):
+        return stream.read(1)
+    decoder = codecs.getincrementaldecoder(stream.encoding or "utf-8")(
+        errors=stream.errors or "strict"
+    )
+    while True:
+        chunk = os.read(descriptor, 1)
+        value = decoder.decode(chunk, final=not chunk)
+        if value or not chunk:
+            return value
 
 
 def posix_key_available(stream) -> bool:
@@ -159,7 +178,7 @@ def read_posix_key(stream, *, escape_timeout: float = POSIX_ESCAPE_TIMEOUT) -> s
     import select
     import time
 
-    first = stream.read(1)
+    first = _read_posix_character(stream)
     if first != "\x1b":
         return {
             "\x7f": "BACKSPACE",
@@ -187,10 +206,19 @@ def read_posix_key(stream, *, escape_timeout: float = POSIX_ESCAPE_TIMEOUT) -> s
         remaining = deadline - time.monotonic()
         if remaining <= 0 or not select.select([stream], [], [], remaining)[0]:
             break
-        sequence += stream.read(1)
-        if sequence in POSIX_ESCAPE_KEYS or sequence.endswith("~"):
+        character = _read_posix_character(stream)
+        if not character:
             break
-    return POSIX_ESCAPE_KEYS.get(sequence, "ESC")
+        sequence += character
+        if sequence in POSIX_ESCAPE_KEYS:
+            break
+        # Consume complete unsupported CSI/SS3 sequences (including mouse
+        # reports) without turning them into the TUI's close command.
+        if len(sequence) > 1 and sequence[0] in "[O" and "@" <= character <= "~":
+            break
+        if sequence[0] not in "[O":
+            break
+    return POSIX_ESCAPE_KEYS.get(sequence, "UNKNOWN" if sequence else "ESC")
 
 
 @contextmanager
