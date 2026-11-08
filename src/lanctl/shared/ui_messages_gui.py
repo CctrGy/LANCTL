@@ -1,6 +1,18 @@
 """Reviewed bilingual dynamic interface messages. Technical values are not localized."""
 
 GUI_MESSAGES = {
+    "LANCTL.GUI.CLOSE.EXPIRED": (
+        "The close request expired. Review the window and try closing again.",
+        "La solicitud de cierre ha caducado. Revisa la ventana y vuelve a intentar cerrarla.",
+    ),
+    "LANCTL.GUI.CLOSE.INVALID": (
+        "Native close is unavailable or the decision is invalid.",
+        "El cierre nativo no está disponible o la decisión no es válida.",
+    ),
+    "LANCTL.GUI.CLOSE.BUSY": (
+        "Close confirmation is still pending. Keep this window open and retry.",
+        "La confirmación de cierre sigue pendiente. Mantén esta ventana abierta y reintenta.",
+    ),
     "LANCTL.SHORTCUT.TITLE": ("Create shortcut", "Crear acceso directo"),
     "LANCTL.SHORTCUT.PREVIEW_BUTTON": ("Review shortcut", "Revisar acceso"),
     "LANCTL.SHORTCUT.CREATE_BUTTON": ("Create", "Crear"),

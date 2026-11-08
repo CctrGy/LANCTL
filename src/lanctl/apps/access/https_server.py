@@ -225,6 +225,7 @@ class HttpsAccessServer:
                     "/",
                     "/index.html",
                     "/app.js",
+                    "/native-close.js",
                     "/styles.css",
                     "/i18n.js",
                     "/i18n-defaults.js",

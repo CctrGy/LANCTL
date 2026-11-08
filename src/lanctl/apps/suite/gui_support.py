@@ -16,6 +16,7 @@ _PROJECT_ACTIONS = frozenset(
         "save_project",
         "project_state",
         "request_close",
+        "prepare_native_close",
         "update_device",
         "create_device",
         "delete_device",
@@ -100,6 +101,17 @@ class GuiSupportMixin:
                     return target(*action_arguments)
             finally:
                 self._lock.release()
+
+        return self._support_reply(operation)
+
+    def prepare_native_close(self, decision="save"):
+        def operation():
+            manager = getattr(self, "_native_close", None)
+            if manager is None:
+                raise RuntimeError(t("LANCTL.GUI.CLOSE.INVALID"))
+            return manager.prepare(decision)
+
+        from lanctl.shared.i18n import t
 
         return self._support_reply(operation)
 

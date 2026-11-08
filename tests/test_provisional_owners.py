@@ -16,6 +16,7 @@ from lanctl.core.projects.provisional import (
     prepare_provisional_close,
     prepare_provisional_workspace,
     provisional_operation,
+    validate_provisional_close,
 )
 
 
@@ -168,3 +169,106 @@ def test_invalid_owner_metadata_is_rejected_without_rewriting(tmp_path, change):
     with pytest.raises(ValueError):
         join_provisional_workspace(provisional, owner, coordinator=coordinator)
     assert metadata.read_bytes() == before
+
+
+@pytest.mark.parametrize("next_decision", ["ask", "save"])
+def test_changed_close_decision_cannot_reuse_previous_discard(workspace, tmp_path, next_decision):
+    coordinator = Coordinator(tmp_path / "coordinator.db")
+    owner = coordinator.register("lanip", "gui", None)
+    draft = prepare_provisional_workspace(root=tmp_path / "provisional")
+    join_provisional_workspace(draft, owner, coordinator=coordinator)
+    with provisional_operation(draft, owner, coordinator=coordinator, base=workspace) as settings:
+        DeviceDatabase(settings["database"]).add_manual_device(idf="PC-001")
+    claim = claim_provisional_close(draft, owner, coordinator=coordinator)
+    assert prepare_provisional_close(
+        draft, owner, claim["token"], coordinator=coordinator, decision="discard"
+    )["ready"]
+    if next_decision == "save":
+        destination = tmp_path / "Existing.vlf"
+        destination.write_bytes(b"preserve")
+        with pytest.raises(ValueError):
+            prepare_provisional_close(
+                draft,
+                owner,
+                claim["token"],
+                coordinator=coordinator,
+                decision="save",
+                destination=destination,
+                name="Existing",
+                base=workspace,
+            )
+        assert destination.read_bytes() == b"preserve"
+    else:
+        assert prepare_provisional_close(draft, owner, claim["token"], coordinator=coordinator)[
+            "needsDecision"
+        ]
+    with pytest.raises(RuntimeError):
+        complete_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    cancel_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    with provisional_operation(draft, owner, coordinator=coordinator, base=workspace) as settings:
+        assert DeviceDatabase(settings["database"]).load()[0].idf == "PC-001"
+
+
+@pytest.mark.parametrize("damage", ["missing", "replaced"])
+def test_saved_project_must_survive_until_close_confirmation(workspace, tmp_path, damage):
+    coordinator = Coordinator(tmp_path / "coordinator.db")
+    owner = coordinator.register("lanip", "gui", None)
+    draft = prepare_provisional_workspace(root=tmp_path / "provisional")
+    join_provisional_workspace(draft, owner, coordinator=coordinator)
+    with provisional_operation(draft, owner, coordinator=coordinator, base=workspace) as settings:
+        DeviceDatabase(settings["database"]).add_manual_device(idf="PC-001")
+    claim = claim_provisional_close(draft, owner, coordinator=coordinator)
+    destination = tmp_path / "Saved.vlf"
+    result = prepare_provisional_close(
+        draft,
+        owner,
+        claim["token"],
+        coordinator=coordinator,
+        decision="save",
+        destination=destination,
+        name="Saved",
+        base=workspace,
+    )
+    assert result["ready"]
+    assert validate_provisional_close(draft, owner, claim["token"], coordinator=coordinator)[
+        "ready"
+    ]
+    if damage == "missing":
+        destination.unlink()
+    else:
+        destination.write_bytes(b"replaced archive")
+    with pytest.raises((RuntimeError, OSError)):
+        validate_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    with pytest.raises((RuntimeError, OSError)):
+        complete_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    cancel_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    with provisional_operation(draft, owner, coordinator=coordinator, base=workspace) as settings:
+        assert DeviceDatabase(settings["database"]).load()[0].idf == "PC-001"
+
+
+def test_preflight_retains_owner_and_requires_native_confirmation(tmp_path):
+    coordinator = Coordinator(tmp_path / "coordinator.db")
+    owner = coordinator.register("lanip", "gui", None)
+    draft = prepare_provisional_workspace(root=tmp_path / "provisional")
+    join_provisional_workspace(draft, owner, coordinator=coordinator)
+    claim = claim_provisional_close(draft, owner, coordinator=coordinator)
+    with pytest.raises(RuntimeError):
+        validate_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    prepare_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    metadata = draft.root / "workspace.json"
+    before = json.loads(metadata.read_text())
+    for _ in range(2):
+        assert validate_provisional_close(
+            draft, owner, claim["token"], coordinator=coordinator
+        ) == {"ready": True, "last": True}
+        assert json.loads(metadata.read_text()) == before
+    # Native destruction may still fail: cancellation must remain possible.
+    cancel_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    with provisional_operation(draft, owner, coordinator=coordinator, base={}):
+        pass
+    claim = claim_provisional_close(draft, owner, coordinator=coordinator)
+    prepare_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    validate_provisional_close(draft, owner, claim["token"], coordinator=coordinator)
+    assert complete_provisional_close(draft, owner, claim["token"], coordinator=coordinator)[
+        "closed"
+    ]

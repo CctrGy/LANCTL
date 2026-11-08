@@ -83,7 +83,7 @@ async function desktopClose() {
     const status = await call("project_state");
     const decision = status.dirty || editorDirty() ? await chooseSave(status.shared) : "discard";
     if(decision === "save") await commitEditor();
-    if(decision !== "cancel") await call("request_close", decision);
+    if(decision !== "cancel") await window.requestNativeClose(decision);
   } catch(error) { message(error.message, true); }
   finally {window.desktopClosing=false;}
 }

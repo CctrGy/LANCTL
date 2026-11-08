@@ -49,7 +49,7 @@
       <div class="table-scroll" tabindex="0" aria-label="Lista de dispositivos; desplazamiento horizontal disponible" data-i18n-aria-label="LANCTL.UI.HTML.DEVICE_LIST_HORIZONTAL_SCROLLING_AVAILABLE">
         <table aria-label="Inventario de dispositivos" data-i18n-aria-label="LANCTL.UI.HTML.DEVICE_INVENTORY">
           <thead><tr>
-            <th class="state-column" data-column="state"><span data-i18n="LANCTL.UI.TEXT.STATUS">Estado</span></th><th data-column="icon"><span data-i18n="LANCTL.UI.TEXT.TYPE">Tipo</span></th><th data-column="ip">IP</th><th data-column="latency">ms</th><th data-column="cnf">CNF</th>
+            <th class="state-column" data-column="state"><span data-i18n="LANCTL.UI.TEXT.STATUS">Estado</span></th><th data-column="icon"><span data-i18n="LANCTL.UI.TEXT.TYPE">Tipo</span></th><th data-column="ip">IP</th><th data-column="idf" class="column-hidden">IDF</th><th data-column="latency">ms</th><th data-column="cnf">CNF</th>
             <th data-column="alias"><span data-i18n="LANCTL.INVENTORY.MANUAL.ALIAS">Alias</span></th><th data-column="mac">MAC</th><th data-column="name"><span data-i18n="LANCTL.INVENTORY.MANUAL.NAME">Nombre</span></th><th data-column="vendor"><span data-i18n="LANCTL.UI.TEXT.MANUFACTURER">Fabricante</span></th>
             <th data-column="group"><span data-i18n="LANCTL.UI.TEXT.GROUP">Grupo</span></th><th data-column="protocols"><span data-i18n="LANCTL.UI.TEXT.PROTOCOLS">Protocolos</span></th><th data-column="description"><span data-i18n="LANCTL.INVENTORY.MANUAL.DESCRIPTION">Descripción</span></th><th data-column="lastSeen"><span data-i18n="LANCTL.UI.TEXT.LAST_SEEN">Última detección</span></th>
           </tr></thead>
@@ -127,7 +127,7 @@
   </div>
   <p id="record-message" role="status" aria-live="polite"></p>
 </dialog>
-<script src="i18n-defaults.js"></script><script src="i18n.js"></script><script src="app-dialogs.js"></script>
+<script src="i18n-defaults.js"></script><script src="i18n.js"></script><script src="native-close.js"></script><script src="app-dialogs.js"></script>
 <script src="app.js"></script>
 <dialog id="desktop-dialog"><form id="desktop-form"><h2 id="desktop-dialog-title"></h2><div id="desktop-fields"></div><p id="desktop-error" role="alert"></p><div class="dialog-actions"><button type="button" id="desktop-dismiss"><span data-i18n="LANCTL.INVENTORY.MANUAL.CANCEL">Cancelar</span></button><button type="submit" class="primary"><span data-i18n="LANCTL.UI.TEXT.ACCEPT">Aceptar</span></button></div></form></dialog>
 <dialog id="save-dialog"><h2><span data-i18n="LANCTL.UI.TEXT.PENDING_CHANGES">Cambios pendientes</span></h2><p><span data-i18n="LANCTL.UI.TEXT.THE_PROJECT_HAS_UNSAVED_CHANGES">El proyecto tiene modificaciones sin guardar.</span></p><div class="dialog-actions"><button data-decision="cancel"><span data-i18n="LANCTL.INVENTORY.MANUAL.CANCEL">Cancelar</span></button><button data-decision="discard"><span data-i18n="LANCTL.UI.TEXT.DISCARD">Descartar</span></button><button data-decision="save" class="primary"><span data-i18n="LANCTL.UI.TEXT.SAVE">Guardar</span></button></div></dialog>

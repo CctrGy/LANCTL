@@ -181,3 +181,28 @@ eludirla. Los datos se pasan como JSON por stdin, separados del código fijo.
 Se crea primero un archivo privado, se verifican sus propiedades y se publica
 sin sustituir archivos existentes. Esta implementación todavía requiere pruebas
 nativas de Windows y validación en distribuciones instaladas y portables.
+
+### Confirmación del cierre GUI (P90, fuentes del 05/11/2026)
+
+Los seis hosts instalan `NativeClose`. El frontend utiliza
+`requestNativeClose`, que prepara un recibo mediante `prepare_native_close`
+(envoltorio `project_call`) y lo devuelve por el canal público de estado de
+pywebview (`lanctl_close_receipt`). Ese canal no espera una respuesta RPC de
+la ventana que se está destruyendo. El receptor espera de forma acotada a que
+termine el hilo del RPC de preparación y revalida el contexto del proyecto
+antes de llamar al servicio de cierre existente. No añade retardos arbitrarios
+ni fuerza la terminación del intérprete. Una preparación pendiente es de un
+solo uso y tiene caducidad; los recibos antiguos o desconocidos no cierran nada.
+
+Los fallos conservan origen, errorId y errorDetails; se devuelven a la ventana
+abierta mediante `lanctl_close_error`. Los métodos Python `request_close`
+mantienen sus firmas anteriores. Los clientes sin el canal de estado conservan
+su adaptación anterior; esta compatibilidad no certifica el cierre de clientes
+GUI antiguos que destruyan directamente su WebView desde un RPC.
+
+Comprobados 13 recorridos Qt offscreen con proyecto temporal: guardar y cancelar
+para cada launcher y descartar en LANIP. El arnés verifica el evento closed,
+los datos al reabrir y la ausencia de nuevos hilos no daemon antes de anunciar
+éxito. El cierre con varios propietarios y el entorno provisional P98/P99,
+Windows y los instalables requieren validación adicional. No equivale a una
+revisión visual ni a probar el gesto X del gestor de ventanas real.

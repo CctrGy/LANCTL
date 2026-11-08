@@ -6,6 +6,16 @@ from lanctl.apps.ip.interfaces.gui.desktop import DesktopApi, DesktopProgress
 MODULE = "lanctl.apps.ip.interfaces.gui.desktop"
 
 
+def test_inventory_serializes_idf_without_replacing_device_identity():
+    from lanctl.apps.ip.domain.models import Device
+
+    device = Device(ip="192.0.2.10", idf="AB-12")
+    record = api()._serialize(device)
+    assert record["idf"] == "AB-12"
+    assert record["id"] == device.device_id
+    assert api()._serialize(Device(ip="192.0.2.11"))["idf"] == ""
+
+
 def test_long_device_description_roundtrips_through_edit_and_reload(tmp_path):
     from lanctl.apps.ip.domain.models import Device
     from lanctl.core.database import DeviceDatabase

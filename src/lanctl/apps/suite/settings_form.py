@@ -46,6 +46,13 @@ def describe_settings(entries, *, project=False):
                 }
                 for item in available_save_modes()
             ]
+        elif schema_path == "localization.language":
+            from lanctl.shared.i18n import get_language_manager
+
+            choices = [
+                {"value": catalog.code, "label": f"{catalog.native_name} ({catalog.code})"}
+                for catalog in get_language_manager().list()
+            ]
         elif path == "gui.theme":
             from lanctl.core.gui_preferences import preferences_payload
 

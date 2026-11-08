@@ -451,6 +451,9 @@ def run_gui():
         background_color="#15181c",
     )
     api._desktop.attach_window(window)
+    from lanctl.apps.suite.native_close import install_native_close
+
+    install_native_close(window, api, launcher="lanctl")
     loaded = Event()
     window.events.loaded += loaded.set
 

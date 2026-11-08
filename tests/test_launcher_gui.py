@@ -1,5 +1,5 @@
 import json
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -408,3 +408,16 @@ def test_wire_new_profiles_and_existing_connector_metadata(workspace, kind, coun
     saved = next(r for r in wire.bootstrap()["records"] if r["id"] == row["id"])
     assert saved["data"]["ports"] == row["data"]["ports"]
     assert "units" not in saved["data"]
+
+
+@pytest.mark.parametrize("launcher", ["lanwire", "lanrack", "lanaccess", "lanmon"])
+def test_close_failure_restores_confirmation_guard(workspace, launcher):
+    instance = api(launcher)
+    instance._window = Mock()
+    instance._window.destroy.side_effect = OSError("native close failed")
+    result = instance.request_close()
+    assert not result["ok"]
+    assert instance._closing is False
+    assert "errorId" in result
+    instance._window.destroy.side_effect = None
+    assert instance.request_close()["closed"]

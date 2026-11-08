@@ -10904,7 +10904,7 @@ window.LANCTL_REFERENCE = {
       "compatibility": {
         "verified": "0.3.4-alpha.3"
       },
-      "description": "Por indicación del usuario, P40/P42 se clasifican como **validación especial pendiente de firma autorizada**, separada de las tareas de implementación ordinaria. Ambos IDs corresponden a la misma incidencia y permanecen abiertos.",
+      "description": "**40 entradas abiertas:** 36 P, tres REF y una revisión visual sin ID. Incluyen P40/P42 como dos seguimientos de una misma incidencia; los contadores son de entradas de la lista, no de funcionalidades independientes. No se cierra ninguna casilla solo por esta revisión.",
       "details": "Documento mantenido en docs/BACKLOG.md.",
       "docs": [
         "BACKLOG.md"

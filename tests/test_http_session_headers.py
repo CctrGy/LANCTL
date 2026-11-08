@@ -65,6 +65,7 @@ def test_static_assets_ignore_untrusted_system_mime_registrations(tmp_path, monk
     expected = {
         "index.html": "text/html",
         "app.js": "application/javascript",
+        "native-close.js": "application/javascript",
         "styles.css": "text/css",
     }
     for name in expected:

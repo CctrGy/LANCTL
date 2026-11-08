@@ -219,6 +219,16 @@ def prepare_config_save(config, stored):
             if config.get(key) == baseline.get(key)
         }
     )
+    operation = operation_config()
+    workspace = (operation or {}).get("projectWorkspace")
+    if isinstance(workspace, dict) and workspace.get("kind") == "provisional":
+        # These are global preferences outside a draft. Its private runtime
+        # routes must not become global merely because a settings form saves.
+        # Compare against the operation, including after repeated saves whose
+        # ConfigSnapshot.project_base contains only PROJECT_KEYS.
+        for key in ("credentials", "log", "programLog"):
+            if config.get(key) == operation.get(key):
+                replacement[key] = deepcopy(stored.get(key))
     return replacement
 
 

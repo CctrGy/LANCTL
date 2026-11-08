@@ -1,5 +1,6 @@
 """Complete GUI settings metadata and atomic program form submissions."""
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from test_launcher_gui import workspace as workspace
@@ -66,3 +67,34 @@ def test_form_batch_rejects_stale_project_context(workspace):
     assert not rejected["ok"]
     assert config.CONFIG_PATH.read_bytes() == before
     assert window.project_call(old, "save_catalog_settings", [{"gui.density": "compact"}])["ok"]
+
+
+def test_language_uses_installed_catalogs_as_dropdown_choices(workspace):
+    from lanctl.apps.suite.settings_form import describe_settings
+
+    catalogs = [
+        SimpleNamespace(code="en", native_name="English"),
+        SimpleNamespace(code="es", native_name="Español"),
+        SimpleNamespace(code="fr", native_name="Français"),
+    ]
+    before = config.CONFIG_PATH.read_bytes()
+    with patch("lanctl.shared.i18n.get_language_manager") as manager:
+        manager.return_value.list.return_value = catalogs
+        entry = describe_settings([{"path": "localization.language", "value": "es"}])[0]
+    assert entry["value"] == "es"
+    assert entry["choices"] == [
+        {"value": "en", "label": "English (en)"},
+        {"value": "es", "label": "Español (es)"},
+        {"value": "fr", "label": "Français (fr)"},
+    ]
+    assert config.CONFIG_PATH.read_bytes() == before
+
+
+def test_settings_catalog_language_is_selectable_without_project(workspace):
+    entry = next(
+        item
+        for item in suite().settings_catalog()["entries"]
+        if item["path"] == "localization.language"
+    )
+    assert entry["choices"]
+    assert all(isinstance(choice["value"], str) and choice["label"] for choice in entry["choices"])

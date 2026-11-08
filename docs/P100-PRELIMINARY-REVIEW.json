@@ -1,12 +1,12 @@
 {
   "scope": "Static explicit consumers and bundled catalogs; not full functional coverage",
-  "sourceFilesExamined": 358,
-  "catalogKeysPerLanguage": 2536,
+  "sourceFilesExamined": 360,
+  "catalogKeysPerLanguage": 2539,
   "catalogKeysMatch": true,
   "placeholderMismatches": [],
   "missingConsumerKeys": [],
-  "explicitConsumerReferences": 2982,
-  "referencedUniqueKeys": 2253,
+  "explicitConsumerReferences": 2998,
+  "referencedUniqueKeys": 2256,
   "unreferencedOrDynamicOnlyKeys": [
     "LANCTL.COMMON.ACTION.LIST",
     "LANCTL.COMMON.STATUS.ACTIVE",
@@ -339,7 +339,7 @@
       "expression": "key"
     }
   ],
-  "residualPythonHtmlCandidates": 398,
+  "residualPythonHtmlCandidates": 399,
   "residualDispositions": {
     "DESIGN_PREVIEW": 21,
     "EXPLICIT_BINDING": 37,
@@ -347,14 +347,14 @@
     "ORIGINAL_DIAGNOSTIC": 13,
     "REVIEW": 1,
     "SCHEMA_KEY": 14,
-    "TECHNICAL_OR_NAME": 109,
+    "TECHNICAL_OR_NAME": 110,
     "TRANSLATED_METADATA": 5
   },
   "unclassifiedCandidates": 1,
   "residualByOwner": {
     "LANACCESS": 12,
     "LANCTL": 14,
-    "LANIP": 287,
+    "LANIP": 288,
     "LANMON": 5,
     "LANRACK": 6,
     "LANWIRE": 8,
@@ -6984,17 +6984,22 @@
     },
     {
       "file": "src/lanctl/apps/suite/gui_support.py",
-      "line": 289,
+      "line": 301,
       "key": "LANCTL.MONITOR.VIEW.REQUESTED"
     },
     {
       "file": "src/lanctl/apps/suite/gui_support.py",
-      "line": 270,
+      "line": 111,
+      "key": "LANCTL.GUI.CLOSE.INVALID"
+    },
+    {
+      "file": "src/lanctl/apps/suite/gui_support.py",
+      "line": 282,
       "key": "LANCTL.MONITOR.VIEW.INVALID"
     },
     {
       "file": "src/lanctl/apps/suite/gui_support.py",
-      "line": 280,
+      "line": 292,
       "key": "LANCTL.MONITOR.VIEW.REQUESTED"
     },
     {
@@ -7009,12 +7014,47 @@
     },
     {
       "file": "src/lanctl/apps/suite/launcher_gui.py",
-      "line": 392,
+      "line": 399,
       "key": "LANCTL.MONITOR.VIEW.INVALID"
     },
     {
+      "file": "src/lanctl/apps/suite/native_close.py",
+      "line": 64,
+      "key": "LANCTL.GUI.CLOSE.INVALID"
+    },
+    {
+      "file": "src/lanctl/apps/suite/native_close.py",
+      "line": 66,
+      "key": "LANCTL.GUI.CLOSE.INVALID"
+    },
+    {
+      "file": "src/lanctl/apps/suite/native_close.py",
+      "line": 71,
+      "key": "LANCTL.GUI.CLOSE.BUSY"
+    },
+    {
+      "file": "src/lanctl/apps/suite/native_close.py",
+      "line": 106,
+      "key": "LANCTL.GUI.CLOSE.EXPIRED"
+    },
+    {
+      "file": "src/lanctl/apps/suite/native_close.py",
+      "line": 111,
+      "key": "LANCTL.GUI.CLOSE.BUSY"
+    },
+    {
+      "file": "src/lanctl/apps/suite/native_close.py",
+      "line": 113,
+      "key": "LANCTL.GUI.CLOSE.BUSY"
+    },
+    {
+      "file": "src/lanctl/apps/suite/native_close.py",
+      "line": 129,
+      "key": "LANCTL.GUI.CLOSE.BUSY"
+    },
+    {
       "file": "src/lanctl/apps/suite/settings_form.py",
-      "line": 58,
+      "line": 65,
       "key": "LANCTL.UI.SCREEN.COMFORTABLE"
     },
     {
@@ -8414,77 +8454,107 @@
     },
     {
       "file": "src/lanctl/core/projects/provisional.py",
-      "line": 78,
+      "line": 79,
       "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
     },
     {
       "file": "src/lanctl/core/projects/provisional.py",
-      "line": 83,
+      "line": 84,
       "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
     },
     {
       "file": "src/lanctl/core/projects/provisional.py",
-      "line": 154,
+      "line": 217,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 222,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 355,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 164,
       "key": "LANCTL.PROJECT.PROVISIONAL.SAVE_MISMATCH"
     },
     {
       "file": "src/lanctl/core/projects/provisional.py",
-      "line": 165,
+      "line": 181,
       "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
     },
     {
       "file": "src/lanctl/core/projects/provisional.py",
-      "line": 179,
+      "line": 195,
       "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
     },
     {
       "file": "src/lanctl/core/projects/provisional.py",
-      "line": 190,
+      "line": 206,
       "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
     },
     {
       "file": "src/lanctl/core/projects/provisional.py",
-      "line": 204,
+      "line": 266,
       "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
     },
     {
       "file": "src/lanctl/core/projects/provisional.py",
-      "line": 215,
+      "line": 277,
       "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 302,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 333,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 363,
+      "key": "LANCTL.PROJECT.PROVISIONAL.SAVE_MISMATCH"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 371,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 373,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 406,
+      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 410,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 97,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
+    },
+    {
+      "file": "src/lanctl/core/projects/provisional.py",
+      "line": 233,
+      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
     },
     {
       "file": "src/lanctl/core/projects/provisional.py",
       "line": 240,
-      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
-    },
-    {
-      "file": "src/lanctl/core/projects/provisional.py",
-      "line": 267,
-      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
-    },
-    {
-      "file": "src/lanctl/core/projects/provisional.py",
-      "line": 282,
-      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
-    },
-    {
-      "file": "src/lanctl/core/projects/provisional.py",
-      "line": 309,
-      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
-    },
-    {
-      "file": "src/lanctl/core/projects/provisional.py",
-      "line": 96,
-      "key": "LANCTL.PROJECT.PROVISIONAL.INVALID"
-    },
-    {
-      "file": "src/lanctl/core/projects/provisional.py",
-      "line": 290,
-      "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
-    },
-    {
-      "file": "src/lanctl/core/projects/provisional.py",
-      "line": 292,
       "key": "LANCTL.PROJECT.PROVISIONAL.BUSY"
     },
     {
@@ -8846,6 +8916,11 @@
       "file": "gui/app.js",
       "line": 16,
       "key": "LANCTL.UI.WEB.VALUE0_ROWS"
+    },
+    {
+      "file": "gui/app.js",
+      "line": 16,
+      "key": "LANCTL.COMMON.VALUE.NONE"
     },
     {
       "file": "gui/app.js",
@@ -10916,6 +10991,11 @@
       "file": "gui/monitor-support.js",
       "line": 299,
       "key": "LANCTL.MONITOR.VIEW.DRAFT_PRESERVED"
+    },
+    {
+      "file": "gui/native-close.js",
+      "line": 17,
+      "key": "LANCTL.GUI.CLOSE.INVALID"
     },
     {
       "file": "gui/physical-editor.js",

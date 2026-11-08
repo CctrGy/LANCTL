@@ -835,6 +835,7 @@ class GuiApi:
         active = self._activity.get(device.device_id, active)
         return {
             "id": device.device_id,
+            "idf": device.idf,
             "ip": device.ip,
             "mac": device.mac,
             "alias": device.alias,

@@ -19,7 +19,7 @@ applyTheme = function(theme = {}) {
 function columnPreferences() {
   try {
     const saved=JSON.parse(localStorage.getItem("lanctl.columns")||"null");
-    if(saved && typeof saved==="object" && !Array.isArray(saved)) return saved;
+    if(saved && typeof saved==="object" && !Array.isArray(saved)) return {idf:false,...saved};
   } catch { /* Ignore invalid presentation preferences, not project data. */ }
   return Object.fromEntries(columns.map(key=>[key,essentialColumns.includes(key)]));
 }

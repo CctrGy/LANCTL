@@ -4477,3 +4477,515 @@ Matriz que falta ejecutar con recursos adecuados:
 
 P90/P88 permanecen abiertas. No se lanzaron navegadores, Qt, builds o nuevas
 suites pesadas. Sin cambios sobre procesos ajenos, instalaciones o datos reales.
+
+## Revisión de estado y revalidación dirigida — 05/11/2026
+
+Árbol limpio al inicio; rama y fuentes conservadas. Se revisaron las reglas,
+backlog, código y evidencias antes de actualizar estados. La cuota aplicable
+Codex tenía 97 % restante; RAM disponible inicial ~2986 MiB y swap vacía,
+frente a la presión documentada del 04/11. Todas las ejecuciones fueron
+secuenciales, con datos temporales, sin escaneo de red ni modificaciones sobre
+instalaciones, proyectos o procesos del usuario.
+
+1. **P118:** `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q
+   tests/test_shortcuts.py tests/test_shortcuts_cli.py tests/test_shortcuts_gui.py
+   tests/test_shortcuts_windows.py`: **102 passed, 1 skipped, 1.06 s**. No se
+   hereda el límite virtual erróneo de la pasada anterior. Gio y Node pasan;
+   la única omisión es COM nativo Windows. Supera los dos fallos de aquella
+   selección; no certifica artefactos ni Windows.
+2. **P90/P88/P103:** `QT_QPA_PLATFORM=offscreen
+   QTWEBENGINE_DISABLE_SANDBOX=1 .venv/bin/python tests/gui_project_bridge_smoke.py
+   --launcher LANZADOR`, repetido por separado para lanip, lanctl, lanwire,
+   lanrack, lanaccess y lanmon. Las seis ejecuciones terminan con código 0 y
+   passed=[lanzador]. Comprueban página real, RPC project_state, contexto obsoleto
+   y destino privado rechazados; LANCTL también abre Settings. Qt offscreen no
+   equivale a revisión visual humana.
+3. **Conjunto Qt:** mismo script sin --launcher, código 0; passed contiene los
+   seis launchers, crossWindowChecked=true y settingsChecked=true. Cambios entre
+   dos VLF temporales convergen entre ventanas. scanChecked=false y
+   closeDecisionsChecked=false: no completa esos criterios de P90/P98/P99.
+   El arnés no registra sesiones GUI reales y no certifica notificaciones de
+   agentes, entrega de actividad a LANMON ni cierre confirmado de propietarios.
+   Se acotó cada proceso por timeout (75 s individual, 90 s conjunto), sin
+   alcanzarlo. pywebview 6.2.1, PyQt6 6.11.0, PyQt6-WebEngine 6.11.0.
+4. **Observaciones del arnés:** advertencias Vulkan/offscreen y actividad sin
+   sesión GUI; al apagar el conjunto aparece `Release of profile requested but
+   WebEnginePage still not deleted. Expect troubles !`. Se conserva como
+   observación P115 pendiente de clasificar; no atribuir una causa de producto
+   ni afirmar que el ciclo completo de destrucción está certificado.
+5. **P98/P99/P122:** `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m
+   pytest -q tests/test_provisional_workspace.py tests/test_provisional_owners.py
+   tests/test_tui_posix_navigation.py`: **22 passed, 1.24 s**. La lectura de
+   `core/projects/provisional.py` confirma preparación, guardado y cierre por
+   dueño en servicios. Búsqueda de sus funciones de ciclo en apps/bootstrap
+   sin llamadas: falta la integración GUI, coherente con el criterio original.
+   La prueba PTY no valida el binario instalado del usuario.
+
+Resultado de gestión: 39 entradas abiertas (35 P, tres REF y una visual), sin
+cierre de casillas. Se actualizan P98/P99 de «pendiente» genérico a integración
+pendiente con base de servicios y P114 a mitigación con investigación pendiente.
+P118 conserva el fallo histórico pero su última selección está verde con la
+omisión Windows. P90/P88 conservan explícitamente los recorridos que faltan.
+No se cambia código, idiomas, parsers ni puntos de error de producto; no requiere
+regeneración de catálogos. Sin build, commit, push ni publicación.
+
+## P90 — bloqueo al cerrar desde RPC nativo corregido (05/11/2026)
+
+Solicitud: continuar con el siguiente elemento según la prioridad vigente,
+P90. Se mantienen P98/P99 y la certificación como alcances separados. Trabajo en
+`codex/p90-native-close-handshake`, creada desde la rama de desarrollo vigente,
+sin modificar ramas estables ni descartar los cambios documentales previos.
+
+### Reproducción y diagnóstico
+
+- Se amplió `tests/gui_project_bridge_smoke.py` con --close-decision y un VLF
+  temporal con un elemento manual pendiente. Se enlaza cada API con su ventana
+  como en el host real, se pulsa la decisión real del formulario y se comprueba
+  closed, reapertura y conservación de datos. La ejecución es offscreen, sin
+  sondeos de red ni proyectos reales.
+- La primera comparación de todo el ZIP falló porque HistoryWriter añade
+  eventos a logs/ y actualiza updated/contentHash/checksum aunque el inventario
+  siga sin guardar. Se inspeccionaron las diferencias antes de ajustar la prueba:
+  ahora conserva toda la comparación de datos y metadatos estables, permitiendo
+  únicamente historial y sus hashes/fecha. No se eliminó la validación de datos.
+- Guardar y descartar podían cerrar la ventana y conservar correctamente los
+  datos, pero dejaban vivo un hilo no daemon. Timeouts propios acotaron las
+  reproducciones (90 s inicialmente, 25 s al confirmar); el resultado completo
+  fue fallo/124, no un pase por imprimir un JSON temprano.
+- Stack del hilo: pywebview util.py:_call → Window.evaluate_js → qt.evaluate_js
+  → Semaphore.acquire. La respuesta RPC intenta volver a una ventana destruida.
+  pywebview 6.2.1 y PyQt6/WebEngine 6.11.0. El arnés también tenía una carrera
+  al borrar temporales antes de que terminara su verificador tras closed: ahora
+  espera verified y detiene su manager de plugins antes de retirar datos.
+
+### Cambio final
+
+- Nuevo adaptador GUI `native_close.py`: ticket opaco de un solo uso, canal de
+  estado público de pywebview sin respuesta RPC, espera acotada del hilo exacto
+  de preparación, revalidación de proyecto y llamada al cierre existente.
+  Se utiliza el mismo servicio de guardado/descarte; no se duplican sus reglas.
+- Nuevo RPC aditivo prepare_native_close incluido en la lista permitida de
+  acciones con contexto. No se renombra request_close ni ningún ID público.
+  Las GUI cargan native-close.js y pasan por él; los clientes de prueba/legados
+  sin canal de estado conservan la llamada anterior y sus argumentos.
+- Errores traducidos en español/inglés y diagnóstico original preservado en
+  el estado de error. Tokens/contexto/hilos no se guardan en configuración ni
+  VLF. Un contexto obsoleto, ticket ajeno/reutilizado, hilo no confirmado o
+  guardado fallido no cierra la ventana. Reintento con preparación nueva.
+- Los cuatro launchers especializados restauran _closing si destroy falla;
+  regresión parametrizada confirma error con origen y reintento correcto.
+
+### Evidencia final
+
+- `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q
+  tests/test_native_close.py tests/test_desktop_gui.py tests/test_suite_gui.py
+  tests/test_project_sync.py tests/test_launcher_gui.py
+  tests/test_http_session_headers.py`:
+  **97 passed, 2 skipped**. Las dos omisiones son pruebas de navegador
+  opcionales, no fallos ocultados. Incluye Node para el recibo, errores/reintento
+  y preservación de argumentos legados; Python para tickets, espera, contexto,
+  errores originales y cierre no confirmado, además de regresiones existentes.
+- Qt real, secuencial, con límite externo de proceso/grupo de 45 s:
+  `QT_QPA_PLATFORM=offscreen QTWEBENGINE_DISABLE_SANDBOX=1 .venv/bin/python
+  tests/gui_project_bridge_smoke.py --launcher LAUNCHER --close-decision DECISION`.
+  **13 ejecuciones con salida 0:** save/cancel en los seis launchers y discard
+  en LANIP. El arnés espera fin del verificador y drena los hilos nuevos no daemon
+  antes de imprimir éxito. Ninguna ejecución final alcanzó el timeout.
+- Save confirma datos al reabrir; cancel confirma ventana abierta, datos del VLF
+  y workspace pendiente; discard confirma VLF conservado sin el elemento pendiente.
+  No se ejecutan save/discard nativos en launchers que no ofrecen esa decisión.
+- P90 sigue abierta: falta escaneo, múltiples propietarios/ventanas en cierre,
+  integración provisional P98/P99, Windows, gesto X del gestor de ventanas,
+  revisión visual e instalables. Sin sesiones GUI registradas en el arnés, no
+  certifica notificación de agentes ni entrega de actividad a LANMON.
+- El aviso `Release of profile requested but WebEnginePage still not deleted`
+  aparece en algunas salidas 0; permanece como observación independiente P115.
+  No se ocultó ni se declara resuelto por eliminar el bloqueo RPC.
+- Sin build, instalación, commit, push ni publicación. Datos y procesos de prueba
+  propios; no se detuvieron procesos ajenos. Casillas abiertas sin cerrar.
+
+- Refuerzos finales del mismo protocolo: recibo caducado sin reemplazo,
+  decisiones restringidas por launcher, recibos Unicode/malformados y operación
+  de proyecto ocupada. La adquisición de la guarda es no bloqueante; no espera
+  indefinidamente detrás de otro trabajo ni fuerza cierre. Tras estos cambios
+  se repite guardar y descartar LANIP con código 0.
+- El HTML compartido referencia native-close.js: HTTPS sirve únicamente ese
+  archivo adicional con MIME fijo. Regresión TLS local confirma 200 y cabeceras
+  correctas; prepare_native_close sigue rechazado como RPC remoto. No se amplía
+  la lista de operaciones ni los permisos remotos.
+- Controles finales: Ruff y formato de los 11 Python modificados correctos;
+  sintaxis de los cuatro JavaScript de cierre comprobada con Node; catálogos
+  inglés/español (2539 claves), recursos de instalador y auditoría de idiomas
+  verificados; errorList regenerado/verificado (1809 puntos), referencias CLI/web,
+  higiene y `git diff --check` correctos. No quedan ejecuciones propias pendientes.
+
+
+## P94 — idioma de LANCTL/GUI como desplegable (05/11/2026)
+
+- Solicitud expresa: sustituir el campo de texto de idioma por un desplegable.
+  Se añade como ajuste de P94, relacionado con P100, sin reutilizar IDs ni
+  aumentar el número de entradas abiertas.
+- `describe_settings` suministra choices para localization.language desde
+  LanguageManager.list(), usando code y native_name. La GUI genérica ya crea
+  select cuando existen opciones; no se necesita otro renderizador ni una
+  lista estática en JavaScript. Incluye los catálogos cargados por el gestor,
+  sin instalar paquetes o cambiar su formato (P121 permanece independiente).
+- Conserva el valor del campo y las reglas/persistencia existentes. Leer el
+  descriptor no cambia la configuración. Nombres nativos y códigos son
+  metadatos; no se añaden textos de presentación ni claves de idioma nuevas.
+- `.venv/bin/python -m pytest -q tests/test_settings_window.py` con carga
+  automática de plugins desactivada: **5 passed, 0.22 s**. Incluye opciones
+  en/es/fr de un gestor controlado, metadatos Unicode, preservación de la
+  selección es y configuración intacta, y catálogo real sin proyecto.
+- `QT_QPA_PLATFORM=offscreen QTWEBENGINE_DISABLE_SANDBOX=1 .venv/bin/python
+  tests/gui_project_bridge_smoke.py --launcher lanctl`: salida 0, Settings
+  abierto con más de 50 campos; el campo localization.language es select y
+  tiene opciones. Datos temporales, sin navegador visible ni sondeos de LAN.
+- Se conservan los cambios P90 previos y el añadido parcial de su prueba de
+  escaneo, interrumpido por esta petición. Solo estaba comprobado su caso sin
+  proyecto; con proyecto y fallo de descubrimiento siguen sin validar. No se
+  atribuye a esta petición ninguna ampliación de validación de escaneo.
+- No cambia el guardado de idioma ni añade instalación de idiomas ausentes;
+  los idiomas nuevos deben estar cargados en el gestor para ofrecerse. Sin
+  compilación, instalación, commit o publicación; pendiente el instalable.
+
+
+## P94 — formato de las opciones de idioma confirmado (05/11/2026)
+
+- Preferencia explícita del usuario: nombre nativo seguido del código entre
+  paréntesis, conforme a English (en) y Español (es), también para idiomas nuevos.
+- La implementación ya genera cada etiqueta con native_name y code. La
+  regresión existente de settings_window comprueba en/es/fr con ese formato;
+  no se necesita cambiar ni duplicar el generador.
+- Consulta real de available_languages(), con validación de los catálogos
+  distribuidos y sin instalación: devuelve exactamente English (en) y
+  Español (es). Registrado el criterio en P94; sin cambios de código o
+  recursos de idioma, sin alterar el idioma seleccionado ni crear otra tarea.
+
+## P90 — puente de escaneo y recuperación con datos existentes (07/11/2026)
+
+Continuación secuencial en `codex/p90-native-close-handshake`, conservando los
+cambios locales previos. Se completa el bloque pendiente del arnés Qt de escaneo;
+no se declara cerrada P90 ni se certifica un instalable.
+
+- Comando base: `timeout --kill-after=5s 45s env QT_QPA_PLATFORM=offscreen
+  QTWEBENGINE_DISABLE_SANDBOX=1 .venv/bin/python
+  tests/gui_project_bridge_smoke.py --launcher lanip --scan-fixture FIXTURE`.
+- `FIXTURE=project`: salida 0. Botón real, RPC, CLI y persistencia: inventario
+  visible, controles recuperados, proyecto seleccionado conservado y guardado
+  comprobado al reabrir el workspace del VLF temporal.
+- `FIXTURE=no-project` y `FIXTURE=project`, ambos con `--scan-failure`:
+  salida 0. Se refuerza el arnés con un elemento manual preexistente para que la
+  conservación de datos no se compruebe solo sobre un inventario vacío. Compara
+  todos los elementos antes/después; con proyecto compara también el contenido
+  del VLF. Muestra la causa original y recupera los controles y estado del escaneo.
+  Ambas variantes pasan tras añadir esas comprobaciones.
+- Solo se sustituye el descubrimiento de hardware por resultados/fallo
+  controlados: `scanBridgeChecked=true`, `scanChecked=false`. No se sondea la
+  red del usuario ni se modifica MyHome1 o su configuración.
+- Una ventana/proceso cada vez, límite externo de 45 segundos (ninguna ejecución
+  lo alcanza). RAM disponible antes: 2562 MiB; después de los tres primeros
+  recorridos: 2979 MiB; swap usada 0 en ambas lecturas. Estas observaciones no
+  equivalen a medir el pico de RAM. Sin builds ni suite completa.
+- Ruff check y format del arnés correctos; `git diff --check` correcto.
+- Persisten el aviso Qt de liberación del perfil y la actividad pendiente sin
+  sesión LANMON registrada en el arnés. No se ocultan ni se consideran resueltos.
+- Pendientes: escaneo físico, varios propietarios/cierre, integración provisional
+  P98/P99, Windows, gesto X, revisión visual y distribución. Sin cambios en
+  contratos públicos, recursos de idioma o puntos de error del producto.
+
+## P123 — columna IDF opcional en LANIP GUI (07/11/2026)
+
+Implementado en fuentes, sin reconstruir instalables. `GuiApi._serialize`
+expone `idf` separado del identificador interno `id`. La tabla y el selector
+Columnas lo presentan; las preferencias nuevas y las antiguas sin esa clave lo
+ocultan inicialmente. Una preferencia explícita se conserva. La vista Completa
+incluye IDF; Esencial lo oculta. Se utiliza `textContent` para los datos.
+
+- Pruebas backend: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest
+  -q tests/test_desktop_gui.py`: **17 passed**; incluye IDF presente/vacío e
+  identidad interna conservada.
+- Prueba real en Chromium: `LANCTL_GUI_BROWSER_TESTS=1
+  PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 LANCTL_CHROMIUM_EXECUTABLE=RUTA_CHROMIUM
+  timeout --kill-after=5s 45s .venv/bin/python -m pytest -q
+  tests/test_idf_column_browser.py`: **1 passed**. Comprueba inicio oculto,
+  preferencias antiguas, valor AB-12, activar/desactivar, recarga y conservación
+  de la preferencia MAC. Una ventana, sin servicios ni datos personales.
+- Primer intento sin ruta explícita: falló porque Playwright esperaba Chromium
+  1248, ausente. Se repitió con el headless shell 1234 ya instalado, sin descargar
+  navegadores. No se atribuye ese fallo al producto.
+- Idiomas: IDF es un identificador técnico sin traducción, como IP/MAC. El valor
+  ausente reutiliza `LANCTL.COMMON.VALUE.NONE`. Auditoría regenerada y comprobada;
+  catálogos bilingües vigentes, 2539 claves, sin nuevas cadenas de producto.
+- Catálogo de errores regenerado/comprobado (1809 puntos; desplazamiento de
+  líneas, sin nuevos orígenes), Ruff check y format de los tres Python afectados,
+  referencias CLI/web e higiene correctos. La referencia web necesitó regenerarse.
+- RAM disponible inicial 2916 MiB y final 2920 MiB, swap usada 0. Sin ejecución
+  paralela, builds, cambios de preferencias reales, commits o publicaciones.
+- P123 queda en fuentes implementadas/entrega pendiente. Revisión visual nativa
+  e instalables no certificados por esta prueba de navegador. Cambios anteriores
+  conservados, incluidos los archivos locales de idiomas de prueba.
+
+## P90 — cierre con una segunda ventana Qt abierta (07/11/2026)
+
+Se añade `--close-peer` al arnés `tests/gui_project_bridge_smoke.py`, condicionado
+por `--close-decision`. Abre solo dos ventanas: el launcher elegido y LANMON
+(LANWIRE si el primero fuera LANMON). No cambia el protocolo del producto.
+
+Tres recorridos finales correctos, cada uno en un proceso secuencial:
+`timeout --kill-after=5s 45s env QT_QPA_PLATFORM=offscreen
+QTWEBENGINE_DISABLE_SANDBOX=1 .venv/bin/python tests/gui_project_bridge_smoke.py
+--launcher lanip --close-decision DECISION --close-peer`, para `save`, `discard`
+y `cancel`. Todos terminan con código 0 y `closePeerChecked=true`.
+
+- Guardar/descartar confirman cierre nativo de LANIP y VLF reabierto con los datos
+  esperados. LANMON sigue abierto y su RPC de estado responde, sin cambios de
+  proyecto; se comprueba también `state.projectContext[0]` en la página del par.
+- Cancelar mantiene ambas ventanas, el VLF original y el workspace pendiente.
+- El arnés drena hilos nuevos no daemon y cierra sus propias ventanas antes de
+  terminar. No se alcanza el timeout ni se fuerzan procesos ajenos.
+- RAM disponible antes: 3001 MiB; tras los primeros tres recorridos: 3008 MiB;
+  swap usada 0. No es medición de pico. Dos ventanas por ejecución, sin builds.
+- Ruff check/format del arnés y `git diff --check` correctos. No se modifican
+  cadenas, errores del producto, parsers o contratos; no requieren regeneración.
+- Persisten los avisos Qt del perfil y de actividad sin sesión LANMON registrada.
+  Este ensayo no registra propietarios en el coordinador: no demuestra el cierre
+  entre procesos, la integración P98/P99 ni el último propietario provisional.
+  Tampoco certifica Windows, gesto X, red física, revisión visual o instalables.
+  P90 permanece abierta y no se confunden ventanas con propietarios registrados.
+
+## P98/P99 — descubrimiento compartido del entorno provisional (07/11/2026)
+
+Se añade `shared_provisional_workspace` en `core/projects/provisional.py`.
+Selecciona el mismo borrador para launchers GUI registrados del principal,
+mediante un índice `shared-<hash del principal>.json` con `schemaVersion: 1`,
+principal e identidad UUID del borrador. El índice tiene bloqueo entre procesos;
+la incorporación respeta la guarda de propietarios existente. No se persiste la
+configuración global, no se importan datos históricos ni se selecciona un VLF.
+
+Comportamiento comprobado:
+- Incorporaciones concurrentes comparten un único directorio y conservan datos.
+- Durante una decisión de cierre se rechaza la incorporación; cancelar la libera.
+- Tras cierre confirmado se crea otro borrador, conservando todos los archivos
+  anteriores. Si desaparecen los propietarios sin cierre, se recupera el mismo
+  borrador y su inventario, sin convertir la caída en permiso para borrarlo.
+- Referencias ausentes/corruptas y metadatos inválidos producen error sin sustituir
+  el inventario ni el índice. Sesiones desconocidas o CLI no crean un entorno.
+- Dos procesos Python independientes, registrados en el mismo coordinador,
+  convergen al mismo UUID. Son trabajadores pequeños con timeout de 15 segundos,
+  sin Qt, navegador, sondeo de red ni builds.
+
+Verificación: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s
+.venv/bin/python -m pytest -q tests/test_shared_provisional.py
+ tests/test_provisional_owners.py tests/test_provisional_workspace.py`:
+**22 passed en 0.71 s**. Incluye regresiones de guardado/cancelación previas.
+Ruff check y format de ambos archivos correctos; catálogo de errores regenerado
+y comprobado (1813 puntos), auditoría de idiomas regenerada y comprobada,
+catálogos bilingües (2539 claves), referencias CLI/web, higiene y diff check
+correctos. Se reutilizan INVALID/BUSY de los recursos de idioma existentes;
+se conservan excepciones originales. Sin nuevos IDs públicos versionados.
+
+RAM disponible inicial 3003 MiB y final 3008 MiB; swap usada 0, sin medición de
+pico. Rama de desarrollo existente y cambios locales ajenos conservados.
+Sin commit, push, publicación, instalables ni operaciones sobre datos personales.
+
+**Alcance parcial:** este servicio todavía no se invoca automáticamente desde el
+arranque de las ventanas. Queda integrar su selección con las operaciones GUI,
+la propagación entre procesos y la decisión/cierre nativo del último propietario,
+además de la transición a VLF. P98/P99 permanecen abiertas; no se presenta este
+avance como activación completa del modo provisional.
+
+## P98/P99 — operaciones GUI bajo contexto provisional (07/11/2026)
+
+`provisional_operation` ya entregaba las rutas aisladas, pero no vinculaba por sí
+mismo el `load_config()` utilizado por los servicios existentes. Se incorpora
+`project_operation(settings)` dentro de la guarda de propietarios. Así, llamadas
+anidadas usan el mismo snapshot; otro proyecto en curso se rechaza mediante su
+identidad antes de ejecutar la operación. El contexto se restaura incluso ante
+excepción, y la guarda sigue impidiendo escrituras durante la decisión de cierre.
+
+Regresiones añadidas a `tests/test_shared_provisional.py`:
+- Inventario local previo, borrador compartido por dos propietarios registrados:
+  creación/edición/eliminación LANIP y creación/lectura LANWIRE mediante las APIs
+  reales. Todos esos cambios quedan en el borrador; configuración e inventario
+  local se comparan byte a byte y permanecen iguales al salir.
+- Contexto ajeno rechazado sin redirigirlo; excepción conserva/restaura el contexto
+  anterior y libera la guarda; anidación en el mismo borrador permitida.
+
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_shared_provisional.py tests/test_provisional_owners.py
+ tests/test_provisional_workspace.py tests/test_project_sync.py`:
+**41 passed, 1 skipped en 2.63 s**. Primera prueba exploratoria falló por consultar
+`name` en una fila resumida LANWIRE que identifica el registro mediante `id`;
+se corrigió el supuesto del test para usar el ID devuelto por la creación.
+No se cambió la API del producto para satisfacer ese supuesto.
+
+Ruff check/format correctos. Catálogo de errores regenerado y comprobado
+(1814 puntos; nuevo rechazo conserva la clave INVALID existente), auditoría de
+idiomas regenerada/comprobada, catálogos bilingües vigentes. Referencias CLI/web,
+higiene y diff check comprobados. No hay nuevos textos, contratos públicos ni
+cambios de formatos persistentes.
+
+La integración sigue siendo parcial: el arranque/selección de ventanas todavía
+no activa automáticamente esta operación provisional. Falta conectar su alcance
+al ciclo GUI completo, las preferencias y sus ámbitos, los trabajos de fondo,
+la transición a VLF y la decisión/cierre nativo del último propietario P99.
+Las pruebas usan APIs Python y datos temporales; no acreditan RPC/Qt ni instalables.
+Sin builds, publicaciones o modificaciones de datos personales.
+
+## P98/P99 — preferencias sin persistir rutas privadas del borrador (07/11/2026)
+
+Fallo reproducido con datos temporales: guardar `timeout` desde
+`provisional_operation` copiaba `credentials`, `log` y `programLog` del borrador
+al documento global. La primera regresión falló en `credentials`, confirmando
+la contaminación; las rutas de PROJECT_KEYS ya tenían protección.
+
+`prepare_config_save` conserva ahora las rutas globales vigentes de esos tres
+campos cuando no hay edición expresa en la operación provisional. Se compara
+contra el contexto operativo, también después de un primer guardado cuando el
+snapshot ya incorpora un project_base limitado a PROJECT_KEYS. No se amplía
+PROJECT_KEYS globalmente ni se cambia el ámbito de otros proyectos.
+
+Dos regresiones en `tests/test_shared_provisional.py` verifican guardados
+repetidos, persistencia de la preferencia solicitada, conservación del contexto
+del borrador, cambios globales externos y edición expresa de una ruta global.
+Todos los archivos se crean en directorios temporales.
+
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_shared_provisional.py tests/test_provisional_owners.py
+ tests/test_provisional_workspace.py tests/test_project_sync.py`:
+**43 passed, 1 skipped en 2.65 s**. Ruff check/format de archivos afectados
+correctos. Catálogo de errores regenerado/comprobado: 1814 puntos, sin nuevos
+puntos de error ni mensajes visibles. Catálogos de idiomas (2539 claves),
+auditoría, referencias CLI/web e higiene correctos. Sin cambios de contrato,
+parsers o formatos persistentes. No se ejecuta suite completa ni compilaciones.
+
+P98/P99 sigue parcial: falta activar el entorno desde las ventanas, coordinar
+trabajos de fondo, transición a VLF y cierre nativo del último propietario.
+Esta prueba de configuración no certifica esos recorridos ni los instalables.
+No se modifican datos personales ni se publica o integra código.
+
+## P99 — invalidación de una decisión anterior de cierre (07/11/2026)
+
+Se reprodujeron dos fallos con datos temporales: tras preparar «descartar»,
+volver a consultar devolvía needsDecision, pero permitía confirmar el cierre;
+intentar guardar en un destino existente fallaba, pero conservaba igualmente
+la autorización anterior de descarte. Las dos regresiones fallaron inicialmente
+porque complete_provisional_close no rechazaba la confirmación.
+
+prepare_provisional_close elimina ahora resolution, savedHash y savedProject
+al procesar una nueva decisión, antes de resolverla o iniciar un guardado.
+El fallo de guardado no restaura una autorización obsoleta. Las pruebas verifican
+que la confirmación se rechaza, se puede cancelar y continuar con el inventario
+intacto; el archivo existente tampoco se altera.
+
+Comprobación acotada, sin GUI ni builds:
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_shared_provisional.py tests/test_provisional_owners.py
+ tests/test_provisional_workspace.py tests/test_project_sync.py`:
+**45 passed, 1 skipped en 2.59 s**.
+
+Ruff check y formato correctos. Catálogo regenerado/comprobado, 1814 puntos;
+se mantienen errores y traducciones existentes. Referencias CLI/web, higiene y
+catálogos bilingües (2539 claves) correctos. La auditoría de idioma detectó su
+informe generado desactualizado; se regeneró y pasó --check. Sin cambios de
+contrato público, parsers o formatos persistentes. Solo datos temporales.
+
+P99 permanece parcial: esta corrección protege el protocolo de servicios;
+no acredita todavía conexión a ventanas, cierre nativo del último propietario,
+Windows ni instalables. No hay publicación, commit ni datos personales alterados.
+
+## P99 — integridad del VLF al confirmar el cierre (07/11/2026)
+
+Dos regresiones reprodujeron que, tras guardar correctamente el borrador,
+eliminar o sustituir el VLF permitía confirmar el cierre igualmente. Se
+comprobaba el hash del borrador, pero no la supervivencia del archivo guardado.
+
+save_provisional_project calcula ahora savedFileHash del archivo exacto dentro
+de su guarda de almacenamiento, después de verificarlo y reabrirlo. La reserva
+de cierre conserva esa huella junto a savedProject. complete_provisional_close
+la compara antes de retirar el propietario; archivo ausente conserva OSError
+original y archivo cambiado usa el error traducible SAVE_MISMATCH existente.
+Una nueva decisión elimina también esta huella. Reservas anteriores sin ella
+se rechazan de forma conservadora y pueden cancelarse. Campo opcional añadido
+al estado interno de cierre; no cambia el formato VLF ni IDs públicos.
+
+El cálculo usa lecturas de 1 MiB, sin cargar el archivo completo en RAM.
+Las pruebas verifican ambos fallos, cancelación y posterior acceso al inventario
+intacto, en directorios temporales. Los cierres con VLF intacto siguen cubiertos.
+
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_provisional_owners.py tests/test_shared_provisional.py
+ tests/test_provisional_workspace.py tests/test_project_sync.py`:
+**47 passed, 1 skipped en 2.68 s**. Ruff y formato correctos. Catálogo de errores
+regenerado/comprobado: 1815 puntos. Auditoría de idiomas regenerada/comprobada;
+catálogos bilingües, referencias CLI/web e higiene comprobados.
+
+P99 sigue parcial por integración de ventanas/cierre nativo. Esta comprobación
+no garantiza que otro programa no altere el archivo después de confirmar, ni
+certifica Windows o instalables. No se ejecutan builds ni suite completa, no se
+publica código ni se modifican datos personales.
+
+## P99 — validación previa separada de la confirmación (07/11/2026)
+
+El adaptador nativo necesita detectar un fallo antes de destruir su ventana;
+la validación hasta ahora solo estaba disponible al completar el cierre, que
+retira al propietario. Se extraen las comprobaciones a _validate_close y se
+expone validate_provisional_close para comprobar preparación sin finalizar.
+Ambas fases comprueban propietario registrado en el borrador, reserva/token,
+estado no cerrado, guardado no en curso, decisión y coherencia de los datos/VLF.
+La confirmación final vuelve a comprobar todo antes de retirar al propietario.
+
+Regresiones: preflight repetido mantiene idénticos metadatos y reserva; rechaza
+una decisión no preparada; permite cancelar y volver a operar si el cierre
+nativo no se realiza; confirmación posterior completa correctamente. Las dos
+regresiones de VLF ausente/sustituido comprueban ahora un preflight correcto,
+la alteración posterior y el rechazo tanto del nuevo preflight como del cierre.
+
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_provisional_owners.py tests/test_shared_provisional.py
+ tests/test_provisional_workspace.py tests/test_project_sync.py`:
+**48 passed, 1 skipped en 2.74 s**. Ruff check/formato correctos. Catálogo de
+errores regenerado/comprobado (1815 puntos, mismos errores conservados con nuevo
+emplazamiento); auditoría de idiomas regenerada/comprobada, catálogos bilingües,
+referencias CLI/web e higiene correctos. Sin textos nuevos o cambios de VLF,
+parsers, IDs públicos o configuración persistente.
+
+Sigue siendo trabajo de servicios: no se activa el entorno provisional en las
+ventanas ni se declara completa la integración GUI P98/P99. Las pruebas usan
+datos temporales y no acreditan destrucción Qt, Windows o instalables. Sin builds,
+publicaciones, commits ni alteración de datos personales.
+
+## P98/P99 — enlace interno con el gestor de cierre nativo (07/11/2026)
+
+NativeClose puede recibir en su atributo privado de host provisional un
+ProvisionalClose con workspace, sesión, reserva, coordinador y decisión ya
+resuelta. No es una entrada RPC ni crea o guarda proyectos por sí solo.
+prepare rechaza una decisión distinta y captura el enlace junto al ticket;
+receive lo consume, espera al hilo RPC, comprueba el contexto y valida el
+borrador antes de ejecutar el cierre existente. Solo tras el evento closed
+llama a complete_provisional_close. Rechazo, excepción o falta de confirmación
+con ventana abierta cancelan la reserva; un error de cancelación se registra
+con origen propio sin sustituir el error principal. Un reintento requiere
+asignar una decisión nueva. Con enlace ausente se conserva el ciclo existente.
+
+Cinco casos con coordinador y archivos temporales reales y eventos de ventana
+simulados: cierre confirmado, rechazo del servicio, excepción al destruir,
+cierre no confirmado y validación fallida. Comprueban propietario/reserva aún
+presentes dentro del callback de cierre, retirada solo tras confirmación,
+conservación del inventario y posibilidad de volver a operar tras fallo.
+La prueba inicial falló por contar un aviso esperado de ausencia de historia
+VLF durante el montaje; se reinicia ese contador antes de probar el cierre.
+
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_native_close.py tests/test_provisional_owners.py
+ tests/test_shared_provisional.py tests/test_provisional_workspace.py
+ tests/test_project_sync.py`: **73 passed, 1 skipped en 2.90 s**.
+Ruff check/formato correctos. Catálogo regenerado/comprobado: 1818 puntos;
+idiomas/auditoría regenerada y verificada, referencias CLI/web e higiene correctos.
+Sin textos visibles nuevos, IDs públicos o formatos persistentes nuevos.
+
+Integración todavía parcial: los hosts no activan automáticamente el borrador
+ni asignan este enlace tras un diálogo real de guardado. Los eventos simulados
+no acreditan Qt, varios procesos nativos, Windows o instalables. No se publica,
+compila, integra en main ni modifica datos personales.

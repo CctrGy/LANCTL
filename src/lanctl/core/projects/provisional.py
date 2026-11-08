@@ -1,4 +1,4 @@
-"""Explicit isolated workspace for a future shared no-project desktop session.
+"""Isolated workspaces and shared draft discovery for no-project desktop sessions.
 
 Preparing this workspace does not change global configuration or adopt existing
 local inventory. Desktop lifetime/selection integration is a separate operation.
@@ -6,6 +6,7 @@ local inventory. Desktop lifetime/selection integration is a separate operation.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import tempfile
 from contextlib import contextmanager
@@ -114,6 +115,15 @@ def prepare_provisional_workspace(*, root=None, identifier=None):
     return ProvisionalWorkspace(identity, directory)
 
 
+def _saved_file_hash(path):
+    """Hash the exact saved artifact without loading a large VLF into RAM."""
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def save_provisional_project(workspace, destination, *, name, base):
     """Save and verify a consistent VLF; keep the source for cancellation/retry.
 
@@ -152,7 +162,13 @@ def save_provisional_project(workspace, destination, *, name, base):
         reopened = prepare_project_workspace(result["path"], root=Path(temporary) / "verification")
         if _workspace_hash(reopened.database, reopened.groups) != expected:
             raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.SAVE_MISMATCH"))
-    return {**result, "verified": verification, "workspaceHash": expected}
+        saved_file_hash = _saved_file_hash(result["path"])
+    return {
+        **result,
+        "verified": verification,
+        "workspaceHash": expected,
+        "savedFileHash": saved_file_hash,
+    }
 
 
 @contextmanager
@@ -189,6 +205,52 @@ def join_provisional_workspace(workspace, session_id, *, coordinator):
         if document.get("closeLease") or document.get("closed"):
             raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
         document["owners"] = sorted(set(document["owners"]) | {session_id})
+
+
+def shared_provisional_workspace(session_id, *, coordinator, root=None):
+    """Join the principal's current draft without persisting global preferences.
+
+    Closed drafts remain on disk for recovery. A missing/corrupt referenced
+    draft is an error, never permission to silently replace its inventory.
+    """
+    if not any(row["id"] == session_id and row["mode"] == "gui" for row in coordinator.sessions()):
+        raise ValueError(t("LANCTL.PROJECT.PROVISIONAL.INVALID"))
+    parent = Path(root).resolve() if root is not None else application_path("data/lc/provisional")
+    identity = hashlib.sha256(coordinator.owner.encode()).hexdigest()
+    index = parent / f"shared-{identity}.json"
+    if index.is_symlink():
+        raise ValueError(t("LANCTL.PROJECT.PROVISIONAL.INVALID"))
+    with locked_files((index,)):
+        if index.exists():
+            document = json.loads(index.read_text(encoding="utf-8"))
+            if (
+                not isinstance(document, dict)
+                or type(document.get("schemaVersion")) is not int
+                or document["schemaVersion"] != 1
+                or document.get("principal") != coordinator.owner
+                or not isinstance(document.get("provisionalId"), str)
+            ):
+                raise ValueError(t("LANCTL.PROJECT.PROVISIONAL.INVALID"))
+            workspace = prepare_provisional_workspace(
+                root=parent, identifier=document["provisionalId"]
+            )
+            with _owner_state(workspace, session_id, coordinator) as state:
+                if not state.get("closed"):
+                    if state.get("closeLease"):
+                        raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
+                    state["owners"] = sorted(set(state["owners"]) | {session_id})
+                    return workspace
+        workspace = prepare_provisional_workspace(root=parent)
+        join_provisional_workspace(workspace, session_id, coordinator=coordinator)
+        atomic_write_json(
+            index,
+            {
+                "schemaVersion": 1,
+                "principal": coordinator.owner,
+                "provisionalId": workspace.identifier,
+            },
+        )
+        return workspace
 
 
 def claim_provisional_close(workspace, session_id, *, coordinator):
@@ -241,6 +303,10 @@ def prepare_provisional_close(
         if decision == "cancel":
             document.pop("closeLease")
             return {"ready": False, "cancelled": True}
+        # A new decision supersedes any previously prepared close. In
+        # particular, a failed save must never fall back to an old discard.
+        for key in ("resolution", "savedHash", "savedProject", "savedFileHash"):
+            lease.pop(key, None)
         last = len(document["owners"]) == 1
         dirty = workspace_is_dirty(workspace.settings({}))
         if not last or not dirty:
@@ -267,29 +333,58 @@ def prepare_provisional_close(
             raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
         lease.pop("saving", None)
         lease.update(
-            resolution="save", savedHash=result["workspaceHash"], savedProject=result["path"]
+            resolution="save",
+            savedHash=result["workspaceHash"],
+            savedProject=result["path"],
+            savedFileHash=result["savedFileHash"],
         )
     return {"ready": True, "last": True, "project": result["path"]}
 
 
-def complete_provisional_close(workspace, session_id, token, *, coordinator):
-    """Acknowledge successful native close; retain source files for recovery."""
+def _validate_close(workspace, session_id, token, document):
+    """Shared checks before destruction and at its final acknowledgement."""
     from .save_policy import workspace_is_dirty
 
+    lease = document.get("closeLease", {})
+    if (
+        session_id not in document["owners"]
+        or document.get("closed")
+        or not _matches_lease(lease, session_id, token)
+        or lease.get("saving")
+    ):
+        raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
+    if lease.get("resolution") == "save":
+        destination = lease.get("savedProject")
+        if (
+            not isinstance(destination, str)
+            or not destination
+            or _saved_file_hash(destination) != lease.get("savedFileHash")
+        ):
+            raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.SAVE_MISMATCH"))
+    last = len(document["owners"]) == 1
+    if last and workspace_is_dirty(workspace.settings({})):
+        database, groups = workspace.root / "devices.json", workspace.root / "groups.json"
+        saved = lease.get("resolution") == "save" and lease.get("savedHash") == _workspace_hash(
+            database, groups
+        )
+        if lease.get("resolution") != "discard" and not saved:
+            raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
+    elif not lease.get("resolution"):
+        raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
+    return last
+
+
+def validate_provisional_close(workspace, session_id, token, *, coordinator):
+    """Check readiness before native destruction, retaining the owner and lease."""
     with _owner_state(workspace, session_id, coordinator) as document:
-        lease = document.get("closeLease", {})
-        if not _matches_lease(lease, session_id, token) or lease.get("saving"):
-            raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
-        last = len(document["owners"]) == 1
-        if last and workspace_is_dirty(workspace.settings({})):
-            database, groups = workspace.root / "devices.json", workspace.root / "groups.json"
-            saved = lease.get("resolution") == "save" and lease.get("savedHash") == _workspace_hash(
-                database, groups
-            )
-            if lease.get("resolution") != "discard" and not saved:
-                raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
-        elif not lease.get("resolution"):
-            raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
+        last = _validate_close(workspace, session_id, token, document)
+        return {"ready": True, "last": last}
+
+
+def complete_provisional_close(workspace, session_id, token, *, coordinator):
+    """Acknowledge successful native close; retain source files for recovery."""
+    with _owner_state(workspace, session_id, coordinator) as document:
+        last = _validate_close(workspace, session_id, token, document)
         document["owners"].remove(session_id)
         document.pop("closeLease")
         if not document["owners"]:
@@ -299,7 +394,9 @@ def complete_provisional_close(workspace, session_id, token, *, coordinator):
 
 @contextmanager
 def provisional_operation(workspace, session_id, *, coordinator, base):
-    """Cooperating writes cannot pass a pending close decision."""
+    """Bind existing services to this draft while guarding its close decision."""
+    from lanctl.core.project_context import operation_config, project_identity, project_operation
+
     with _owner_state(workspace, session_id, coordinator) as document:
         if (
             session_id not in document["owners"]
@@ -307,4 +404,9 @@ def provisional_operation(workspace, session_id, *, coordinator, base):
             or document.get("closed")
         ):
             raise RuntimeError(t("LANCTL.PROJECT.PROVISIONAL.BUSY"))
-        yield workspace.settings(base)
+        settings = workspace.settings(base)
+        current = operation_config()
+        if current is not None and project_identity(current) != project_identity(settings):
+            raise ValueError(t("LANCTL.PROJECT.PROVISIONAL.INVALID"))
+        with project_operation(settings):
+            yield settings

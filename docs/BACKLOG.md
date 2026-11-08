@@ -1,5 +1,51 @@
 # Trabajo pendiente de LANCTL
 
+## Revisión de estado — 05/11/2026
+
+**40 entradas abiertas:** 36 P, tres REF y una revisión visual sin ID. Incluyen
+P40/P42 como dos seguimientos de una misma incidencia; los contadores son de
+entradas de la lista, no de funcionalidades independientes. No se cierra ninguna
+casilla solo por esta revisión.
+
+- **Fuentes implementadas; validación/entrega pendiente (12):** P123, P122, P106,
+  P105, P104, P102, P88, P85, P75, P73, P70 y P48.
+- **Implementación parcial o integración/alcance pendiente (11):** P119, P118,
+  P100, P98, P99, P94, P90, P34, P47, P71 y P72.
+- **Desarrollo/migración pendiente (8):** P121, P120, P117, P116, P50,
+  REF-P34-migration, REF-P47-interface y REF-P50-session.
+- **Investigación pendiente (2):** P114 (con mitigación) y P97.
+- **Validación transversal (3):** P115, P32 y revisión visual nativa sin ID.
+- **Decisión pendiente (2):** P95 y P92.
+- **Validación especial de firma autorizada (2):** P40/P42.
+
+Evidencia nueva: P118 **102 pruebas correctas y una omitida**, superando sus dos
+fallos anteriores bajo presión de recursos. Puente Qt básico y contexto P90/P88
+correctos por launcher y en conjunto. Cierre P90: 13 recorridos Qt y 97 pruebas
+correctas (dos omitidas). El 07/11 se comprueba el puente de escaneo con proyecto
+y su recuperación ante fallo con/sin proyecto; también guardar/descartar/cancelar
+LANIP con LANMON abierto y receptivo sobre el mismo VLF. Escaneo físico, varios propietarios entre procesos
+y distribución pendientes. Servicios provisionales y navegación TUI: **22 pruebas
+correctas** en selección conjunta; no prueba el instalable P122 del usuario.
+Detalle y límites en `BACKLOG-VERIFICATION.md`, revisión del 05/11.
+
+## Columna IDF opcional en LANIP GUI — 05/11/2026
+
+- [ ] **P123 · Media · Implementado y comprobado en fuentes; entrega pendiente.** Añadir **IDF** a la lista
+  de opciones del selector **Columnas** de LANIP/GUI, para permitir visualizar
+  el identificador de cada elemento en el inventario. Debe estar **deseleccionado
+  por defecto** y mostrarse únicamente cuando el usuario active esa columna.
+  **Criterios de aceptación:** IDF aparece entre las columnas disponibles;
+  inicialmente está desmarcado y oculto en la tabla; al activarlo se muestra
+  el IDF correspondiente a cada elemento y al desactivarlo vuelve a ocultarse.
+  Respetar las preferencias de columnas existentes y los recursos de idioma.
+  **Implementación 07/11:** payload GUI con `idf` conservando `id`; cabecera y
+  celdas IDF, ocultas inicialmente. Las preferencias antiguas sin clave `idf`
+  reciben `false`; una elección explícita se conserva al recargar. La vista
+  Completa permite mostrarla junto a todas las demás columnas.
+  **Verificación:** 17 pruebas de backend y una prueba Chromium real correctas
+  (inicio, preferencias antiguas, activar/desactivar y recarga). Detalle en
+  `BACKLOG-VERIFICATION.md`. Pendiente distribuir el cambio en instalables.
+
 ## Cierre inesperado al navegar por LANIP TUI — 04/11/2026
 
 - [ ] **P122 · Alta · Corregido en fuentes; pendiente comprobación del instalable
@@ -36,7 +82,7 @@ Ambos IDs corresponden a la misma incidencia y permanecen abiertos.
   desactivar comprobaciones para desbloquearlos. Conservar la evidencia y los
   criterios originales de P40/P42 más abajo.
 
-## Orden operativo de continuación — revisión del 04/11/2026
+## Orden operativo de continuación — revisión del 05/11/2026
 
 La posición de una tarea nueva en este documento no implica mayor prioridad.
 Conservar las condiciones y evidencias originales; una implementación en fuentes
@@ -44,6 +90,8 @@ no cierra las verificaciones nativas o de distribución.
 
 1. **P90 y contexto P88/P103:** completar la matriz pendiente del puente GUI y
    del proyecto real; P103 se usa como contexto, sin reabrir su corrección.
+   Comprobar también P122 en el instalable afectado; la corrección POSIX está
+   probada en fuentes, pero el artefacto del usuario sigue sin verificarse.
 2. **P98/P99 conjuntamente:** integrar el entorno provisional compartido,
    guardado a VLF y cierre confirmado del último propietario. Ya existe base
    en servicios; falta conectarla al ciclo real de ventanas sin perder datos.
@@ -52,8 +100,9 @@ no cierra las verificaciones nativas o de distribución.
 4. **P114/REF-P34-migration, REF-P47-interface, P97:** atender integridad,
    disponibilidad y diagnósticos según dependencias y reproducción disponible.
 5. **P118/P119/P117/P120:** terminar accesos, preferencia y componentes del
-   instalador coordinadamente. P118 tiene implementación parcial y dos fallos
-   de revalidación bajo presión de recursos; falta certificación nativa.
+   instalador coordinadamente. P118 tiene implementación parcial; la nueva
+   revalidación del 05/11 supera los dos fallos anteriores (102 correctas, una
+   omitida por COM Windows). Sigue pendiente la certificación de distribución.
 6. **P100/P94, P116/P92 y P121:** idiomas y diseño conservando contratos;
    P92 requiere decisión visual y P121 define una migración todavía pendiente.
    Continuar REF-P50-session/P50 cuando sus dependencias estén resueltas.
@@ -364,6 +413,13 @@ nativos por pruebas simuladas para declarar una tarea cerrada.
   de que esta revalidación completa haya pasado. RAM disponible al terminar:
   121 MiB, swap llena; no iniciar navegador, builds ni suites amplias.
 
+  **Revalidación actual 05/11/2026:** con unos 3 GiB disponibles y swap vacía,
+  los cuatro archivos de pruebas de accesos directos pasan juntos sin límite
+  artificial de espacio virtual: **102 correctas, una omitida** (COM Windows).
+  Los dos casos fallidos el 04/11 pasan ahora, incluido Gio y el formulario Node.
+  Se conserva el fallo histórico y su contexto; ya no es un bloqueo vigente de
+  esta selección. No certifica Windows, instalables ni el resto de P118.
+
   **Pendiente:** completar el inventario GUI real, validación Windows `.lnk`, iconos,
   reemplazo confirmado, reparación y recorridos nativos completos. El servicio
   está expuesto por CLI/GUI en fuentes, pero aún no integrado en los instaladores.
@@ -641,7 +697,7 @@ Las extracciones locales compatibles no requieren esperar a esa reconstrucción.
   No se cambian valores aceptados, firmas, IDs ni textos visibles; P115/P32 conserva
   certificación de distribución. Detalles y excepción de servicio en verificación.
 
-- [ ] **P114 · Media (P2) · Investigación pendiente. Fallo intermitente de hilo
+- [ ] **P114 · Media (P2) · Mitigación implementada; investigación causal pendiente. Fallo intermitente de hilo
   en runtime de plugins.** En la selección de 139 pruebas de monitor/plugins,
   `test_worker_exits_when_owner_dies_even_without_windows_job` falló durante
   activación con `RuntimeError: can't start new thread`; pasó al repetir sola.
@@ -685,6 +741,13 @@ Las extracciones locales compatibles no requieren esperar a esa reconstrucción.
   inventarios grandes y monitorización con cargas reproducibles: CPU, RAM,
   latencia, concurrencia y tiempo de cierre. Proponer optimizaciones adicionales
   solo a partir de cuellos de botella medidos.
+  **Observación de revisión (05/11):** el smoke Qt conjunto termina con código
+  0 y comprobaciones correctas, pero emite `Release of profile requested but
+  WebEnginePage still not deleted. Expect troubles !`. Registrar y clasificar el
+  ciclo de destrucción del arnés/Qt antes de certificar cierre; no se ha aislado
+  una causa de producto ni se afirma cierre nativo completo. El aviso de actividad
+  sin sesión GUI del mismo arnés se distingue del arranque normal: el smoke no
+  registra sesiones. No se usa esta pasada para certificar entrega a LANMON.
   **Criterio de cierre:** registrar versiones, plataforma, carga y resultados;
   resolver o clasificar fallos y vulnerabilidades aplicables, cubrir instalación,
   actualización y recuperación en Windows/Linux. Al implementar P107–P113,
@@ -1155,7 +1218,7 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   distribuciones superados. Esta anotación amplía P100; no implementa todavía
   la migración ni declara completada la internacionalización.
 
-- [ ] **P98 · Alta · Pendiente de auditoría funcional nativa.** Revisar las
+- [ ] **P98 · Alta · Base de servicios implementada; integración del entorno provisional y auditoría nativa pendientes.** Revisar las
   acciones disponibles sin proyecto seleccionado en todos los launchers.
   El usuario observa restricciones excesivas: **LANIP → Scan debe permitir
   descubrir una red aunque todavía no exista proyecto**. Mantener disponibles
@@ -1170,6 +1233,36 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   Definir cómo conservar los datos y modificaciones de ese entorno y su
   posterior guardado como proyecto, evitando pérdidas o mezcla con datos de
   otros proyectos o con el inventario histórico local.
+
+  **Avance 07/11 — descubrimiento compartido:** el servicio
+  `shared_provisional_workspace` permite localizar/incorporarse al borrador
+  vigente del principal mediante un índice versionado y bloqueo entre procesos.
+  Conserva borradores tras caída de propietarios; un cierre confirmado permite
+  iniciar otro sin borrar el anterior. Rechaza sesiones desconocidas/no GUI,
+  incorporación durante una decisión de cierre y referencias corruptas/ausentes.
+  **22 pruebas correctas**, incluida convergencia desde dos procesos Python.
+  No cambia configuración global ni adopta inventario local. Sigue pendiente
+  conectar este servicio a arranque, selección, operaciones y cierre GUI P99;
+  este avance no activa por sí solo el entorno provisional en las ventanas.
+
+  **Avance 07/11 — contexto de las operaciones:** `provisional_operation`
+  vincula ahora los servicios que consultan `load_config()` al borrador durante
+  toda la operación y restaura el contexto al terminar o fallar. Rechaza mezclar
+  el borrador con otro proyecto ya en curso. Pruebas con APIs reales LANIP
+  (crear/editar/eliminar) y LANWIRE (crear/leer), conservando inventario local y
+  configuración: **41 correctas, una omitida**, junto a las regresiones de
+  propietarios, workspace y sincronización. Sigue pendiente activar esta guarda
+  desde el ciclo GUI y completar cierre/guardado P99; no se cambia automáticamente
+  el entorno de las ventanas existentes.
+
+  **Avance 07/11 — ámbito de preferencias:** corregido un fallo reproducido al
+  guardar configuración dentro de una operación provisional: las rutas privadas
+  de credenciales y registros se copiaban a las preferencias globales. Ahora
+  conserva las rutas globales vigentes si no se editaron expresamente, incluso
+  tras guardados repetidos o cambios desde otra ventana. El contexto operativo
+  mantiene sus rutas de borrador. **43 pruebas correctas, una omitida** en el
+  conjunto relacionado; detalles en BACKLOG-VERIFICATION. Sigue pendiente la
+  integración automática GUI y el ciclo completo de cierre/guardado P99.
 
   **Comprobación del 26/10/2026:** prueba aislada con configuración y datos
   temporales, `activeProject=None`: bootstrap y `project_call(...,
@@ -1212,7 +1305,7 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   descarte retira el entorno activo conservando archivos para recuperación.
   La ventana debe confirmar su destrucción antes de liberar al dueño; GUI pendiente.
 
-- [ ] **P99 · Alta · Pendiente.** Al cerrar la **última pestaña del entorno
+- [ ] **P99 · Alta · Protocolo de cierre implementado en servicios; integración GUI y validación de último propietario pendientes.** Al cerrar la **última pestaña del entorno
   LANCTL**, si se está trabajando sin proyecto y existen modificaciones sin
   guardar, consultar: **«¿Seguro que no quieres guardar todas las modificaciones
   en un proyecto?»** Ofrecer **Guardar como proyecto**, **Descartar y cerrar**
@@ -1231,6 +1324,36 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   escrituras posteriores a la confirmación. Reutilizar el ciclo de cierre
   compartido cuando corresponda, manteniendo el comportamiento de proyectos
   ya abiertos y sin incluir credenciales/configuración privada en el VLF.
+  **Corrección 07/11 — decisiones sustituidas:** una nueva preparación de cierre
+  invalida la resolución anterior y sus referencias de guardado. Se reprodujo
+  que «descartar», seguido de otra consulta o de un guardado fallido, permitía
+  confirmar indebidamente el cierre con el descarte antiguo. Ambas regresiones
+  comprueban ahora rechazo de la confirmación, cancelación y conservación del
+  inventario. Conjunto relacionado: **45 correctas, una omitida**. Sigue pendiente
+  conectar este protocolo con las ventanas y verificar el cierre nativo real.
+  **Corrección 07/11 — archivo guardado antes de confirmar:** el protocolo
+  comprueba también que el VLF guardado conserve su huella SHA-256. Antes podía
+  confirmar el cierre aunque ese archivo se hubiera eliminado o sustituido.
+  Ahora rechaza esos casos sin retirar al propietario ni perder el borrador;
+  permite cancelar y continuar. Lectura por bloques de 1 MiB. Regresiones y
+  conjunto relacionado: **47 correctas, una omitida**. No certifica todavía
+  el recorrido nativo ni protege frente a cambios externos posteriores al cierre.
+  **Avance 07/11 — validación antes de destruir la ventana:** añadido
+  `validate_provisional_close`, que comprueba la decisión, propietario, cambios
+  y VLF conservando la reserva y el propietario. La confirmación final reutiliza
+  las mismas comprobaciones para detectar cambios posteriores a la validación
+  previa. Cancelar sigue siendo posible si la ventana no llega a cerrarse.
+  **48 pruebas correctas, una omitida**; servicio preparado, conexión al ciclo
+  nativo GUI todavía pendiente, sin activación automática en ventanas.
+  **Avance 07/11 — adaptador de cierre nativo:** NativeClose admite un enlace
+  interno ProvisionalClose con una decisión ya preparada por el host. Valida
+  tras drenar el RPC y antes de destruir; confirma al propietario solo después
+  del evento closed. Si la ventana permanece abierta tras un fallo/rechazo,
+  cancela la reserva y conserva los errores originales. El enlace se consume
+  para exigir una nueva decisión en el reintento. **73 correctas, una omitida**
+  en el conjunto de cierre/contexto, con eventos de ventana simulados y
+  coordinador/archivos reales temporales. Falta que el host active el borrador,
+  resuelva su diálogo y asigne el enlace; aún no es el recorrido Qt completo.
   **Criterio de cierre:** pruebas con una y varias pestañas/launchers, cambios
   en distintas aplicaciones, cierre intermedio y último cierre, guardado y
   reapertura íntegra, descarte, cancelación, fallo de guardado y cierres
@@ -1337,6 +1460,16 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   el diseño al conjunto. Mantener las opciones pertinentes para cada interfaz,
   su significado, validación y persistencia, incluido el filtrado resuelto en
   P69. Coordinar con P92 la apariencia de los iconos si se acuerda adaptarlos.
+  **Ajuste solicitado e implementado — 05/11/2026:** Idioma en
+  LANCTL/GUI debe ser un desplegable. `localization.language` recibe opciones
+  desde los catálogos cargados por LanguageManager, con nombre nativo y código;
+  no hay una lista fija de idiomas. **Formato aprobado por el usuario:**
+  `nombre nativo (código)`, por ejemplo `English (en)`, `Español (es)` y
+  `Français (fr)`. Aplicarlo también a los idiomas incorporados posteriormente,
+  usando sus metadatos. Conserva el valor y el servicio de guardado
+  existentes. Cinco pruebas del formulario y comprobación Qt real de LANCTL
+  correctas: el control es un select con opciones. Pendiente incorporación al
+  instalable y revisión del resultado por el usuario; no cierra el resto de P94.
   **Criterio de cierre:** alcance y propuesta visual concretados con el usuario;
   pantallas incluidas revisadas en temas disponibles y tamaños de ventana
   admitidos, con campos legibles, foco visible, navegación por teclado y
@@ -1406,7 +1539,7 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   `core/projects/paths.py`. Prioridad media provisional; P90 puede impedir
   verificar las operaciones de proyecto en la GUI nativa.
 
-- [ ] **P90 · Crítica / bloqueante · Causa corregida; matriz funcional completa pendiente.** Fallo del puente
+- [ ] **P90 · Crítica / bloqueante · Argumentos y bloqueo de cierre Qt corregidos en fuentes; matriz completa y distribución pendientes.** Fallo del puente
   GUI al invocar `GuiSupportMixin.project_call` en Linux x86_64, versión
   `0.3.4-alpha.1`. El usuario informa de un error con el simple arranque.
   El diagnóstico aportado muestra repetidamente
@@ -1465,6 +1598,32 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   Esto facilita dividir la comprobación del puente, pero no sustituye la matriz
   funcional ni permite cerrar P90/P88. Guardar/descartar/cancelar y escaneo nativo
   continúan pendientes, junto con el recorrido de sincronización entre ventanas.
+
+  **Verificación parcial actual 05/11/2026:** smoke Qt offscreen real correcto
+  en cada uno de los seis launchers por separado y en recorrido conjunto. En
+  todos pasan project_state y las guardas de contexto/destino privado. El conjunto
+  verifica convergencia al cambiar entre dos VLF y apertura de Settings LANCTL.
+  No registra sesiones GUI como un arranque normal ni prueba escaneo, decisiones
+  de cierre o instalables. El apagado conjunto emite un aviso de perfil WebEngine
+  pendiente de clasificar en P115. P90/P88 continúan abiertas por su alcance completo.
+
+  **Corrección de cierre (05/11/2026):** nuevo recorrido con VLF temporal
+  y cambios pendientes reproduce un bloqueo distinto del error de argumentos:
+  la ventana se destruye dentro del RPC, pero un hilo no daemon de pywebview
+  sigue esperando el retorno de JavaScript; el proceso no termina. Corregido
+  en los seis adaptadores mediante preparación, recibo por estado nativo y espera
+  acotada del hilo que devolvió esa preparación antes de destruir la ventana.
+  Conserva la guarda de proyecto, las funciones Python anteriores y el diagnóstico
+  original. Fallar al destruir un launcher restaura su guarda de confirmación.
+  **Resultado:** 97 pruebas correctas y dos omitidas; 13 recorridos Qt offscreen
+  correctos con salida 0, sin hilos nuevos no daemon pendientes: guardar/cancelar
+  en los seis launchers y descartar en LANIP. Guardar verifica reapertura y datos;
+  cancelar conserva la ventana, el borrador y los datos del proyecto. Se permite
+  el historial de auditoría, que actualiza VLF sin guardar el inventario.
+  **Pendientes:** escaneo nativo, cierre con varios propietarios, ciclo del
+  entorno provisional P98/P99, gesto nativo del gestor de ventanas, Windows,
+  instalables y revisión humana. El aviso Qt de perfil al salir persiste como
+  observación P115; no se confunde con el bloqueo de hilo ahora corregido.
 
   **Contexto separado:** el informe incluye fallos anteriores de arranque con
   petición de instalar `.[gui]` y una advertencia TUI al consultar ARP. Después

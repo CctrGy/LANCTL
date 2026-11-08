@@ -342,7 +342,11 @@ class LauncherApi(GuiSupportMixin):
             if self._launcher == "lanaccess":
                 self._service.lock()
             self._closing = True
-            self._window.destroy()
+            try:
+                self._window.destroy()
+            except Exception:
+                self._closing = False
+                raise
             return {"closed": True}
 
         return self._respond(operation, "Close")
@@ -371,6 +375,9 @@ def run_gui(launcher, **options):
     )
     api._window = window
     api._suite._desktop.attach_window(window)
+    from lanctl.apps.suite.native_close import install_native_close
+
+    install_native_close(window, api, launcher=launcher)
     loaded = Event()
     window.events.loaded += loaded.set
     window.events.shown += lambda: apply_dark_caption(window, launcher)

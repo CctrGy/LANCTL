@@ -246,7 +246,7 @@ async function suiteClose(){
     if(window.confirmSettingsClose&&!await window.confirmSettingsClose())return;
     if($("#dialog").open&&submitForm&&originalForm!==JSON.stringify([...new FormData($("#form"))])&&!await confirmAction(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_FORM_HAS_UNSAVED_CHANGES_DISCARD_THEM_AND_CLOSE"),window.LanctlI18n.t("LANCTL.UI.TEXT.DISCARD_AND_CLOSE")))return;
     if(!await preserveProject())return;
-    const result=await call("request_close");if(!result.closed)message(window.LanctlI18n.t("LANCTL.UI.VIEW.COULD_NOT_CLOSE_THE_WINDOW"),true);
+    const result=await window.requestNativeClose();if(!result.closed&&!result.queued)message(window.LanctlI18n.t("LANCTL.UI.VIEW.COULD_NOT_CLOSE_THE_WINDOW"),true);
   }catch(error){message(error.message,true);}
 }
 $("#close-dialog").onclick=$("#dismiss").onclick=dismissForm;
