@@ -81,7 +81,7 @@ def test_rack_reads_real_wire_storage_and_has_no_write_access(workspace):
     rack = wire.wire_create({"kind": "rack", "prefix": "RK", "units": 24, "name": "Principal"})[
         "id"
     ]
-    device = wire.wire_create({"kind": "switch.5ports", "prefix": "SW"})["id"]
+    device = wire.wire_create({"kind": "switch.12ports", "prefix": "SW"})["id"]
     record = next(r for r in wire.bootstrap()["records"] if r["id"] == device)
     assert wire.wire_update(device, record["revision"], {"rack": rack, "unit": 18})["ok"]
     reader = api("lanrack")

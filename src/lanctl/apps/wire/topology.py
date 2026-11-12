@@ -28,6 +28,7 @@ NEW_IDF_PROFILES = {
     "wire.copper": ("wire.copper", None),
     "wire.fiber": ("wire.fiber", None),
     "wire.dac": ("wire.dac", None),
+    "external.fiber-entry": ("external.fiber-entry", "external.fiber-entry"),
     "router.otg": ("router.otg", "router.otg"),
     "router.gateway": ("router.gateway", "router"),
     "switch.5ports": ("switch.5Ports", "switch-5"),
@@ -38,6 +39,40 @@ NEW_IDF_PROFILES = {
     "pc.2ports": ("pc.2Ports", "pc-2"),
     "server.2ports": ("server.2Ports", "server-2"),
 }
+
+
+# The selectable catalog follows the requested combinations. Historical profiles
+# remain accepted for saved data and existing callers, without changing meaning.
+SWITCH_SELECTION = {
+    "switch.26rj45.2sfp": (26, 2, True),
+    **{f"switch.{count}ports": (count, 0, count >= 16) for count in (5, 8, 16, 24, 48)},
+    **{
+        f"switch.{copper}rj45.{fiber}sfp": (copper, fiber, copper >= 16)
+        for copper in (5, 8, 16, 24, 48)
+        for fiber in (2, 4, 6)
+    },
+    **{f"switch.{fiber}sfp": (0, fiber, fiber >= 12) for fiber in (4, 8, 12, 16, 24, 48)},
+}
+SWITCH_PORT_PROFILES = {
+    "switch.6ports": (6, 0, False),
+    "switch.12ports": (12, 0, True),
+    "switch.12rj45.2sfp": (12, 2, True),
+    "switch.48rj45.8sfp": (48, 8, True),
+    **SWITCH_SELECTION,
+}
+for _profile in SWITCH_PORT_PROFILES:
+    NEW_IDF_PROFILES.setdefault(_profile, (_profile, _profile))
+
+
+for _count in (1, 3, 4, 5, 6):
+    NEW_IDF_PROFILES[f"server.{_count}ports"] = (f"server.{_count}ports", f"server-{_count}")
+
+
+def switch_creation_profiles():
+    return [
+        {"kind": kind, "rj45": copper, "sfp": fiber, "rackmount": rackmount}
+        for kind, (copper, fiber, rackmount) in SWITCH_SELECTION.items()
+    ]
 
 
 def build_new_idf_data(
@@ -56,6 +91,35 @@ def build_new_idf_data(
             "subtype": subtype,
             "kind": subtype,
             "endpoints": [],
+        }
+    elif normalized == "external.fiber-entry":
+        data = {
+            "type": "external.fiber-entry",
+            "subtype": subtype,
+            "ports": build_ports(1, "FIBER", kind=FIBER),
+        }
+    elif normalized in SWITCH_PORT_PROFILES and normalized not in {
+        "switch.5ports",
+        "switch.12ports",
+        "switch.24ports",
+        "switch.48ports",
+    }:
+        copper, fiber, rackmount = SWITCH_PORT_PROFILES[normalized]
+        ports = build_ports(copper, "X{n}") if copper else {}
+        if fiber:
+            ports.update(build_ports(fiber, "SFP{n}", kind=FIBER))
+        data = {
+            "type": "device.switch",
+            "subtype": subtype,
+            "ports": ports,
+            "rackAppearance": {
+                "schemaVersion": 1,
+                "kind": "switch",
+                "rj45": copper,
+                "sfp": fiber,
+                "rackmount": rackmount,
+                "units": 1,
+            },
         }
     else:
         data = apply_device_preset({}, preset)
@@ -145,6 +209,7 @@ def apply_device_preset(data: dict[str, Any], requested_type: str) -> dict[str, 
         "pc-2": ("device.pc", 2, "LAN{n}", False),
         "server-2": ("device.server", 2, "LAN{n}", False),
     }
+    presets.update({f"server-{n}": ("device.server", n, "LAN{n}", False) for n in range(1, 7)})
     if normalized in presets:
         element_type, count, pattern, fiber = presets[normalized]
         result["type"] = element_type

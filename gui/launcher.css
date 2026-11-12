@@ -59,3 +59,71 @@
 
 /* Compact wall outlets: geometry also used by layout and cable anchors. */
 .wire-node.physical-outlet{height:64px;padding:4px;border-radius:5px}.physical-outlet strong{display:block;font-size:12px;line-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.physical-outlet small{font-size:9px;line-height:10px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.physical-outlet .wire-ports{gap:2px;margin-top:2px}.physical-outlet .wire-ports span{min-height:18px;padding:1px;font-size:10px}
+
+.rack-unit-context{position:fixed;z-index:2000;min-width:210px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;padding:6px;border:1px solid var(--line);border-radius:9px;background:var(--color-surface,var(--surface));color:var(--text);box-shadow:0 12px 30px #0006}
+.rack-unit-context-title{padding:7px 10px;font-size:.85em;color:var(--muted);border-bottom:1px solid var(--line);margin-bottom:4px}
+.rack-unit-context>button{display:block;width:100%;border:0;border-radius:5px;background:transparent;color:inherit;text-align:left;padding:9px 10px}
+.rack-unit-context>button:hover:not(:disabled),.rack-unit-context>button:focus-visible{background:var(--bg);outline:2px solid var(--color-accent,var(--lime));outline-offset:-2px}
+.rack-unit-context>button:disabled{opacity:.45;cursor:not-allowed}
+
+/* Copper and optical counts share one row in physical creation forms. */
+.switch-port-counts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.switch-port-counts[hidden]{display:none}
+.switch-port-counts>label{display:grid;gap:6px;min-width:0;color:var(--muted);font-size:12px}
+.switch-port-counts select{width:100%;min-width:0}
+
+.rack-position-controls{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
+.rack-position-controls button{min-width:42px;min-height:42px}
+
+.rack-size-position{display:grid;grid-template-columns:minmax(90px,1fr) minmax(200px,1fr);gap:14px;align-items:end}
+.rack-size-position>label{display:grid;gap:6px;min-width:0;color:var(--muted);font-size:12px}
+.rack-size-position>label[hidden],.rack-position-controls[hidden]{display:none}
+.rack-size-position input,.rack-size-position select{min-width:0;width:100%}
+@media(max-width:540px){.rack-size-position{grid-template-columns:minmax(70px,1fr) minmax(170px,2fr);gap:8px}}
+.rack-size-position input,.rack-size-position select,.rack-size-position button{height:42px;box-sizing:border-box}
+.rack-size-position button{padding:0 12px}
+
+.rack-face .skin-panel-label{fill:#b8c0b4;stroke:#737f75;stroke-width:.6}
+.rack-face .skin-panel-module text{fill:#18211d;font:7px monospace;text-anchor:middle}
+.rack-face .skin-panel-jack{fill:#101719;stroke:#91a293;stroke-width:1.2}
+.rack-face .skin-panel-module path{fill:none;stroke:#bcad76;stroke-width:1}
+
+.rack-face .skin-outlet-shell{fill:#121b1e;stroke:#96a394;stroke-width:2}
+.rack-face .skin-outlet-hole{fill:#050809;stroke:#59655d;stroke-width:1}
+.rack-face .skin-outlet-earth{fill:none;stroke:#b5bca8;stroke-width:3;stroke-linecap:round}
+
+.rack-face .skin-comb-tooth{fill:none;stroke:#8c9e91;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.rack-face .skin-organizer-channel{fill:#111b1e;stroke:#8c9e91;stroke-width:3}
+.rack-face .skin-organizer-divider{fill:none;stroke:#52675a;stroke-width:4}
+.rack-face .skin-ventilation-slot{fill:#0c1418;stroke:#596b60;stroke-width:1}
+
+/* Preserve physical connector proportions instead of stretching a short U row. */
+.rack-detail-layout .rack-elevation.rack-skinned{width:100%;max-width:var(--rack-max-width,100%);margin-inline:auto;box-sizing:border-box}
+.rack-face{object-fit:contain}
+
+.rack-face .skin-tray-chassis{fill:#101719;stroke:#65716c;stroke-width:2}
+.rack-face .skin-tray-lip{fill:none;stroke:#8b9689;stroke-width:3}
+.rack-face .skin-small-case{fill:#2a3539;stroke:#83948c;stroke-width:1.5}
+.rack-face .skin-small-router .skin-small-case{fill:#2b303b}
+.rack-face .skin-small-otg .skin-small-case{fill:#343b35;stroke:#a8b2a6}
+.rack-face .skin-small-label{fill:#e1e9e4;font:600 13px sans-serif}
+.rack-face .skin-small-id,.rack-face .skin-small-more{fill:#a5b7aa;font:11px sans-serif}
+.rack-face .skin-small-port{fill:#0b1418;stroke:#9b9f82;stroke-width:1}
+.rack-face .skin-small-port.optical{stroke:#8fb3cf;fill:#132532}
+.rack-face .skin-small-wireless{fill:none;stroke:#8da59b;stroke-width:1.5}
+
+/* LANWIRE optical provider boundary: one circular fiber port. */
+.wire-node.wire-fiber-entry{padding:0;background:transparent;border:0;box-shadow:none;text-align:center;overflow:visible}
+.wire-fiber-entry .wire-fiber-symbol{display:block;width:96px;height:96px;margin:0 auto 5px;overflow:visible}
+.wire-fiber-entry .wire-fiber-outer{fill:var(--panel,#20282d);stroke:#19a651;stroke-width:4}
+.wire-fiber-entry .wire-fiber-port{fill:#20282d;stroke:#f3a20b;stroke-width:5}
+.wire-fiber-entry.selected .wire-fiber-outer,.wire-fiber-entry:focus-visible .wire-fiber-outer{stroke:var(--lime)}
+.wire-fiber-entry strong{display:block;font-size:12px;overflow-wrap:anywhere}
+
+.physical-region-handle{position:absolute;pointer-events:auto;touch-action:none;min-width:0!important;min-height:0!important;padding:0!important;border:1px solid var(--lime);background:#526b25;border-radius:4px;z-index:4}
+.physical-region-handle.side-e,.physical-region-handle.side-w{width:var(--grip);height:calc(var(--grip)*2);top:50%;transform:translateY(-50%);cursor:ew-resize}
+.physical-region-handle.side-e{right:calc(var(--grip)/-2)}.physical-region-handle.side-w{left:calc(var(--grip)/-2)}
+.physical-region-handle.side-n,.physical-region-handle.side-s{height:var(--grip);width:calc(var(--grip)*2);left:50%;transform:translateX(-50%);cursor:ns-resize}
+.physical-region-handle.side-n{top:calc(var(--grip)/-2)}.physical-region-handle.side-s{bottom:calc(var(--grip)/-2)}
+.physical-region:focus-within,.physical-region:has(.physical-region-handle:hover){z-index:4}
+.physical-region-handle:focus-visible{outline:2px solid var(--lime);outline-offset:3px}

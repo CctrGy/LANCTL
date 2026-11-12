@@ -162,3 +162,61 @@ para esa invocación, incluidos hijos que heredaron los pipes. La limpieza de
 árboles de procesos Windows requiere certificación nativa y no se afirma aquí.
 Los runners personalizados inyectados mantienen su contrato anterior: deben
 proporcionar sus propios límites de captura; el límite de respuesta sí se aplica.
+
+## Web común de los launchers
+
+La raíz HTTPS y `/lanctl` abren la navegación común. La barra lateral puede
+ocultarse y reaparecer con el botón de menú; permanece al cambiar de aplicación.
+
+| Ruta | Interfaz reutilizada |
+| --- | --- |
+| `/lanctl/panel` | LANCTL: proyectos, plugins y configuración |
+| `/lanctl/ip` | LANIP |
+| `/lanctl/wire` | LANWIRE |
+| `/lanctl/access` | LANACCESS |
+| `/lanctl/rack` | LANRACK |
+| `/lanctl/mon` | LANMON |
+
+Cada vista carga el HTML, CSS y JavaScript de la GUI instalada dentro de un
+marco del mismo origen. `web-bridge.js` adapta el contrato pywebview a una API
+HTTP autenticada; no se mantiene una segunda implementación del dominio.
+El contenedor comparte la selección de proyecto y las preferencias de idioma y
+tema del servicio. Estas preferencias pertenecen al usuario del servicio; no se
+copian automáticamente desde otro ordenador.
+
+El backend valida una lista explícita de métodos por aplicación, permisos RBAC,
+CSRF y contexto de proyecto antes de llamar a las API GUI existentes. Las
+instancias de API se separan por sesión: desbloquear la bóveda en un navegador
+no desbloquea la de otro. Abrir otro launcher navega a su ruta en la misma web.
+Las operaciones exclusivas del escritorio, como abrir una terminal del servidor
+o elegir carpetas nativas, no se exponen. El selector web de proyectos ofrece
+los proyectos registrados y los creados en la carpeta gestionada del servicio.
+Las rutas anteriores `/index.html` y `/api/rpc` se conservan por compatibilidad.
+
+Para publicar `https://core.lan/lanctl/`, el proxy debe conservar el prefijo y el
+origen externo debe coincidir con el origen permitido del servicio. Esta
+función no configura DNS, certificados ni el proxy inverso y no modifica los
+puertos de otros servicios. En la RPi de prueba se utiliza temporalmente
+`https://192.168.1.9:8443/lanctl/panel`.
+
+### Menú compacto y enlaces a otros servicios
+
+El menú común distribuye los seis launchers sin scroll, seguido de
+Configuración general, el proyecto activo y un bloque inferior de servicios.
+En pantallas bajas reduce separaciones y descripciones, conservando el orden
+vertical de los launchers. Al plegarse, desaparece por completo
+y deja el ancho disponible al contenido. Configuración abre la ventana de
+ajustes existente de LANCTL y respeta `system.configure`.
+
+Las direcciones de los otros servicios se definen en el entorno del proceso:
+`LANCTL_WEB_HARDWARE_URL`, `LANCTL_WEB_DNS_URL` y `LANCTL_WEB_VPN_URL`.
+Aceptan enlaces HTTP/HTTPS sin credenciales. Si no se configura una dirección,
+se conserva su espacio como etiqueta inactiva. Se abren en otra pestaña sin
+acceso a la ventana de LANCTL. Cada servicio conserva su propia autenticación.
+Estas variables son propias del despliegue; no se fijan IP o puertos personales
+en los fuentes ni se adivina una web a partir del puerto UDP de WireGuard.
+
+En la RPi5 se localizaron Hardware en `/hardware/`, Pi-hole en `/admin/` y
+WireGuard VPN en `/vpn/`, servidos por el acceso común `https://core.lan`.
+El proxy Caddy de ese acceso ya existía al revisar esta modificación; no se
+cambió su configuración ni la de los otros servicios.

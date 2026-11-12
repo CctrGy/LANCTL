@@ -143,7 +143,7 @@ window.LANCTL_REFERENCE = {
         "post-install"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Root orchestrator for the LANCTL suite applications.",
       "details": "Usage: LANCTL [-h] [--version] [--cli | -tui | --gui] [-web | -github | -reference] [--admin]\n              LAUNCHER ...\n\nRoot orchestrator for the LANCTL suite applications.\n\nArguments:\n  LAUNCHER\n    lanip (ip)             Logical inventory, discovery, IP, MAC and services.\n    lanwire (wire)         Wiring, ports, panels and physical topology.\n    lanrack (rack)         Technical rooms, racks, rack units and equipment.\n    lanaccess (access)     Users, credentials and remote access.\n    lanmon (monitor)       Monitoring, events, incidents and history.\n    plugin                 Shared suite administration.\n    settings               Shared suite administration.\n    language               Shared suite administration.\n    backend                Shared suite administration.\n    shortcut               Preview or create a desktop shortcut.\n    setup-defaults         Initialize installation preferences without overwriting existing ones.\n    completions            Register or remove Clink completion for the current user.\n    post-install           Open LANIP as the normal user after installation.\n\nOptions:\n  -h, --help               Show this help and exit.\n  --version                Show the common suite version and exit.\n  --cli, -cli              Open the main console.\n  -tui, --tui              Open the main TUI.\n  --gui                    Open the LANCTL graphical hub.\n  -web, --web              Show and open the official website.\n  -github, --github        Show and open the official GitHub.\n  -reference, --reference  Show and open the official reference.\n  --admin                  Explicitly request UAC for an installed launcher on Windows.",
@@ -321,7 +321,7 @@ window.LANCTL_REFERENCE = {
         "lab"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Logical control of LAN devices and infrastructure.",
       "details": "Usage: LANIP [-h] [--version] [--quiet | --verbose] [--gui] [--first-scan] [--cli]\n             [-tui [VENTANA]] [-project ARCHIVO.vlf]\n             COMANDO ...\n\nLogical control of LAN devices and infrastructure.\n\nArguments:\n  COMANDO\n    ephemeral (-e)            Scan active hosts without reading or saving any inventory.\n    list                      Scan the LAN and show active and historical devices.\n    recurrent                 Query recurring elements known to LANCTL.\n    ping                      Check once whether an element responds to PING or ARP.\n    open (connect)            Open an element with a protocol-appropriate client.\n    settings                  Query or change LANCTL's persistent configuration.\n    call                      Resolve an alias, IP or MAC to device data.\n    search                    Search devices by alias, name, IP or MAC.\n    scan                      Inspect a single LAN element in depth.\n    cnf                       Assign an element's CNF state by IP, MAC or alias.\n    credential (credentials, auth)\n                              Associate encrypted credentials with an element and protocol.\n    GATEWAY (gateway)         Query and configure the gateway through TR-064.\n    downloadSettings (downloadsettings, download-settings)\n                              Legacy alias for “GATEWAY downloadSettings”.\n    protocol                  Query or configure an element's protocol.\n    ssh                       Open SSH or run a read-only show query.\n    radmin                    Configure, check or open Radmin Viewer.\n    wol                       Wake devices through Wake-on-LAN and run safe sequences.\n    history                   Query structured events from the active VLF project.\n    monitor                   Operate LAN monitor sessions and checks.\n    access                    Configure secure LAN remote access through SSH and HTTPS.\n    smb                       Discover and open Windows SMB resources.\n    terminal (cli)            Open an element's terminal according to its protocol.\n    switch                    Plan filtered, remapped and classified Cisco commands.\n    group                     Create, edit and query element groups.\n    element                   Edit one or more fields of an element identified by IP, MAC or\n                              alias.\n    project (projects)        Create, update and inspect LANCTL .vlf projects.\n    plugin (plugins, addon, addons)\n                              Manage unified LANCTL .lcp plugins.\n    language (languages, lang)\n                              Manage LANCTL interface languages.\n    error (errors)            Query the catalog by identifier 0eXXXXXXXX.\n    database (db)             Diagnose and export data.\n    demo                      Generate a reproducible walkthrough without depending on a real\n                              network.\n    lanwire (wire)            Open LANWIRE or run one of its commands on the shared physical\n                              database.\n    lab                       Manage simulated LANs without real traffic.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Show the version and exit.\n  --quiet                     Suppress successful output; preserve errors.\n  --verbose                   Add execution diagnostics to stderr.\n  --gui                       Open the LANIP graphical interface.\n  --first-scan                Request first scan confirmation when opening the GUI; do not scan\n                              automatically.\n  --cli, -cli                 Open the persistent interactive LANCTL terminal.\n  -tui, --tui [VENTANA]       Open the advanced full-screen terminal interface. Can open PLUGINS,\n                              PROJECTS or SETTINGS directly.\n  -project, --project ARCHIVO.vlf\n                              Select a VLF project before opening the TUI or running a command.",
@@ -476,7 +476,7 @@ window.LANCTL_REFERENCE = {
       "category": "Descubrimiento de red",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Perform actual discovery in an isolated in-memory session. Does not open, modify or save projects or device databases.",
       "details": "Usage: LANIP ephemeral [-h] [--fast | --normal | --accurate] [--range NETWORK] [--resolve-names]\n                       [--ports PORTS] [--json] [--workers WORKERS] [--timeout TIMEOUT]\n                       [--max-hosts MAX_HOSTS] [--scan-order {ascending,descending,random}]\n\nPerform actual discovery in an isolated in-memory session. Does not open, modify or save projects or device databases.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --fast                      Prioriza un barrido ARP rápido.\n  --normal                    Combina ICMP, ARP y descubrimiento de servicios.\n  --accurate                  Añade reintentos y reconocimiento más profundo.\n  --range NETWORK             CIDR range to explore only during this execution.\n  --resolve-names             Resolve names without storing them.\n  --ports PORTS               Optional TCP ports, for example 22,80,443.\n  --json                      Return the session as JSON.\n  --workers WORKERS           Concurrent probes.\n  --timeout TIMEOUT           Base timeout per probe, in seconds.\n  --max-hosts MAX_HOSTS       Defensive limit on authorized addresses.\n  --scan-order {ascending,descending,random}\n                              Address exploration order.",
@@ -876,7 +876,7 @@ window.LANCTL_REFERENCE = {
       "category": "Inventario y búsqueda",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Perform a basic IP/MAC scan, update the database by MAC and also show undetected devices.",
       "details": "Usage: LANIP list [-h] [--network NETWORK] [--interface INTERFACE] [--database DATABASE]\n                  [--groups GROUPS] [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT] [-recurrent]\n                  [--where WHERE] [-w WORKERS] [-t TIMEOUT]\n                  [--scan-order {ascending,descending,random}] [--include-unknown]\n                  [--resolve-names] [--max-hosts MAX_HOSTS] [--discovery {icmp,arp,hybrid}]\n                  [--profile {fast,normal,accurate} | --fast | --normal | --accurate]\n                  [--progress | --no-progress] [--show-discovery] [--include-arp-cache]\n                  [--show-detection] [--active | -disconnected] [-basic] [-cnf {O,X,-,S,F}]\n                  [-group GRUPO] [-dhcp]\n\nPerform a basic IP/MAC scan, update the database by MAC and also show undetected devices.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --network NETWORK           CIDR network. Detects the LAN as /24 by default.\n  --interface INTERFACE       Local IPv4 source or interface ID; uses its actual mask. ICMP/ARP\n                              only, without DNS or external discovery.\n  --database DATABASE         Element JSON file.\n  --groups GROUPS             Group JSON file.\n  -f, --format {table,json,csv,html,xml,yaml}\n                              Output format (default: table).\n  -o, --output OUTPUT         Save output to a file.\n  -recurrent, --recurrent     List recurring elements without scanning the LAN or showing IP.\n  --where WHERE               Composable query, for example: \"active and group=IOT and\n                              vendor~Amazon\".\n  -w, --workers WORKERS       Concurrent checks.\n  -t, --timeout TIMEOUT       Base timeout in seconds per operation and host; the profile may\n                              adjust it.\n  --scan-order {ascending,descending,random}\n                              IP probe order: ascending, descending or random.\n  --include-unknown           Include active hosts even if their MAC is not yet known.\n  --resolve-names             Resolve and save DNS names of detected elements.\n  --max-hosts MAX_HOSTS       Maximum hosts allowed in a scan.\n  --discovery {icmp,arp,hybrid}\n                              Method: icmp, active arp or hybrid (default from settings).\n  --profile {fast,normal,accurate}\n                              Complete scan profile: fast, normal or accurate.\n  --fast                      Fast ARP scan.\n  --normal                    Balanced hybrid scan.\n  --accurate                  Deep scan using multiple methods.\n  --progress                  Show interactive progress.\n  --no-progress               Hide progress.\n  --show-discovery            Add a column with ICMP, ARP, LOCAL, BASIC or CACHE.\n  --include-arp-cache         Import cached ARP neighbors as unverified CACHE; they do not count\n                              as active.\n  --show-detection            Add historical methods and last-seen date.\n  --active, -active, -connected, --connected, -conected\n                              Show only devices active in the current scan.\n  -disconnected, --disconnected, -offline\n                              Show only devices not currently detected.\n  -basic, --basic             Compact view: IP, alias and description.\n  -cnf, --cnf-state {O,X,-,S,F}\n                              Filter by CNF state: O, X, -, S or F.\n  -group, --group GRUPO       Show only elements in a group.\n  -dhcp, --dhcp-only          Show only IPs within the configured DHCP range.",
@@ -950,7 +950,7 @@ window.LANCTL_REFERENCE = {
       "category": "Comandos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Show recurring identities by MAC. Does not include IP because it can change on each LAN.",
       "details": "Usage: LANIP recurrent [-h] -list [-f {table,json,csv,html,xml,yaml}] [-o OUTPUT]\n\nShow recurring identities by MAC. Does not include IP because it can change on each LAN.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -list, --list               List all recurring elements without their IPs.\n  -f, --format {table,json,csv,html,xml,yaml}\n                              Output format (default: table).\n  -o, --output OUTPUT         Save output to a file.",
@@ -1059,7 +1059,7 @@ window.LANCTL_REFERENCE = {
       "category": "Diagnóstico de red",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Diagnose a single element without changing the database. PING tests ICMP; ARP performs an active LAN query; AUTO combines both methods.",
       "details": "Usage: LANIP ping [-h] [--method {auto,ping,arp} | --ping | --arp] [--timeout TIMEOUT] [--json]\n                  [--database DATABASE]\n                  selector\n\nDiagnose a single element without changing the database. PING tests ICMP; ARP performs an active LAN query; AUTO combines both methods.\n\nArguments:\n  selector                  IP, MAC, alias or registered name.\n\nOptions:\n  -h, --help                Show this help and exit.\n  --method {auto,ping,arp}  Lookup method: auto, ping or arp (default: auto).\n  --ping                    Use only one ICMP request.\n  --arp                     Use only one active ARP request.\n  --timeout TIMEOUT         Maximum timeout per check, in seconds.\n  --json                    Return diagnostics as JSON.\n  --database DATABASE       Element JSON file.",
@@ -1267,7 +1267,7 @@ window.LANCTL_REFERENCE = {
       "category": "Comandos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP open [-h] [--port PORT] [--path PATH]\n                  [--mode {control,view,file,shutdown,chat,voice,message,telnet}]\n                  [--through THROUGH] [--fullscreen] [--color-depth {24,16,8,4,2,1}]\n                  [--updates UPDATES] [--phonebook PHONEBOOK] [--phonebook-id PHONEBOOK_ID]\n                  [--dry-run] [--database DATABASE] [--store STORE]\n                  selector [{auto,ssh,tr-064,telnet,http,https,ftp,rdp,rtsp,smb,radmin}]",
       "details": "Usage: LANIP open [-h] [--port PORT] [--path PATH]\n                  [--mode {control,view,file,shutdown,chat,voice,message,telnet}]\n                  [--through THROUGH] [--fullscreen] [--color-depth {24,16,8,4,2,1}]\n                  [--updates UPDATES] [--phonebook PHONEBOOK] [--phonebook-id PHONEBOOK_ID]\n                  [--dry-run] [--database DATABASE] [--store STORE]\n                  selector [{auto,ssh,tr-064,telnet,http,https,ftp,rdp,rtsp,smb,radmin}]\n\nArguments:\n  selector                    Element IP, MAC or alias.\n  {auto,ssh,tr-064,telnet,http,https,ftp,rdp,rtsp,smb,radmin}\n                              Protocol or automatic detection.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --port PORT                 Alternative port.\n  --path PATH                 HTTP/FTP/RTSP path or SMB resource.\n  --mode {control,view,file,shutdown,chat,voice,message,telnet}\n                              Radmin connection mode.\n  --through THROUGH           Intermediate Radmin server HOST:PORT.\n  --fullscreen                Open full-screen control or view.\n  --color-depth {24,16,8,4,2,1}\n                              Radmin color depth (1, 2, 4, 8, 16 or 24 bits).\n  --updates UPDATES           Maximum screen updates per second (1-120).\n  --phonebook PHONEBOOK       Radmin .rpb phonebook path.\n  --phonebook-id PHONEBOOK_ID\n                              Entry identifier within the Radmin phonebook.\n  --dry-run                   Show the target without opening it.\n  --database DATABASE         Element JSON file.\n  --store STORE               Encrypted credential store.",
@@ -1901,7 +1901,7 @@ window.LANCTL_REFERENCE = {
       "category": "Configuración",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]\n                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]\n                      [--scope {program,project}] [--category CATEGORY]",
       "details": "Usage: LANIP settings [-h] [--startup-interface {cli,tui,gui}] [--close-gui-on-launch {on,off}]\n                      [-range CIDR] [-list-fields CAMPO [CAMPO ...]] [-dhcp-range INICIO-FIN]\n                      [-credentials ARCHIVO] [-discovery {icmp,arp,hybrid}]\n                      [--scan-profile {fast,normal,accurate}] [--progress {on,off}]\n                      [--service-identification {on,off}]\n                      [--disconnected-retention {permanent,session,forget}]\n                      [--disconnected-target {unconfirmed,all}] [--disconnected-scope {all,dhcp}]\n                      [--workers WORKERS] [--timeout TIMEOUT]\n                      [--scan-order {ascending,descending,random}] [--max-hosts MAX_HOSTS]\n                      [--database ARCHIVO] [--physical-database ARCHIVO] [--groups ARCHIVO]\n                      [--log DIRECTORIO] [--error-log-level 1-59]\n                      [--projects-directory DIRECTORIO] [-save-mode MODO] [-save-interval MINUTOS]\n                      [--cli-exit-save-prompt {on,off}] [--cli-command-chaining {on,off}]\n                      [-log-cleanup {on,off}] [-log-retention-days DÍAS]\n                      [--remote-access {on,off}] [--remote-bind IP] [--remote-cidr CIDR]\n                      [--remote-port REMOTE_PORT] [--remote-password-auth {on,off}]\n                      [--remote-backend {service,user}]\n                      [--remote-forced-view {off,gui,tui,plugins,projects,settings}]\n                      [--tui-key ACCIÓN=TECLA] [--tui-layout {cli.bottom,cli.top}]\n                      [--tui-cli-percent 15-75] [--tui-column COLUMNA=TAMAÑO]\n                      [--tui-footer-buttons ACCIONES] [--tui-footer-button ACCIÓN=on|off]\n                      [--menu | --catalog | --get RUTA | --set RUTA VALOR]\n                      [--scope {program,project}] [--category CATEGORY]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --startup-interface {cli,tui,gui}\n                              Preferred interface when opening any LANCTL launcher without\n                              arguments.\n  --close-gui-on-launch {on,off}\n                              Close the main GUI when the requested launcher is available.\n  -range CIDR                 Default LAN range, for example 192.168.1.1/24.\n  -list-fields, --list-fields, -list CAMPO [CAMPO ...]\n                              Columns displayed by list, separated by spaces or commas.\n  -dhcp-range, --dhcp-range, -dhcp INICIO-FIN\n                              Manual DHCP range. Use 'off' to leave it unconfigured.\n  -credentials, --credentials ARCHIVO\n                              Path to the encrypted credential store.\n  -discovery, --discovery {icmp,arp,hybrid}\n                              Default method used by list.\n  --scan-profile {fast,normal,accurate}\n                              Default list profile: fast, normal or accurate.\n  --progress {on,off}         Enable or disable interactive progress.\n  --service-identification {on,off}\n                              Enable or disable service recognition in scan.\n  --disconnected-retention {permanent,session,forget}\n                              Disconnected device persistence: permanent, session or forget.\n  --disconnected-target {unconfirmed,all}\n                              Apply retention only to CNF=X (unconfirmed) or to all (all).\n  --disconnected-scope {all,dhcp}\n                              Apply the rule to the entire LAN (all) or only the DHCP range\n                              (dhcp).\n  --workers WORKERS           Default scan concurrency.\n  --timeout TIMEOUT           Default timeout per network operation.\n  --scan-order {ascending,descending,random}\n                              Default probe order: ascending, descending or random.\n  --max-hosts MAX_HOSTS       Maximum hosts authorized per scan.\n  --database ARCHIVO          Path to the element inventory.\n  --physical-database ARCHIVO\n                              Path to the physical SQLite database managed exclusively by LANWIRE.\n  --groups ARCHIVO            Path to the group database.\n  --log DIRECTORIO            Log directory.\n  --error-log-level 1-59      Minimum ErrorEvent level written to the log (1 includes detailed\n                              diagnostics).\n  --projects-directory DIRECTORIO\n                              Default folder for relative VLF project names.\n  -save-mode, --save-mode MODO\n                              VLF save policy. Use 'list' to query built-in and plugin-provided\n                              options.\n  -save-interval, --save-interval MINUTOS\n                              Interval for automatic.timeToSave in minutes (minimum 0.1).\n  --cli-exit-save-prompt {on,off}\n                              Ask whether to save after each individual console command.\n  --cli-command-chaining {on,off}\n                              Allow command chaining with ; in the interactive CLI.\n  -log-cleanup, --log-cleanup {on,off}\n                              Enable or disable automatic cleanup of old logs.\n  -log-retention-days, --log-retention-days DÍAS\n                              Number of days to retain log files.\n  --remote-access {on,off}    Enable restricted SSH access.\n  --remote-bind IP            Local IPv4 address for SSH listening.\n  --remote-cidr CIDR          Authorized source network.\n  --remote-port REMOTE_PORT   Remote SSH server port.\n  --remote-password-auth {on,off}\n                              Allow or block SSH password authentication.\n  --remote-backend {service,user}\n                              Run the backend as a persistent service or user process.\n  --remote-forced-view {off,gui,tui,plugins,projects,settings}\n                              Default view for root forced-view.\n  --tui-key ACCIÓN=TECLA      Assign a key to a TUI action. May be repeated.\n  --tui-layout {cli.bottom,cli.top}\n                              Place the CLI at the top (cli.top) or bottom (cli.bottom).\n  --tui-cli-percent 15-75     Vertical percentage reserved for CLI; ListElement retains at least\n                              25%.\n  --tui-column COLUMNA=TAMAÑO\n                              Column weight (GROUP=15%); IP=15ch and MAC=17ch are fixed.\n  --tui-footer-buttons ACCIONES\n                              Visible bottom-bar actions, comma-separated; use all for all\n                              actions.\n  --tui-footer-button ACCIÓN=on|off\n                              Show or hide a specific bottom-bar action. May be repeated.\n  --menu                      Interactive program and project editor organized by category.\n  --catalog                   List common and CLI preferences by category, with values and\n                              editability.\n  --get RUTA                  Query a setting by path, for example ip.workers.\n  --set RUTA VALOR            Change a common or CLI preference; lists and booleans use JSON.\n  --scope {program,project}   Configuration scope (default: program).\n  --category CATEGORY         Filter the catalog by category, for example network or monitor.",
@@ -1986,7 +1986,7 @@ window.LANCTL_REFERENCE = {
       "category": "Comandos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP call [-h]\n                  [-f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}]\n                  [--json] [--database DATABASE]\n                  selector",
       "details": "Usage: LANIP call [-h]\n                  [-f {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}]\n                  [--json] [--database DATABASE]\n                  selector\n\nArguments:\n  selector                    Device alias, IP or MAC.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -f, --field {ip,cnf,mac,alias,name,group,description,manufacturer,default-name,device-id,protocols}\n                              Returned field (default: ip).\n  --json                      Return the complete record as JSON.\n  --database DATABASE         Element JSON file.",
@@ -2047,7 +2047,7 @@ window.LANCTL_REFERENCE = {
       "category": "Inventario y búsqueda",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP search [-h] [--json] [--database DATABASE] selector",
       "details": "Usage: LANIP search [-h] [--json] [--database DATABASE] selector\n\nArguments:\n  selector             Exact alias, name, IP or MAC.\n\nOptions:\n  -h, --help           Show this help and exit.\n  --json               Return the complete record as JSON for scripts.\n  --database DATABASE  Element JSON file.",
@@ -2174,7 +2174,7 @@ window.LANCTL_REFERENCE = {
       "category": "Descubrimiento de red",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Resolve an element by IP, MAC or alias and check identity, availability and TCP ports. Does not modify the device.",
       "details": "Usage: LANIP scan [-h] [--ports LISTA] [--all-ports] [--timeout TIMEOUT] [--workers WORKERS]\n                  [--banners] [--identify] [--json] [--database DATABASE]\n                  selector\n\nResolve an element by IP, MAC or alias and check identity, availability and TCP ports. Does not modify the device.\n\nArguments:\n  selector             IP, MAC or alias registered in LANCTL.\n\nOptions:\n  -h, --help           Show this help and exit.\n  --ports LISTA        Ports or ranges: 22,80,443,8000-8100 (default: common).\n  --all-ports          Explicitly authorize a TCP 1-65535 scan.\n  --timeout TIMEOUT    Maximum timeout per connection, in seconds.\n  --workers WORKERS    Maximum number of concurrent connections.\n  --banners            Read passive banners; do not send protocol-specific probes.\n  --identify           Recognize services and infer device type from evidence.\n  --json               JSON output.\n  --database DATABASE  Element JSON file.",
@@ -2233,7 +2233,7 @@ window.LANCTL_REFERENCE = {
       "category": "Comandos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP cnf [-h] [--database DATABASE] selector [value]",
       "details": "Usage: LANIP cnf [-h] [--database DATABASE] selector [value]\n\nArguments:\n  selector             Element IP, MAC or alias.\n  value                O (OK), X (UNKNOWN), - (UNRECOGNIZED), S (MARKED) or F (FIXED). Without a\n                       value, release F and restore O.\n\nOptions:\n  -h, --help           Show this help and exit.\n  --database DATABASE  Element JSON file.",
@@ -2328,7 +2328,7 @@ window.LANCTL_REFERENCE = {
       "category": "Acceso remoto",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP credential [-h] [-user USERNAME] [--database DATABASE] [--store STORE]\n                        selector [{set,list,delete}] [protocol]",
       "details": "Usage: LANIP credential [-h] [-user USERNAME] [--database DATABASE] [--store STORE]\n                        selector [{set,list,delete}] [protocol]\n\nArguments:\n  selector                    Element IP, MAC or alias.\n  {set,list,delete}           Credential operation.\n  protocol                    Protocol, for example tr-064.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -user, --username USERNAME  Remote username.\n  --database DATABASE         Element JSON file.\n  --store STORE               Encrypted credential store.",
@@ -2362,7 +2362,7 @@ window.LANCTL_REFERENCE = {
         "downloadSettings"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP GATEWAY [-h] ACCIÓN ...",
       "details": "Usage: LANIP GATEWAY [-h] ACCIÓN ...\n\nArguments:\n  ACCIÓN\n    downloadSettings (downloadsettings, download-settings)\n                              Download relevant LAN and DHCP settings for configuration.\n\nOptions:\n  -h, --help                  Show this help and exit.",
@@ -2436,7 +2436,7 @@ window.LANCTL_REFERENCE = {
       "category": "Comandos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP GATEWAY downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--database DATABASE]\n                                      [--store STORE]",
       "details": "Usage: LANIP GATEWAY downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--database DATABASE]\n                                      [--store STORE]\n\nOptions:\n  -h, --help           Show this help and exit.\n  --port PORT          Router TR-064 port.\n  --timeout TIMEOUT    Maximum timeout in seconds.\n  --database DATABASE  Element JSON file.\n  --store STORE        Encrypted credential store.",
@@ -2520,7 +2520,7 @@ window.LANCTL_REFERENCE = {
       "category": "Comandos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--database DATABASE]\n                              [--store STORE]\n                              [gateway]",
       "details": "Usage: LANIP downloadSettings [-h] [--port PORT] [--timeout TIMEOUT] [--database DATABASE]\n                              [--store STORE]\n                              [gateway]\n\nArguments:\n  gateway              Router IP, MAC or alias.\n\nOptions:\n  -h, --help           Show this help and exit.\n  --port PORT          Router TR-064 port.\n  --timeout TIMEOUT    Maximum timeout in seconds.\n  --database DATABASE  Element JSON file.\n  --store STORE        Encrypted credential store.",
@@ -2649,7 +2649,7 @@ window.LANCTL_REFERENCE = {
       "category": "Acceso remoto",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP protocol [-h] [--port PORT] [--driver DRIVER] [--host-key HOST_KEY] [--kex KEX]\n                      [--profile {ssh_legacy_cisco_s300,ssh_esp32_rack_monitor}]\n                      [--database DATABASE]\n                      selector {show,configure} protocol",
       "details": "Usage: LANIP protocol [-h] [--port PORT] [--driver DRIVER] [--host-key HOST_KEY] [--kex KEX]\n                      [--profile {ssh_legacy_cisco_s300,ssh_esp32_rack_monitor}]\n                      [--database DATABASE]\n                      selector {show,configure} protocol\n\nArguments:\n  selector                    IP, MAC or alias.\n  {show,configure}            Query or change the protocol.\n  protocol                    Protocol to configure.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --port PORT                 Remote port.\n  --driver DRIVER             Device driver.\n  --host-key HOST_KEY         Allowed host-key algorithm; may be repeated.\n  --kex KEX                   Key-exchange algorithm; may be repeated.\n  --profile {ssh_legacy_cisco_s300,ssh_esp32_rack_monitor}\n                              Reusable SSH profile.\n  --database DATABASE         Element JSON file.",
@@ -2745,7 +2745,7 @@ window.LANCTL_REFERENCE = {
       "category": "Acceso remoto",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP ssh [-h] [--database DATABASE] [--store STORE] [--host HOST]\n                 selector {probe,fingerprint,trust,open,show} [COMANDO ...]",
       "details": "Usage: LANIP ssh [-h] [--database DATABASE] [--store STORE] [--host HOST]\n                 selector {probe,fingerprint,trust,open,show} [COMANDO ...]\n\nArguments:\n  selector                    IP, MAC or alias.\n  {probe,fingerprint,trust,open,show}\n                              SSH operation.\n  COMANDO                     Fingerprint or remote command, depending on the operation.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --database DATABASE         Element JSON file.\n  --store STORE               Encrypted credential store.\n  --host HOST                 Candidate IP for probe/fingerprint, without changing the database.",
@@ -2934,7 +2934,7 @@ window.LANCTL_REFERENCE = {
       "category": "Acceso remoto",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP radmin [-h] [--mode {control,view,file,shutdown,chat,voice,message,telnet}]\n                    [--port PORT] [--executable EXECUTABLE] [--through THROUGH] [--fullscreen]\n                    [--color-depth {24,16,8,4,2,1}] [--updates UPDATES] [--phonebook PHONEBOOK]\n                    [--phonebook-id PHONEBOOK_ID] [--database DATABASE] [--store STORE]\n                    selector {probe,configure,open}",
       "details": "Usage: LANIP radmin [-h] [--mode {control,view,file,shutdown,chat,voice,message,telnet}]\n                    [--port PORT] [--executable EXECUTABLE] [--through THROUGH] [--fullscreen]\n                    [--color-depth {24,16,8,4,2,1}] [--updates UPDATES] [--phonebook PHONEBOOK]\n                    [--phonebook-id PHONEBOOK_ID] [--database DATABASE] [--store STORE]\n                    selector {probe,configure,open}\n\nArguments:\n  selector                    Element IP, MAC or alias.\n  {probe,configure,open}      Opción de configuración de Radmin Viewer.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --mode {control,view,file,shutdown,chat,voice,message,telnet}\n                              Opción de configuración de Radmin Viewer.\n  --port PORT                 Opción de configuración de Radmin Viewer.\n  --executable EXECUTABLE     Per-device path; use 'auto' for automatic detection.\n  --through THROUGH           Intermediate server HOST:PORT.\n  --fullscreen                Open full-screen control or view.\n  --color-depth {24,16,8,4,2,1}\n                              Radmin color depth (1, 2, 4, 8, 16 or 24 bits).\n  --updates UPDATES           Maximum screen updates per second (1-120).\n  --phonebook PHONEBOOK       Radmin-managed .rpb phonebook.\n  --phonebook-id PHONEBOOK_ID\n                              Entry identifier within the Radmin phonebook.\n  --database DATABASE         Opción de configuración de Radmin Viewer.\n  --store STORE               Opción de configuración de Radmin Viewer.",
@@ -3375,7 +3375,7 @@ window.LANCTL_REFERENCE = {
       "category": "Automatización",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP wol [-h] [-if CONDICIÓN] [--if-all CONDICIÓN] [--if-any CONDICIÓN]\n                 [--if-not CONDICIÓN] [-t SCHEDULE] [--message MESSAGE] [--force] [--cancel]\n                 [--broadcast BROADCAST] [--port PORT] [--repeat REPEAT] [--interval INTERVAL]\n                 [--wait WAIT] [--method {auto,arp,ping,port}] [--check-port CHECK_PORT]\n                 [--interface INTERFACE] [--retry RETRY] [--dry-run] [--json] [--quiet]\n                 [--group GROUP] [--all] [--yes] [--after AFTER] [--delay DELAY]\n                 [--timeout TIMEOUT] [--on-failure {stop,continue,retry}] [--cooldown COOLDOWN]\n                 [--max-attempts MAX_ATTEMPTS] [--power-transport {ssh,disabled}]\n                 [--power-platform {windows,linux}] [--power-command ACCIÓN=COMANDO]\n                 [--database DATABASE] [--store STORE] [--sequences SEQUENCES]\n                 [words ...]",
       "details": "Usage: LANIP wol [-h] [-if CONDICIÓN] [--if-all CONDICIÓN] [--if-any CONDICIÓN]\n                 [--if-not CONDICIÓN] [-t SCHEDULE] [--message MESSAGE] [--force] [--cancel]\n                 [--broadcast BROADCAST] [--port PORT] [--repeat REPEAT] [--interval INTERVAL]\n                 [--wait WAIT] [--method {auto,arp,ping,port}] [--check-port CHECK_PORT]\n                 [--interface INTERFACE] [--retry RETRY] [--dry-run] [--json] [--quiet]\n                 [--group GROUP] [--all] [--yes] [--after AFTER] [--delay DELAY]\n                 [--timeout TIMEOUT] [--on-failure {stop,continue,retry}] [--cooldown COOLDOWN]\n                 [--max-attempts MAX_ATTEMPTS] [--power-transport {ssh,disabled}]\n                 [--power-platform {windows,linux}] [--power-command ACCIÓN=COMANDO]\n                 [--database DATABASE] [--store STORE] [--sequences SEQUENCES]\n                 [words ...]\n\nArguments:\n  words                       NAME [wakeup|status|shutdown|restart|sleep|hibernate|configure] or\n                              sequence ...\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -if, --if CONDICIÓN         Condición AND adicional (repetible).\n  --if-all CONDICIÓN          Condición AND adicional.\n  --if-any CONDICIÓN          Condición OR adicional.\n  --if-not CONDICIÓN          Condición negada.\n  -t, --time SCHEDULE         Momento del apagado programado.\n  --message MESSAGE           Mensaje remoto, si el transporte lo admite.\n  --force                     Solicita cierre forzado al transporte.\n  --cancel                    Cancela una programación, si el transporte lo admite.\n  --broadcast BROADCAST       IPv4 de broadcast.\n  --port PORT                 Puerto UDP WOL.\n  --repeat REPEAT             Número de paquetes mágicos.\n  --interval INTERVAL         Intervalo entre paquetes.\n  --wait WAIT                 Segundos máximos de verificación.\n  --method {auto,arp,ping,port}\n                              Método de verificación.\n  --check-port CHECK_PORT     Puerto TCP de comprobación.\n  --interface INTERFACE       IPv4 local de salida.\n  --retry RETRY               Reintentos completos.\n  --dry-run                   Valida sin enviar.\n  --json                      Salida JSON estructurada.\n  --quiet                     Omite salida humana.\n  --group GROUP               Actúa sobre un grupo.\n  --all                       Actúa sobre todo el inventario.\n  --yes                       Confirma explícitamente --all.\n  --after AFTER               Dependencia de paso.\n  --delay DELAY               Espera previa del paso.\n  --timeout TIMEOUT           Timeout de paso.\n  --on-failure {stop,continue,retry}\n                              Política ante fallo.\n  --cooldown COOLDOWN         Espera mínima entre ejecuciones.\n  --max-attempts MAX_ATTEMPTS\n                              Máximo de intentos.\n  --power-transport {ssh,disabled}\n                              Transporte autorizado para apagar o reiniciar.\n  --power-platform {windows,linux}\n                              Sistema operativo remoto.\n  --power-command ACCIÓN=COMANDO\n                              Plantilla administrada ACCIÓN=COMANDO.\n  --database DATABASE         Element JSON file.\n  --store STORE               Encrypted credential store.\n  --sequences SEQUENCES       Archivo transaccional de secuencias.",
@@ -3561,7 +3561,7 @@ window.LANCTL_REFERENCE = {
       "category": "Datos y exportación",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP history [-h] [--all] [--commands] [--today] [--from FECHA] [--to FECHA]\n                     [--type TYPES] [--source SOURCE] [--result RESULT] [--errors]\n                     [--search SEARCH] [--limit LIMIT] [--reverse] [--format {table,json,csv}]\n                     [selector]",
       "details": "Usage: LANIP history [-h] [--all] [--commands] [--today] [--from FECHA] [--to FECHA]\n                     [--type TYPES] [--source SOURCE] [--result RESULT] [--errors]\n                     [--search SEARCH] [--limit LIMIT] [--reverse] [--format {table,json,csv}]\n                     [selector]\n\nArguments:\n  selector                   DeviceId, alias, name, MAC, current or historical IP.\n\nOptions:\n  -h, --help                 Show this help and exit.\n  --all                      Include general events from the entire LAN.\n  --commands                 In the interactive CLI, show session commands.\n  --today                    Limit the query to the current local day.\n  --from FECHA               Start date YYYY-MM-DD.\n  --to FECHA                 End date YYYY-MM-DD.\n  --type TYPES               Canonical type; may be repeated.\n  --source SOURCE            Filter by source.\n  --result RESULT            Filter by result.\n  --errors                   Show errors only.\n  --search SEARCH            Search safe text.\n  --limit LIMIT              Maximum number of events (1..10000).\n  --reverse                  Descending order.\n  --format {table,json,csv}  Output format.",
@@ -3940,7 +3940,7 @@ window.LANCTL_REFERENCE = {
       "category": "Monitorización",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP monitor [-h] [--project PROJECT] [--permanent] [--duration DURATION]\n                     [--mode {permanent,temporary,diagnostic,once}]\n                     [--authority {observe,operate,administer}] [--json] [--yes]\n                     [--interval INTERVAL] [--every EVERY] [--group GROUP]\n                     [--type {presence,services,ports,identity,smb,full}] [--fast] [--unknown]\n                     [--follow] [--sessions SESSIONS] [--incidents-store INCIDENTS_STORE]\n                     [--lock LOCK] [--monitor-db MONITOR_DB] [--profiles PROFILES]\n                     [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]\n                     [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]\n                     [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP]\n                     [--workers WORKERS] [--timeout TIMEOUT]\n                     [words ...]",
       "details": "Usage: LANIP monitor [-h] [--project PROJECT] [--permanent] [--duration DURATION]\n                     [--mode {permanent,temporary,diagnostic,once}]\n                     [--authority {observe,operate,administer}] [--json] [--yes]\n                     [--interval INTERVAL] [--every EVERY] [--group GROUP]\n                     [--type {presence,services,ports,identity,smb,full}] [--fast] [--unknown]\n                     [--follow] [--sessions SESSIONS] [--incidents-store INCIDENTS_STORE]\n                     [--lock LOCK] [--monitor-db MONITOR_DB] [--profiles PROFILES]\n                     [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]\n                     [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]\n                     [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP]\n                     [--workers WORKERS] [--timeout TIMEOUT]\n                     [words ...]\n\nArguments:\n  words                       attach, detach, status, once, session, incidents, incident, service\n                              or foreground.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --project PROJECT           Opción operativa del monitor.\n  --permanent                 Opción operativa del monitor.\n  --duration DURATION         Opción operativa del monitor.\n  --mode {permanent,temporary,diagnostic,once}\n                              Opción operativa del monitor.\n  --authority {observe,operate,administer}\n                              Opción operativa del monitor.\n  --json                      Opción operativa del monitor.\n  --yes                       Opción operativa del monitor.\n  --interval INTERVAL         Opción operativa del monitor.\n  --every EVERY               Opción operativa del monitor.\n  --group GROUP               Opción operativa del monitor.\n  --type {presence,services,ports,identity,smb,full}\n                              Opción operativa del monitor.\n  --fast                      Opción operativa del monitor.\n  --unknown                   Opción operativa del monitor.\n  --follow                    Opción operativa del monitor.\n  --sessions SESSIONS         Runtime session state.\n  --incidents-store INCIDENTS_STORE\n                              Runtime incident state.\n  --lock LOCK                 Monitor singleton lock.\n  --monitor-db MONITOR_DB     Monitor SQLite repository.\n  --profiles PROFILES         Custom profiles.\n  --assignments-store ASSIGNMENTS_STORE\n                              Persistent assignments.\n  --profile PROFILE           Monitor profile.\n  --priority {low,normal,high,critical}\n                              Assignment priority.\n  --check CHECK               Check ping, arp or port:NN.\n  --presence PRESENCE         Presence interval.\n  --discovery DISCOVERY       Discovery interval.\n  --services SERVICES         Service interval.\n  --deep DEEP                 Deep scan interval.\n  --workers WORKERS           Profile workers.\n  --timeout TIMEOUT           Profile timeout.",
@@ -4162,7 +4162,7 @@ window.LANCTL_REFERENCE = {
       "category": "Acceso remoto",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP access [-h] [--bind BIND] [--cidr CIDR] [--port PORT] [--password-auth {on,off}]\n                    [--role ROLE] [--ssh-key SSH_KEY] [--expires EXPIRES]\n                    [--permission PERMISSION] [--certificate CERTIFICATE]\n                    [--private-key PRIVATE_KEY] [--common-name COMMON_NAME] [--yes] [--json]\n                    [--scope {user,service}] [--config CONFIG] [--users USERS]\n                    [words ...]",
       "details": "Usage: LANIP access [-h] [--bind BIND] [--cidr CIDR] [--port PORT] [--password-auth {on,off}]\n                    [--role ROLE] [--ssh-key SSH_KEY] [--expires EXPIRES]\n                    [--permission PERMISSION] [--certificate CERTIFICATE]\n                    [--private-key PRIVATE_KEY] [--common-name COMMON_NAME] [--yes] [--json]\n                    [--scope {user,service}] [--config CONFIG] [--users USERS]\n                    [words ...]\n\nArguments:\n  words                      init, status, enable, disable, configure, user, role, session, web or\n                             certificate.\n\nOptions:\n  -h, --help                 Show this help and exit.\n  --bind BIND                Opción de acceso remoto.\n  --cidr CIDR                Opción de acceso remoto.\n  --port PORT                Opción de acceso remoto.\n  --password-auth {on,off}   Opción de acceso remoto.\n  --role ROLE                Opción de acceso remoto.\n  --ssh-key SSH_KEY          Opción de acceso remoto.\n  --expires EXPIRES          Opción de acceso remoto.\n  --permission PERMISSION    Opción de acceso remoto.\n  --certificate CERTIFICATE  Opción de acceso remoto.\n  --private-key PRIVATE_KEY  Opción de acceso remoto.\n  --common-name COMMON_NAME  Opción de acceso remoto.\n  --yes                      Opción de acceso remoto.\n  --json                     Opción de acceso remoto.\n  --scope {user,service}     Separate user credentials from the persistent service credentials.\n  --config CONFIG            Separate remote configuration.\n  --users USERS              Remote user store.",
@@ -4364,7 +4364,7 @@ window.LANCTL_REFERENCE = {
       "category": "Acceso remoto",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP smb [-h] [--network] [--group GROUP] [--timeout TIMEOUT] [--workers WORKERS]\n                 [--anonymous] [--include-system] [--dry-run] [--yes] [--json]\n                 [--database DATABASE] [--store STORE] [--storage STORAGE]\n                 [name] [action] [resource] [{open,queue,connect}]",
       "details": "Usage: LANIP smb [-h] [--network] [--group GROUP] [--timeout TIMEOUT] [--workers WORKERS]\n                 [--anonymous] [--include-system] [--dry-run] [--yes] [--json]\n                 [--database DATABASE] [--store STORE] [--storage STORAGE]\n                 [name] [action] [resource] [{open,queue,connect}]\n\nArguments:\n  name                  Server/device (no action defaults to info).\n  action                scan, info, shares, open, printers, workgroups, connect, disconnect,\n                        status or printer.\n  resource              Shared folder or printer.\n  {open,queue,connect}  Printer action.\n\nOptions:\n  -h, --help            Show this help and exit.\n  --network             Examine the entire LANCTL inventory.\n  --group GROUP         Limit the scan to a LANCTL group.\n  --timeout TIMEOUT     TCP probe timeout.\n  --workers WORKERS     Maximum number of concurrent probes.\n  --anonymous           Do not load associated credentials.\n  --include-system      Include administrative and special resources.\n  --dry-run             Show the plan without authenticating, opening or changing anything.\n  --yes                 Confirm a printer connection.\n  --json                Output structured JSON.\n  --database DATABASE   Inventory JSON file.\n  --store STORE         DPAPI credential store.\n  --storage STORAGE     Plugin observations directory.",
@@ -4448,7 +4448,7 @@ window.LANCTL_REFERENCE = {
       "category": "Acceso remoto",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP terminal [-h] [-p PROTOCOL] [--native] [--database DATABASE] [--store STORE] selector",
       "details": "Usage: LANIP terminal [-h] [-p PROTOCOL] [--native] [--database DATABASE] [--store STORE] selector\n\nArguments:\n  selector                 Element IP, MAC or alias.\n\nOptions:\n  -h, --help               Show this help and exit.\n  -p, --protocol PROTOCOL  Protocol when multiple terminals are available.\n  --native                 Use the native SSH client without LANCTL's color layer.\n  --database DATABASE      Element JSON file.\n  --store STORE            Encrypted credential store.",
@@ -4551,7 +4551,7 @@ window.LANCTL_REFERENCE = {
       "category": "Infraestructura de red",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Managed Cisco commands:\n  show COMMAND\n  port list\n  port label PORT NAME\n  port unlabel PORT\n  port show [PORT] status|description|config|errors|vlan\n  port set [PORT] description|speed|duplex VALUE\n  port enable|disable|reset [PORT]\n  start|stop|reset [PORT]\n  save-config\n  terminal\n\nGlobal options: --profile PROFILE --dry-run --yes\nThis phase uses a simulated adapter and does not connect to the switch.",
       "details": "Usage: LANIP switch [-h] [--profile PROFILE] [--profiles PROFILES] [--database DATABASE]\n                    [--dry-run] [--yes]\n                    selector ...\n\nManaged Cisco commands:\n  show COMMAND\n  port list\n  port label PORT NAME\n  port unlabel PORT\n  port show [PORT] status|description|config|errors|vlan\n  port set [PORT] description|speed|duplex VALUE\n  port enable|disable|reset [PORT]\n  start|stop|reset [PORT]\n  save-config\n  terminal\n\nGlobal options: --profile PROFILE --dry-run --yes\nThis phase uses a simulated adapter and does not connect to the switch.\n\nArguments:\n  selector             Switch IP, MAC or alias.\n  COMANDO              Managed Cisco action to plan.\n\nOptions:\n  -h, --help           Show this help and exit.\n  --profile PROFILE    Cisco profile that remaps ports.\n  --profiles PROFILES  JSON file containing Cisco profiles.\n  --database DATABASE  Element JSON file.\n  --dry-run            Show the plan only.\n  --yes                Confirm changes without asking.",
@@ -4689,7 +4689,7 @@ window.LANCTL_REFERENCE = {
       "category": "Grupos de comandos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP group [-h] [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENT |\n                   -remove ELEMENT | -list] [--database DATABASE] [--groups GROUPS]\n                   [name]",
       "details": "Usage: LANIP group [-h] [-new | -del | -rename NUEVO | -description TEXTO | -add ELEMENT |\n                   -remove ELEMENT | -list] [--database DATABASE] [--groups GROUPS]\n                   [name]\n\nArguments:\n  name                 Group name.\n\nOptions:\n  -h, --help           Show this help and exit.\n  -new                 Create the group.\n  -del                 Delete the group.\n  -rename NUEVO        Rename the group.\n  -description TEXTO   Edit its description.\n  -add ELEMENT         Add IP, MAC or alias.\n  -remove ELEMENT      Remove IP, MAC or alias.\n  -list                List elements belonging to the group.\n  --database DATABASE  Element JSON file.\n  --groups GROUPS      Group JSON file.",
@@ -4911,7 +4911,7 @@ window.LANCTL_REFERENCE = {
       "category": "Inventario y edición",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-idf NEW_IDF]\n                     [-group NEW_GROUP] [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE]\n                     [--groups GROUPS] [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}]\n                     [values ...]",
       "details": "Usage: LANIP element [-h] [-add MAC] [-name NEW_NAME] [-ip NEW_IP] [-alias NEW_ALIAS]\n                     [-description NEW_DESCRIPTION] [-cnf NEW_CNF] [-idf NEW_IDF]\n                     [-group NEW_GROUP] [-protocol NEW_PROTOCOL] [-delete] [--database DATABASE]\n                     [--groups GROUPS] [--yes]\n                     [selector]\n                     [{edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}]\n                     [values ...]\n\nArguments:\n  selector                    IP, MAC or alias.\n  {edit,ip,cnf,name,description,alias,idf,group,protocol,delete,del,remove}\n                              Field or action to edit.\n  values                      New value.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -add MAC                    Add a new element using its MAC address.\n  -name, --name NEW_NAME      Assign NAME to the specified element.\n  -ip, --ip NEW_IP            Assign an IPv4 address.\n  -alias, --alias NEW_ALIAS   Assign ALIAS to the specified element.\n  -description, --description NEW_DESCRIPTION\n                              Assign DESCRIPTION to the specified element.\n  -cnf, --cnf NEW_CNF         Assign the CNF state.\n  -idf, --idf NEW_IDF         Assign a unique IDF (2-5 letters and 2-5 digits).\n  -group, --group NEW_GROUP   Add the element to the group.\n  -protocol, --protocol NEW_PROTOCOL\n                              Enable a protocol.\n  -delete, --delete           Completely delete the specified element.\n  --database DATABASE         Element JSON file.\n  --groups GROUPS             Group JSON file.\n  --yes                       Delete without requesting confirmation.",
@@ -4950,7 +4950,7 @@ window.LANCTL_REFERENCE = {
         "list"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project [-h] ACCIÓN ...",
       "details": "Usage: LANIP project [-h] ACCIÓN ...\n\nArguments:\n  ACCIÓN\n    status           Show the active project.\n    create           Create an empty VLF project by default.\n    update           Update active data while preserving supplementary information.\n    save             Manually save the active VLF project.\n    import-physical  Copy a historical IDF database into the active empty physical project.\n    info             Show project metadata.\n    verify           Check hashes, structure and SQLite.\n    use              Select the VLF project that receives the audit.\n    list             List internal contents without extracting them.\n\nOptions:\n  -h, --help         Show this help and exit.",
@@ -4994,7 +4994,7 @@ window.LANCTL_REFERENCE = {
       "category": "Proyectos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project status [-h] [--json]",
       "details": "Usage: LANIP project status [-h] [--json]\n\nOptions:\n  -h, --help  Show this help and exit.\n  --json      Return JSON.",
@@ -5146,7 +5146,7 @@ window.LANCTL_REFERENCE = {
       "category": "Proyectos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project create [-h] [--name NAME] [--description DESCRIPTION] [--author AUTHOR]\n                            [--lan-name LAN_NAME] [--location LOCATION] [--company COMPANY]\n                            [--responsible RESPONSIBLE] [--clone-current] [--force]\n                            file",
       "details": "Usage: LANIP project create [-h] [--name NAME] [--description DESCRIPTION] [--author AUTHOR]\n                            [--lan-name LAN_NAME] [--location LOCATION] [--company COMPANY]\n                            [--responsible RESPONSIBLE] [--clone-current] [--force]\n                            file\n\nArguments:\n  file                       Output file; .vlf is appended if missing.\n\nOptions:\n  -h, --help                 Show this help and exit.\n  --name NAME                Human-readable project name.\n  --description DESCRIPTION  General description.\n  --author AUTHOR            Project author.\n  --lan-name LAN_NAME        Human-readable LAN name.\n  --location LOCATION        Physical location.\n  --company COMPANY          Company or organization.\n  --responsible RESPONSIBLE  Person responsible for the LAN.\n  --clone-current            Create the project by explicitly copying the active inventory and\n                             groups.\n  --force                    Overwrite an existing VLF.",
@@ -5188,7 +5188,7 @@ window.LANCTL_REFERENCE = {
       "category": "Proyectos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project update [-h] file",
       "details": "Usage: LANIP project update [-h] file\n\nArguments:\n  file        Existing VLF project.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5220,7 +5220,7 @@ window.LANCTL_REFERENCE = {
       "category": "Proyectos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project save [-h]",
       "details": "Usage: LANIP project save [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5262,7 +5262,7 @@ window.LANCTL_REFERENCE = {
       "category": "Proyectos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project import-physical [-h] file",
       "details": "Usage: LANIP project import-physical [-h] file\n\nArguments:\n  file        Source IDF .db database; preserved unchanged.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5315,7 +5315,7 @@ window.LANCTL_REFERENCE = {
       "category": "Proyectos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project info [-h] [--json] file",
       "details": "Usage: LANIP project info [-h] [--json] file\n\nArguments:\n  file        VLF project.\n\nOptions:\n  -h, --help  Show this help and exit.\n  --json      Return JSON.",
@@ -5368,7 +5368,7 @@ window.LANCTL_REFERENCE = {
       "category": "Proyectos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project verify [-h] [--json] file",
       "details": "Usage: LANIP project verify [-h] [--json] file\n\nArguments:\n  file        VLF project.\n\nOptions:\n  -h, --help  Show this help and exit.\n  --json      Return JSON.",
@@ -5410,7 +5410,7 @@ window.LANCTL_REFERENCE = {
       "category": "Proyectos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project use [-h] file",
       "details": "Usage: LANIP project use [-h] file\n\nArguments:\n  file        Existing VLF project.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5452,7 +5452,7 @@ window.LANCTL_REFERENCE = {
       "category": "Proyectos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP project list [-h] file",
       "details": "Usage: LANIP project list [-h] file\n\nArguments:\n  file        VLF project.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5499,7 +5499,7 @@ window.LANCTL_REFERENCE = {
         "pack"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin [-h] ACCIÓN ...",
       "details": "Usage: LANIP plugin [-h] ACCIÓN ...\n\nArguments:\n  ACCIÓN\n    list         List installed plugins.\n    catalog      Show the bundled official catalog.\n    info         Show manifest, permissions and state.\n    install      Verify and install a disabled .lcp package.\n    enable       Grant permissions and enable a plugin.\n    disable      Desactiva el complemento.\n    reload       Recarga un complemento activo.\n    uninstall    Desinstala el complemento.\n    verify       Verify a .lcp or installed plugin.\n    permissions  Show requested and granted permissions.\n    revoke       Revoke a plugin's permissions and trust.\n    publisher    Manage Ed25519 fingerprints of trusted LCP publishers.\n    extensions   List extensions for CLI, TUI and the future GUI.\n    pack         Build a .lcp package from a directory.\n\nOptions:\n  -h, --help     Show this help and exit.",
@@ -5531,7 +5531,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin list [-h]",
       "details": "Usage: LANIP plugin list [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5563,7 +5563,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin catalog [-h]",
       "details": "Usage: LANIP plugin catalog [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5605,7 +5605,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin info [-h] plugin_id",
       "details": "Usage: LANIP plugin info [-h] plugin_id\n\nArguments:\n  plugin_id   Stable plugin identifier.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5647,7 +5647,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin install [-h] file",
       "details": "Usage: LANIP plugin install [-h] file\n\nArguments:\n  file        Package file with the .lcp extension.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5722,7 +5722,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin enable [-h] [--grant [PERMISO ...]] [--grant-all] [--trust] plugin_id",
       "details": "Usage: LANIP plugin enable [-h] [--grant [PERMISO ...]] [--grant-all] [--trust] plugin_id\n\nArguments:\n  plugin_id              Installed plugin identifier.\n\nOptions:\n  -h, --help             Show this help and exit.\n  --grant [PERMISO ...]  Specific permissions to grant.\n  --grant-all            Grant all requested permissions.\n  --trust                Authorize trusted code within the process.",
@@ -5764,7 +5764,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin disable [-h] plugin_id",
       "details": "Usage: LANIP plugin disable [-h] plugin_id\n\nArguments:\n  plugin_id   Installed plugin identifier.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5806,7 +5806,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin reload [-h] plugin_id",
       "details": "Usage: LANIP plugin reload [-h] plugin_id\n\nArguments:\n  plugin_id   Installed plugin identifier.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5848,7 +5848,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin uninstall [-h] plugin_id",
       "details": "Usage: LANIP plugin uninstall [-h] plugin_id\n\nArguments:\n  plugin_id   Installed plugin identifier.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5890,7 +5890,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin verify [-h] target",
       "details": "Usage: LANIP plugin verify [-h] target\n\nArguments:\n  target      Installed identifier or path to a .lcp file.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5932,7 +5932,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin permissions [-h] plugin_id",
       "details": "Usage: LANIP plugin permissions [-h] plugin_id\n\nArguments:\n  plugin_id   Installed plugin identifier.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -5983,7 +5983,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin revoke [-h] plugin_id [PERMISO ...]",
       "details": "Usage: LANIP plugin revoke [-h] plugin_id [PERMISO ...]\n\nArguments:\n  plugin_id   Installed plugin identifier.\n  PERMISO     Leave empty to revoke all permissions.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6019,7 +6019,7 @@ window.LANCTL_REFERENCE = {
         "revoke"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin publisher [-h] ACCIÓN ...",
       "details": "Usage: LANIP plugin publisher [-h] ACCIÓN ...\n\nArguments:\n  ACCIÓN\n    list      List trusted publishers.\n    trust     Trust the signature contained in an LCP package.\n    revoke    Revoke a publisher fingerprint.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6051,7 +6051,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin publisher list [-h]",
       "details": "Usage: LANIP plugin publisher list [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6105,7 +6105,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin publisher trust [-h] [--name NAME] file",
       "details": "Usage: LANIP plugin publisher trust [-h] [--name NAME] file\n\nArguments:\n  file         Signed and verified .lcp package.\n\nOptions:\n  -h, --help   Show this help and exit.\n  --name NAME  Descriptive publisher name.",
@@ -6148,7 +6148,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin publisher revoke [-h] fingerprint",
       "details": "Usage: LANIP plugin publisher revoke [-h] fingerprint\n\nArguments:\n  fingerprint  Full Ed25519 SHA-256 fingerprint.\n\nOptions:\n  -h, --help   Show this help and exit.",
@@ -6193,7 +6193,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin extensions [-h] [--type TYPE]",
       "details": "Usage: LANIP plugin extensions [-h] [--type TYPE]\n\nOptions:\n  -h, --help   Show this help and exit.\n  --type TYPE  Filter by unified extension type.",
@@ -6266,7 +6266,7 @@ window.LANCTL_REFERENCE = {
       "category": "Plugins y expansiones",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP plugin pack [-h] [--force] [--signing-key SIGNING_KEY] directory output",
       "details": "Usage: LANIP plugin pack [-h] [--force] [--signing-key SIGNING_KEY] directory output\n\nArguments:\n  directory                  Source directory containing plugin.info.\n  output                     Output .lcp file.\n\nOptions:\n  -h, --help                 Show this help and exit.\n  --force                    Overwrite the existing output package.\n  --signing-key SIGNING_KEY  Ed25519 PEM private key for signing the LCP.",
@@ -6305,7 +6305,7 @@ window.LANCTL_REFERENCE = {
         "export"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP language [-h] ACTION ...",
       "details": "Usage: LANIP language [-h] ACTION ...\n\nArguments:\n  ACTION\n    list      List installed languages.\n    use       Select the interface language.\n    info      Show language metadata and coverage.\n    install   Install or update a .lang JSON catalog.\n    validate  Validate a .lang catalog.\n    export    Export the English template for translation.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6334,7 +6334,7 @@ window.LANCTL_REFERENCE = {
       "category": "Configuración",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP language list [-h]",
       "details": "Usage: LANIP language list [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6374,7 +6374,7 @@ window.LANCTL_REFERENCE = {
       "category": "Configuración",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP language use [-h] language",
       "details": "Usage: LANIP language use [-h] language\n\nArguments:\n  language    Language code or name, for example en or Español.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6414,7 +6414,7 @@ window.LANCTL_REFERENCE = {
       "category": "Configuración",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP language info [-h] [language]",
       "details": "Usage: LANIP language info [-h] [language]\n\nArguments:\n  language    Language code or name; active language by default.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6454,7 +6454,7 @@ window.LANCTL_REFERENCE = {
       "category": "Configuración",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP language install [-h] file",
       "details": "Usage: LANIP language install [-h] file\n\nArguments:\n  file        Language catalog with .lang extension.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6494,7 +6494,7 @@ window.LANCTL_REFERENCE = {
       "category": "Configuración",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP language validate [-h] file",
       "details": "Usage: LANIP language validate [-h] file\n\nArguments:\n  file        Language catalog with .lang extension.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6534,7 +6534,7 @@ window.LANCTL_REFERENCE = {
       "category": "Configuración",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP language export [-h] file",
       "details": "Usage: LANIP language export [-h] file\n\nArguments:\n  file        Destination .lang file.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -6585,7 +6585,7 @@ window.LANCTL_REFERENCE = {
       "category": "Comandos",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP error [-h] [--json] 0eXXXXXXXX",
       "details": "Usage: LANIP error [-h] [--json] 0eXXXXXXXX\n\nArguments:\n  0eXXXXXXXX  Stable error identifier.\n\nOptions:\n  -h, --help  Show this help and exit.\n  --json      Output the result as JSON.",
@@ -6707,7 +6707,7 @@ window.LANCTL_REFERENCE = {
       "category": "Datos y exportación",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP database [-h] (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip |\n                      --import ARCHIVO.zip | --restore ARCHIVO.bak)\n                      [--target {database,groups,physical}] [--yes] [--json]",
       "details": "Usage: LANIP database [-h] (--diagnose | --export ARCHIVO.zip | --verify ARCHIVO.zip |\n                      --import ARCHIVO.zip | --restore ARCHIVO.bak)\n                      [--target {database,groups,physical}] [--yes] [--json]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --diagnose                  Validate configured stores.\n  --export ARCHIVO.zip        Export data with verifiable hashes.\n  --verify ARCHIVO.zip        Verify an export without importing it.\n  --import ARCHIVO.zip        Import verified data.\n  --restore ARCHIVO.bak       Restore a validated store backup.\n  --target {database,groups,physical}\n                              Store to restore.\n  --yes                       Confirm data replacement.\n  --json                      Output diagnostics as JSON.",
@@ -6774,7 +6774,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Create inventory, VLF project, evidence, monitoring and a demonstration report isolated from user data.",
       "details": "Usage: LANIP demo [-h] [--output DIRECTORIO] [--force] [--format {json,html,all}]\n\nCreate inventory, VLF project, evidence, monitoring and a demonstration report isolated from user data.\n\nOptions:\n  -h, --help                Show this help and exit.\n  --output DIRECTORIO       Directory for the project and report.\n  --force                   Replace a previous demo.\n  --format {json,html,all}  Exported report format.",
@@ -6869,7 +6869,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lanwire [-h] [--new-window] [--version] [--database ARCHIVO.db] [-tui | --cli] ...",
       "details": "Usage: LANIP lanwire [-h] [--new-window] [--version] [--database ARCHIVO.db] [-tui | --cli] ...\n\nArguments:\n  ARGUMENTO              Arguments forwarded to LANWIRE, for example: list.\n\nOptions:\n  -h, --help             Show this help and exit.\n  --new-window           Open LANWIRE in a separate console even when arguments are provided.\n  --version              Show the common LANWIRE version and exit.\n  --database ARCHIVO.db  Select an alternative physical IDF database.\n  -tui, --tui            Open the LANWIRE TUI.\n  --cli                  Open the LANWIRE interactive console.",
@@ -6910,7 +6910,7 @@ window.LANCTL_REFERENCE = {
         "evolve"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab [-h] ACCIÓN ...",
       "details": "Usage: LANIP lab [-h] ACCIÓN ...\n\nArguments:\n  ACCIÓN\n    generate  Generate a reproducible scenario.\n    list      Lista escenarios.\n    status    Muestra el escenario activo.\n    stop      Desactiva el proveedor simulado.\n    start     Explicitly activate a virtual scenario.\n    validate  Validate a scenario.\n    export    Export a scenario.\n    import    Import a JSON scenario.\n    network   Manually create a virtual network.\n    device    Edit simulated devices.\n    evolve    Advance the clock and apply pending events.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7038,7 +7038,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab generate [-h] [--name NAME] [--cidr CIDR]\n                          [--profile {home,office,datacenter,industrial,chaotic}]\n                          [--devices DEVICES] [--seed SEED] [--active-percent ACTIVE_PERCENT]\n                          [--dhcp-percent DHCP_PERCENT] [--type {snapshot,timeline,chaos}]",
       "details": "Usage: LANIP lab generate [-h] [--name NAME] [--cidr CIDR]\n                          [--profile {home,office,datacenter,industrial,chaotic}]\n                          [--devices DEVICES] [--seed SEED] [--active-percent ACTIVE_PERCENT]\n                          [--dhcp-percent DHCP_PERCENT] [--type {snapshot,timeline,chaos}]\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --name NAME                 Scenario name.\n  --cidr CIDR                 Virtual IPv4 network.\n  --profile {home,office,datacenter,industrial,chaotic}\n                              Device profile.\n  --devices DEVICES           Number of devices.\n  --seed SEED                 Reproducible seed.\n  --active-percent ACTIVE_PERCENT\n                              Active percentage.\n  --dhcp-percent DHCP_PERCENT\n                              DHCP percentage.\n  --type {snapshot,timeline,chaos}\n                              Scenario evolution.",
@@ -7068,7 +7068,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab list [-h]",
       "details": "Usage: LANIP lab list [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7098,7 +7098,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab status [-h]",
       "details": "Usage: LANIP lab status [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7128,7 +7128,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab stop [-h]",
       "details": "Usage: LANIP lab stop [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7168,7 +7168,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab start [-h] scenario",
       "details": "Usage: LANIP lab start [-h] scenario\n\nArguments:\n  scenario    Scenario name.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7208,7 +7208,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab validate [-h] scenario",
       "details": "Usage: LANIP lab validate [-h] scenario\n\nArguments:\n  scenario    Scenario name.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7273,7 +7273,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab export [-h] [--format {json,csv}] [--output OUTPUT] scenario",
       "details": "Usage: LANIP lab export [-h] [--format {json,csv}] [--output OUTPUT] scenario\n\nArguments:\n  scenario             Scenario name.\n\nOptions:\n  -h, --help           Show this help and exit.\n  --format {json,csv}  Output format.\n  --output OUTPUT      Destination file; stdout if omitted.",
@@ -7313,7 +7313,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab import [-h] file",
       "details": "Usage: LANIP lab import [-h] file\n\nArguments:\n  file        JSON file.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7345,7 +7345,7 @@ window.LANCTL_REFERENCE = {
         "create"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab network [-h] {create} ...",
       "details": "Usage: LANIP lab network [-h] {create} ...\n\nArguments:\n  {create}\n    create    Create an empty scenario.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7398,7 +7398,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab network create [-h] --name NAME [--cidr CIDR]",
       "details": "Usage: LANIP lab network create [-h] --name NAME [--cidr CIDR]\n\nOptions:\n  -h, --help   Show this help and exit.\n  --name NAME  Scenario name.\n  --cidr CIDR  Virtual CIDR.",
@@ -7432,7 +7432,7 @@ window.LANCTL_REFERENCE = {
         "delete"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab device [-h] {add,delete} ...",
       "details": "Usage: LANIP lab device [-h] {add,delete} ...\n\nArguments:\n  {add,delete}\n    add         Add a device.\n    delete      Delete a device.\n\nOptions:\n  -h, --help    Show this help and exit.",
@@ -7527,7 +7527,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab device add [-h] --ip IP --mac MAC [--alias ALIAS] [--name NAME] [--inactive]\n                            scenario",
       "details": "Usage: LANIP lab device add [-h] --ip IP --mac MAC [--alias ALIAS] [--name NAME] [--inactive]\n                            scenario\n\nArguments:\n  scenario       Scenario.\n\nOptions:\n  -h, --help     Show this help and exit.\n  --ip IP        Simulated IPv4.\n  --mac MAC      Simulated MAC.\n  --alias ALIAS  Alias.\n  --name NAME    Name.\n  --inactive     Create it inactive.",
@@ -7577,7 +7577,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab device delete [-h] scenario device",
       "details": "Usage: LANIP lab device delete [-h] scenario device\n\nArguments:\n  scenario    Scenario.\n  device      ID, IP, MAC or alias.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7620,7 +7620,7 @@ window.LANCTL_REFERENCE = {
       "category": "Laboratorio virtual",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANIP lab evolve [-h] --seconds SECONDS",
       "details": "Usage: LANIP lab evolve [-h] --seconds SECONDS\n\nOptions:\n  -h, --help         Show this help and exit.\n  --seconds SECONDS  Virtual seconds.",
@@ -7726,7 +7726,7 @@ window.LANCTL_REFERENCE = {
         "prefix"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Physical management, IDF, wiring and topology for the LANCTL suite.",
       "details": "Usage: LANWIRE [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli] COMANDO ...\n\nPhysical management, IDF, wiring and topology for the LANCTL suite.\n\nArguments:\n  COMANDO\n    tui                  Open the full-screen interface.\n    cli                  Open the interactive console.\n    help                 Show LANWIRE command help.\n    list (ls)            List identifiers.\n    seed                 Load the initial test topology.\n    show                 Show an identifier.\n    add                  Generate the next IDF.\n    idf                  Create identifiers with a complete physical profile.\n    reserve              Reserve an IDF.\n    element              Query or update an element's data and ports.\n    delete (del)         Delete an IDF.\n    graph (map)          Show the physical topology.\n    prefix               Manage letter sets.\n\nOptions:\n  -h, --help             Show this help and exit.\n  --version              Show the common suite version and exit.\n  --database ARCHIVO.db  Physical IDF database; defaults to physical/idf.db in the shared root.\n  --gui                  Open the desktop graphical interface.\n  -tui, --tui            Open the full-screen interface.\n  --cli, -cli            Open the LANWIRE interactive console.",
@@ -7756,7 +7756,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE tui [-h]",
       "details": "Usage: LANWIRE tui [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7786,7 +7786,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE cli [-h]",
       "details": "Usage: LANWIRE cli [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7816,7 +7816,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE help [-h]",
       "details": "Usage: LANWIRE help [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7856,7 +7856,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE list [-h] [prefix]",
       "details": "Usage: LANWIRE list [-h] [prefix]\n\nArguments:\n  prefix      Filter by IDF prefix.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7886,7 +7886,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE seed [-h]",
       "details": "Usage: LANWIRE seed [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7926,7 +7926,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE show [-h] idf",
       "details": "Usage: LANWIRE show [-h] idf\n\nArguments:\n  idf         Physical identifier to query.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -7994,7 +7994,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE add [-h] [--digits {2,3,4,5}] [-more N] prefix",
       "details": "Usage: LANWIRE add [-h] [--digits {2,3,4,5}] [-more N] prefix\n\nArguments:\n  prefix              Physical element type prefix.\n\nOptions:\n  -h, --help          Show this help and exit.\n  --digits {2,3,4,5}  Number of counter digits (2 to 5).\n  -more, --more N     Create N consecutive IDFs.",
@@ -8034,7 +8034,7 @@ window.LANCTL_REFERENCE = {
         "add"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE idf [-h] {list,types,show,edit,delete,del,new,add} ...",
       "details": "Usage: LANWIRE idf [-h] {list,types,show,edit,delete,del,new,add} ...\n\nArguments:\n  {list,types,show,edit,delete,del,new,add}\n    list                      List prefixes or the IDFs of a prefix.\n    types                     List available physical profiles.\n    show                      Query a prefix or IDF.\n    edit                      Edit a prefix or IDF data.\n    delete (del)              Delete an IDF.\n    new                       Assign a physical profile to a prefix.\n    add                       Create an IDF using the assigned prefix profile.\n\nOptions:\n  -h, --help                  Show this help and exit.",
@@ -8074,7 +8074,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE idf list [-h] [prefix]",
       "details": "Usage: LANWIRE idf list [-h] [prefix]\n\nArguments:\n  prefix      Prefix whose elements are listed.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8105,7 +8105,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE idf types [-h]",
       "details": "Usage: LANWIRE idf types [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8146,7 +8146,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE idf show [-h] code",
       "details": "Usage: LANWIRE idf show [-h] code\n\nArguments:\n  code        Specific prefix or IDF.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8240,7 +8240,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE idf edit [-h] [-type ELEMENT_TYPE] [-name NAME] [-alias ALIAS]\n                        [-description DESCRIPTION]\n                        code [CAMPO=VALOR ...]",
       "details": "Usage: LANWIRE idf edit [-h] [-type ELEMENT_TYPE] [-name NAME] [-alias ALIAS]\n                        [-description DESCRIPTION]\n                        code [CAMPO=VALOR ...]\n\nArguments:\n  code                      Specific prefix or IDF.\n  CAMPO=VALOR               IDF data.\n\nOptions:\n  -h, --help                Show this help and exit.\n  -type ELEMENT_TYPE        New prefix profile.\n  -name NAME                Prefix name.\n  -alias ALIAS              Prefix alias.\n  -description DESCRIPTION  Prefix description.",
@@ -8281,7 +8281,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE idf delete [-h] code",
       "details": "Usage: LANWIRE idf delete [-h] code\n\nArguments:\n  code        Specific IDF; does not delete prefixes.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8367,7 +8367,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE idf new [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION]\n                       -type ELEMENT_TYPE\n                       code",
       "details": "Usage: LANWIRE idf new [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION]\n                       -type ELEMENT_TYPE\n                       code\n\nArguments:\n  code                        Prefix for new or exact IDF for add.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -name NAME                  Record name.\n  -alias ALIAS                Optional alias.\n  -description, -descriptionn DESCRIPTION\n                              Optional description.\n  -type ELEMENT_TYPE          Physical profile.",
@@ -8442,7 +8442,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE idf add [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION] code",
       "details": "Usage: LANWIRE idf add [-h] [-name NAME] [-alias ALIAS] [-description DESCRIPTION] code\n\nArguments:\n  code                        Prefix for new or exact IDF for add.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  -name NAME                  Record name.\n  -alias ALIAS                Optional alias.\n  -description, -descriptionn DESCRIPTION\n                              Optional description.",
@@ -8492,7 +8492,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE reserve [-h] idf [CLAVE=VALOR ...]",
       "details": "Usage: LANWIRE reserve [-h] idf [CLAVE=VALOR ...]\n\nArguments:\n  idf          Exact IDF to reserve.\n  CLAVE=VALOR  Optional initial data.\n\nOptions:\n  -h, --help   Show this help and exit.",
@@ -8541,7 +8541,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE element [-h] idf [CAMPO=VALOR ...]",
       "details": "Usage: LANWIRE element [-h] idf [CAMPO=VALOR ...]\n\nArguments:\n  idf          IDF to query or update.\n  CAMPO=VALOR  Physical fields to modify.\n\nOptions:\n  -h, --help   Show this help and exit.",
@@ -8581,7 +8581,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE delete [-h] idf",
       "details": "Usage: LANWIRE delete [-h] idf\n\nArguments:\n  idf         IDF to delete.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8611,7 +8611,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE graph [-h]",
       "details": "Usage: LANWIRE graph [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8649,7 +8649,7 @@ window.LANCTL_REFERENCE = {
         "delete"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE prefix [-h] {list,ls,show,set,delete,del} ...",
       "details": "Usage: LANWIRE prefix [-h] {list,ls,show,set,delete,del} ...\n\nArguments:\n  {list,ls,show,set,delete,del}\n    list (ls)                 List definitions.\n    show                      Show a definition.\n    set                       Create or update a definition.\n    delete (del)              Delete a definition.\n\nOptions:\n  -h, --help                  Show this help and exit.",
@@ -8679,7 +8679,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE prefix list [-h]",
       "details": "Usage: LANWIRE prefix list [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8720,7 +8720,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE prefix show [-h] letters",
       "details": "Usage: LANWIRE prefix show [-h] letters\n\nArguments:\n  letters     Prefix letters.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8779,7 +8779,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE prefix set [-h] letters name [description]",
       "details": "Usage: LANWIRE prefix set [-h] letters name [description]\n\nArguments:\n  letters      Prefix letters.\n  name         Descriptive type name.\n  description  Optional description.\n\nOptions:\n  -h, --help   Show this help and exit.",
@@ -8820,7 +8820,7 @@ window.LANCTL_REFERENCE = {
       "category": "Cableado y topología",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANWIRE prefix delete [-h] letters",
       "details": "Usage: LANWIRE prefix delete [-h] letters\n\nArguments:\n  letters     Prefix letters to delete.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8918,7 +8918,7 @@ window.LANCTL_REFERENCE = {
         "element"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Display racks and their equipment.",
       "details": "Usage: LANRACK [-h] [--version] [--database ARCHIVO.db] [--gui | -tui | --cli]\n               {list,ls,show,dimensions,elements,add-element,element} ...\n\nDisplay racks and their equipment.\n\nArguments:\n  {list,ls,show,dimensions,elements,add-element,element}\n    list (ls)                 List available racks.\n    show                      Show a rack and its occupants.\n    dimensions                Edit the rack height and mounting width.\n    elements                  List all elements, locations and trays.\n    add-element               Create a shared physical element.\n    element                   Edit or relocate an element without changing its links.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Show the common suite version and exit.\n  --database ARCHIVO.db       Shared physical IDF database.\n  --gui                       Open the desktop graphical interface.\n  -tui, --tui                 Open the full-screen interface.\n  --cli, -cli                 Open the interactive console.",
@@ -8947,7 +8947,7 @@ window.LANCTL_REFERENCE = {
       "category": "Racks y salas técnicas",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANRACK list [-h]",
       "details": "Usage: LANRACK list [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -8986,7 +8986,7 @@ window.LANCTL_REFERENCE = {
       "category": "Racks y salas técnicas",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANRACK show [-h] rack",
       "details": "Usage: LANRACK show [-h] rack\n\nArguments:\n  rack        Rack ID or name.\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -9052,7 +9052,7 @@ window.LANCTL_REFERENCE = {
       "category": "Racks y salas técnicas",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANRACK dimensions [-h] --units UNITS --width-inches {10,19,21,23} rack",
       "details": "Usage: LANRACK dimensions [-h] --units UNITS --width-inches {10,19,21,23} rack\n\nArguments:\n  rack                        Rack ID.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --units UNITS               Height from 4 to 52 U.\n  --width-inches {10,19,21,23}\n                              Mounting width in inches.",
@@ -9081,7 +9081,7 @@ window.LANCTL_REFERENCE = {
       "category": "Racks y salas técnicas",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANRACK elements [-h]",
       "details": "Usage: LANRACK elements [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -9144,7 +9144,7 @@ window.LANCTL_REFERENCE = {
       "category": "Racks y salas técnicas",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANRACK add-element [-h] --kind KIND --prefix PREFIX [--name NAME]",
       "details": "Usage: LANRACK add-element [-h] --kind KIND --prefix PREFIX [--name NAME]\n\nOptions:\n  -h, --help       Show this help and exit.\n  --kind KIND      Equipment, panel, outlet or tray profile.\n  --prefix PREFIX  IDF prefix.\n  --name NAME      Element name.",
@@ -9265,7 +9265,7 @@ window.LANCTL_REFERENCE = {
       "category": "Racks y salas técnicas",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANRACK element [-h] [--name NAME] [--description DESCRIPTION]\n                       [--placement {inside,environment,independent,hosted}] [--rack RACK]\n                       [--unit UNIT] [--height-u HEIGHT_U] [--tray TRAY]\n                       element",
       "details": "Usage: LANRACK element [-h] [--name NAME] [--description DESCRIPTION]\n                       [--placement {inside,environment,independent,hosted}] [--rack RACK]\n                       [--unit UNIT] [--height-u HEIGHT_U] [--tray TRAY]\n                       element\n\nArguments:\n  element                     Element ID.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --name NAME                 Element name.\n  --description DESCRIPTION   Element description.\n  --placement {inside,environment,independent,hosted}\n                              Physical classification.\n  --rack RACK                 Destination rack ID.\n  --unit UNIT                 Starting mounting unit.\n  --height-u HEIGHT_U         Height occupied by the element.\n  --tray TRAY                 Tray housing the device.",
@@ -9418,7 +9418,7 @@ window.LANCTL_REFERENCE = {
         "user"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Manage encrypted credentials in the LANCTL environment.",
       "details": "Usage: LANACCESS [-h] [--version] [--database DATABASE] [--store STORE]\n                 [--cipher {auto,dpapi,portable}] [--scope {program,windows,project}]\n                 [--project-dir PROJECT_DIR] [--gui | -tui | --cli]\n                 {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user} ...\n\nManage encrypted credentials in the LANCTL environment.\n\nArguments:\n  {remote-setup,list,ls,show,set,delete,del,credential,doctor,settings,protocol,user}\n    remote-setup              Create the first remote service account on Windows (administrator\n                              required).\n    list (ls)                 List metadata; never secrets.\n    show                      Show credential metadata.\n    set                       Create or update a credential.\n    delete (del)              Delete a credential.\n    credential                Credential management, transport and recovery.\n    doctor                    Check links and permissions without changing data.\n    settings                  Show or select the shared store.\n    protocol                  Store protocol summary.\n    user                      Remote access users; not Windows accounts.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Show the common suite version and exit.\n  --database DATABASE         LANCTL element database.\n  --store STORE               Encrypted credential store.\n  --cipher {auto,dpapi,portable}\n                              Encryption provider; portable prompts for a password.\n  --scope {program,windows,project}\n                              Location; does not change permissions or copy secrets automatically.\n  --project-dir PROJECT_DIR   Project directory for its independent store.\n  --gui                       Open the desktop graphical interface.\n  -tui, --tui                 Open the full-screen interface.\n  --cli, -cli                 Open the interactive console.",
@@ -9447,7 +9447,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS remote-setup [-h]",
       "details": "Usage: LANACCESS remote-setup [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -9476,7 +9476,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS list [-h]",
       "details": "Usage: LANACCESS list [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -9515,7 +9515,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS show [-h] credential_id",
       "details": "Usage: LANACCESS show [-h] credential_id\n\nArguments:\n  credential_id  Credential identifier.\n\nOptions:\n  -h, --help     Show this help and exit.",
@@ -9575,7 +9575,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS set [-h] --username USERNAME element protocol",
       "details": "Usage: LANACCESS set [-h] --username USERNAME element protocol\n\nArguments:\n  element                     Device IP, MAC, alias or ID.\n  protocol                    Associated protocol, for example ssh.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --username, -user USERNAME  Remote username.",
@@ -9614,7 +9614,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS delete [-h] credential_id",
       "details": "Usage: LANACCESS delete [-h] credential_id\n\nArguments:\n  credential_id  Credential identifier.\n\nOptions:\n  -h, --help     Show this help and exit.",
@@ -9652,7 +9652,7 @@ window.LANCTL_REFERENCE = {
         "recover"
       ],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS credential [-h] {list,show,delete,set,export,import,copy,recover} ...",
       "details": "Usage: LANACCESS credential [-h] {list,show,delete,set,export,import,copy,recover} ...\n\nArguments:\n  {list,show,delete,set,export,import,copy,recover}\n    list                      List metadata.\n    show                      show by identifier.\n    delete                    delete by identifier.\n    set                       Save and link a credential.\n    export                    Transport an encrypted store; never plaintext.\n    import                    Transport an encrypted store; never plaintext.\n    copy                      Copy to another store and verify; preserve the source.\n    recover                   Repair missing references; do not delete or overwrite secrets.\n\nOptions:\n  -h, --help                  Show this help and exit.",
@@ -9681,7 +9681,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS credential list [-h]",
       "details": "Usage: LANACCESS credential list [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -9721,7 +9721,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS credential show [-h] credential_id",
       "details": "Usage: LANACCESS credential show [-h] credential_id\n\nArguments:\n  credential_id\n\nOptions:\n  -h, --help     Show this help and exit.",
@@ -9761,7 +9761,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS credential delete [-h] credential_id",
       "details": "Usage: LANACCESS credential delete [-h] credential_id\n\nArguments:\n  credential_id\n\nOptions:\n  -h, --help     Show this help and exit.",
@@ -9821,7 +9821,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS credential set [-h] --username USERNAME element protocol",
       "details": "Usage: LANACCESS credential set [-h] --username USERNAME element protocol\n\nArguments:\n  element\n  protocol\n\nOptions:\n  -h, --help           Show this help and exit.\n  --username USERNAME",
@@ -9861,7 +9861,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS credential export [-h] file",
       "details": "Usage: LANACCESS credential export [-h] file\n\nArguments:\n  file\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -9901,7 +9901,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS credential import [-h] file",
       "details": "Usage: LANACCESS credential import [-h] file\n\nArguments:\n  file\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -9955,7 +9955,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS credential copy [-h] [--target-cipher {dpapi,portable}] file",
       "details": "Usage: LANACCESS credential copy [-h] [--target-cipher {dpapi,portable}] file\n\nArguments:\n  file\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --target-cipher {dpapi,portable}",
@@ -9997,7 +9997,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS credential recover [-h] [--yes]",
       "details": "Usage: LANACCESS credential recover [-h] [--yes]\n\nOptions:\n  -h, --help  Show this help and exit.\n  --yes       Apply repairs; diagnose only by default.",
@@ -10027,7 +10027,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS doctor [-h]",
       "details": "Usage: LANACCESS doctor [-h]\n\nOptions:\n  -h, --help  Show this help and exit.",
@@ -10089,7 +10089,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS settings [-h] [--yes] [{show,use-store}] [file]",
       "details": "Usage: LANACCESS settings [-h] [--yes] [{show,use-store}] [file]\n\nArguments:\n  {show,use-store}\n  file\n\nOptions:\n  -h, --help        Show this help and exit.\n  --yes             Confirm changing the configured store without moving secrets.",
@@ -10171,7 +10171,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS protocol [-h] [--port PORT] [--driver DRIVER]\n                          [{list,configure}] [element] [protocol]",
       "details": "Usage: LANACCESS protocol [-h] [--port PORT] [--driver DRIVER]\n                          [{list,configure}] [element] [protocol]\n\nArguments:\n  {list,configure}\n  element\n  protocol\n\nOptions:\n  -h, --help        Show this help and exit.\n  --port PORT       Port 1-65535.\n  --driver DRIVER   Protocol driver.",
@@ -10252,7 +10252,7 @@ window.LANCTL_REFERENCE = {
       "category": "Credenciales y acceso",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "usage: LANACCESS user [-h] [--role {viewer,operator,manager,administrator}] [--yes]\n                      {list,add,enable,disable,delete} [username]",
       "details": "Usage: LANACCESS user [-h] [--role {viewer,operator,manager,administrator}] [--yes]\n                      {list,add,enable,disable,delete} [username]\n\nArguments:\n  {list,add,enable,disable,delete}\n  username\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --role {viewer,operator,manager,administrator}\n  --yes                       Confirm deletion.",
@@ -10725,7 +10725,7 @@ window.LANCTL_REFERENCE = {
       "category": "Launchers",
       "children": [],
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Monitoring, events and incidents for the LANCTL suite.",
       "details": "Usage: LANMON [-h] [--version] [--project PROJECT] [--permanent] [--duration DURATION]\n              [--mode {permanent,temporary,diagnostic,once}]\n              [--authority {observe,operate,administer}] [--json] [--yes] [--interval INTERVAL]\n              [--every EVERY] [--group GROUP] [--type {presence,services,ports,identity,smb,full}]\n              [--fast] [--unknown] [--follow] [--sessions SESSIONS]\n              [--incidents-store INCIDENTS_STORE] [--lock LOCK] [--monitor-db MONITOR_DB]\n              [--profiles PROFILES] [--assignments-store ASSIGNMENTS_STORE] [--profile PROFILE]\n              [--priority {low,normal,high,critical}] [--check CHECK] [--presence PRESENCE]\n              [--discovery DISCOVERY] [--services SERVICES] [--deep DEEP] [--workers WORKERS]\n              [--timeout TIMEOUT] [--gui | --cli | --tui] [--source {all,program,project}]\n              [--limit LIMIT] [--window] [--level LEVEL]\n              [words ...]\n\nMonitoring, events and incidents for the LANCTL suite.\n\nArguments:\n  words                       logs, events, status, attach, detach, once, session, incidents,\n                              service o foreground.\n\nOptions:\n  -h, --help                  Show this help and exit.\n  --version                   Show the common suite version and exit.\n  --project PROJECT           Opción operativa del monitor.\n  --permanent                 Opción operativa del monitor.\n  --duration DURATION         Opción operativa del monitor.\n  --mode {permanent,temporary,diagnostic,once}\n                              Opción operativa del monitor.\n  --authority {observe,operate,administer}\n                              Opción operativa del monitor.\n  --json                      Opción operativa del monitor.\n  --yes                       Opción operativa del monitor.\n  --interval INTERVAL         Opción operativa del monitor.\n  --every EVERY               Opción operativa del monitor.\n  --group GROUP               Opción operativa del monitor.\n  --type {presence,services,ports,identity,smb,full}\n                              Opción operativa del monitor.\n  --fast                      Opción operativa del monitor.\n  --unknown                   Opción operativa del monitor.\n  --follow                    Opción operativa del monitor.\n  --sessions SESSIONS         Runtime session state.\n  --incidents-store INCIDENTS_STORE\n                              Runtime incident state.\n  --lock LOCK                 Monitor singleton lock.\n  --monitor-db MONITOR_DB     Monitor SQLite repository.\n  --profiles PROFILES         Custom profiles.\n  --assignments-store ASSIGNMENTS_STORE\n                              Persistent assignments.\n  --profile PROFILE           Monitor profile.\n  --priority {low,normal,high,critical}\n                              Assignment priority.\n  --check CHECK               Check ping, arp or port:NN.\n  --presence PRESENCE         Presence interval.\n  --discovery DISCOVERY       Discovery interval.\n  --services SERVICES         Service interval.\n  --deep DEEP                 Deep scan interval.\n  --workers WORKERS           Profile workers.\n  --timeout TIMEOUT           Profile timeout.\n  --gui                       Open the desktop graphical interface.\n  --cli, -cli                 Open the command console.\n  --tui, -tui                 Open the tabular event viewer.\n  --source {all,program,project}\n                              Log source.\n  --limit LIMIT               Maximum number of events (1-1000).\n  --window                    Open logs in another terminal and follow the common log.\n  --level LEVEL               Minimum level (1-59); preserve lines without a level.",
@@ -10752,7 +10752,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Proyectos",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Contenedor portable de inventario, configuración, auditoría y hashes.",
       "details": "Los proyectos .vlf permiten guardar, verificar, clonar y trasladar un entorno LANCTL completo.",
@@ -10772,7 +10772,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Plugins y expansiones",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Paquete verificable de extensión con manifiesto, permisos y runtimes controlados.",
       "details": "Los paquetes .lcp se validan antes de instalarse y permanecen desactivados hasta conceder sus permisos.",
@@ -10792,7 +10792,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Grupos de comandos",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Árboles de subcomandos que agrupan acciones relacionadas bajo una raíz común.",
       "details": "Usa --help en cualquier nivel para consultar sus acciones, argumentos y opciones disponibles.",
@@ -10812,7 +10812,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "CLI directa, consola interactiva `lanaccess --cli` y TUI `lanaccess --tui` comparten servicios. En el TUI, N/B cambia de página, A crea, E elimina, D diagnostica y C permite ejecutar los mismos comandos sin salir. Los controles se confirman con Intro; no son todavía modales como LANIP.",
       "details": "Documento mantenido en docs/ACCESS-MONITOR-MANAGEMENT.md.",
@@ -10830,7 +10830,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Para nodos permanentes, políticas de mínimo privilegio, PKI, actualización y recuperación, consulta la [guía de despliegue empresarial](ENTERPRISE.md).",
       "details": "Documento mantenido en docs/ACCESS.md.",
@@ -10848,7 +10848,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "`LANCTL` es el orquestador común. Permite abrir las aplicaciones con `lanctl ip`, `lanctl wire`, `lanctl rack` y `lanctl access`; los ejecutables independientes usan los mismos datos y la misma versión de la suite.",
       "details": "Documento mantenido en docs/APPLICATIONS.md.",
@@ -10866,7 +10866,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Base auditada: `d6b0e7d382a643789942314fd0ea18a103f19a98`, versión `0.3.2-beta.4`. Las correcciones se desarrollan en `codex/audit-corrections` para revisión e integración posterior en `main`. Ninguna rama estable se modifica.",
       "details": "Documento mantenido en docs/AUDIT-CORRECTIONS-2026-10.md.",
@@ -10884,7 +10884,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Validación y planificación antes de implementar:",
       "details": "Documento mantenido en docs/BACKLOG-VERIFICATION.md.",
@@ -10902,9 +10902,9 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
-      "description": "**40 entradas abiertas:** 36 P, tres REF y una revisión visual sin ID. Incluyen P40/P42 como dos seguimientos de una misma incidencia; los contadores son de entradas de la lista, no de funcionalidades independientes. No se cierra ninguna casilla solo por esta revisión.",
+      "description": "**56 entradas abiertas:** 52 P, tres REF y una revisión visual sin ID. Incluyen P40/P42 como dos seguimientos de una misma incidencia; los contadores son de entradas de la lista, no de funcionalidades independientes. No se cierra ninguna casilla solo por esta revisión.",
       "details": "Documento mantenido en docs/BACKLOG.md.",
       "docs": [
         "BACKLOG.md"
@@ -10920,7 +10920,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "LANCTL se distribuye como beta técnica. Utilízalo únicamente en redes propias o donde tengas autorización y conserva una copia independiente de los proyectos `.vlf`. No uses todavía LANCTL como única fuente del inventario de una red.",
       "details": "Documento mantenido en docs/BETA-TESTING.md.",
@@ -10938,7 +10938,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "`CiscoPlanner` no conoce SSH ni Netmiko. `CommandPlan` contiene la identidad estable ALS, endpoint actual, puerto lógico y nativo, riesgo y comandos que un adaptador podría ejecutar. `FakeCiscoAdapter` es el único adaptador habilitado en esta fase.",
       "details": "Documento mantenido en docs/cisco-command-layer.md.",
@@ -10956,7 +10956,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Documento generado automáticamente desde los parsers de la aplicación. No lo edites manualmente; ejecuta `python tools/generate_cli_reference.py`.",
       "details": "Documento mantenido en docs/CLI-REFERENCE.md.",
@@ -10974,7 +10974,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "`lanctl settings` abre el editor por categorías cuando se ejecuta en una terminal interactiva. `lanctl settings --menu` lo abre explícitamente. Con entrada/salida redirigida se conserva la consulta JSON anterior sin preguntas interactivas.",
       "details": "Documento mantenido en docs/CLI-SETTINGS.md.",
@@ -10992,7 +10992,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Todos los comandos admiten `-h`, `--help` y `/?`. `list` y `recurrent` ofrecen `table`, `json`, `csv`, `html`, `xml` y `yaml`. Usa `--output` para escritura atómica a archivo.",
       "details": "Documento mantenido en docs/CLI.md.",
@@ -11010,7 +11010,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "LANCTL conserva una única configuración JSON con esquema versionado. Desde el esquema 2, las opciones se agrupan por responsabilidad en vez de compartir un espacio plano de claves.",
       "details": "Documento mantenido en docs/CONFIGURATION.md.",
@@ -11028,7 +11028,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "LANCTL, LANIP, LANWIRE, LANRACK, LANACCESS y LANMON registran sus ejecuciones en `runtime/coordinator.db`, dentro de la raíz de datos resuelta por el programa. Es un almacén SQLite transaccional con `user_version=1`, no una base de inventario ni un almacén de credenciales. No se versiona en Git.",
       "details": "Documento mantenido en docs/COORDINATION.md.",
@@ -11046,7 +11046,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Esta lista desarrolla las [reglas de desarrollo](DEVELOPMENT-RULES.md). Se utiliza para funciones nuevas, correcciones, refactorizaciones e interfaces, incluidos scripts e instaladores. Una tarea no se declara verificada solo por haber escrito el código o generado un catálogo.",
       "details": "Documento mantenido en docs/DEVELOPMENT-CHECKLIST.md.",
@@ -11064,7 +11064,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Estas reglas son el contrato de trabajo del repositorio. Se aplican a código, documentación, plugins, automatizaciones, empaquetado y publicaciones.",
       "details": "Documento mantenido en docs/DEVELOPMENT-RULES.md.",
@@ -11082,7 +11082,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Estas herramientas ayudan a revisar LANCTL, pero no forman parte del programa ni de sus instaladores. Se instalan fuera del repositorio. Sus configuraciones reproducibles y documentos de arquitectura sí se versionan.",
       "details": "Documento mantenido en docs/DEVELOPMENT-TOOLS.md.",
@@ -11100,7 +11100,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Esta guía describe un nodo LANCTL administrado dentro de una LAN confiable. SSH y HTTPS permanecen desactivados hasta completar la configuración y no se publican directamente en Internet.",
       "details": "Documento mantenido en docs/ENTERPRISE.md.",
@@ -11118,7 +11118,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "LANCTL representa los fallos nuevos mediante `ErrorEvent`, con nivel, origen jerárquico, código estable, mensaje, recuperabilidad, contexto redactado y un identificador de correlación. `ErrorManager.emit()` permite decidir de forma independiente si el error se muestra (`print_output`) y si interrumpe la tarea (`break_execution`). Los errores que interrumpen se muestran mediante su `repr`, útil para soporte y diagnóstico.",
       "details": "Documento mantenido en docs/ERRORS.md.",
@@ -11136,7 +11136,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "El usuario solicita completar los pendientes de interfaz y encarga a AUDITOR los cambios internos. El trabajo continúa en la rama existente experimental-gui, sin publicar, instalar ni modificar la versión durante la integración.",
       "details": "Documento mantenido en docs/GUI-AUDITOR-COORDINATION.md.",
@@ -11154,7 +11154,25 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
+      },
+      "description": "Fecha: 10/11/2026. Revisión del checkout local, incluidos cambios pendientes. No representa una certificación de instalables ni autoriza modificaciones de proyectos reales. No se han cambiado datos personales ni código operativo.",
+      "details": "Documento mantenido en docs/GUI-EDITING-COVERAGE-REVIEW.md.",
+      "docs": [
+        "GUI-EDITING-COVERAGE-REVIEW.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-gui-editing-coverage-review",
+      "kind": "document",
+      "name": "GUI-EDITING-COVERAGE-REVIEW.md",
+      "title": "Revisión de estructura y cobertura de edición de la GUI",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/GUI-EDITING-COVERAGE-REVIEW.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Abrir `gui/launcher-prototypes.html` en el navegador. No requiere servidor ni dependencias externas. Las cuatro vistas se seleccionan en la barra superior; también admiten los fragmentos `#wire`, `#rack`, `#access` y `#mon`.",
       "details": "Documento mantenido en docs/GUI-PROTOTYPES.md.",
@@ -11172,7 +11190,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Fecha: 04/11/2026. Estado: propuesta preparada; decisión visual e implementación pendientes. Alcance de esta entrega: revisión de fuentes y contraste de colores, sin modificar recursos gráficos, preferencias, instaladores ni asociaciones.",
       "details": "Documento mantenido en docs/ICON-THEME-PROPOSAL.md.",
@@ -11190,7 +11208,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Este subsistema está destinado a la futura interfaz gráfica. No registra comandos en CLI ni TUI.",
       "details": "Documento mantenido en docs/ICONS.md.",
@@ -11208,7 +11226,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "GitHub Releases es el canal de distribución binaria de LANCTL. Los scripts de instalación no compilan código: seleccionan un artefacto exacto para la versión, SO y arquitectura, descargan `SHA256SUMS.txt` y fallan antes de instalar si la verificación no coincide.",
       "details": "Documento mantenido en docs/INSTALL.md.",
@@ -11226,7 +11244,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Las limitaciones resueltas deben retirarse de esta lista en la misma revisión que incorpore y pruebe la corrección.",
       "details": "Documento mantenido en docs/KNOWN-ISSUES.md.",
@@ -11244,7 +11262,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Inicia `lanctl --gui` (desde fuentes: `python -m lanctl --gui`). La consola habitual `lanctl --cli` y el TUI siguen disponibles. Desde fuentes se necesita el extra `gui`: `pip install -e \".[gui]\"`.",
       "details": "Documento mantenido en docs/LANCTL-GUI.md.",
@@ -11262,7 +11280,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "La [revisión del almacenamiento y empaquetado](LANGUAGE-STORAGE-REVIEW.md) describe las duplicaciones actuales y una propuesta de recursos compartidos. Es un análisis pendiente de implementación; el comportamiento vigente se documenta a continuación.",
       "details": "Documento mantenido en docs/LANG.md.",
@@ -11280,7 +11298,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Revisión de las fuentes y del empaquetado actual. Se inspeccionaron los recursos del binario Linux local y se reprodujo la creación/selección de catálogos en directorios temporales. No se ha inspeccionado un `.exe` Windows concreto ni se ha cambiado el comportamiento de ejecución, la configuración o los idiomas del usuario. El contenido previsto para Windows se deduce de `LANCTL.spec`.",
       "details": "Documento mantenido en docs/LANGUAGE-STORAGE-REVIEW.md.",
@@ -11298,7 +11316,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Interfaz de escritorio sobre pywebview, HTML/CSS/JavaScript local y los servicios existentes de LANIP. No instala un servidor web ni abre un puerto de acceso remoto. La API remota anterior conserva `GuiApi`; el escritorio utiliza `DesktopApi`.",
       "details": "Documento mantenido en docs/LANIP-GUI.md.",
@@ -11316,7 +11334,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "LANLAB permite probar inventario, filtros, historial y presentación de LANIP sin depender de una LAN física. Su proveedor implementa el contrato común `DiscoveryProvider` y devuelve `DiscoveryResult` con `source=simulated`, proveedor, escenario y semilla.",
       "details": "Documento mantenido en docs/LANLAB.md.",
@@ -11334,7 +11352,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "LANWIRE es el gestor de infraestructura física complementario de LANCTL. En Windows se distribuye como `lanwire.exe` en el mismo directorio que `LANCTL.exe`. La GUI heredada no forma parte de la distribución.",
       "details": "Documento mantenido en docs/LANWIRE.md.",
@@ -11352,7 +11370,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Desde LANCTL, pulsa la tarjeta de la aplicación. También se abren directamente:",
       "details": "Documento mantenido en docs/LAUNCHER-GUI.md.",
@@ -11370,7 +11388,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Todos los launchers admiten `--cli` (también `-cli`) y `--tui` (también `-tui`). Los comandos directos y `/?` siguen disponibles. No cambia el formato de los proyectos, credenciales ni contratos de plugins.",
       "details": "Documento mantenido en docs/LAUNCHER-INTERFACES.md.",
@@ -11388,7 +11406,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "LANCTL utiliza `.lcp` como contenedor ZIP seguro para todos sus complementos. Un mismo paquete puede aportar capacidades `plugin`, `theme`, `language`, `settings`, `automation`, `network`, `analysis`, `ui`, `security`, `protocol`, `scanner`, `parser`, `exporter`, `project-handler` o `project-save-mode`. CLI, TUI y la futura GUI consumen el mismo registro de extensiones.",
       "details": "Documento mantenido en docs/LCP.md.",
@@ -11406,7 +11424,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "La GUI se conserva únicamente como referencia mientras el desarrollo se centra en CLI y TUI. No recibe nuevas funciones, no participa en la batería ordinaria de pruebas y no se incluye en los ejecutables, el ZIP portable, el instalador ni los accesos directos de Windows.",
       "details": "Documento mantenido en docs/LEGACY-GUI.md.",
@@ -11424,7 +11442,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "El backend separa el motor de ejecución de la configuración y los datos. `MonitorService` consume `ConfigProvider`, `AssignmentProvider`, `MetricsStore`, `SessionRepository`, `IncidentRepository` y `ReportBuilder`. Las implementaciones persistentes usan SQLite con WAL, timeout de bloqueo, transacciones e índices por dispositivo y tiempo.",
       "details": "Documento mantenido en docs/MONITOR.md.",
@@ -11442,7 +11460,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Fecha: 27/10/2026. Autorización: ejecutar el plan y las modificaciones sin consultas intermedias; revisar estética después. Las tareas se verifican por comportamiento y contratos, sin certificar exhaustividad por recuento de claves. Se trabaja sobre los cambios locales existentes sin descartarlos.",
       "details": "Documento mantenido en docs/P100-ACTION-PLAN.md.",
@@ -11460,7 +11478,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "27/10/2026. Se ha ampliado la migración funcional de los seis launchers, sus interfaces existentes y los componentes compartidos. Los catálogos inglés y español tienen **2.470 claves cada uno**. La estética se revisará después. P100 conserva pendiente la certificación de recorridos e instalables nativos Windows/Linux; la auditoría estática no demuestra por sí sola todos los estados posibles del programa ni los textos de plugins externos.",
       "details": "Documento mantenido en docs/P100-PRELIMINARY-REVIEW.md.",
@@ -11478,7 +11496,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Revisión de fuentes locales del 27/10/2026. No es una migración de idiomas ni una certificación de los ejecutables instalados. Incluye cambios locales existentes; no se han modificado interfaces, catálogos ni datos del usuario.",
       "details": "Documento mantenido en docs/P100-STRING-SCOPE.md.",
@@ -11496,7 +11514,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Generado con `python3 tools/generate_string_inventory.py`. No importa ni ejecuta LANCTL.",
       "details": "Documento mantenido en docs/P100-STRING-SUMMARY.md.",
@@ -11514,7 +11532,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "La demostración aislada no modifica el inventario normal ni envía paquetes a la red. Genera un proyecto VLF verificable y dos informes:",
       "details": "Documento mantenido en docs/PRESENTATION.md.",
@@ -11532,7 +11550,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Fecha: 2026-08-01",
       "details": "Documento mantenido en docs/RELEASE-0.3.0-beta.1.md.",
@@ -11550,7 +11568,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Versión beta para evaluación en Windows x64. Incluye ejecutables autocontenidos: no requiere una instalación de Python en el equipo de destino.",
       "details": "Documento mantenido en docs/RELEASE-0.3.0-beta.20.md.",
@@ -11568,7 +11586,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Beta técnica dirigida a evaluación controlada. Los launchers son autocontenidos y no requieren que Python esté instalado en el equipo destino.",
       "details": "Documento mantenido en docs/RELEASE-0.3.0-beta.22.md.",
@@ -11586,7 +11604,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Beta técnica dirigida a evaluación controlada. Los launchers son autocontenidos y no requieren que Python esté instalado en el equipo destino.",
       "details": "Documento mantenido en docs/RELEASE-0.3.1-beta.1.md.",
@@ -11604,7 +11622,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Beta técnica en desarrollo sobre la rama `main`. La versión estable anterior permanece congelada en `stable/0.3.1-beta.1`, en el tag `v0.3.1-beta.1` y en su GitHub Release con los instaladores originales.",
       "details": "Documento mantenido en docs/RELEASE-0.3.1-beta.2.md.",
@@ -11622,7 +11640,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Versión de prueba publicada desde `main` como **pre-release**. Puede contener funciones todavía no sometidas a un ciclo completo de validación. La versión conservada como estable sigue siendo `0.3.1-beta.1` en la rama `stable/0.3.1-beta.1`, su tag y su GitHub Release.",
       "details": "Documento mantenido en docs/RELEASE-0.3.1-beta.3.md.",
@@ -11640,7 +11658,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Beta de desarrollo integrada en `main`; no es una versión estable.",
       "details": "Documento mantenido en docs/RELEASE-0.3.2-beta.1.md.",
@@ -11658,7 +11676,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Publicación solicitada en el canal estable, conservando el sufijo beta por decisión del propietario. La etiqueta de canal no implica ausencia de defectos.",
       "details": "Documento mantenido en docs/RELEASE-0.3.2-beta.4.md.",
@@ -11676,7 +11694,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Nueva versión del canal estable, posterior a 0.3.2-beta.4. Integra el desarrollo experimental y las correcciones de auditoría de octubre en la rama `main`. Las ramas y los instaladores de versiones anteriores se conservan.",
       "details": "Documento mantenido en docs/RELEASE-0.3.3.md.",
@@ -11694,7 +11712,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Prototipo de la rama `experimental-gui`, publicado como **pre-release** para probar las interfaces gráficas en otro ordenador. No es una versión estable y no sustituye a la Release estable 0.3.3. No se necesita instalar Python.",
       "details": "Documento mantenido en docs/RELEASE-0.3.4-alpha.1.md.",
@@ -11712,7 +11730,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Nueva revisión de desarrollo posterior a `0.3.4-alpha.1`. Incluye mejoras de configuración GUI, navegación TUI, diagnóstico, idiomas e instaladores. No declara una versión estable ni modifica los identificadores públicos del Core.",
       "details": "Documento mantenido en docs/RELEASE-0.3.4-alpha.2.md.",
@@ -11730,7 +11748,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Punto de referencia de desarrollo guardado el 4 de noviembre de 2026, posterior a `0.3.4-alpha.2`. Conserva el trabajo actual de persistencia, importación, coordinación de proyectos, monitorización, procesos remotos, preferencias de interfaz e instalador Linux.",
       "details": "Documento mantenido en docs/RELEASE-0.3.4-alpha.3.md.",
@@ -11748,7 +11766,25 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
+      },
+      "description": "Punto de referencia local del 12 de noviembre de 2026 con las últimas correcciones de desarrollo, posteriores al punto `0.3.4-alpha.3`.",
+      "details": "Documento mantenido en docs/RELEASE-0.3.4-alpha.7.md.",
+      "docs": [
+        "RELEASE-0.3.4-alpha.7.md"
+      ],
+      "examples": [],
+      "group": "docs/",
+      "id": "doc-release-0-3-4-alpha-7",
+      "kind": "document",
+      "name": "RELEASE-0.3.4-alpha.7.md",
+      "title": "LANCTL 0.3.4-alpha.7 — Experimental (no estable)",
+      "url": "https://github.com/CctrGy/LANCTL/blob/main/docs/RELEASE-0.3.4-alpha.7.md"
+    },
+    {
+      "category": "Archivos de documentación",
+      "compatibility": {
+        "verified": "0.3.4-alpha.7"
       },
       "description": "LANWIRE añade perfiles de prefijos, creación explícita de IDF, identificadores de 2–5 letras/dígitos, plantillas mixtas de puertos, compatibilidad de medios, vista de topología, navegación entre cables/equipos y edición desde el TUI. La persistencia actualiza referencias al renombrar puertos y limpia conexiones al eliminar elementos, con escrituras transaccionales. La inicialización de LANWIRE puede clasificar registros antiguos FB/WL/WE: conviene respaldar bases reales antes de abrirlas con esta versión.",
       "details": "Documento mantenido en docs/REVIEW-EXPERIMENTAL-2026-09-25.md.",
@@ -11766,7 +11802,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Las comprobaciones de cada cambio a `main` incluyen pruebas de integración y cobertura de ramas, Ruff, Bandit, `pip check`, `pip-audit`, CodeQL y revisión de dependencias. Dependabot revisa semanalmente paquetes Python y GitHub Actions. Los workflows usan permisos mínimos y la publicación solo obtiene `contents: write` dentro del trabajo que crea una release desde un tag.",
       "details": "Documento mantenido en docs/SECURITY.md.",
@@ -11784,7 +11820,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Documento histórico: recoge la revisión anterior a la publicación de 0.3.2-beta.4. El estado siguiente corresponde a ese momento y no al estado actual del repositorio; consulta las notas de cada Release.",
       "details": "Documento mantenido en docs/STABILITY-REVIEW-2026-09-26.md.",
@@ -11802,7 +11838,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "LANCTL separa programa, datos de usuario/servicio y proyectos. En una instalación Windows estándar, el programa reside en `Program Files` y los datos mutables en `C:\\ProgramData\\LANCTL`. Los secretos usan el ámbito de usuario o servicio configurado. Los proyectos VLF solo cambian cuando se seleccionan de forma explícita.",
       "details": "Documento mantenido en docs/STORAGE.md.",
@@ -11820,7 +11856,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "1. Ejecuta `lanctl database --diagnose` y conserva la salida. 2. Consulta un identificador mostrado con `lanctl error 0eXXXXXXXX`. 3. Revisa `logs/` sin publicar credenciales ni la carpeta `access/`. 4. Si falla un plugin, inicia con `pluginSafeMode: true`, revoca permisos o desactívalo. 5. Verifica un LCP con `lanctl plugin verify ARCHIVO.lcp` antes de instalarlo. 6. Verifica una copia de datos con `lanctl database --verify ARCHIVO.zip`.",
       "details": "Documento mantenido en docs/TROUBLESHOOTING.md.",
@@ -11838,7 +11874,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Inicia el anfitrión de la suite con `lanctl --tui`. Dentro, `help` y `help settings` muestran ayuda en una vista del propio TUI, sin salir a la consola. Usa `↑/↓`, `RePág/AvPág` e `Inicio/Fin` para desplazarte y `Esc` o `Enter` para volver al panel. `commands`, `pwd` y `version` usan la misma vista.",
       "details": "Documento mantenido en docs/TUI.md.",
@@ -11856,7 +11892,7 @@ window.LANCTL_REFERENCE = {
     {
       "category": "Archivos de documentación",
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "description": "Un archivo `.vlf` es un contenedor ZIP con nombres internos POSIX y una estructura fija. No debe confundirse la compresión ZIP con cifrado.",
       "details": "Documento mantenido en docs/VLF.md.",
@@ -11873,15 +11909,15 @@ window.LANCTL_REFERENCE = {
     }
   ],
   "meta": {
-    "entryCount": 196,
+    "entryCount": 198,
     "name": "LANCTL Reference",
     "repository": "https://github.com/CctrGy/LANCTL",
-    "version": "0.3.4-alpha.3"
+    "version": "0.3.4-alpha.7"
   },
   "workflows": [
     {
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "docs": [
         "VLF.md",
@@ -11940,7 +11976,7 @@ window.LANCTL_REFERENCE = {
     },
     {
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "docs": [
         "LCP.md",
@@ -11998,7 +12034,7 @@ window.LANCTL_REFERENCE = {
     },
     {
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "docs": [
         "CONFIGURATION.md",
@@ -12062,7 +12098,7 @@ window.LANCTL_REFERENCE = {
     },
     {
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "docs": [
         "ACCESS.md",
@@ -12121,7 +12157,7 @@ window.LANCTL_REFERENCE = {
     },
     {
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "docs": [
         "ACCESS.md",
@@ -12176,7 +12212,7 @@ window.LANCTL_REFERENCE = {
     },
     {
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "docs": [
         "MONITOR.md",
@@ -12233,7 +12269,7 @@ window.LANCTL_REFERENCE = {
     },
     {
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "docs": [
         "STORAGE.md",
@@ -12286,7 +12322,7 @@ window.LANCTL_REFERENCE = {
     },
     {
       "compatibility": {
-        "verified": "0.3.4-alpha.3"
+        "verified": "0.3.4-alpha.7"
       },
       "docs": [
         "CLI.md",

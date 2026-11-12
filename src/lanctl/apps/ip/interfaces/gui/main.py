@@ -781,9 +781,13 @@ class GuiApi:
         history.redo[:] = [edit for edit in history.redo if edit.device_id != device_id]
 
     def _inventory_payload(self, query: str = "") -> dict:
+        from lanctl.core.inventory_visibility import logical_devices
         from lanctl.core.project_context import project_identity
 
-        devices = [self._serialize(device) for device in self._database().load()]
+        devices = [
+            self._serialize(device)
+            for device in logical_devices(self._database().load(), load_config())
+        ]
         wanted = str(query or "").strip().casefold()
         if wanted:
             devices = [

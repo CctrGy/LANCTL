@@ -159,13 +159,24 @@ def _inventory_documents(project: Path) -> tuple[list[dict], list[dict]]:
                 if mac:
                     device_macs[str(device_id)] = str(mac)
 
+            identity_members: dict[str, list[str]] = {}
+            if connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='group_member_ids_v1'"
+            ).fetchone():
+                for group_name, device_id in connection.execute(
+                    "SELECT group_name, device_id FROM group_member_ids_v1 ORDER BY rowid"
+                ):
+                    identity_members.setdefault(str(group_name), []).append(str(device_id))
             members: dict[str, list[str]] = {}
             for group_name, device_id in connection.execute(
                 "SELECT group_name, device_id FROM group_members ORDER BY group_name, device_id"
             ):
                 mac = device_macs.get(str(device_id))
-                if mac:
-                    members.setdefault(str(group_name), []).append(mac)
+                if str(device_id) not in identity_members.get(str(group_name), []):
+                    if mac:
+                        members.setdefault(str(group_name), []).append(mac)
+                    else:
+                        identity_members.setdefault(str(group_name), []).append(str(device_id))
 
             groups = [
                 {
@@ -173,6 +184,11 @@ def _inventory_documents(project: Path) -> tuple[list[dict], list[dict]]:
                     "description": str(description or ""),
                     "members": members.get(str(name), []),
                     "editable": bool(editable),
+                    **(
+                        {"membershipSchemaVersion": 1, "memberIds": identity_members[str(name)]}
+                        if identity_members.get(str(name))
+                        else {}
+                    ),
                 }
                 for name, description, editable in connection.execute(
                     "SELECT name, description, editable FROM groups ORDER BY rowid"

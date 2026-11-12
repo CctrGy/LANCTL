@@ -1,0 +1,8 @@
+/* Native launcher presentation is reused; only server-inapplicable controls differ. */
+html[data-lanctl-web] body{min-width:0}
+html[data-lanctl-web] [hidden]{display:none!important}
+html[data-lanctl-web] #external-cli,html[data-lanctl-web] #cli,html[data-lanctl-web] #lanip-cli,html[data-lanctl-web] #open-terminal,html[data-lanctl-web] #open-device,html[data-lanctl-web] #show-shares,html[data-lanctl-web] [data-page=terminal],html[data-lanctl-web] [data-action=shortcut],html[data-lanctl-web] [data-action=project-directory]{display:none!important}
+html[data-lanctl-web] .shell{border:0!important;border-radius:0!important;height:100vh;max-height:none}
+html[data-lanctl-web] .web-picker-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:20px}
+html[data-lanctl-web] dialog>form>select{width:100%;margin-top:15px}
+html[data-lanctl-web] .shell{width:100%!important;max-width:none!important;margin:0!important;min-height:0}

@@ -194,3 +194,46 @@ editadas en `lan/settings.override.json`, un documento opcional con
 El guardado conserva este documento y aplica sus valores sobre los valores
 generados. Forma parte del cálculo de hashes del VLF. La activación carga las
 preferencias explícitas sin reemplazar el inventario del espacio de trabajo.
+
+### Pertenencia a grupos sin MAC
+
+La corrección P127 permite identificar miembros manuales por `deviceId`, antes
+de conocer su MAC. Los documentos de grupos conservan `members` (MAC) y añaden,
+solo cuando hay miembros por identidad, `membershipSchemaVersion: 1` y
+`memberIds`. Los grupos anteriores se leen sin migración ni renumeración.
+
+El SQLite VLF mantiene `group_members` y añade la tabla opcional versionada
+`group_member_ids_v1`, que distingue las relaciones por identidad de las
+relaciones heredadas por MAC al reconstruir el workspace. Los identificadores
+de dispositivo existentes no cambian al asignar el grupo. Los lectores actuales
+aceptan archivos anteriores sin esa tabla. Versiones antiguas no garantizan
+conservar esta nueva información si vuelven a guardar el proyecto; usar una
+versión que incluya P127 para editar proyectos con miembros sin MAC.
+
+### Pizarra LANWIRE en JSON (P138)
+
+`devices/physical.json` conserva, dentro de su inventario, el campo opcional
+`diagramLayouts: {schemaVersion: 1, views: {...}}`. Cada clave de vista es una
+terna JSON `[nivel, rackId, cpdId]` (nivel `inside` o `outside`); cada valor incluye
+`schemaVersion: 1`, `positions: {elementId: {x, y}}` y `camera: {x, y, z}`.
+Cada vista admite también `regions: {regionId: {x, y, w, h}}` (P139),
+con hasta 512 áreas y tamaños positivos. Es opcional: los JSON anteriores sin
+áreas siguen admitidos. Todos sus valores deben ser finitos y no superar
+10.000.000 en valor absoluto. Se guarda junto con las posiciones para conservar
+el desplazamiento en cadena al redimensionar; Reorganizar restablece las áreas.
+Las coordenadas son visuales, no cambian la ubicación física ni conexiones.
+No se guardan rutas personales ni las claves locales del navegador en el VLF.
+
+El workspace incluye estos datos en su fingerprint y en el guardado habitual
+manual/automático del proyecto. Sin el campo se mantiene compatibilidad con
+proyectos anteriores; solo se incorpora al modificar/guardar la distribución.
+La GUI puede leer posiciones locales antiguas como punto inicial y da prioridad
+al JSON del proyecto cuando existe. Sin proyecto seleccionado mantiene el
+almacenamiento local.
+
+Se validan números finitos, zoom 0.02–3, hasta 5.000 posiciones por vista,
+64 vistas y 20.000 posiciones totales. Escritura atómica, revisión optimista por
+vista y contexto de proyecto impiden sobrescribir otra edición silenciosamente.
+Los contenedores visuales se amplían alrededor de posiciones manuales guardadas;
+no las recortan de nuevo al rectángulo del cálculo automático. Versiones que no
+incluyan P138 no garantizan recuperar o conservar esta información visual.

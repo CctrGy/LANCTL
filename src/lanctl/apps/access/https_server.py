@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import ssl
@@ -16,11 +17,12 @@ from lanctl.core.resources import bundled_path
 from .auth import AuthorizationService
 from .network import source_allowed
 from .remote import LanctlCommandAdapter, RemoteGuiApi
+from .web_suite import PAGES, WebSuiteGateway, presentation
 
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
         "default-src 'self'; img-src 'self' data:; connect-src 'self'; "
-        "frame-ancestors 'none'; object-src 'none'; base-uri 'none'"
+        "frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
     ),
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
@@ -29,7 +31,36 @@ SECURITY_HEADERS = {
 }
 COOKIE_ATTRIBUTES = "Secure; HttpOnly; SameSite=Strict; Path=/"
 MAX_BODY = 64 * 1024
-STATIC_CONTENT_TYPES = {".html": "text/html", ".js": "application/javascript", ".css": "text/css"}
+STATIC_CONTENT_TYPES = {
+    ".html": "text/html",
+    ".js": "application/javascript",
+    ".css": "text/css",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".ico": "image/x-icon",
+}
+GUI_STATIC_FILES = frozenset(
+    {
+        "index.html",
+        "app.js",
+        "native-close.js",
+        "styles.css",
+        "i18n.js",
+        "i18n-defaults.js",
+        "desktop.css",
+        "lanip.css",
+        "app-preferences.css",
+        "app-dialogs.js",
+        "desktop.js",
+        "lanip.js",
+        "device-sheet.js",
+        "lanip-controls.js",
+        "app-preferences.js",
+        "app-support.js",
+        "first-scan.js",
+    }
+)
 
 
 def _session_cookie(identifier):
@@ -136,6 +167,7 @@ class HttpsAccessServer:
         self.static_directory = Path(static_directory or bundled_path("gui"))
         self.gui_api = RemoteGuiApi(self.authorization, gui_api)
         self.command_adapter = command_adapter or LanctlCommandAdapter(self.authorization)
+        self.web_suite = WebSuiteGateway(self.authorization)
         self.login_limiter = _LoginLimiter()
         parent = self
 
@@ -176,6 +208,34 @@ class HttpsAccessServer:
                 self._headers(content_type, len(body))
                 self.end_headers()
                 self.wfile.write(body)
+
+            def _view(self, page):
+                template = (
+                    "suite.html"
+                    if page == "panel"
+                    else "index.html"
+                    if page == "ip"
+                    else "launcher.html"
+                )
+                html = (parent.static_directory / template).read_text(encoding="utf-8")
+                html = html.replace("<html ", '<html data-lanctl-web="true" ', 1)
+                html = html.replace(
+                    "<head>",
+                    '<head><base href="/lanctl/resources/">'
+                    '<link rel="stylesheet" href="/lanctl/resources/web-embedded.css">'
+                    '<script src="/lanctl/resources/web-bridge.js"></script>',
+                    1,
+                )
+                body = html.encode("utf-8")
+                self.send_response(200)
+                self._headers("text/html; charset=utf-8", len(body))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def _session_key(self):
+                cookie = SimpleCookie(self.headers.get("Cookie", ""))
+                identifier = cookie.get("lanctl_session")
+                return hashlib.sha256((identifier.value if identifier else "").encode()).hexdigest()
 
             def _source(self):
                 return source_allowed(self.client_address[0], parent.cidr)
@@ -221,17 +281,58 @@ class HttpsAccessServer:
                 if not self._source():
                     return self._send(403, {"error": "source outside managed LAN"})
                 path = urlsplit(self.path).path
-                if path in {
-                    "/",
-                    "/index.html",
-                    "/app.js",
-                    "/native-close.js",
-                    "/styles.css",
-                    "/i18n.js",
-                    "/i18n-defaults.js",
-                }:
-                    filename = "index.html" if path in {"/", "/index.html"} else path[1:]
+                if path in {"/", "/lanctl", "/lanctl/", *("/lanctl/" + page for page in PAGES)}:
+                    return self._send_file(bundled_path("gui/web-shell.html"))
+                if path.startswith("/lanctl/view/") and path.removeprefix("/lanctl/view/") in PAGES:
+                    return self._view(path.removeprefix("/lanctl/view/"))
+                if path.startswith("/lanctl/resources/"):
+                    filename = path.removeprefix("/lanctl/resources/")
+                    candidate = parent.static_directory / filename
+                    if (
+                        "/" not in filename
+                        and "\\" not in filename
+                        and candidate.suffix in {".css", ".js"}
+                        and not candidate.is_symlink()
+                        and candidate.is_file()
+                    ):
+                        return self._send_file(candidate)
+                    return self._send(404, {"error": "not found"})
+                if path.startswith("/lanctl/assets/"):
+                    parts = path.removeprefix("/lanctl/assets/").split("/")
+                    if len(parts) == 2 and parts[0] in {"launcher-icons", "device-icons"}:
+                        candidate = bundled_path("assets") / parts[0] / parts[1]
+                        if (
+                            parts[1] not in {".", ".."}
+                            and "\\" not in parts[1]
+                            and candidate.suffix in {".svg", ".png", ".jpg", ".ico"}
+                            and not candidate.is_symlink()
+                            and candidate.is_file()
+                        ):
+                            return self._send_file(candidate)
+                    return self._send(404, {"error": "not found"})
+                if path == "/lanctl/api/presentation":
+                    try:
+                        return self._send(200, presentation())
+                    except (OSError, ValueError) as error:
+                        from lanctl.core.errors import errors
+
+                        event = errors.from_exception(
+                            error,
+                            origin="LANCTL.Access.Web.Presentation",
+                            code="ACCESS.WEB.PRESENTATION.FAILED",
+                            level=43,
+                            print_output=False,
+                        )
+                        return self._send(
+                            500, {"error": "presentation unavailable", "errorId": event.error_id}
+                        )
+                if path.startswith("/lanctl/api/"):
+                    path = path.removeprefix("/lanctl")
+                filename = "index.html" if path == "/" else path.removeprefix("/")
+                if filename in GUI_STATIC_FILES:
                     return self._send_file(parent.static_directory / filename)
+                if path == "/assets/launcher-icons/lanip.svg":
+                    return self._send_file(bundled_path("assets/launcher-icons/lanip.svg"))
                 try:
                     if path == "/api/status":
                         self._authorized("monitor.read")
@@ -254,6 +355,8 @@ class HttpsAccessServer:
                 if not self._source():
                     return self._send(403, {"error": "source outside managed LAN"})
                 path = urlsplit(self.path).path
+                if path.startswith("/lanctl/api/"):
+                    path = path.removeprefix("/lanctl")
                 try:
                     self._origin()
                     if path == "/api/login":
@@ -276,9 +379,28 @@ class HttpsAccessServer:
                             {"csrfToken": csrf, "username": user.username, "roles": user.roles},
                             _session_cookie(session.sessionId),
                         )
+                    try:
+                        self._session()
+                    except PermissionError:
+                        return self._send(401, {"error": "authentication required"})
                     user = self._session(csrf=True)
                     body = self._body()
+                    if path == "/api/shell":
+                        return self._send(200, parent.web_suite.shell(user, self._session_key()))
+                    if path == "/api/gui":
+                        return self._send(
+                            200,
+                            parent.web_suite.call(
+                                user,
+                                self._session_key(),
+                                body.get("page"),
+                                body.get("method"),
+                                body.get("args", []),
+                                body.get("projectContext"),
+                            ),
+                        )
                     if path == "/api/logout":
+                        parent.web_suite.forget(self._session_key())
                         cookie = SimpleCookie(self.headers.get("Cookie", ""))
                         session = cookie.get("lanctl_session")
                         if session:

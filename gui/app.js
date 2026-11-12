@@ -99,7 +99,7 @@ function isRemoteClient(){
   // La GUI local usa file:// y recibe la API de pywebview unos instantes
   // después de cargar el DOM. Solo el frontend servido por HTTPS/HTTP debe
   // mostrar autenticación; la ausencia temporal del puente no implica remoto.
-  return window.location.protocol==="https:"||window.location.protocol==="http:";
+  return !window.LANCTL_WEB&&(window.location.protocol==="https:"||window.location.protocol==="http:");
 }
 window.addEventListener("pywebviewready",()=>{
   document.querySelector(".remote-login")?.remove();

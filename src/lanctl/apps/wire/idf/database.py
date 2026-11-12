@@ -446,6 +446,19 @@ class IDFDatabaseManager:
         for key, record in records.items():
             if not IDF.is_valid(key) or not isinstance(record, dict) or record.get("id") != key:
                 raise ValueError(f"registro IDF no válido: {key}")
+            data = record.get("data")
+            if isinstance(data, dict) and "management" in data:
+                from lanctl.core.inventory_visibility import validate_management
+
+                validate_management(data["management"])
+            if isinstance(data, dict) and "powerOutlets" in data:
+                from lanctl.core.power_outlets import validate_outlets
+
+                validate_outlets(data["powerOutlets"])
+        if "diagramLayouts" in database:
+            from lanctl.core.diagram_layout import layouts
+
+            layouts(database)
         prefixes = database.get("prefixes", {})
         if not isinstance(prefixes, dict):
             raise ValueError("el campo prefixes de la base de datos no es válido")

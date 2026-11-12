@@ -91,6 +91,14 @@ def test_rack_automatic_scale_preserves_units_and_editing(workspace, units):
             sizes.append(measure["unit"])
             assert 30 <= measure["unit"] <= 84
             assert measure["noHorizontalOverflow"], (width, height, measure)
+            # SVG connector geometry must use one scale on both axes.
+            scales = page.evaluate("""() => [...document.querySelectorAll('.rack-face')].map(svg => {
+                const matrix=svg.getScreenCTM();
+                return {x:matrix.a,y:matrix.d,ratio:svg.getAttribute('preserveAspectRatio')};
+            })""")
+            assert all(scale["ratio"] == "xMidYMid meet" for scale in scales)
+            assert all(abs(scale["x"] - scale["y"]) < 0.001 for scale in scales)
+
             assert measure["noOverlaps"]
             assert measure["headerHeight"] < 125
             assert measure["footerBottom"] <= height + 1

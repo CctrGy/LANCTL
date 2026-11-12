@@ -349,3 +349,164 @@ el pie. La selección gráfica se realiza desde LANCTL; el botón LANCTL del pie
 usa la coordinación de ventanas existente. Las APIs y comandos históricos de
 proyecto siguen disponibles. Un formulario abierto conserva su contenido y
 rechaza la escritura si cambió el proyecto o el inventario mientras estaba abierto.
+
+
+## Selección de switches y montaje en bandeja
+
+Al elegir **Tipo: Switch**, el alta física ofrece dos controles en una misma
+fila: **RJ45** a la izquierda y **SFP** a la derecha, cada uno con su cantidad.
+RJ45 = 0 selecciona solo SFP; SFP = 0 selecciona solo RJ45. La combinación
+0 + 0 no está disponible: las cantidades SFP se ajustan al valor RJ45 elegido.
+El catálogo compartido ofrece exactamente estas 26 configuraciones:
+
+- RJ45: 5, 8, 16, 24 y 48.
+- RJ45+SFP: cada cantidad RJ45 anterior combinada con 2, 4 o 6 SFP (15 opciones).
+- Solo SFP: 4, 8, 12, 16, 24 y 48.
+
+El alta desde una U filtra los perfiles de sobremesa; en el alta independiente
+están disponibles todas las combinaciones. Los perfiles de 5/8 RJ45 (también
+mixtos) y los de 4/8 SFP se tratan como sobremesa; los demás perfiles nuevos
+admiten montaje directo. Los perfiles históricos de 6/12 RJ45 y combinaciones
+anteriores siguen siendo compatibles sin aparecer en esta nueva selección.
+Son perfiles genéricos de referencia, no un catálogo de modelos ni una detección
+de capacidades reales.
+Los puertos de cobre se crean como X1…Xn y los ópticos como SFP1…SFPn;
+son registros reales utilizables para conexiones. No se inventan velocidades,
+PoE ni módulos/transceptores instalados.
+
+Los switches de sobremesa de 5, 6 y 8 RJ45, los routers genéricos y los OTG
+pueden crearse como elementos independientes y alojarse en una bandeja montada
+mediante **Alojar dispositivo**. No se ofrecen en el alta ni en la asignación
+directa de una unidad U. La misma regla se valida en el almacenamiento, también
+para CLI/RPC, y respeta los frentes marcados como no rackmount. Las alturas de
+bandeja y las colisiones siguen validándose para el tramo completo.
+
+Los perfiles antiguos conservan sus nombres y puertos. No se convierten
+inventarios existentes ni se mueven equipos automáticamente; una nueva
+reubicación debe respetar el formato de montaje. La posición física se guarda
+en el proyecto VLF con el resto del inventario, independientemente del dibujo.
+
+
+### Creación de equipos rackmount por tipo (2026-11-10)
+
+El formulario muestra cantidades RJ45/SFP solo para switches. Patch panel conserva
+su preset de 24 puertos y los datos de identificación, sin controles de conexión.
+Bandejas, servidores, tapas ciegas, paneles de ventilación, organizadores, peines,
+regletas y SAI permiten indicar altura en U (1–52), validada contra el rack y
+solapamientos. Los accesorios nuevos no generan puertos de red ni especificaciones
+eléctricas inventadas; su frente usa la representación genérica existente.
+El prefijo IDF ofrece sugerencias de los prefijos existentes y permite escribir otro.
+Al crear desde una U, la clasificación predeterminada es interior del rack y permite
+seleccionar entorno del rack; no aparece Connection Type, tampoco en servidores.
+La creación independiente de equipos de red conserva su configuración de conexión.
+
+Validación: pruebas de catálogo, persistencia, ocupación y navegador ES/EN en
+`tests/test_switch_port_profiles.py`, menús de U y guardado compartido. No se
+recompilaron instaladores ni se certificó Qt nativo/Windows en este ajuste.
+
+
+### Desplazamiento de la posición al crear desde una U (2026-11-10)
+
+La unidad inicial toma la U pulsada y se puede escribir o ajustar con botones
+−/+ en pasos de una unidad. Un cuadro de solo lectura muestra el intervalo
+contiguo ocupado (por ejemplo U5–U7 para 3 U). Cambiar tipo o altura recalcula el
+intervalo. Los botones respetan los extremos del rack; las colisiones y alturas
+fuera del rack siguen rechazándose por la validación compartida, sin mover ni
+sobrescribir otros equipos. En clasificación entorno se ocultan y desactivan
+los controles de U, conservando su selección si se vuelve a interior.
+El guardado utiliza la unidad ajustada y no la U original del menú.
+
+
+### Servidor configurable en creación (2026-11-10)
+
+Servidor ofrece cantidad de puertos de red 1–6 (predeterminado 2), altura 1–4 U
+(predeterminada 1) y, al final, clasificación, unidad inicial con −/+ e intervalo
+ocupado. La altura seleccionada recalcula el intervalo. Cada cantidad genera
+puertos LAN1…LANn reales con los valores del preset existente, sin inventar
+velocidades ni PoE. El perfil histórico server.2ports conserva su contrato;
+los perfiles de 1, 3, 4, 5 y 6 puertos son aditivos.
+
+Comprobación: 60 pruebas correctas en 25,26 s (perfiles, creación, ocupación,
+menús de U y guardado); navegador ES/EN ampliado con creación real de servidor
+de 6 puertos, 4 U y posición U6–U9. Sin compilación de instaladores ni validación
+Qt nativo/Windows. Formato, Ruff, idiomas, auditoría, errores y referencias se
+comprueban mediante las herramientas del repositorio.
+
+
+### Distribución compacta de tamaño y ocupación (2026-11-10)
+
+El diseño actualizado sustituye las filas de unidad inicial e intervalo separado
+por una sola fila: altura, +, intervalo ocupado y −. El intervalo es de solo
+lectura; los botones desplazan la posición inicial, conservando la altura.
+Servidor conserva altura seleccionable 1–4 U; el resto mantiene sus límites.
+Para tipos de altura fija se muestra 1 U. Clasificación queda debajo y oculta
+los controles de desplazamiento al seleccionar entorno del rack.
+
+Verificación funcional: 60 pruebas correctas en 25,86 s; se añade comprobación
+geométrica ES/EN de alineación y captura del formulario de servidor. Se mantienen
+las comprobaciones de guardado real, límites, ocupación y menús. Sin instaladores
+nuevos ni certificación Qt nativa/Windows.
+
+
+### Menú de bandeja: añadir y crear contenido (2026-11-10)
+
+Clic derecho sobre bandeja ofrece «Añadir elementos existentes» y «Crear elemento
+dentro de la bandeja». La segunda acción crea el IDF y su pertenencia en una sola
+operación, sin asignarle U propias. Ambas conservan el contexto de proyecto.
+La selección existente muestra equipos pequeños (directMount falso) cuya altura
+no supera la bandeja. La creación ofrece router, OTG y switches de sobremesa,
+filtrando los perfiles rackmount. El Core rechaza alojar equipos más altos que
+las U reservadas y reducir una bandeja por debajo de su contenido; los rechazos
+conservan la base. No hay dimensiones métricas ni límite numérico de capacidad
+definidos en el modelo: no se afirma validar anchura/profundidad o espacio total.
+La pregunta sobre un límite adicional concreto queda abierta al usuario.
+
+Pruebas: menú y creación real con y sin skins; conservación de identidad y
+puertos al alojar; rechazo atómico de altura excesiva y reducción incompatible.
+Sin instaladores nuevos ni prueba Qt nativa/Windows.
+
+## Completar un switch importado sin cambiar su IDF
+
+Un IDF escrito en LANIP identifica el equipo, pero no define sus conectores.
+Cuando el registro físico es un elemento genérico sin puertos, su ficha de
+LANWIRE/LANRACK ofrece **Configurar puertos del switch**. Se selecciona el perfil
+real, incluidos 26 RJ45 + 2 SFP. La operación modifica el registro existente;
+conserva IDF, identidad lógica, IP, metadatos y ubicación/altura. No se utiliza
+Nuevo elemento para reutilizar un IDF ya reservado.
+
+La operación rechaza revisiones obsoletas, equipos con puertos ya configurados,
+otros tipos y extremos de cable que requieran revisión. Conserva las validaciones
+de montaje y ocupación. No implementa sincronización automática de altas entre
+LANIP y el inventario físico ni renumeración/fusión de registros.
+
+## Accesorios y proporciones de las skins
+
+Peine, organizador y ventilación tienen frentes propios, seleccionables en
+Personalizar frente y en su catálogo. Las altas nuevas usan su diseño; el modo
+automático reconoce el tipo de accesorio. Los frentes guardados explícitamente
+se respetan, incluida una tapa ciega elegida antes. No se crean puertos de red
+para estos accesorios ni se cambian sus IDF, posición o altura.
+
+Todos los SVG utilizan escala uniforme (`xMidYMid meet`). La elevación limita
+su ancho según la escala de una U y queda centrada al ensanchar la ventana,
+en vez de estirar horizontalmente puertos, tornillos o ranuras. El espacio
+adicional de la ventana queda alrededor del armario. No cambia la ocupación
+física ni la numeración de conectores.
+
+
+### Entrada de fibra de compañía (2026-11-12)
+
+LANWIRE ofrece el perfil aditivo `external.fiber-entry` en «Nuevo elemento».
+Representa el límite de entrada óptica de la compañía, con un único puerto
+hembra FIBER de medio `connection.fiber`. Su símbolo usa un aro verde exterior
+y un puerto circular naranja; conserva selección, arrastre, detalles y conexión
+mediante los controles normales. El nombre y el IDF son editables. Los cables
+usan extremos reales `device`/`port`; no se requiere el campo heredado `source`.
+
+El elemento solo se presenta en LANWIRE. El inventario compartido y el VLF
+conservan sus datos y conexiones; las vistas LANRACK, LANIP, LANACCESS y LANMON
+no muestran este tipo aunque tenga IP. Puede asociarse al entorno de un rack
+para heredar su CPD, pero no montarse en una U ni dentro de una bandeja.
+El tipo histórico `external.supply` conserva su significado y compatibilidad.
+La figura es una convención visual de LANCTL, sin atribuir un conector físico,
+operador o tecnología óptica específicos.

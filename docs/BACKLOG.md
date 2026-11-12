@@ -1,22 +1,274 @@
 # Trabajo pendiente de LANCTL
 
-## Revisión de estado — 05/11/2026
+## Revisión de estado — 12/11/2026
 
-**40 entradas abiertas:** 36 P, tres REF y una revisión visual sin ID. Incluyen
+**56 entradas abiertas:** 52 P, tres REF y una revisión visual sin ID. Incluyen
 P40/P42 como dos seguimientos de una misma incidencia; los contadores son de
 entradas de la lista, no de funcionalidades independientes. No se cierra ninguna
 casilla solo por esta revisión.
 
-- **Fuentes implementadas; validación/entrega pendiente (12):** P123, P122, P106,
+- **Fuentes implementadas; validación/entrega pendiente (20):** P139, P138, P137, P127, P132, P130, P128, P124, P123, P122, P106,
   P105, P104, P102, P88, P85, P75, P73, P70 y P48.
-- **Implementación parcial o integración/alcance pendiente (11):** P119, P118,
+- **Implementación parcial o integración/alcance pendiente (14):** P136, P133, P134, P119, P118,
   P100, P98, P99, P94, P90, P34, P47, P71 y P72.
-- **Desarrollo/migración pendiente (8):** P121, P120, P117, P116, P50,
+- **Desarrollo/migración pendiente (11):** P135, P126, P125, P121, P120, P117, P116, P50,
   REF-P34-migration, REF-P47-interface y REF-P50-session.
-- **Investigación pendiente (2):** P114 (con mitigación) y P97.
+- **Investigación pendiente (4):** P131, P129, P114 (con mitigación) y P97.
 - **Validación transversal (3):** P115, P32 y revisión visual nativa sin ID.
 - **Decisión pendiente (2):** P95 y P92.
 - **Validación especial de firma autorizada (2):** P40/P42.
+
+## Redimensionado de áreas RACK/CPD en LANWIRE — 12/11/2026
+
+- [ ] **P139 · Media · Implementado en fuentes; validación nativa/entrega pendiente.**
+  Cuatro tiradores permiten ampliar/reducir cada área verde por sus lados.
+  Al ampliar, los bloques que colisionarían se desplazan en esa dirección,
+  con sus elementos y propagación en cadena; los elementos propios conservan
+  su posición. Los bloques fuera de la franja afectada permanecen intactos.
+  La reducción respeta el espacio ocupado por los elementos propios.
+  Flechas de teclado (Mayús para pasos mayores) y Escape para cancelar.
+  Geometría visual y posiciones se guardan juntas en el JSON de P138 por vista;
+  Reorganizar elimina explícitamente el tamaño manual. No cambia ubicaciones,
+  cables, puertos ni inventario. Comparte algoritmo en áreas rack y CPD.
+  **Verificación:** ocho pruebas de pizarra/layout correctas, con cuatro
+  direcciones, empuje en cadena, reducción, cancelación, teclado, guardado GUI
+  y reapertura VLF/navegador limpio; 24 regresiones relacionadas correctas.
+  Captura Chromium inspeccionada. Pendiente Qt/instalables y revisión manual
+  de CPD con topologías reales grandes; no se declara certificación nativa.
+
+## Pizarra LANWIRE persistente dentro del proyecto — 12/11/2026
+
+- [ ] **P138 · Media · Implementado en fuentes; validación nativa/entrega pendiente.**
+  Guardar las posiciones de elementos y la cámara (desplazamiento/zoom) en JSON
+  dentro del proyecto, para recuperarlas en la siguiente visualización y en
+  otro ordenador. Se usa diagramLayouts versionado dentro de
+  **devices/physical.json del VLF**, separado por vista interior/exterior y
+  rack/CPD, sin almacenar rutas del ordenador. La edición actualiza el workspace
+  y sigue la política de guardado del proyecto; Guardar/cambio/cierre GUI esperan
+  la cola de posiciones. Sin proyecto permanece el comportamiento local.
+  Escrituras atómicas y control de revisión por vista; datos corruptos,
+  excesivos o cambios concurrentes se rechazan sin reemplazar la distribución.
+  La geometría del contenedor se adapta a posiciones guardadas y ya no las
+  recoloca al cargarlas. JSON antiguo sin este campo sigue admitido; las
+  posiciones locales anteriores pueden servir de punto inicial.
+  **Verificación:** prueba de JSON/VLF/reapertura, conflictos y dato inválido;
+  navegador nuevo con localStorage vacío recupera posiciones y zoom tras guardar
+  por la acción GUI real. Cuatro pruebas de pizarra/layout correctas y 62
+  regresiones correctas (tres omitidas). Pendiente Qt/instalables, entrega y
+  matriz completa de varias ventanas/permisos/vistas.
+
+## Distribución automática legible en la pizarra LANWIRE — 12/11/2026
+
+- [ ] **P137 · Media · Implementado en fuentes; validación nativa/entrega pendiente.**
+  Ampliación de P55 solicitada por el usuario: organizar los elementos de la
+  pizarra para seguir mejor las conexiones. El botón **Reorganizar** usa ahora
+  un algoritmo por componentes y niveles, con ocho pasadas de ordenación
+  baricéntrica de vecinos para reducir cruces entre niveles. Respeta dimensiones
+  reales, separa componentes, maneja ramificaciones/ciclos y no modifica cables,
+  puertos, ubicación física ni inventario. Las posiciones manuales existentes
+  permanecen al refrescar; Reorganizar las sustituye explícitamente y guarda
+  solo preferencias visuales, manteniendo grupos CPD/rack y navegación.
+  **Verificación:** algoritmo puro con tarjetas de distintos tamaños, grafo
+  cíclico, desconectados, orden de entrada invertido y 1.000 nodos; sin tarjetas
+  solapadas, datos de entrada intactos y ramas ordenadas. Recorrido Chromium
+  real con router/switch/tres equipos, preservación manual y reorganización
+  explícita; archivo IDF intacto y captura inspeccionada. Dos pruebas correctas.
+  Es una heurística reproducible, no garantiza el óptimo global de cruces.
+  Pendiente Qt/instalables y evaluación visual en topologías reales grandes.
+
+## Accesorios sin conexiones visibles solo en LANRACK — 12/11/2026
+
+- [ ] **P136 · Media · Aplicado en vistas GUI; CLI/TUI, validación nativa y entrega pendientes.** Por indicación expresa
+  del usuario, los elementos sin conexiones **bandeja, peine, organizador y
+  panel de ventilación** deben representarse únicamente en **LANRACK**, por
+  su función estética y de organización física. No deben aparecer como
+  elementos en otros launchers, incluidos listados, diagramas, búsquedas y
+  selectores de creación/asignación que los expongan como dispositivos.
+  **Criterios de aceptación:** aplicar una clasificación explícita por tipo,
+  no por nombre del elemento ni por estar temporalmente desconectado; un
+  router o switch sin enlaces no se convierte en accesorio. Mantener su alta,
+  edición, representación y gestión en LANRACK, conservando IDF, ubicación,
+  ocupación de U y persistencia del proyecto. Las bandejas deben conservar
+  sus dispositivos alojados y sus relaciones; esos dispositivos siguen
+  visibles en los launchers donde corresponda, sin exponer la bandeja como
+  dispositivo conectable ni inventar puertos. Filtrar presentación sin borrar
+  registros ni romper referencias compartidas. Coordinar P78/P130/P133/P135;
+  esta regla sustituye para estos tipos la exposición en LANWIRE prevista
+  anteriormente en P135. No extender automáticamente a otros tipos no citados.
+  **Ampliación expresa — 12/11/2026:** incorporar también los **SAI sin IP**
+  y las regletas **PowerDistributionUnit (PDU)** a la representación exclusiva
+  de LANRACK. Los **switches no gestionables sin IP** deben aparecer en
+  **LANRACK y LANWIRE**, conservando puertos y enlaces físicos, pero no como
+  equipos en LANIP. No inferir que un switch es no gestionable solo porque
+  falta su IP: distinguir esa condición de un equipo gestionable pendiente
+  de configurar o descubrir. Definir y validar los metadatos de clasificación
+  y reevaluar la visibilidad cuando cambien IP o capacidad de gestión, sin
+  eliminar registros ni conexiones. Un SAI con IP no queda excluido por esta
+  regla; revisar su representación lógica según capacidades y servicios.
+  **Criterio de organización:** LANRACK y LANWIRE priorizan la representación
+  física (enfoque L1); LANIP representa el inventario lógico de red, combinando
+  información L2/L3. Es una separación de vistas del mismo inventario, no una
+  restricción que elimine datos MAC, puertos o relaciones útiles de otras capas.
+  Validar matriz por tipo/IP/gestión, persistencia y ausencia de duplicados;
+  conservar dispositivos lógicos alojados en bandejas y enlaces a través de
+  switches no gestionables aunque sus vistas difieran entre launchers.
+  **Implementación 12/11:** política compartida por tipo para las vistas GUI:
+  LANWIRE filtra accesorios/PDU/SAI sin IP; LANIP, LANACCESS y LANMON contrastan
+  registros lógicos con inventario físico por IDF. La IP lógica también cuenta
+  para SAI y switches. Clasificación management opcional y versionada, con
+  selector Gestionable/No gestionable/Sin especificar; ausencia de dato nunca
+  implica no gestionable. LANRACK mantiene el inventario completo. LANWIRE
+  excluye los tipos reservados de su catálogo de alta; los equipos alojados
+  siguen visibles y editables, con colocación gestionada desde LANRACK.
+  No se filtran cargas de almacenamiento usadas por mutaciones ni se borran
+  credenciales, relaciones, puertos o historial. Pruebas GUI/API con archivos
+  intactos, enlace físico conservado y cambios de IP/gestión; detalle en
+  BACKLOG-VERIFICATION. Falta aplicar la política a CLI/TUI y certificar Qt,
+  matriz completa y distribución; P136 no se declara cerrada.
+
+## Cabecera IDF común para accesorios físicos del rack — 11/11/2026
+
+- [ ] **P135 · Media · Pendiente de diseño e implementación.** Crear una
+  cabecera/prefijo IDF común para los elementos físicos descritos por el usuario
+  como puramente estéticos: **peines, tapas ciegas, organizadores y paneles de
+  ventilación**, para que pertenezcan a un mismo grupo organizativo.
+  Definir el prefijo concreto sin colisionar con los existentes y conservar
+  un subtipo que distinga cada accesorio. Cada elemento debe mantener un IDF
+  único, aunque comparta cabecera con los demás; no utilizar un mismo ID
+  para varios accesorios ni confundir esta familia con los grupos de red.
+  **Criterios de aceptación:** alta y clasificación coherentes en LANRACK y
+  LANWIRE; agrupación reconocible en listados/selectores y representación
+  propia según subtipo. Conservar posición y altura en U, validación de
+  ocupación, edición, traslado y guardado/reapertura. No inventar interfaces
+  de red o conexiones para accesorios que no las tienen. Revisar los elementos
+  existentes y definir una transición compatible sin renumerar ni reutilizar
+  identificadores publicados. Nombres y etiquetas bilingües según P100;
+  coordinar catálogo y skins con P130/P134.
+  **Revisión estética 12/11:** hoja comparativa con propuestas vectoriales
+  diferenciadas para peine, tapa ciega, organizador y panel de ventilación,
+  inspeccionada a 1440 y 980 px. La tapa ciega existente deja de dibujar una
+  ranura que la confundía con otro accesorio. Peine/organizador/ventilación son
+  propuestas visuales de revisión en ese primer paso. Posteriormente, por
+  petición del usuario, los tres frentes se integran en el renderizador,
+  selector y catálogo de skins de los tipos físicos existentes; las altas
+  nuevas reciben el frente correspondiente. Se conservan frentes explícitos
+  ya guardados. Prefijo IDF común y transición de P135 siguen pendientes;
+  no se renumeran elementos ni se declara cerrado P135.
+
+## Skins de elementos rackmount y representación del switch — 11/11/2026
+
+- [ ] **P134 · Media · Correcciones visuales parciales en fuentes; validación nativa pendiente.** El
+  usuario informa de que la imagen del switch asignado al rack no se ve bien
+  y solicita revisar las skins de los elementos **rackmount**. Reproducir con
+  el perfil y dimensiones del switch afectado antes de atribuir una causa:
+  revisar escala, proporciones, altura en U, ancho de montaje y distribución
+  de puertos, etiquetas y controles, tanto en el frente como en sus previews.
+  **Caso adicional comunicado — 11/11/2026:** un **PATCHPANEL** se representa
+  con la imagen de un **switch de 24 puertos**. Revisar la correspondencia entre
+  tipo físico, perfil y skin automática o guardada, incluidos valores heredados
+  y fallbacks. No asumir que compartir número de puertos implica compartir tipo
+  de frontal. Añadir una regresión que distinga patch panel y switch de 24
+  puertos, conservando sus datos y conexiones; causa aún sin reproducir.
+  **Criterio de cierre:** representación legible y proporcionada, sin recortes,
+  deformación, solapamientos ni puertos fuera del frontal; correspondencia con
+  el perfil real de RJ45/SFP, sin inventar conexiones ni alterar el inventario.
+  Comprobar perfiles pequeños y densos, elementos de varias U, tamaños de
+  ventana, escala de fuente y temas. Ampliar la revisión a otras skins rackmount
+  conservando sus diferencias de tipo; registrar capturas antes/después y
+  regresiones del fallo reproducido. Relacionar con P66/P130 y revisión visual
+  transversal; coordinar el caso específico de tomas PDU con P132.
+  **Revisión y corrección 12/11:** se reproduce una similitud real: patch panel
+  y switch compartían dibujo de puertos e indicador de alimentación. El panel
+  ahora usa módulos pasivos numerados y sin indicador; switch mantiene su
+  frente activo. La distribución de 48 SFP se separa del área de rótulos y los
+  previews respetan el nombre guardado del elemento. Prueba Chromium y hoja
+  comparativa inspeccionada a 1440/980 px; 51 regresiones correctas, seis omitidas.
+  No se ha reproducido el caso concreto del proyecto del usuario ni se alteran
+  skins explícitas guardadas por él. Faltan matriz visual completa, Qt y entrega.
+  **Variantes RJ45+SFP — 12/11:** tras aceptación visual del usuario, revisada
+  la distribución mixta: reserva proporcional para SFP y separación del bloque
+  RJ45, manteniendo rótulos libres y puertos dentro del frontal. Prueba real de
+  navegador sobre 17 combinaciones (5/8/16/24/48 RJ45 con 2/4/6 SFP, más 48+8
+  y 50+2); conteos y geometría correctos. Comparativa visual ampliada e
+  inspeccionada a 1440 px, generada también a 980 px. Qt/entrega pendientes.
+  **Corrección de escala — 12/11:** el usuario informa de que el armario se
+  reduce demasiado y no permite distinguir los frentes. La vista con skins
+  deja de intentar encajar todas las U en la altura disponible: calcula su
+  escala por ancho, con mínimo legible de 52 px/U, y usa scroll vertical para
+  racks altos. Mantiene escala uniforme de los SVG y ajuste al ancho de ventana.
+  Dos pruebas Chromium correctas, incluida un rack de 52 U a distintas alturas
+  y anchuras; captura inspeccionada. No cambia inventario ni ocupación.
+  **Bandeja oscura y equipos alojados — 12/11:** interior de bandeja oscuro
+  como el fondo, sin rejilla de ventilación; miniaturas de router, OTG y switch
+  pequeño dentro de ella, con nombre, IDF y conectores derivados del inventario.
+  Se conserva el reborde de la bandeja y la ocupación de U del contenedor;
+  no se crean montajes adicionales para los alojados. Los nombres completos
+  están en el tooltip; si no caben todas las miniaturas, se indica el número
+  restante. Captura de bandeja de 2 U con tres equipos inspeccionada; tres
+  pruebas de revisión visual correctas. Relacionado con P78/P130/P133.
+
+## Dispositivos pequeños ausentes al alojarlos en bandejas — 11/11/2026
+
+- [ ] **P133 · Alta · Flujo corregido en fuentes; contraste del caso real y entrega pendientes.** El usuario
+  informa de que, al añadir elementos dentro de una bandeja de LANRACK,
+  no aparecen dispositivos pequeños como **routers y OTG**. Revisar también
+  switches pequeños de sobremesa. Relacionado con P78/P130; añadir el acceso
+  a Alojar dispositivo no acredita que su selector funcione en el caso real.
+  **Investigación:** reproducir con el inventario y versión afectados, revisar
+  datos recibidos, clasificación de montaje, filtros y ubicación vigente.
+  Distinguir elementos existentes de tipos disponibles para crear; conservar
+  evidencia si el elemento aún no existe en el inventario. Comprobar que el
+  filtro que excluye dispositivos no rackmount del montaje directo en U no
+  los excluya también, por error, del alojamiento en bandeja.
+  **Criterio de cierre:** dispositivos compatibles del proyecto aparecen y
+  pueden alojarse conservando identidad, puertos y conexiones; la bandeja
+  reserva las U y sus alojados no consumen otras como montajes directos.
+  Verificar elementos independientes y traslados desde otra ubicación con
+  confirmación, cancelación sin cambios, guardado/reapertura y estados vacíos
+  o errores traducidos. Prueba del recorrido GUI y regresión del origen real;
+  no declarar resuelto solo por las pruebas anteriores con inventario sintético.
+  **Avance 12/11:** reproducido el selector vacío cuando no hay equipos
+  compatibles ya creados: faltaba explicación y acceso al alta desde ese
+  formulario. Ahora distingue existentes de tipos nuevos, explica el estado
+  vacío y ofrece Crear elemento dentro de la bandeja, reutilizando el alta
+  de router/OTG/switch de sobremesa. Trasladar desde otra ubicación pide
+  confirmación y conserva contexto/revisión del formulario. Se verifica alta
+  desde inventario vacío, selección posterior, traslado cancelado/confirmado
+  y guardado/reapertura VLF. Tres recorridos Chromium correctos y 85 pruebas
+  relacionadas correctas (dos omitidas); nueva comprobación de persistencia
+  correcta. No se atribuye aún el caso real del usuario a filtros ni se
+  certifica su instalable: Qt, datos/versión afectados y entrega pendientes.
+
+## Tomas eléctricas y apariencia de PDU — 10/11/2026
+
+- [ ] **P132 · Media · Implementado en fuentes; validación nativa/entrega pendiente.** Rediseñar la
+  representación de **PowerDistributionUnit (PDU)** en el rack virtual: sustituir
+  el frente poco representativo por tomas eléctricas reconocibles, siguiendo
+  las capturas y dibujos aportados por el usuario.
+  **Creación:** permitir seleccionar el tipo de toma **Schuko** o **IEC** y
+  conservarlo en el elemento; permitir revisarlo/cambiarlo al editar. Schuko
+  debe representarse con pequeños receptáculos circulares, dos orificios y
+  contactos de tierra; IEC con contorno rectangular de dos esquinas biseladas
+  a 45 grados y sus contactos interiores, conforme al dibujo aportado.
+  Precisar la variante IEC representada antes de implementar para que nombre
+  y dibujo correspondan al mismo conector, sin asumir que todos los IEC son iguales.
+  **Criterios de aceptación:** tomas distribuidas de forma legible en el frente,
+  sin tapar nombre/ID ni desbordar la altura en U; apariencia coherente con el
+  tema y la escala. Guardar/reabrir conserva el tipo y actualiza el frente en
+  las vistas que lo representen. Definir compatibilidad para PDU existentes
+  sin este dato, sin reinterpretarlo silenciosamente ni perder información.
+  Reutilizar las skins vectoriales y el modelo físico, sin alterar conexiones
+  existentes; etiquetas bilingües coherentes con P100 y catálogo de creación P130.
+  **Implementación 12/11:** alta y edición permiten Schuko o IEC C13 y 1–24
+  tomas; metadatos opcionales powerOutlets con schemaVersion=1, validados en
+  el servicio y al leer la base IDF. Frente con receptáculos circulares/tierra
+  o rectangulares biselados/contactos, sin convertir tomas en puertos de red.
+  PDU antiguas sin dato siguen sin modificar y muestran Sin especificar;
+  editar otros campos no les asigna un tipo implícitamente. El rótulo del
+  frontal identifica PDU aunque conserve el perfil histórico blank.
+  **Verificación:** 2 pruebas específicas (una con Chromium y reapertura VLF),
+  94 regresiones correctas, seis omitidas y cinco subtests correctos. Captura
+  inspeccionada y corregido rótulo heredado; Qt/instalables pendientes.
 
 Evidencia nueva: P118 **102 pruebas correctas y una omitida**, superando sus dos
 fallos anteriores bajo presión de recursos. Puente Qt básico y contexto P90/P88
@@ -27,6 +279,247 @@ LANIP con LANMON abierto y receptivo sobre el mismo VLF. Escaneo físico, varios
 y distribución pendientes. Servicios provisionales y navegación TUI: **22 pruebas
 correctas** en selección conjunta; no prueba el instalable P122 del usuario.
 Detalle y límites en `BACKLOG-VERIFICATION.md`, revisión del 05/11.
+
+## Revisión de controles de edición por launcher — 10/11/2026
+
+- [ ] **P131 · Media · Pendiente de revisión funcional y visual.** Revisar una
+  selección representativa de controles de edición en las GUI de los seis
+  launchers, tomando como inventario inicial
+  [GUI-EDITING-COVERAGE-REVIEW.md](GUI-EDITING-COVERAGE-REVIEW.md). Distinguir
+  controles ausentes, poco accesibles, duplicados y campos de solo lectura;
+  no convertir todo dato técnico en un campo editable ni exigir la misma
+  edición en aplicaciones con responsabilidades distintas.
+  - **LANCTL:** crear/editar metadatos de proyecto, guardar/cancelar ajustes y
+    disponibilidad de acciones sobre el proyecto seleccionado. Coordinar la
+    eliminación con P125, sin autorizar borrados durante la revisión.
+  - **LANIP:** nombre, alias, descripción, IP, IDF, icono y confirmación;
+    creación y pertenencia a grupos. Revisar los controles que faltan para
+    renombrar/eliminar grupos y editar su descripción; conservar BASIC y
+    relacionar la reproducción del fallo de asignación con P127.
+  - **LANWIRE:** Ver detalles/Editar (P129), nombre/alias/descripción, ubicación,
+    rack/unidad/altura, puertos, PoE, medio y extremos de cable; guardar ficha,
+    cancelar y guardar proyecto (P128).
+  - **LANRACK:** ficha del ocupante, dimensiones del rack, frentes, mover/asignar,
+    alta desde una unidad y bandejas multi-U. P130 ya está implementada en
+    fuentes: revisar su disponibilidad, teclado y validación nativa pendiente,
+    sin rehacer el menú. Verificar que editar afecta al elemento seleccionado.
+  - **LANACCESS:** usuario, cambio de contraseña con confirmación, bloqueo,
+    cancelación y errores; mantener ocultos los secretos actuales y respetar
+    los identificadores/campos que el contrato declara de solo lectura.
+  - **LANMON:** edición básica de equipo y grupos, acciones de monitor e
+    incidencias. Determinar si se requiere un editor gráfico de perfiles y
+    asignaciones avanzadas; registrar esa decisión antes de ampliar alcance.
+  **Criterios de aceptación:** matriz de controles y recorridos con resultado
+  comprobado/pendiente/no aplica, acceso por ratón y teclado, español/inglés,
+  temas y tamaños admitidos. Diferenciar Guardar ficha de Guardar proyecto;
+  verificar cancelación, errores recuperables, contexto obsoleto, estado sin
+  proyecto y persistencia al reabrir. Documentar por separado fuentes,
+  navegador, GUI nativa e instalables. Consolidar hallazgos con P94/P100,
+  P98/P99 y P125–P130 sin cerrar tareas por mera presencia del control.
+
+## Revisión de cobertura de edición GUI — 10/11/2026
+
+Informe en [GUI-EDITING-COVERAGE-REVIEW.md](GUI-EDITING-COVERAGE-REVIEW.md):
+matriz de los seis launchers, campos editables, límites de solo lectura y
+comparación de servicios/controles. No cierra tareas existentes. Prioriza P130,
+P129 y P125; identifica gestión gráfica incompleta de grupos en LANIP y deja
+para decisión la paridad de perfiles/asignaciones avanzadas de LANMON.
+Las diferencias de inventario lógico/físico y preferencias visuales/proyecto
+requieren conservar contratos; no basta con mostrar todos los campos como JSON.
+
+## Menú contextual por unidad del rack virtual — 10/11/2026
+
+- [ ] **P130 · Media · Implementado en fuentes; validación nativa/entrega pendiente.** En LANRACK,
+  abrir un menú contextual al hacer clic derecho sobre una unidad del rack
+  virtual, con acciones vinculadas a esa unidad y al elemento que la ocupa,
+  no al propio rack.
+  - **Unidad ocupada:** ofrecer Ver detalles y **Editar** el elemento alojado.
+    Si ocupa varias unidades, resolver el mismo elemento desde cualquiera de
+    ellas y conservar su identidad y ubicación al editar otros datos.
+  - **Unidad vacía:** sustituir Editar por **Crear elemento**, abriendo el alta
+    con rack y unidad de destino preseleccionados. No crear otro rack.
+  - **Asignar elemento existente:** ofrecer **Asignar** para seleccionar un
+    elemento del mismo proyecto que esté sin ubicar o situado en otra ubicación.
+    Mostrar su ubicación actual; si supone un traslado, explicar origen y destino
+    y confirmar el movimiento, sin duplicar el elemento ni perder sus relaciones.
+    Presentar la acción en unidades vacías; en unidades ocupadas, mantenerla
+    deshabilitada con explicación salvo que exista un flujo explícito de sustitución.
+  **Criterios de aceptación:** validar tipo de elemento, altura en U, límites
+  del rack y espacio disponible en todo el tramo; impedir solapamientos y no
+  desplazar al ocupante implícitamente. Crear/asignar/trasladar debe ser atómico;
+  cancelar o fallar conserva origen y destino. Actualizar el rack y las vistas
+  relacionadas y verificar persistencia al guardar/reabrir el proyecto (P128).
+  Reutilizar servicios de edición y ubicación existentes, respetar permisos,
+  contexto de proyecto, idiomas y acceso al menú mediante teclado.
+  **Implementación 10/11:** menú por clic derecho y tecla Menú/Shift+F10 en
+  unidades de las vistas simple y con frentes. Consulta de solo lectura y edición
+  del ocupante; creación con rack/U fijados; asignación por ID existente con
+  ubicación visible y confirmación del traslado. Asignar se deshabilita si la
+  unidad está ocupada. Reutiliza rack_element y las validaciones transaccionales
+  de ubicación; las altas desde una U no permiten crear racks ni cables.
+  **Verificación:** dos recorridos Chromium reales (ambas vistas), edición,
+  creación, asignación, traslado cancelado/confirmado y rechazo por altura;
+  42 pruebas relacionadas correctas, una omitida. Detalle y límites en
+  BACKLOG-VERIFICATION; queda pendiente Qt/instalables y entrega.
+  **Aclaración del usuario y comprobación 10/11:** el alta debe reservar todas
+  las U indicadas, también en bandejas de varias unidades. P78 ya incorpora las
+  bandejas en fuentes; no es una función aún sin implementar. El formulario
+  exige altura entera positiva (1–52 U) y el servicio valida el tramo completo.
+  Dos recorridos de navegador comprueban bandeja de 2 U ocupando U10–U11 en
+  ambas vistas y rechazo de otra bandeja de 2 U que colisionaría con U9 aunque
+  empiece en U8 vacía. Conservar esta garantía para todos los tipos montables.
+  **Ajuste visual 10/11:** acciones en menú flotante junto al cursor, en lugar
+  del diálogo centrado; por teclado se ancla a la unidad enfocada. Se ajusta
+  al viewport y al tema, con cierre exterior/Escape y navegación por flechas.
+  Dos regresiones Chromium correctas e inspección de captura; Qt/entrega pendiente.
+  **Bandejas y dispositivos pequeños 10/11:** el menú contextual de una bandeja
+  ofrece ahora **Alojar dispositivo**, reutilizando el formulario existente de
+  P78. Se comprueba alojar router, OTG y switch de cinco puertos en una bandeja
+  de 2 U sin reservar otras U como montajes directos. Las bandejas existentes
+  están incluidas en Asignar; crear una nueva corresponde a Crear elemento →
+  Bandeja. Dos recorridos Chromium correctos en ambas vistas; entrega pendiente.
+
+  **Selector de perfiles y montaje — 10/11:** tipo Switch separado del
+  desplegable de configuración de puertos. Perfiles rackmount de 12/16/24/48
+  RJ45 y combinaciones 12+2, 16+2, 24+2/4 y 48+2/4/6/8 RJ45+SFP; sobremesa
+  de 5/6/8 RJ45 fuera del alta directa por U. Los perfiles nuevos crean puertos
+  reales, no solo frentes visuales. Routers genéricos, OTG y switches pequeños
+  no se ofrecen al crear/asignar directamente en U; el almacenamiento rechaza
+  ese montaje y permite alojarlos en bandejas. Conserva perfiles históricos y
+  datos existentes sin recolocación automática. Detalle y pruebas en
+  `BACKLOG-VERIFICATION.md`; pendiente validación nativa/instalables.
+
+  **Ampliación expresa del selector — 10/11:** para Switch, dos desplegables
+  dependientes Tipo de puertos/Cantidad. Selección exacta: RJ45 5/8/16/24/48;
+  cada una combinada con 2/4/6 SFP; solo SFP 4/8/12/16/24/48. Total 26 perfiles.
+  Se conservan los perfiles previos por compatibilidad y el filtro de montaje
+  directo. Soporte de 48 SFP en datos y frontal, sin crear puertos ficticios.
+  Verificación: 46 pruebas específicas/navegador y 97 relacionadas correctas
+  (5 omitidas), con límites nativos documentados.
+
+  **Distribución ajustada a la referencia visual — 10/11:** los dos controles
+  de Switch pasan a ser cantidades RJ45/SFP, en una misma fila, izquierda/derecha.
+  El valor 0 permite seleccionar un solo medio; no se ofrece 0+0. Se conserva
+  la matriz de 26 combinaciones y el filtro de montaje directo. Sustituye la
+  presentación anterior Tipo de puertos/Cantidad sin cambiar los perfiles.
+
+## Acciones de detalle y edición en LANWIRE — 10/11/2026
+
+- [ ] **P129 · Media · Pendiente de reproducción y corrección.** El usuario
+  observa los botones **«Ver detalles»** y **«Edit»** en LANWIRE; aparentemente
+  ambos abren los mismos datos del elemento. Reproducir sus recorridos para
+  determinar si existe una diferencia real de consulta/edición o una duplicidad.
+  Si tienen la misma función, unificar la acción; si son distintas, diferenciar
+  claramente la consulta de la edición, con controles y permisos coherentes.
+  Corregir «Edit» sin traducir utilizando los recursos de idioma existentes y
+  verificar ambas etiquetas y los textos dinámicos en español e inglés.
+  **Criterio de cierre:** acciones sin ambigüedad ni duplicación innecesaria;
+  selección del elemento correcta, cancelación sin cambios y edición persistente
+  cuando corresponda. Relacionar con P100/P94 para idiomas/diseño y con P128
+  para el guardado del launcher, sin confundir abrir datos con guardarlos.
+
+## Botón Guardar ausente en LANRACK y LANWIRE — 10/11/2026
+
+- [ ] **P128 · Alta · Corregida en fuentes y verificada en Chromium/Linux; certificación nativa pendiente.** El usuario
+  informa de que no hay botón **Guardar** en el launcher LANRACK y amplía el
+  mismo informe a **LANWIRE**, donde tampoco lo encuentra. Comprobar ambos
+  launchers y su posible control compartido, sin dar por confirmada una causa común.
+  Comprobar
+  la interfaz y distribución afectadas para distinguir ausencia del control,
+  ocultación por diseño adaptable o estado incorrecto de disponibilidad.
+  **Resultado esperado:** acción Guardar visible y accesible por teclado,
+  coherente con los demás launchers y vinculada al proyecto de trabajo vigente.
+  Verificar que guarda los cambios de LANRACK y que estos se conservan al
+  reabrir el proyecto; no limitar la corrección a mostrar un botón sin operación.
+  Revisar también el comportamiento sin proyecto, coordinándolo con P98/P99,
+  y presentar errores recuperables con su origen y textos de idioma.
+  Conservar permisos, cambios pendientes y guardas frente a cambios de proyecto.
+  **Avance 10/11/2026:** reproducida ocultación explícita compartida en
+  `gui/launcher.js`; Guardar proyecto se muestra en ambos launchers y queda
+  deshabilitado sin proyecto, con explicación traducida. Se conserva el RPC
+  con contexto vigente; se evita repetir el guardado mientras está en curso.
+  Verificados teclado, español/inglés, cambios de dimensiones de LANRACK,
+  persistencia al reabrir, error recuperable y rechazo de contexto obsoleto.
+  Evidencia en `BACKLOG-VERIFICATION.md`; pendiente recorrido Qt e instalables
+  Windows/Linux. No se añade Guardar como al entorno provisional (P98/P99).
+
+## Fallo al asignar grupos a elementos en LANIP/GUI — 09/11/2026
+
+- [ ] **P127 · Alta · Corregido caso sin MAC en fuentes; validación nativa/entrega pendientes.** El usuario
+  informa de que falla la asignación de grupos a los elementos en LANIP/GUI.
+  Todavía no se dispone de mensaje de error ni de pasos que permitan distinguir
+  un fallo del selector, envío RPC, validación, persistencia o actualización de
+  la vista; no atribuir una causa sin reproducirlo.
+  **Investigación y criterio de cierre:** recorrer la asignación y el cambio
+  de grupo desde la interfaz, comprobar el grupo mostrado y el almacenado,
+  recargar y reabrir el proyecto para verificar persistencia. Revisar selección
+  del elemento, catálogo de grupos y contexto del proyecto; conservar permisos
+  y validaciones. Comprobar cancelación y errores sin modificar otros elementos,
+  grupos o proyectos. Corregir el origen reproducido, conservar su diagnóstico
+  y añadir una regresión del recorrido afectado. Relacionar con P90/P88/P103
+  si la reproducción identifica un problema del puente o del contexto.
+  **Corrección 12/11:** localizado rechazo explícito de grupos sin MAC en
+  el servicio y checkbox deshabilitado en GUI; Crear y añadir tampoco asignaba
+  el grupo a esos elementos. Ahora usa deviceId estable mediante membresía
+  opcional versionada, manteniendo members por MAC para grupos existentes.
+  CLI y VLF conservan/representan ambos tipos; reapertura distingue los IDs
+  mediante tabla opcional group_member_ids_v1. Dos pruebas específicas correctas
+  (navegador incluido), 46 regresiones correctas y una omitida. Datos temporales,
+  sin cambiar IDs ni proyectos del usuario. Alcance comprobado: elementos
+  manuales sin MAC; otros posibles fallos y Qt/instalables siguen pendientes.
+
+## Ajustar el ancho de columnas en listas configurables — 09/11/2026
+
+- [ ] **P126 · Media · Pendiente de implementación.** Permitir ajustar el
+  ancho de las columnas en todas las listas que tengan columnas configurables,
+  de forma coherente entre los launchers. Inventariar las listas afectadas y
+  reutilizar el comportamiento compartido en GUI y web donde corresponda.
+  **Criterios de aceptación:** ajustar columnas individualmente desde su
+  cabecera, con una alternativa accesible por teclado; conservar el ancho
+  elegido por lista y columna al recargar o reabrir; permitir restablecer los
+  anchos predeterminados. Mantener las preferencias al ocultar/mostrar columnas,
+  sin interferir con selección, ordenación o filtros. Aplicar límites razonables
+  y desplazamiento horizontal cuando sea necesario, conservando la alineación
+  entre cabeceras y filas. Respetar idioma, escala de fuente y tamaño de ventana;
+  no guardar esta preferencia visual en los datos del proyecto.
+
+## Eliminar proyectos desde el gestor de LANCTL/GUI — 09/11/2026
+
+- [ ] **P125 · Media · Pendiente de implementación.** El usuario informa de
+  que el gestor de proyectos de LANCTL/GUI no ofrece una opción para eliminar
+  proyectos. Añadir esa acción para el proyecto seleccionado, con confirmación
+  explícita que identifique nombre y ruta y explique qué se eliminará.
+  **Criterios de aceptación:** acción accesible desde el gestor; cancelar no
+  modifica archivos; eliminar actualiza la lista y presenta errores recuperables
+  conservando su origen. Comprobar proyectos abiertos o usados por otros
+  launchers y cambios sin guardar antes de permitir la eliminación. Definir y
+  mostrar el tratamiento del VLF y su workspace asociado, evitando borrar
+  datos compartidos, credenciales o archivos de otros proyectos. Respetar
+  permisos, guardas de contexto y recursos de idioma. Esta entrada registra
+  la funcionalidad pendiente; no autoriza eliminar ningún proyecto ahora.
+
+## Navegación común de la web LAN — 08/11/2026
+
+- [ ] **P124 · Alta · Implementado en fuentes y desplegado en RPi5; validación de distribución pendiente.**
+  Reutilizar las páginas HTML/CSS/JS de las GUI existentes dentro de una web
+  común, con barra lateral plegable para LANCTL, LANIP, LANWIRE, LANACCESS,
+  LANRACK y LANMON. Rutas `/lanctl/panel`, `/lanctl/ip`, `/lanctl/wire`,
+  `/lanctl/access`, `/lanctl/rack` y `/lanctl/mon`; `/lanctl` abre el panel.
+  Conservar proyecto compartido y preferencias de idioma y tema del servicio
+  (verde grafito por defecto). El puente HTTP adapta las API GUI existentes,
+  con lista explícita de métodos, RBAC, CSRF y guardas de contexto de proyecto;
+  la bóveda de LANACCESS se aísla por sesión autenticada.
+  **Verificación:** 63 pruebas correctas, 7 omitidas y 20 deseleccionadas en
+  Linux; recorridos del navegador contra la RPi5 registrados en
+  `BACKLOG-VERIFICATION.md`. Se mantienen las rutas HTTP anteriores.
+  **Pendiente:** pruebas de distribución y revisión funcional exhaustiva de
+  todas las operaciones de cada módulo. La configuración del proxy inverso
+  se realiza desde otro ordenador y se mantiene independiente de este cambio.
+  Las acciones exclusivas del escritorio no ejecutan terminales del servidor.
+  **Ampliación del menú:** distribución sin scroll, plegado completo,
+  Configuración general debajo de los launchers y bloque inferior Hardware,
+  DNS y WireGuard VPN mediante enlaces del despliegue. El proxy Caddy fue
+  localizado ya configurado por el trabajo externo; no se modificó aquí.
 
 ## Columna IDF opcional en LANIP GUI — 05/11/2026
 
@@ -1050,6 +1543,17 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   Las modalidades no disponibles deben identificarse como tales en la matriz,
   sin presentar una sección vacía como cobertura completa.
 
+  **Pendiente explícito del usuario — 10/11/2026:** revisar conjuntamente los
+  nombres y términos en inglés/español, sus traducciones y los archivos de
+  idiomas correspondientes. Detectar mezclas de idiomas, traducciones ausentes,
+  contradictorias o inconsistentes y nombres distintos para el mismo concepto
+  entre launchers. Contrastar cada etiqueta con su función real, incluidos
+  tipos de elementos, bandejas, acciones y menús de LANRACK/LANWIRE. Corregir
+  las fuentes bilingües y regenerar catálogos `.lang`, JSON/manifiestos y fallback
+  aplicables; verificar claves, placeholders y presentación en ambos idiomas,
+  sin traducir IDs técnicos ni modificar paquetes personalizados del usuario.
+  Se mantiene como revisión pendiente dentro de P100, sin duplicar su ID.
+
   **Diagnóstico comprobado — 27/10/2026:** `shared/i18n.py` contiene 67 claves
   inglesas y 67 españolas; el archivo local
   `data/lc/config/languages/english.lang` contiene 54, con 13 ausentes del
@@ -1354,6 +1858,13 @@ nuevas mantienen su estado; no se ha compilado ni publicado una distribución.
   en el conjunto de cierre/contexto, con eventos de ventana simulados y
   coordinador/archivos reales temporales. Falta que el host active el borrador,
   resuelva su diálogo y asigne el enlace; aún no es el recorrido Qt completo.
+  **Validación 09/11 — adaptador con Qt real:** nuevo smoke acotado a una sola
+  ventana WebView, con RPC, recibo state y evento closed reales. Cuatro ejecuciones
+  correctas: último propietario con guardar/reabrir VLF, descarte, propietario
+  intermedio con otra sesión registrada y rechazo de cierre con recuperación.
+  Datos temporales y sin red; no sustituye la integración con páginas/dialogos
+  de los launchers ni prueba dos ventanas/procesos. QtWebEngine emite un aviso
+  de limpieza de perfil, documentado en BACKLOG-VERIFICATION. P98/P99 sigue abierto.
   **Criterio de cierre:** pruebas con una y varias pestañas/launchers, cambios
   en distintas aplicaciones, cierre intermedio y último cierre, guardado y
   reapertura íntegra, descarte, cancelación, fallo de guardado y cierres
@@ -3325,3 +3836,25 @@ Se conserva el adaptador seleccionado y el tratamiento de caché como evidencia
 no activa. Verificación: 111 pruebas correctas de interfaces y CLI, incluyendo
 regresiones de ausencia, timeout y código de salida fallido. Pendiente reconstruir
 el instalable y validar en el portátil afectado.
+
+
+Ajuste de creación rackmount (2026-11-10): campos reactivos por tipo, accesorios
+(tapa ciega, ventilación, organizador, peine, regleta y SAI), altura en U donde
+corresponde y selección interior/entorno con interior predeterminado. Se retira
+Connection Type en la creación desde U. Evidencia en BACKLOG-VERIFICATION.md.
+
+Creación desde una U: añadidos posición inicial editable, botones −/+ e intervalo
+ocupado reactivo a la altura; se guarda la posición ajustada. Validación y evidencia
+en BACKLOG-VERIFICATION.md (2026-11-10).
+
+Creación de servidor (2026-11-10): desplegables de 1–6 puertos y 1–4 U;
+posición e intervalo al final. Perfiles adicionales compatibles, sin cambiar
+server.2ports. Evidencia en BACKLOG-VERIFICATION.md.
+
+Bandejas (2026-11-10): menú para añadir existentes o crear contenido directamente,
+filtrado de equipos pequeños y límite de altura frente a las U de la bandeja.
+No se ha definido capacidad por anchura/profundidad o número de dispositivos.
+
+Entrada óptica de compañía (2026-11-12): perfil `external.fiber-entry` con un
+puerto FIBER real, símbolo circular exclusivo de LANWIRE y conexiones mediante
+cables de fibra. Sin modificar el tipo heredado `external.supply`.

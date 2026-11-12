@@ -37,9 +37,14 @@ function rackFitElevation() {
     gap = parseFloat(style.rowGap),
     available = canvas.clientHeight - header.offsetHeight - 8 - vertical,
     byHeight = (available - (rack.units - 1) * gap) / rack.units,
-    byWidth = ((elevation.clientWidth - horizontal - 65) * 88) / 1200 + 6,
-    height = Math.floor(Math.max(30, Math.min(84, byHeight, byWidth)));
+    byWidth = ((canvas.clientWidth - horizontal - 81) * 88) / 1200 + 6,
+    // Equipment fronts keep a readable scale even when the whole cabinet is tall.
+    height = rackSkinsVisible
+      ? Math.floor(Math.max(52, Math.min(84, byWidth)))
+      : Math.floor(Math.max(30, Math.min(84, byHeight, byWidth)));
   elevation.style.setProperty("--rack-unit-height", height + "px");
+  // The cabinet follows the scale of one U; a wide window adds space around it.
+  elevation.style.setProperty("--rack-max-width", Math.floor((height - 6) * 1200 / 88 + horizontal + 81) + "px");
 }
 const rackSizeObserver = new ResizeObserver(rackFitElevation);
 const rackSkinKinds = ()=>([
@@ -51,6 +56,9 @@ const rackSkinKinds = ()=>([
   ["router", window.LanctlI18n.t("LANCTL.UI.VIEW.ROUTER_FIREWALL")],
   ["shelf", window.LanctlI18n.t("LANCTL.UI.WORD.TRAY")],
   ["blank", window.LanctlI18n.t("LANCTL.UI.VIEW.BLANK_PANEL")],
+  ["cable-comb", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.CABLE_COMB")],
+  ["organizer", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.ORGANIZER")],
+  ["ventilation", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.VENTILATION")],
 ]);
 function rackAutoSkin(r) {
   const data = r.data || {},
@@ -59,7 +67,8 @@ function rackAutoSkin(r) {
     fiber = entries.filter(([, p]) =>
       /fiber|sfp/i.test([p.kind, p.connector, p.type].join(" ")),
     );
-  const kind = /switch/.test(type)
+  const accessory = {"rack.cable-comb":"cable-comb", "rack.organizer":"organizer", "rack.ventilation":"ventilation", "rack.blank":"blank"}[type];
+  const kind = accessory || (/switch/.test(type)
     ? "switch"
     : /panel/.test(type)
       ? "panel"
@@ -69,7 +78,7 @@ function rackAutoSkin(r) {
           ? "ups"
           : /router|gateway|firewall/.test(type)
             ? "router"
-            : "shelf";
+            : "shelf");
   return {
     kind,
     rj45: entries.length - fiber.length,
@@ -97,23 +106,49 @@ function rackFace(r, override) {
     ),
     copper = ports.filter((e) => !fiber.includes(e));
   const used = new Set(r.connectedPorts || []),
-    name = r.name || r.id;
-  const title = window.LanctlI18n.t("LANCTL.UI.WEB.VALUE0_VALUE1_VALUE2_U_GENERIC_FRONT_VALUE3_VALUE4_RJ45_VALUE5_SFP",{value0:(name),value1:(r.id),value2:(units),value3:(p.kind),value4:(p.rj45),value5:(p.sfp)});
+    name = r.name || r.data?.name || r.id;
+  const kindLabel = ["rack.pdu", "device.pdu"].includes(r.data?.type) ? window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.PDU") : (rackSkinKinds().find(k => k[0] === p.kind)?.[1] || p.kind);
+  const title = window.LanctlI18n.t("LANCTL.UI.WEB.VALUE0_VALUE1_VALUE2_U_GENERIC_FRONT_VALUE3_VALUE4_RJ45_VALUE5_SFP",{value0:(name),value1:(r.id),value2:(units),value3:(kindLabel),value4:(p.rj45),value5:(p.sfp)});
+  const isTray = ["tray", "device.tray"].includes(r.data?.type);
   const label = name.length > 33 ? name.slice(0, 30) + "…" : name;
-  let body = `<rect class="skin-chassis" x="${p.rackmount ? 18 : 200}" y="5" width="${p.rackmount ? 1164 : 800}" height="${h - 12}" rx="5"/>`;
+  let body = `<rect class="${isTray ? "skin-tray-chassis" : "skin-chassis"}" x="${p.rackmount ? 18 : 200}" y="5" width="${p.rackmount ? 1164 : 800}" height="${h - 12}" rx="5"/>`;
   if (p.rackmount)
     for (const x of [5, 1184])
       body += `<rect class="skin-ear" x="${x}" y="1" width="12" height="${h - 4}" rx="3"/><circle class="skin-bolt" cx="${x + 6}" cy="15" r="3"/><circle class="skin-bolt" cx="${x + 6}" cy="${h - 16}" r="3"/>`;
   else
     body += `<path class="skin-tray" d="M5 ${h - 8} H1195 M12 ${h - 18} V${h - 4} M1188 ${h - 18} V${h - 4}"/>`;
   const textX = p.rackmount ? 38 : 220;
-  body += `<text class="skin-device-name" x="${textX}" y="25">${esc(label)}</text><text class="skin-device-id" x="${textX}" y="42">${esc(r.id)} · ${esc(rackSkinKinds().find((k) => k[0] === p.kind)?.[1] || p.kind)}</text>`;
-  if (["switch", "panel", "router"].includes(p.kind)) {
+  body += `<text class="skin-device-name" x="${textX}" y="25">${esc(label)}</text><text class="skin-device-id" x="${textX}" y="42">${esc(r.id)} · ${esc(kindLabel)}</text>`;
+  if (["rack.pdu", "device.pdu"].includes(r.data?.type)) {
+    const outlets = r.data.powerOutlets;
+    if (outlets && outlets.schemaVersion === 1 && ["schuko","iec-c13"].includes(outlets.type) && Number.isInteger(outlets.count) && outlets.count >= 1 && outlets.count <= 24) {
+      const columns = Math.min(12, outlets.count), rows = Math.ceil(outlets.count / columns), cell = 720 / columns;
+      const radius = Math.min(24, cell * .35, (h - 16) / (rows * 2) - 3);
+      for (let i=0; i<outlets.count; i++) {
+        const x = 440 + (i % columns + .5) * cell, y = (Math.floor(i / columns) + .5) * h / rows;
+        body += `<g class="skin-outlet" data-outlet="${outlets.type}" transform="translate(${x} ${y})">`;
+        if (outlets.type === "schuko") body += `<circle class="skin-outlet-shell" r="${radius}"/><circle class="skin-outlet-hole" cx="${-radius*.35}" r="${radius*.12}"/><circle class="skin-outlet-hole" cx="${radius*.35}" r="${radius*.12}"/><path class="skin-outlet-earth" d="M${-radius*.25} ${-radius*.85} H${radius*.25} M${-radius*.25} ${radius*.85} H${radius*.25}"/>`;
+        else body += `<path class="skin-outlet-shell" d="M${-radius} ${radius*.8} V${-radius*.35} L${-radius*.55} ${-radius*.8} H${radius*.55} L${radius} ${-radius*.35} V${radius*.8} Z"/><path class="skin-outlet-earth" d="M0 ${-radius*.4} v${radius*.3} M${-radius*.5} ${radius*.15} v${radius*.3} M${radius*.5} ${radius*.15} v${radius*.3}"/>`;
+        body += '</g>';
+      }
+    } else body += `<text class="skin-device-id" x="440" y="${h/2}">${esc(window.LanctlI18n.t("LANCTL.PDU.UNSPECIFIED"))}</text>`;
+  } else if (p.kind === "panel") {
+    // Passive panels have numbered modules, not switch LEDs or an uplink bank.
+    const count = p.rj45 + p.sfp, rows = count > 24 ? 2 : 1;
+    const columns = Math.max(1, Math.ceil(count / rows)), cell = 720 / columns;
+    for (let i = 0; i < count; i++) {
+      const x = 440 + (i % columns) * cell, y = 10 + Math.floor(i / columns) * 36;
+      const optical = i >= p.rj45, port = optical ? fiber[i - p.rj45] : copper[i];
+      body += `<g class="skin-panel-module" data-connector="${optical ? "sfp" : "rj45"}"><title>${esc(port?.[0] || String(i + 1))}</title><rect class="skin-panel-label" x="${x + 1}" y="${y}" width="${cell - 3}" height="10" rx="1"/><text x="${x + cell / 2}" y="${y + 8}">${i + 1}</text><rect class="skin-panel-jack" x="${x + 3}" y="${y + 14}" width="${Math.max(3, cell - 7)}" height="17" rx="1"/><path d="M${x + cell * .35} ${y + 17} H${x + cell * .65}"/></g>`;
+    }
+  } else if (["switch", "router"].includes(p.kind)) {
     const columns = Math.max(1, Math.ceil(p.rj45 / 2)),
-      area = p.rj45 > 24 ? 650 : 390,
+      fiberColumns = Math.ceil(p.sfp / 2),
+      fiberWidth = fiberColumns * 34,
+      right = (p.rackmount ? 1160 : 980) - (p.sfp ? fiberWidth + 22 : 0),
+      area = Math.min(p.rj45 > 24 ? 650 : 390, right - 440),
       cell = Math.min(31, area / columns),
       size = Math.max(9, cell - 5),
-      right = p.rackmount ? 1040 : 925,
       start = right - columns * cell;
     for (let i = 0; i < p.rj45; i++) {
       const col = Math.floor(i / 2),
@@ -124,9 +159,9 @@ function rackFace(r, override) {
         active = port && used.has(port[0]);
       body += `<g class="skin-port ${active ? "connected" : ""}" data-skin-port="${esc(port?.[0] || "")}" data-connector="rj45"><title>${esc(port ? port[0] + (active ? window.LanctlI18n.t("LANCTL.UI.FRAGMENT.CONNECTED") : window.LanctlI18n.t("LANCTL.UI.FRAGMENT.NO_RECORDED_CONNECTION")) : "RJ45 " + (i + 1) + window.LanctlI18n.t("LANCTL.UI.FRAGMENT.REPRESENTATION_WITHOUT_AN_ASSOCIATED_PORT"))}</title><rect x="${x}" y="${y}" width="${size}" height="21" rx="1"/><path d="M${x + size * 0.25} ${y + 3} H${x + size * 0.75} M${x + size * 0.3} ${y + 6} H${x + size * 0.7}"/><text x="${x + size / 2}" y="${y + 29}">${i + 1}</text></g>`;
     }
-    const sfpStart = p.rackmount ? 1065 : 945,
+    const sfpStart = p.rj45 === 0 ? 440 : right + 22,
       cols = Math.max(1, Math.ceil(p.sfp / 2)),
-      sfpCell = Math.min(38, (p.rackmount ? 100 : 48) / cols);
+      sfpCell = Math.min(38, (p.rj45 === 0 ? (p.rackmount ? 720 : 550) : fiberWidth) / cols);
     for (let i = 0; i < p.sfp; i++) {
       const x = sfpStart + Math.floor(i / 2) * sfpCell,
         y = 15 + (i % 2) * 33,
@@ -134,6 +169,21 @@ function rackFace(r, override) {
       body += `<g class="skin-port skin-sfp ${port && used.has(port[0]) ? "connected" : ""}" data-connector="sfp"><title>${esc(port ? port[0] : "SFP " + (i + 1) + window.LanctlI18n.t("LANCTL.UI.FRAGMENT.REPRESENTATION_WITHOUT_AN_ASSOCIATED_PORT"))}</title><rect x="${x}" y="${y}" width="${Math.max(7, sfpCell - 4)}" height="20" rx="1"/><text x="${x + sfpCell / 2 - 2}" y="${y + 29}">S${i + 1}</text></g>`;
     }
     body += `<circle class="skin-power" cx="${textX + 5}" cy="62" r="3"/><text class="skin-device-id" x="${textX + 17}" y="65">${p.rj45} RJ45${p.sfp ? " + " + p.sfp + " SFP" : ""}</text>`;
+  } else if (p.kind === "cable-comb") {
+    for (let i = 0; i < 16; i++) {
+      const x = 446 + i * 44;
+      body += `<path class="skin-comb-tooth" d="M${x} ${h*.25} V${h*.76} H${x+26} V${h*.25}"/>`;
+    }
+  } else if (p.kind === "organizer") {
+    body += `<rect class="skin-organizer-channel" x="445" y="${h*.28}" width="710" height="${h*.46}" rx="9"/>`;
+    for (let i = 0; i < 8; i++) {
+      const x = 490 + i * 88;
+      body += `<path class="skin-organizer-divider" d="M${x} ${h*.28} V${h*.74}"/>`;
+    }
+  } else if (p.kind === "ventilation") {
+    for (let i = 0; i < 38; i++) {
+      body += `<rect class="skin-ventilation-slot" x="${446+i*18.5}" y="${h*.2}" width="8" height="${h*.6}" rx="3"/>`;
+    }
   } else if (p.kind === "server") {
     const rows = Math.min(4, units),
       cols = 6,
@@ -147,11 +197,14 @@ function rackFace(r, override) {
     body += `<rect class="skin-display" x="455" y="${h * 0.25}" width="200" height="${h * 0.45}" rx="6"/><text class="skin-display-text" x="555" y="${h * 0.5}">SAI / UPS</text><text class="skin-device-id" x="555" y="${h * 0.5 + 18}" text-anchor="middle">Sin telemetría</text>`;
     for (let i = 0; i < 16; i++)
       body += `<path class="skin-vent" d="M${740 + i * 23} ${h * 0.2} V${h * 0.8}"/>`;
+  } else if (isTray) {
+    body += rackTrayContents(r, h);
+    body += `<path class="skin-tray-lip" d="M24 ${h-12} H1176 M24 ${h-22} V${h-10} M1176 ${h-22} V${h-10}"/>`;
   } else if (p.kind === "shelf") {
     for (let i = 0; i < 24; i++)
       body += `<path class="skin-vent" d="M${440 + i * 28} ${h * 0.45} V${h * 0.8}"/>`;
-  } else body += `<path class="skin-vent" d="M440 ${h * 0.55} H1120"/>`;
-  return `<svg class="rack-face skin-${p.kind}" viewBox="0 0 1200 ${h}" preserveAspectRatio="none" focusable="false" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title>${body}</svg>`;
+  } else if (p.kind !== "blank") body += `<path class="skin-vent" d="M440 ${h * 0.55} H1120"/>`;
+  return `<svg class="rack-face skin-${p.kind}" viewBox="0 0 1200 ${h}" preserveAspectRatio="xMidYMid meet" focusable="false" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title>${body}</svg>`;
 }
 function rackSkinElevation(rack) {
   const occupied = new Map(),
@@ -176,9 +229,9 @@ function rackSkinElevation(rack) {
       rendered.add(r.id);
       const span = r.span || 1;
       const label = `${r.name || r.id} · ${r.id} · ${span} U`;
-      html += `<button class="rack-skin-unit occupied" data-rack-occupant="${esc(r.id)}" style="--rack-span:${span}" title="${esc(label)}" aria-label="${esc(label)}"><span class="rack-u-label">${span > 1 ? `${Number(r.unit) + span - 1}–${r.unit}` : r.unit} U</span><span class="rack-skin-face">${rackFace(r)}<span class="rack-skin-caption">${esc(r.name || r.id)}</span></span></button>`;
+      html += `<button class="rack-skin-unit occupied" data-rack-unit="${r.unit}" data-rack-id="${esc(selected)}" data-rack-occupant="${esc(r.id)}" style="--rack-span:${span}" title="${esc(label)}" aria-label="${esc(label)}"><span class="rack-u-label">${span > 1 ? `${Number(r.unit) + span - 1}–${r.unit}` : r.unit} U</span><span class="rack-skin-face">${rackFace(r)}<span class="rack-skin-caption">${esc(r.name || r.id)}</span></span></button>`;
     } else
-      html += `<button class="rack-skin-unit rack-skin-empty" disabled><span class="rack-u-label">${u} U</span><span><span data-i18n="LANCTL.UI.HTML.FREE">Libre</span></span></button>`;
+      html += `<button class="rack-skin-unit rack-skin-empty" data-rack-unit="${u}" data-rack-id="${esc(selected)}"><span class="rack-u-label">${u} U</span><span><span data-i18n="LANCTL.UI.HTML.FREE">Libre</span></span></button>`;
   }
   if (conflicts.size)
     html =
@@ -243,7 +296,7 @@ function rackSkinEditor(r) {
     preview.innerHTML = rackFace(r, {
       ...v,
       rj45: Math.max(0, Math.min(96, v.rj45 || 0)),
-      sfp: Math.max(0, Math.min(32, v.sfp || 0)),
+      sfp: Math.max(0, Math.min(48, v.sfp || 0)),
       units: Math.max(1, Math.min(52, v.units || 1)),
     });
     for (const k of ["rj45", "sfp"])
@@ -259,7 +312,7 @@ function rackSkinEditor(r) {
   for (const key of ["rj45", "sfp", "units"]) {
     const input = controls.querySelector(`[name=${key}]`);
     input.min = key === "units" ? 1 : 0;
-    input.max = key === "rj45" ? 96 : key === "sfp" ? 32 : 52;
+    input.max = key === "rj45" ? 96 : key === "sfp" ? 48 : 52;
     input.step = 1;
   }
   controls.addEventListener("input", paint);
@@ -315,3 +368,33 @@ render = function () {
           )),
     );
 };
+
+function rackTrayContents(tray, height) {
+  const children = typeof physicalInventory === "function" ? physicalInventory().filter(r => r.data.location?.tray === tray.id) : [];
+  const columns = Math.min(3, children.length || 1), maxRows = Math.max(1, Math.floor((height-24)/60));
+  const shown = children.slice(0, columns * maxRows), rows = Math.max(1, Math.ceil(shown.length / columns));
+  const cellWidth = 770 / columns, cellHeight = (height-24) / rows;
+  let body = "";
+  for (const [index, child] of shown.entries()) {
+    const x = 390 + index % columns * cellWidth;
+    const w = cellWidth-12, h = Math.min(68,cellHeight-6), y = 10 + Math.floor(index / columns) * cellHeight + cellHeight-h-6, ports = Object.entries(child.data.ports || {});
+    const name = child.data.name || child.data.alias || child.id;
+    const limit = Math.max(8, Math.floor((w-16)/7));
+    const label = name.length > limit ? name.slice(0,limit-1)+"…" : name;
+    const kind = /switch/.test(child.data.type) ? "switch" : (child.data.subtype === "router.otg" || ports.some(([id])=>id === "FIBER")) ? "otg" : "router";
+    body += `<g class="skin-small-device skin-small-${kind}" data-tray-device="${esc(child.id)}"><title>${esc(name+" · "+child.id+(child.data.ip ? " · "+child.data.ip : ""))}</title><rect class="skin-small-case" x="${x}" y="${y}" width="${w}" height="${h}" rx="5"/><text class="skin-small-label" x="${x+9}" y="${y+16}">${esc(label)}</text><text class="skin-small-id" x="${x+9}" y="${y+30}">${esc(child.id)}</text>`;
+    const visiblePorts = ports.slice(0,8), portWidth = Math.min(17,(w-20)/Math.max(visiblePorts.length,1)-4);
+    for (const [i,[id,port]] of visiblePorts.entries()) {
+      const px = x+10+i*(portWidth+4), py = y+Math.max(34,h-19);
+      const optical = /fiber|sfp/i.test(port.kind || "") || id === "FIBER";
+      if (/wifi|wireless|wlan/i.test(id+" "+(port.kind || ""))) {
+        body += `<circle class="skin-small-wireless" cx="${px+5}" cy="${py+5}" r="4"><title>${esc(id)}</title></circle>`;
+        continue;
+      }
+      body += `<rect class="skin-small-port ${optical ? "optical" : ""}" x="${px}" y="${py}" width="${portWidth}" height="10"><title>${esc(id)}</title></rect>`;
+    }
+    body += '</g>';
+  }
+  if (shown.length < children.length) body += `<text class="skin-small-more" x="1150" y="${height-14}" text-anchor="end">${esc(window.LanctlI18n.t("LANCTL.RACK.TRAY.MORE", {count:children.length-shown.length}))}</text>`;
+  return body;
+}

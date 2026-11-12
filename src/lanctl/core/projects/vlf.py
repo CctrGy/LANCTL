@@ -487,6 +487,9 @@ def _write_elements_database(path: Path, devices, groups) -> None:
                 FOREIGN KEY(device_id) REFERENCES devices(device_id)
             );
         """)
+        connection.execute(
+            "CREATE TABLE group_member_ids_v1 (group_name TEXT NOT NULL, device_id TEXT NOT NULL, PRIMARY KEY(group_name, device_id))"
+        )
         for device in devices:
             raw = device.to_dict()
             connection.execute(
@@ -509,11 +512,20 @@ def _write_elements_database(path: Path, devices, groups) -> None:
                 ),
             )
         by_mac = {device.mac: device.device_id for device in devices if device.mac}
+        device_ids = {device.device_id for device in devices}
         for group in groups:
             connection.execute(
                 "INSERT INTO groups VALUES (?,?,?)",
                 (group.name, group.description, int(group.editable)),
             )
+            for identifier in group.member_ids:
+                if identifier in device_ids:
+                    connection.execute(
+                        "INSERT OR IGNORE INTO group_members VALUES (?,?)", (group.name, identifier)
+                    )
+                    connection.execute(
+                        "INSERT INTO group_member_ids_v1 VALUES (?,?)", (group.name, identifier)
+                    )
             for mac in group.members:
                 if mac in by_mac:
                     connection.execute(

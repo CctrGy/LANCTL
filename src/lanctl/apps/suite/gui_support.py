@@ -38,6 +38,7 @@ _PROJECT_ACTIONS = frozenset(
         "save_catalog_settings",
         "save_launcher_setting",
         "wire_create",
+        "wire_diagram",
         "wire_organization",
         "wire_update",
         "wire_connect",

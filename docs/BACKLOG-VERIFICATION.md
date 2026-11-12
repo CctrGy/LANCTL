@@ -4989,3 +4989,1124 @@ Integración todavía parcial: los hosts no activan automáticamente el borrador
 ni asignan este enlace tras un diálogo real de guardado. Los eventos simulados
 no acreditan Qt, varios procesos nativos, Windows o instalables. No se publica,
 compila, integra en main ni modifica datos personales.
+
+## P124 — contenedor web LAN con las GUI existentes (08/11/2026)
+
+Implementación en `experimental-gui`: contenedor `/lanctl/` con menú plegable,
+seis rutas y marcos del mismo origen que cargan `suite.html`, `index.html` o
+`launcher.html`. Se reutilizan las API SuiteApi, DesktopApi y LauncherApi mediante
+un adaptador HTTP con listas explícitas, RBAC, CSRF, contexto de proyecto y
+estado de bóveda separado por sesión. No se añaden IDs públicos del Core ni
+formatos de persistencia. Los textos nuevos usan las fuentes bilingües y sus
+catálogos generados: 2563 claves por idioma. Catálogo de errores: 1834 puntos.
+
+Comando: `.venv/bin/python -m pytest -q tests/test_lan_web_suite.py
+ tests/test_access.py tests/test_launcher_gui.py tests/test_gui.py
+ tests/test_gui_support.py --tb=short`: **63 passed, 7 skipped,
+20 deselected en 8.46 s**. Se comprueban servicios reales de las seis vistas,
+selección compartida, contexto obsoleto, escrituras de inventario físico,
+autorización de métodos anidados, aislamiento de bóveda, rutas HTTPS,
+autenticación, CSRF y origen. Ruff y formato de los Python afectados, sintaxis
+JavaScript, generadores de idiomas, auditoría, catálogo, referencias CLI/web,
+higiene y diff comprobados. No se ha ejecutado la suite completa.
+
+Desplegado en `/opt/lanctl-experimental-gui` de la RPi5 con copia de seguridad
+bajo `/var/backups/lanctl-web/`. Se cambió la instalación del mismo paquete a
+editable para que el servicio cargue ese clon, conservando su entorno y datos.
+`lanctl-web.service` activo. Recorrido del navegador: inicio de sesión existente,
+carga de LANCTL/LANIP/LANWIRE/LANACCESS/LANRACK/LANMON, tema verde grafito,
+barra plegada y desplegada y regreso al panel. Sin errores de consola observados.
+No se ejecutaron escaneos ni se modificaron credenciales o proyectos reales.
+El ámbito de servicio continúa sin proyecto; el proyecto compartido se verifica
+con proyectos temporales en las pruebas automatizadas.
+
+Pendientes: proxy inverso `core.lan/lanctl/`, recorrido exhaustivo de operaciones,
+Windows, móviles y nuevos instalables. La prueba en navegador no acredita todos
+los controles nativos; las acciones exclusivas del escritorio no se exponen.
+No se modifican Pi-hole, DNS, WireGuard ni sus puertos. No se publica ni se hace
+commit/push en esta intervención.
+
+### P124 — menú sin scroll y navegación entre servicios (08/11/2026)
+
+Menú con altura dinámica y seis filas que se compactan en pantallas bajas,
+conservando el orden. Plegado completo, Configuración general reutilizando
+la ventana existente, proyecto activo y enlaces inferiores del despliegue.
+Las direcciones se suministran mediante tres variables de entorno del servicio,
+validadas como HTTP/HTTPS sin credenciales; nunca se deriva una web del puerto
+UDP de WireGuard. Las instalaciones sin URL muestran etiquetas inactivas.
+No se cambia el contrato del Core ni el formato de datos.
+
+`.venv/bin/python -m pytest -q tests/test_lan_web_suite.py tests/test_access.py
+ --tb=short`: **34 passed en 7.09 s**, incluida regresión de enlaces con
+protocolos no permitidos, credenciales, puerto inválido y controles en la URL.
+Ruff/formato y sintaxis JS correctos; catálogos con 2565 claves por idioma,
+catálogo de 1835 puntos de error, referencias CLI/web e higiene comprobados.
+No se ejecuta la suite completa por este ajuste de presentación.
+
+Desplegado en la RPi5 con copia de seguridad. La sesión existente abre los
+ajustes generales desde LANIP; el diálogo original muestra sus 68 opciones y
+se cierra sin guardar. Se comprueba el menú sin scroll y el contenido con ancho
+útil en pantalla estrecha y baja, además de la vista normal. Las medidas del
+DOM verifican alturas sin desbordamiento (600/600, 360/360 y 320/320 píxeles),
+los seis launchers y los enlaces dentro del área visible. Se restaura el tamaño
+del navegador al terminar.
+Las direcciones se localizan leyendo la configuración y páginas existentes de
+la RPi: `/hardware/`, `/admin/` y `/vpn/` del acceso común `https://core.lan`.
+Se configura únicamente un drop-in del servicio LANCTL con esos tres enlaces;
+no se modifica Caddy, Pi-hole ni WireGuard. La prueba comprueba sus destinos,
+no acredita autenticación ni todas las funciones de los otros servicios.
+
+## P98/P99 — adaptador de cierre con ventana Qt real (09/11/2026)
+
+Nuevo `tests/gui_provisional_close_smoke.py`: una única ventana pywebview/Qt
+oculta y una API mínima. Usa el NativeClose real, RPC de preparación, recibo por
+state y evento closed reales; coordinador, borrador, reserva y VLF temporales.
+El callback de destrucción comprueba que el propietario y la reserva aún
+existen. Tras el evento se comprueba su liberación; ante rechazo, recuperación
+del acceso al borrador y conservación de su inventario. No se sondea ninguna red.
+
+Cuatro ejecuciones independientes, secuenciales y con salida 0:
+
+`QT_QPA_PLATFORM=offscreen QTWEBENGINE_DISABLE_SANDBOX=1 PYTHONPATH=src
+ timeout --kill-after=5s 40s .venv/bin/python tests/gui_provisional_close_smoke.py`
+con argumentos:
+- `--decision discard`: último propietario, cierre y fuente retenida.
+- `--decision save`: VLF guardado y reapertura con el IDF esperado.
+- `--decision discard --peer`: retira solo al dueño de la ventana; el segundo
+  propietario registrado conserva el entorno. No es otra ventana/proceso.
+- `--decision discard --reject`: rechazo controlado, conserva ventana hasta
+  comprobar error original y recuperación; el driver cierra después su ventana.
+
+La primera ejecución exploratoria detectó que webview.start puede retornar
+antes de terminar la comprobación del trabajador. Se añadió una espera acotada
+al evento de verificación; no se alteró el comportamiento del producto.
+Ruff inicialmente detectó una supresión BLE001 innecesaria en el smoke; retirada.
+
+Advertencias del entorno: Vulkan no disponible en offscreen y, en tres
+recorridos, `Release of profile requested but WebEnginePage still not deleted`.
+Los procesos finalizaron con salida 0 y sus comprobaciones pasaron; el aviso de
+limpieza QtWebEngine queda pendiente, no se declara resuelto por estas pruebas.
+
+Ruff check/formato, catálogo de errores (1835 puntos vigentes del árbol),
+auditoría de idiomas e higiene correctos; no se introducen errores de producto,
+textos visibles, formatos o contratos nuevos. Solo se añade un driver de pruebas
+y documentación; no exige regenerar idiomas/referencias ni ejecutar suite general.
+Sin builds, publicaciones, commits o modificaciones de datos personales.
+
+P98/P99 permanece parcial: este smoke verifica el adaptador con Qt, no las
+páginas completas, arranque/selección automática del borrador, diálogo de nombre
+y destino, acciones de cada launcher, dos ventanas/procesos ni Windows/instalables.
+
+
+## P128 — Guardar en LANRACK y LANWIRE (10/11/2026)
+
+Rama temporal `codex/p128-launcher-save`, sin commit ni publicación. Se conservan
+los cambios anteriores de web LAN/P100, los catálogos de prueba y todos los datos
+personales. No se ha modificado ningún proyecto real para esta tarea.
+
+- Causa reproducida: `refresh()` de `gui/launcher.js` ocultaba expresamente el
+  botón cuando el launcher era LANWIRE o LANRACK, incluso con proyecto activo.
+  No era una ausencia del RPC ni se atribuye a recorte adaptable.
+- Corrección: botón HTML nativo visible para todos los launchers especializados,
+  deshabilitado sin proyecto y con título traducido. Guardado con bloqueo de
+  repetición, refresco y mensajes de resultado/error. El estado de guardado se
+  mantiene separado del de edición de formularios para no dejarlo deshabilitado
+  tras actualizar dimensiones. Se conserva el RPC compartido `project_call`,
+  sus guardas de contexto y el servicio de guardado existente.
+- Reutilizados `SAVE_PROJECT` y `NO_ACTIVE_PROJECT` en inglés/español; sin nuevas
+  cadenas de presentación ni cambios en IDs públicos, permisos o formatos.
+  Sin proyecto no se guarda en un destino implícito: botón deshabilitado; el
+  flujo de cierre/guardado provisional P98/P99 mantiene su alcance pendiente.
+- Regresiones en `tests/test_launcher_save.py`: guardado desde ambos adaptadores,
+  reapertura en workspace independiente, cambio de altura de rack a 42 U,
+  proyecto cambiado antes de guardar y fallo de escritura conservando el VLF y
+  los cambios pendientes, con reintento correcto.
+- Recorridos Chromium usan la página de producción con RPC al backend real:
+  botón a 780×560, foco y Enter, etiqueta inglesa/española, edición de dimensiones
+  por formulario en LANRACK, guardado y reapertura; rechazo de contexto antiguo,
+  error visible y botón reutilizable, visible/deshabilitado sin proyecto.
+  Solo proyectos/directorios temporales. No certifica Qt ni ejecutables.
+
+Validaciones y limitaciones del bloque:
+
+- `LANCTL_GUI_BROWSER_TESTS=1 LANCTL_CHROMIUM_EXECUTABLE=... .venv/bin/python
+  -m pytest -q tests/test_launcher_save.py`: 8 pruebas correctas con Chromium
+  local (ruta proporcionada mediante la variable ya utilizada por otros tests).
+- `.venv/bin/python -m pytest -q tests/test_launcher_gui.py
+  tests/test_physical_project_persistence.py tests/test_physical_save_modes.py
+  tests/test_project_sync.py`: 86 correctas, 2 omitidas (recorridos opcionales).
+- Una ejecución ampliada con todos los recorridos de navegador activados obtuvo
+  74 correctas y un fallo de infraestructura en `test_project_sync.py`: requiere
+  `channel="msedge"`, ausente en este equipo. No se cambió ni relajó esa prueba.
+- No se recompilaron instalables ni se certificó Windows/Qt. P128 permanece
+  abierta para ese recorrido nativo; la corrección en fuentes sí está aplicada.
+
+Cierre de verificaciones de fuentes P128:
+
+- Regresión comprobada contra la regla de ocultación anterior: el recorrido
+  LANRACK/inglés falla en `button.is_visible()`; restaurada la corrección,
+  los ocho casos P128 pasan de nuevo (9,44 s).
+- Revisada captura Chromium LANRACK/español a 780×560: botón Guardar proyecto
+  visible en el pie, después de editar dimensiones; sin recorte del control.
+- Ruff global y formato global: correctos (623 archivos). Catálogo regenerado y
+  verificado (1835 puntos; incorpora también fuentes previas del checkout).
+  Referencias CLI/web, higiene y `git diff --check`: correctos. Referencia web
+  regenerada al actualizar el backlog. Sin cambios en fuentes bilingües, por
+  lo que no se regeneran idiomas ajenos a la corrección.
+- Suite completa no ejecutada en este bloque: validación centrada en los cuatro
+  adaptadores y en persistencia/contexto físicos, más el recorrido de producción
+  de los dos launchers afectados. Se conservan explícitos los límites nativos.
+
+
+## Revisión solicitada de estructura y edición GUI — 10/11/2026
+
+Informe: `GUI-EDITING-COVERAGE-REVIEW.md`. Rama documental temporal
+`codex/gui-editing-coverage-review`; conserva los cambios anteriores de P128,
+web LAN e idiomas. Sin cambios operativos ni edición de proyectos personales.
+
+Cobertura: seis launchers; páginas productivas, orden de scripts/overrides,
+servicios y campos editables, RPC y contexto, entidades lógicas/físicas,
+preferencias locales y datos VLF. Se distinguen opciones presentes, diferencias
+de alcance, campos protegidos y validación nativa pendiente.
+
+Hallazgos trazables: P130 (menú por unidad), P129 (dos entradas a la misma ficha),
+P125 (eliminación de proyectos), CRUD de grupos incompleto en GUI de LANIP,
+perfiles/asignaciones de LANMON sin editor dedicado, descripción/documentación
+de LANRACK anticuadas y complejidad de extensiones globales de frontend.
+No se declara resuelta P127 ni se crean IDs públicos o requisitos de paridad
+no acordados. El backlog enlaza el informe sin cerrar tareas por inspección.
+
+Pruebas nuevas de esta revisión, con datos temporales:
+
+- Seis módulos de servicios/formularios físicos, alta manual y settings:
+  58 correctas, 7 omitidas (navegador opcional).
+- `tests/test_view_editing.py`: 20 correctas (edición lógica/credenciales).
+- Chromium mediante `LANCTL_CHROMIUM_EXECUTABLE`, pruebas de P128, alta manual
+  y Settings: 12 correctas.
+- Recorridos históricos P82 (LANMON/LANIP y credenciales): 2 correctas,
+  2 deseleccionadas al repetir los casos investigados con idioma español
+  explícito y catálogo instalado en el directorio temporal.
+  Estos tests solicitan msedge: solo en el proceso de revisión se adaptó
+  `BrowserType.launch` al Chromium local; sus aserciones no se modificaron.
+  No constituye validación Edge/Windows.
+- La primera ejecución histórica sin fijar idioma obtuvo 2 fallos y 1 correcto
+  antes de interrumpir las esperas restantes: buscaba «Cambios guardados.» y
+  «Actualizar» en español. Con la preparación explícita ambos casos pasan.
+  Se registra la dependencia de idioma de esas pruebas; no se atribuye a un
+  fallo de persistencia ni se presenta el primer intento como suite limpia.
+
+No se ha ejecutado la suite completa ni se certifican Qt, instalables o toda
+combinación de equipo/tema/escala/tamaño. Las pruebas de servicios no cierran los
+requisitos visuales. Referencia web regenerada por el informe y el backlog.
+
+- Recorrido físico LANRACK con feedback LANWIRE:
+  `test_real_rack_editor_tray_movement_and_wire_feedback`: 1 correcto (4,24 s),
+  con el mismo adaptador de lanzamiento a Chromium y preparación española.
+  Comprueba alojar dispositivos en bandeja, mover, editar y reflejar cambios en
+  la base física compartida. Sin cambios en los tests o el código productivo.
+
+Controles documentales de la revisión: referencias CLI/web, higiene y
+`git diff --check` correctos. Sin commit, fusión ni publicación.
+
+## P130 — menú contextual de unidades LANRACK (10/11/2026)
+
+Añadido rack-unit-menu.js al host launcher.html y atributos de unidad/rack en
+las elevaciones simple y con frentes. Clic derecho o Menú/Shift+F10 abren un
+diálogo de acciones con botones accesibles: consulta de solo lectura, edición
+del ocupante, creación en una U vacía y asignación de un elemento existente.
+Asignar está deshabilitado en unidades ocupadas. El editor existente mantiene
+la identidad del ocupante; las U de un elemento de varias unidades apuntan al
+mismo ID. En la vista gráfica el frente completo comparte el destino.
+
+wireNew admite un destino opcional de rack/U, excluye racks/cables y solicita
+altura para crear directamente en esa posición. La asignación muestra ID y
+ubicación actual y confirma origen/destino antes de trasladar. Se conserva el
+ID y se reutilizan rack_element, la revisión del inventario y las validaciones
+Core de ubicación: no se duplica lógica de colisiones ni se escribe por fuera
+de sus transacciones. Los formularios de creación/asignación conservan contexto
+proyecto/revisión para rechazar cambios concurrentes. Cancelar traslado mantiene
+el formulario abierto con un aviso traducido y sin aplicar cambios.
+
+Pruebas de navegador, una instancia Chromium y dos casos secuenciales:
+`LANCTL_GUI_BROWSER_TESTS=1 LANCTL_CHROMIUM_EXECUTABLE=/home/victor/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_rack_unit_menu.py`: **2 passed en 5.35 s**.
+Comprueban ambas vistas, edición del ocupante sin renombrar el rack, teclado,
+alta en U5, asignación del ID existente a U7, traslado U7→U9 cancelado y confirmado,
+y alta de 2U en U12 de un rack de 12U rechazada sin cambios de inventario.
+Primer intento reveló que rack-skins reemplaza la elevación base; se incorporaron
+los atributos también allí y se ajustó la selección a la U inicial del frente.
+
+Regresiones acotadas:
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 40s .venv/bin/python
+-m pytest -q tests/test_physical_placement.py tests/test_lanrack.py
+ tests/test_launcher_gui.py`: **42 passed, 1 skipped en 2.21 s**.
+
+Siete mensajes bilingües nuevos en la fuente GUI, catálogos/fallback regenerados
+(2572 claves por idioma). Ruff Python check/formato, catálogo de errores (1835
+puntos, sin cambio de errores Python), auditoría de idiomas regenerada/comprobada,
+referencias CLI/web e higiene correctos. Los errores JavaScript utilizan las
+claves de idioma y el puente existente; no se inventan IDs públicos. No cambian
+formatos persistentes ni se modifican datos reales. Sin builds, commits o push.
+
+Pendientes: validación Qt/instalables, despliegue web, revisión visual manual y
+certificación exhaustiva de idiomas. Pruebas con datos temporales; no equivalen
+a entrega del instalador. Se mantiene P130 abierto por validación/entrega.
+
+Comprobación adicional de persistencia compartida:
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 40s .venv/bin/python
+-m pytest -q tests/test_physical_project_persistence.py`: **17 passed en 2.02 s**.
+El shell del lote devolvió 1 porque la búsqueda posterior de procesos propios
+no encontró coincidencias; pytest terminó correctamente. No quedaron procesos
+Chromium/pytest de estas comprobaciones activos.
+
+## P130/P78 — alta de bandejas y ocupación de varias U (10/11/2026)
+
+Aclaración del usuario: los nuevos elementos y bandejas pueden ocupar varias U.
+P78 ya está implementado en fuentes. Se mantiene el tipo tray y la validación
+compartida; no se introduce un tipo de bandeja alternativo. El campo de altura
+P130 ahora requiere entero positivo, mínimo 1, máximo 52; el backend comprueba
+además límites del armario y colisiones de todo el tramo.
+
+Ampliada la regresión Chromium en ambas vistas: crear una bandeja de 2 U en U10,
+comprobar span=2 en el servicio y su representación (frente de 2 U o botones
+U10 y U11 con el mismo ID); intentar otra bandeja de 2 U desde U8 libre pero
+con U9 ocupada, verificar rechazo sin cambios; mantener el caso de sobrepasar
+la altura del rack. La primera ejecución se detuvo al intentar cancelar bajo
+el diálogo real de error: el test ahora cierra ese aviso antes de cancelar el
+formulario, sin modificar el producto ni omitir validaciones.
+
+Mismo comando de navegador de P130: **2 passed en 6.65 s**. Ruff check correcto;
+auditoría regenerada/comprobada, catálogo de errores e higiene comprobados.
+Sin textos nuevos ni cambios de persistencia, IDs públicos o datos personales.
+Qt/instalables y entrega siguen pendientes; no se añade otra tarea duplicada.
+
+## P130 — menú contextual junto al cursor (10/11/2026)
+
+Por solicitud visual del usuario, las acciones de unidad dejan de usar el diálogo
+centrado. Se presentan en un menú flotante anclado a clientX/clientY; con teclado,
+a la unidad enfocada. Posición limitada al viewport, colores del tema, encabezado
+rack/U, opciones verticales y Asignar deshabilitado en unidades ocupadas.
+Se cierra al pulsar fuera, Escape, Tab, desplazar o redimensionar; flechas y
+Home/End recorren las opciones activas. Restaura foco y elimina listeners mediante
+AbortController. Las acciones abren los formularios existentes después de retirar
+el menú. Sin nuevos textos ni cambios de servicios/persistencia.
+
+Regresión Chromium de P130 adaptada al menú flotante: **2 passed en 7.27 s**,
+ambas vistas; añade comprobación de límites del viewport, ausencia de diálogo
+modal al abrir el menú y cierre con Escape. Conserva recorridos de edición,
+creación, asignación y bandejas multi-U. Captura del navegador inspeccionada:
+menú visible junto al frente y acorde con el tema. Ruff y formato Python,
+auditoría de idiomas regenerada/comprobada, higiene y diff check correctos.
+Qt/instalables siguen pendientes; no se compila ni publica.
+
+
+## Registro de revisión pendiente de controles — P131 (10/11/2026)
+
+A petición del usuario se añade P131, prioridad media, como revisión funcional y
+visual de una selección de controles de los seis launchers. Incluye fichas,
+grupos, ubicación/puertos, racks/unidades/bandejas, credenciales, monitorización
+y distinción entre guardar ficha/proyecto. Los faltantes se coordinan con tareas
+existentes; no se implementan controles ni se autorizan borrados en este bloque.
+
+Se comprobó el backlog vigente: P130 ya está implementada en fuentes y mantiene
+validación nativa pendiente. P131 conserva ese avance y no pide rehacerla.
+Actualizados los contadores de entradas abiertas (48; 44 P). Cambio documental,
+sin cambios en idiomas operativos, IDs, catálogo de errores o datos personales.
+
+## P130/P78 — acceso a alojamiento desde el menú de bandejas (10/11/2026)
+
+El catálogo ya incluye tray en Crear elemento y los registros tray/device.tray
+no están excluidos de Asignar elemento existente. Faltaba llevar al menú nuevo
+la acción Alojar dispositivo ya disponible en el editor anterior. Se extrae ese
+formulario a physicalHostDevice y se reutiliza desde ambos puntos. La acción
+contextual solo se ofrece en bandejas; reutiliza rack_element/wire_update y las
+reglas de contención existentes. Sin nuevos textos, esquemas o errores Python.
+
+Ampliación del test real de navegador: crear bandeja de 2 U, alojar router.gateway,
+router.otg y switch.5ports mediante el menú, conservar IDs y comprobar tray en
+cada registro. Los alojados aparecen en el inventario del rack con unidad 0,
+por lo que no reservan U como montajes directos. La primera aserción del test
+supuso erróneamente que no aparecerían en occupants; corregida al contrato real
+(unit=0) sin alterar el producto para satisfacer esa expectativa.
+
+Comando Chromium de P130: **2 passed en 9.27 s**, ambas vistas; mantiene los
+recorridos anteriores de crear, editar, trasladar y colisión de varias U.
+Ruff, auditoría de idiomas, catálogo de errores (1835 puntos), higiene y diff
+check correctos. Solo datos temporales, sin builds ni publicación. Qt/instalables
+y entrega permanecen pendientes. No se declara un fallo de catálogo reproducido
+porque los tipos ya estaban presentes; se corrige el acceso contextual ausente.
+
+
+## P130/P131 — tipo Switch, puertos reales y montaje en bandeja (10/11/2026)
+
+Solicitud del usuario sobre el selector de alta física: separar categoría y
+puertos, ofrecer combinaciones RJ45/SFP y reservar el montaje directo en U a
+los equipos adecuados. Rama temporal `codex/rack-switch-port-profiles`; se
+conservan los cambios locales previos y los proyectos personales no se modifican.
+
+- `wire-gui.js`: Tipo Switch y segundo desplegable Configuración de puertos.
+  Fuente compartida en `topology.switch_creation_profiles`, publicada por el
+  bootstrap del launcher. El filtro de alta desde U solo ofrece perfiles
+  rackmount; routers/OTG no se ofrecen ahí. El alta independiente conserva
+  sobremesa 5/6/8 RJ45 y routers para alojarlos en bandejas existentes.
+- Perfiles rackmount 12/16/24/48 RJ45; combinaciones 12+2, 16+2, 24+2/4 y
+  48+2/4/6/8 RJ45+SFP. Los perfiles históricos conservan sus nombres y payloads.
+  Las variantes nuevas añaden puertos Xn/SFPn reales, con medio y polaridad
+  hembra, y un frente acorde. No se añaden puertos por cambiar solo un skin.
+- `core/physical_placement.direct_mount_allowed` y `validate_location`:
+  router genérico/OTG, switches pequeños 5/6/8 y frentes no rackmount no pueden
+  asignarse directamente en U. Regla en almacenamiento, también para llamadas
+  directas CLI/RPC. El flag visual rackmount no permite convertir router o switch
+  pequeño en un perfil montable. Alojarlos en bandeja conserva ID, puertos y
+  relaciones; no se recolocan ni migran silenciosamente datos existentes.
+- Snapshots físicos publican capacidad `directMount`; Asignar desde U filtra los
+  equipos no montables y la ficha deshabilita montaje interior para ellos.
+  Se mantienen el control de revisión/contexto, el guardado VLF y las reglas
+  de altura/colisiones existentes. P130 no se da por certificada en instalables.
+- Un fixture anterior que montaba directamente un switch de cinco puertos se
+  cambia a su perfil rackmount de doce, manteniendo las aserciones originales.
+  La nueva regresión negativa comprueba expresamente el rechazo del de cinco.
+  El recorrido histórico de creación usa ahora tipo Switch + perfil, conforme
+  a los dos controles nuevos; no se eliminan sus aserciones de conexiones.
+
+Validación dirigida:
+
+- Servicios/topología, ubicaciones, creación, skins, launchers y dimensiones:
+  101 correctas, 7 omitidas en la primera selección.
+- Perfiles y restricciones, menú P130 (ambas vistas), guardado P128 y nuevos
+  selectores español/inglés con Chromium y backend real: **34 correctas**
+  (20,48 s), incluida prueba que impide eludir la clasificación mediante skin.
+- Reapertura de 24 RJ45 + 4 SFP conserva 28 puertos y conexión en SFP1.
+  Rechazo atómico de alta/reubicación directa de router, OTG y switches 5/6/8;
+  alojamiento posterior en bandeja conserva identidad y puertos.
+- Captura del formulario español inspeccionada: tipo y configuración separados,
+  24 RJ45 + 4 SFP, altura U, explicación de bandeja y botones visibles.
+- Fuentes bilingües, catálogos, bundle y fallback regenerados. Catálogo de
+  errores regenerado (1836 puntos). Auditoría P100 regenerada/comprobada.
+  Ruff y formato global correctos (626 archivos). Referencia CLI comprobada;
+  referencia web regenerada y comprobada; higiene y diff check correctos.
+
+Suite general: `.venv/bin/python -m pytest -q` no completada. Mostró cuatro
+indicadores de fallo antes de quedar esperando alrededor del 86 %; no emitió
+resumen que permita identificar/atribuir esos fallos. Tras unos cuatro minutos
+se interrumpió el proceso propietario (SIGINT). Terminó con código 139 y traza
+de QtWebEngine en `webview/platforms/qt.py:closeEvent`, durante
+`test_suite_entrypoints.py::test_lanmon_defaults_to_status_and_forwards_monitor_arguments`,
+que había entrado en `launcher_gui.run_gui` desde el arranque LANMON. No se
+certifica una suite limpia ni se atribuye esa traza a los perfiles nuevos sin
+investigación. Las pruebas específicas y la selección relacionada anteriores
+sí terminaron correctamente; no se deshabilitaron aserciones por este bloqueo.
+
+Las comprobaciones de Chromium no certifican Qt, Windows ni instalables. No hay
+compilación, commit, fusión, publicación ni cambios en ramas estables.
+
+
+## Ampliación de combinaciones RJ45/SFP — P130/P131 (10/11/2026)
+
+Continuación en `codex/rack-switch-port-profiles`, conservando cambios previos.
+Al seleccionar Switch se muestran dos desplegables dependientes: tipo de
+puertos (RJ45, RJ45+SFP, SFP) y cantidad/combinación. Selección exacta solicitada:
+5 RJ45 simples (5/8/16/24/48), 15 mixtos (cada cantidad × 2/4/6 SFP) y seis
+ópticos (4/8/12/16/24/48). No se guarda el estado auxiliar del selector como
+un dato de inventario. `SWITCH_SELECTION` limita la selección nueva mientras
+`SWITCH_PORT_PROFILES` mantiene perfiles antiguos aceptados sin reinterpretarlos.
+
+Los perfiles mixtos de 5/8 RJ45 y ópticos de 4/8 SFP se clasifican conservadoramente
+como sobremesa; no se ofrecen ni aceptan para montaje directo en U. La llamada
+independiente conserva los 26 perfiles y permite alojarlos después en bandejas.
+Se mantiene la regla anterior para router, OTG y switches pequeños, incluso
+ante un cambio del flag visual rackmount. No hay migraciones de datos personales.
+
+Se permite un máximo de 48 SFP en la apariencia existente (extensión compatible
+del rango), tanto en validador como en editor. El frontal de solo SFP utiliza
+el ancho central disponible en lugar del margen reservado a uplinks de switches
+mixtos, evitando solapar 48 conectores en el pequeño espacio de uplinks.
+
+Evidencia: `tests/test_switch_port_profiles.py` comprueba matriz exacta, conteos,
+medio óptico, nombres únicos, compatibilidad histórica y restricciones.
+Dos recorridos Chromium ES/EN comprueban los conjuntos exactos de opciones
+(5/15/6), selección dependiente, alta de 24+4 y de 48 SFP, montaje de este último
+y 48 conectores de frontal en el DOM; no hay errores de JavaScript.
+Con P130/P128: **46 passed en 23,76 s**. Selección de servicios físicos,
+creación, topología, skins, launchers, dimensiones y persistencia:
+**97 passed, 5 skipped en 5,74 s**.
+
+Generados de idiomas/bundle/fallback y auditoría P100 regenerados y comprobados;
+catálogo de errores regenerado (1836 puntos). Ruff y formato global correctos
+(626 archivos). No se repite la suite general bloqueada en Qt en el bloque
+anterior; no se certifican Qt/Windows ni instalables, ni se compila/publica.
+
+
+## Distribución horizontal de cantidades RJ45 y SFP — 10/11/2026
+
+Ajuste a la imagen indicada por el usuario: después de Tipo: Switch, una fila
+con desplegable RJ45 a la izquierda y SFP a la derecha. Cada uno elige cantidad;
+se retiran los controles de familia/combinación de la presentación anterior.
+
+Sin cambiar servicios ni perfiles: RJ45 admite 0/5/8/16/24/48; con RJ45 > 0,
+SFP admite 0/2/4/6. Con RJ45 = 0, SFP admite 4/8/12/16/24/48. El alta contextual
+filtra los equipos no montables igual que antes. No hay opción 0+0 y el servicio
+sigue recibiendo la identidad del perfil validado, no contadores auxiliares.
+La fila usa dos columnas iguales, etiquetas vinculadas y navegación nativa.
+
+Regresión Chromium ES/EN adaptada: posiciones y alineación izquierda/derecha,
+anchura a 780 px, cantidades disponibles, alta de 24+4 y 0+48 con puertos reales,
+frente de 48 SFP y desaparición de la fila al seleccionar otro tipo. Sin pruebas
+sobre proyectos reales; se conserva la limitación nativa registrada antes.
+
+Resultado de la distribución horizontal: 46 pruebas correctas (24,15 s),
+captura española inspeccionada. Auditoría de idiomas, referencias, catálogo,
+Ruff/formato, higiene y diff check correctos. Sin certificación de instalables.
+
+
+### Creación de equipos rackmount por tipo (2026-11-10)
+
+El formulario muestra cantidades RJ45/SFP solo para switches. Patch panel conserva
+su preset de 24 puertos y los datos de identificación, sin controles de conexión.
+Bandejas, servidores, tapas ciegas, paneles de ventilación, organizadores, peines,
+regletas y SAI permiten indicar altura en U (1–52), validada contra el rack y
+solapamientos. Los accesorios nuevos no generan puertos de red ni especificaciones
+eléctricas inventadas; su frente usa la representación genérica existente.
+El prefijo IDF ofrece sugerencias de los prefijos existentes y permite escribir otro.
+Al crear desde una U, la clasificación predeterminada es interior del rack y permite
+seleccionar entorno del rack; no aparece Connection Type, tampoco en servidores.
+La creación independiente de equipos de red conserva su configuración de conexión.
+
+Validación: pruebas de catálogo, persistencia, ocupación y navegador ES/EN en
+`tests/test_switch_port_profiles.py`, menús de U y guardado compartido. No se
+recompilaron instaladores ni se certificó Qt nativo/Windows en este ajuste.
+
+Resultado del ajuste: 54 pruebas correctas en 23,86 s con Chromium, incluyendo
+menús de U, guardado, controles ES/EN y ocho casos de ocupación de equipos.
+Ruff, formato, idiomas, auditoría, errores, referencias CLI/web, higiene y diff
+comprobados correctamente. Los dos casos del menú que antes intentaban cambiar
+la altura del switch se actualizaron para seleccionar bandeja y seguir verificando
+el rechazo de una altura que excede el rack.
+
+
+### Desplazamiento de la posición al crear desde una U (2026-11-10)
+
+La unidad inicial toma la U pulsada y se puede escribir o ajustar con botones
+−/+ en pasos de una unidad. Un cuadro de solo lectura muestra el intervalo
+contiguo ocupado (por ejemplo U5–U7 para 3 U). Cambiar tipo o altura recalcula el
+intervalo. Los botones respetan los extremos del rack; las colisiones y alturas
+fuera del rack siguen rechazándose por la validación compartida, sin mover ni
+sobrescribir otros equipos. En clasificación entorno se ocultan y desactivan
+los controles de U, conservando su selección si se vuelve a interior.
+El guardado utiliza la unidad ajustada y no la U original del menú.
+
+Verificación de desplazamiento: 54 pruebas correctas en 22,80 s con Chromium,
+incluidos ES/EN, posición inicial desde el clic, botones, límites, actualización
+por altura/tipo, clasificación entorno y guardado real de la U ajustada.
+Ruff, formato, idiomas, auditoría, catálogo de errores, referencias e higiene
+correctos. Sin compilación de instaladores ni prueba Qt nativa en este ajuste.
+
+
+### Servidor configurable en creación (2026-11-10)
+
+Servidor ofrece cantidad de puertos de red 1–6 (predeterminado 2), altura 1–4 U
+(predeterminada 1) y, al final, clasificación, unidad inicial con −/+ e intervalo
+ocupado. La altura seleccionada recalcula el intervalo. Cada cantidad genera
+puertos LAN1…LANn reales con los valores del preset existente, sin inventar
+velocidades ni PoE. El perfil histórico server.2ports conserva su contrato;
+los perfiles de 1, 3, 4, 5 y 6 puertos son aditivos.
+
+Comprobación: 60 pruebas correctas en 25,26 s (perfiles, creación, ocupación,
+menús de U y guardado); navegador ES/EN ampliado con creación real de servidor
+de 6 puertos, 4 U y posición U6–U9. Sin compilación de instaladores ni validación
+Qt nativo/Windows. Formato, Ruff, idiomas, auditoría, errores y referencias se
+comprueban mediante las herramientas del repositorio.
+
+
+### Distribución compacta de tamaño y ocupación (2026-11-10)
+
+El diseño actualizado sustituye las filas de unidad inicial e intervalo separado
+por una sola fila: altura, +, intervalo ocupado y −. El intervalo es de solo
+lectura; los botones desplazan la posición inicial, conservando la altura.
+Servidor conserva altura seleccionable 1–4 U; el resto mantiene sus límites.
+Para tipos de altura fija se muestra 1 U. Clasificación queda debajo y oculta
+los controles de desplazamiento al seleccionar entorno del rack.
+
+Verificación funcional: 60 pruebas correctas en 25,86 s; se añade comprobación
+geométrica ES/EN de alineación y captura del formulario de servidor. Se mantienen
+las comprobaciones de guardado real, límites, ocupación y menús. Sin instaladores
+nuevos ni certificación Qt nativa/Windows.
+
+
+### Menú de bandeja: añadir y crear contenido (2026-11-10)
+
+Clic derecho sobre bandeja ofrece «Añadir elementos existentes» y «Crear elemento
+dentro de la bandeja». La segunda acción crea el IDF y su pertenencia en una sola
+operación, sin asignarle U propias. Ambas conservan el contexto de proyecto.
+La selección existente muestra equipos pequeños (directMount falso) cuya altura
+no supera la bandeja. La creación ofrece router, OTG y switches de sobremesa,
+filtrando los perfiles rackmount. El Core rechaza alojar equipos más altos que
+las U reservadas y reducir una bandeja por debajo de su contenido; los rechazos
+conservan la base. No hay dimensiones métricas ni límite numérico de capacidad
+definidos en el modelo: no se afirma validar anchura/profundidad o espacio total.
+La pregunta sobre un límite adicional concreto queda abierta al usuario.
+
+Pruebas: menú y creación real con y sin skins; conservación de identidad y
+puertos al alojar; rechazo atómico de altura excesiva y reducción incompatible.
+Sin instaladores nuevos ni prueba Qt nativa/Windows.
+
+Resultado: 80 pruebas correctas en 26,75 s, incluidas las pruebas de ubicación
+física, perfiles, menú de bandeja y guardado. Ruff, formato, catálogos, referencias,
+auditoría de idiomas e higiene comprobados.
+
+## P134/P135 — revisión estética de frentes y accesorios (12/11/2026)
+
+Alcance solicitado: revisión estética de ambas tareas. Se conserva el árbol
+local y la rama codex/rack-switch-port-profiles, sin datos reales ni builds.
+
+P134: en rackFace, panel/switch/router compartían la rama de puertos y el
+indicador de alimentación. Aunque rackAutoSkin clasificaba un device.panel
+como panel, el resultado se parecía al switch de 24 puertos. Se crea una rama
+pasiva con módulos numerados, sin indicador de alimentación. Se mantiene la
+clasificación automática y no se sobrescriben perfiles explícitos del usuario.
+No se inspeccionó su proyecto, por lo que no se atribuye su caso concreto a una
+skin guardada ni se declara completamente resuelto. Además, el perfil solo SFP
+usaba el área de rótulos: pasa a la zona derecha disponible; el preview consulta
+el nombre del registro cuando no tiene name resumido. Blank ya no dibuja una
+ranura horizontal, para que la tapa ciega sea un frente cerrado.
+
+P135: propuesta visual de peine, organizador y panel de ventilación, junto a la
+tapa ciega existente. Estos tres SVG son material de revisión, no nuevos tipos
+persistentes ni skins seleccionables del producto. El prefijo IDF común y los
+subtipos siguen pendientes; no se inventan puertos o se renumeran registros.
+
+Artefactos locales reproducibles con tests/test_rack_visual_review.py:
+`/home/victor/.codex/visualizations/2026/10/26/01a179f3-7a70-7b10-a0ff-144f36e2966d/p134-p135-review/`
+contiene revision.html y capturas revision-1440.png / revision-980.png. Ambas
+capturas se inspeccionaron: los frentes se diferencian, no hay scroll horizontal
+y los accesorios no aparentan puertos de red. La hoja está en español; los SVG
+reales usan el idioma inglés del fixture. No certifica por sí sola todos los
+idiomas, temas, alturas ni densidades del producto.
+
+Prueba nueva con Chromium real (una ventana, datos temporales):
+`LANCTL_GUI_BROWSER_TESTS=1 LANCTL_CHROMIUM_EXECUTABLE=/home/victor/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
+LANCTL_VISUAL_REVIEW_DIR=<directorio de artefactos>
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_rack_visual_review.py`: **1 passed en 1.29 s**.
+Comprueba panel de 24 módulos sin alimentación, switch de 24 puertos con su
+indicador, 48 SFP, tapa sin ranura y datos de inventario intactos.
+
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 40s .venv/bin/python
+-m pytest -q tests/test_rack_skins.py tests/test_switch_port_profiles.py`:
+**51 passed, 6 skipped en 1.53 s** (recorridos opcionales de navegador omitidos
+en ese comando, además de la nueva prueba de navegador ejecutada aparte).
+
+Ruff/formato del test, auditoría de idiomas regenerada y --check correctos.
+Catálogo de errores vigente: 1837 puntos del árbol, sin mover errores Python.
+Referencias CLI correctas; web estaba desactualizada y se regeneró/comprobó.
+Higiene y diff check correctos. No cambian recursos de idioma, parsers, IDs
+públicos ni formatos persistentes por esta revisión. P134 sigue parcial por
+matriz visual/Qt/instalables y caso real pendiente; P135 conserva pendiente su
+implementación de catálogo y familia IDF. Sin commit, push o publicación.
+
+## P134 — variantes mixtas RJ45 + SFP (12/11/2026)
+
+Tras aceptar la comparativa previa, el usuario solicita revisar perfiles mixtos.
+Se sustituye la reserva fija de 100 unidades SVG para SFP por espacio calculado
+según sus columnas y una separación de 22 unidades. El bloque RJ45 se adapta
+al ancho restante sin entrar en la zona de rótulos; SFP conserva dimensiones
+legibles en 2/4/6/8 conectores. También se respeta el ancho de sobremesa.
+No se alteran perfiles, conectores de datos ni conexiones.
+
+Regresión Chromium ampliada: 17 combinaciones de 5/8/16/24/48 RJ45 con 2/4/6
+SFP, más 48+8 y 50+2. Comprueba número de conectores, bloque RJ45 a partir de
+x=440, separación estricta con SFP y límite derecho x<=1160. Mismo comando y
+artefactos de la revisión anterior: **1 passed en 1.72 s**. Hoja comparativa
+ampliada con 8+2, 24+2/4/6 y 48+2/4/6/8; capturas a 1440/980 px. La de 1440
+se inspeccionó visualmente: bloques diferenciados y sin desbordamientos.
+Ruff, auditoría regenerada/comprobada, catálogo, higiene y diff correctos.
+Sin textos nuevos, errores Python ni cambios de contratos/persistencia.
+P134 sigue parcial por pruebas Qt/instalables y matriz visual restante.
+
+## P133 — selector vacío, alta en bandeja y traslado seguro (12/11/2026)
+
+Revisión del árbol actual: el backend ya expone directMount y el selector
+physicalHostDevice admite elementos con directMount=false y altura compatible.
+El menú contextual ya tenía un alta independiente. Se reproduce otro hueco del
+recorrido: el formulario de elementos existentes queda vacío sin explicación
+ni acceso al alta cuando todavía no hay routers/OTG/switches creados. Esto no
+prueba que sea la causa exacta del informe en su versión/proyecto real.
+
+Corrección: formulario de existentes con ayuda bilingüe y botón Crear elemento
+dentro de la bandeja; selector vacío deshabilitado y sin guardar una selección
+inexistente. physicalCreateInTray se reutiliza desde ese formulario y el menú,
+con proyecto/revisión capturados. El traslado de un equipo situado en otra
+ubicación pregunta origen/destino, permite cancelar y aplica rack_element con
+la revisión capturada, conservando validación de altura y montaje existente.
+No se relajan los filtros de montaje para permitir equipos incompatibles.
+
+Prueba nueva tests/test_tray_selector_gui.py con una página real y API real:
+inventario inicialmente sin dispositivos; alta de router.gateway, router.otg y
+switch de cinco RJ45 desde la misma bandeja; excluye de existentes los ya
+alojados allí; los tres aparecen al abrir otra bandeja. Traslado cancelado y
+confirmado conserva ID/puertos. Guardado VLF y reapertura en otro workspace
+confirman la relación de contención. Datos exclusivamente temporales.
+
+Comando Chromium usado en P130 con tests/test_tray_selector_gui.py y
+ tests/test_rack_unit_menu.py: **3 passed en 12.46 s**. Tras incorporar la
+comprobación VLF a la nueva prueba, repetida: **1 passed en 3.00 s**.
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 40s .venv/bin/python
+-m pytest -q tests/test_switch_port_profiles.py tests/test_physical_placement.py
+ tests/test_physical_project_persistence.py`: **85 passed, 2 skipped en 3.70 s**.
+
+Dos recursos bilingües añadidos; idiomas y recursos de instalador regenerados
+y comprobados (2597 claves por idioma). Ruff check/formato, auditoría regenerada
+y --check, catálogo vigente (1837 puntos), referencias CLI/web e higiene correctos.
+Nuevos rechazos JS usan claves existentes y el puente de diagnóstico vigente;
+no se añaden IDs de error paralelos ni cambia la persistencia/contrato público.
+
+P133 pasa a parcial: flujo corregido y pruebas de fuente, pero aún sin reproducir
+el inventario/instalable del usuario ni certificar Qt y distribución. No se toca
+su proyecto, no se compila ni se publica. No se afirma que un fallo de filtros
+quedara reproducido cuando los datos temporales ya estaban admitidos.
+
+## P132 — PDU Schuko / IEC C13 (12/11/2026)
+
+Implementado powerOutlets opcional {schemaVersion:1,type:schuko|iec-c13,count:1..24}
+en el elemento PDU, conservando ID, ubicación, altura y puertos. Validación
+compartida en core/power_outlets.py, aplicada por WireGuiService y al leer la
+base IDF: tipos/rangos/versiones inválidos fallan conservando su origen. La
+creación antigua sin este campo sigue admitida; no se completa al leer ni al
+editar otro dato. Sin migración destructiva o renumeración.
+
+El formulario de alta PDU y el editor general permiten tipo y cantidad. Los
+campos se ocultan/deshabilitan para otros tipos; metadatos solo se envían si
+corresponden. Elementos antiguos ofrecen Sin especificar y no se modifican
+implícitamente. Se elige la variante IEC C13 para identificar explícitamente
+la toma femenina biselada, en vez de llamar IEC a cualquier formato.
+Referencia primaria consultada para nomenclatura: SCHURTER,
+https://catalogue.schurter.com/en/datasheet/typ_4785.pdf (IEC Connector C13).
+Es representación esquemática, no plano de fabricación ni certificado eléctrico.
+
+rackFace reconoce rack.pdu/device.pdu y dibuja tomas circulares con orificios y
+contactos de tierra o receptáculos biselados con tres contactos; distribuye hasta
+24 en dos filas dentro de la altura del elemento, reservando el área del rótulo.
+Sin dato, muestra Sin especificar en lugar de inventar tomas. No crea conexiones
+ni puertos de inventario. Primera inspección de captura detectó rótulo histórico
+Blank panel: corregido para mostrar el nombre PDU aunque conserve esa skin.
+
+`LANCTL_GUI_BROWSER_TESTS=1 LANCTL_CHROMIUM_EXECUTABLE=/home/victor/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
+LANCTL_PDU_REVIEW_DIR=/home/victor/.codex/visualizations/2026/10/26/01a179f3-7a70-7b10-a0ff-144f36e2966d/p132-review
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_pdu_outlets.py`: **2 passed en 1.90 s**.
+Prueban valores inválidos sin modificar el elemento, compatibilidad antigua,
+alta Schuko, edición IEC, conteo SVG y guardado/reapertura VLF con metadatos.
+Captura pdu-outlets.png inspeccionada; artefacto local, no archivo de inventario.
+
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 40s .venv/bin/python
+-m pytest -q tests/test_rack_skins.py tests/test_switch_port_profiles.py
+ tests/test_physical_idf_database.py tests/test_physical_project_persistence.py`:
+**94 passed, 6 skipped, 5 subtests passed en 4.76 s**.
+Ruff detectó imports y variable sobrante en el test inicial: corregidos; check y
+formato de cinco archivos afectados correctos. Cuatro recursos bilingües nuevos;
+catálogos/fallback e instalador regenerados, 2601 claves por idioma. Catálogo de
+errores regenerado/comprobado: 1839 puntos. Auditoría regenerada/comprobada,
+referencias CLI/web, higiene y diff check comprobados.
+
+Quedan Qt/instalables, entrega y matriz visual completa de alturas/temas.
+Pruebas con datos temporales, sin datos personales, builds, commit o publicación.
+P132 sigue abierta por validación/entrega; no se declara distribuida.
+
+## P136 — separación de vistas físicas/lógicas en GUI (12/11/2026)
+
+Se añade inventory_visibility como política de presentación, sin filtrar los
+load/all usados por mutaciones. LANRACK conserva todos los registros. Bootstrap
+LANWIRE filtra bandejas, peines, organizadores, ventilación, PDU y SAI sin IP;
+conserva switches no gestionables y enlaces. LANIP/GUI consulta el inventario
+físico por IDF (sin coincidencias por nombre), aplica la regla a sus filas y
+recuenta su resumen. LANACCESS filtra dispositivos/credenciales vinculadas en
+su snapshot, manteniendo archivos; LANMON filtra su inventario presentado,
+sin eliminar muestras o informes históricos. La IP lógica vinculada también
+cuenta para determinar visibilidad. Registros sin vínculo IDF permanecen como
+están; no se deduce identidad o no-gestión por ausencia de IP.
+
+management={schemaVersion:1,managed:bool} es opcional. Se valida al editar y al
+leer IDF; campos ausentes conservan clasificación desconocida. El editor del
+switch ofrece Gestionable / No gestionable / Sin especificar; volver a Sin
+especificar retira solo ese metadato. LANWIRE excluye los tipos reservados del
+alta. Los equipos alojados siguen visibles; su ubicación se conserva al editar
+otros campos y se gestiona desde LANRACK. Se omite el grupo visual de bandeja
+en el diagrama LANWIRE, conservando la colocación en rack y sus enlaces.
+
+Pruebas nuevas tests/test_inventory_visibility.py: matriz por tipo/gestión/IP,
+API GUI con inventario físico y lógico vinculado, archivos idénticos tras leer,
+router alojado y cable físico a switch no gestionable conservados; activar IP
+del SAI o gestión del switch cambia visibilidad. LANACCESS conserva equipos
+lógicos alojados. Reapertura VLF conserva metadata y política. Navegador real
+comprueba catálogo filtrado, clasificación editable, LANRACK completo y edición
+del router alojado sin perder tray. El montaje del test de enlace inicialmente
+eligió un puerto OTG incompatible con cobre; se usa router y puerto compatible,
+sin cambiar las reglas del producto para el test.
+
+Resultados acotados (con el Python del entorno y PYTEST_DISABLE_PLUGIN_AUTOLOAD=1):
+- Chromium, tests/test_inventory_visibility.py, **9 passed en 2.02 s** antes de
+  añadir el caso VLF; todos con datos temporales y una ventana a la vez.
+- Tests de visibilidad/PDU/menú/bandejas con navegador: **14 passed en 14.52 s**.
+- test_launcher_gui, test_switch_port_profiles, test_physical_project_persistence,
+  test_desktop_gui, test_inventory_visibility, test_http_session_headers:
+  **113 passed, 4 skipped en 6.48 s**.
+- Visibilidad/acceso/launchers tras filtro LANACCESS: **55 passed, 2 skipped en 8 s**.
+- Visibilidad con el caso VLF añadido: **9 passed, 1 skipped en 0.40 s** (navegador
+  omitido en este último comando, ya ejecutado por separado).
+
+Seis regresiones antiguas de altura suponían que accesorios estaban en el
+snapshot LANWIRE; se actualiza su lectura a LANRACK, manteniendo comprobaciones
+de altura y colisión. Tests PDU y menú leen datos completos del servicio para
+inspeccionar almacenamiento; la interacción PDU se realiza desde LANRACK.
+La primera prueba de editor usó un registro sin revision; corregida para usar
+el payload GUI versionado, sin relajar la guarda del producto.
+
+Cinco recursos de idioma nuevos, catálogos/fallback e instalador regenerados
+(2611 claves). Ruff check/formato comprobados; errores regenerados/comprobados,
+1843 puntos; auditoría regenerada/comprobada, referencias CLI/web, higiene y diff
+check correctos. La referencia web estaba obsoleta y se regeneró. No hay cambios
+en parsers o IDs públicos, borrados de datos, builds, commits o publicaciones.
+
+P136 permanece parcial: política aplicada en estas vistas GUI (incluidos clientes
+web que reutilizan las API), no extendida aún a listados CLI/TUI. Pendiente Qt,
+matriz completa en todas las interfaces y entrega en instalables. No se declara
+que todos los launchers/interfaz estén certificados ni se usa filtro como permiso.
+
+## Switch existente sin puertos — 12/11/2026
+
+Causa comprobada: la incorporación puntual de identidades LANIP conservó IDF,
+nombre e IP como elementos genéricos con puertos desconocidos. Nuevo elemento
+reserva otro IDF; no completa un registro existente. Se añade una acción en la
+ficha LANWIRE/LANRACK para completar un elemento/switch sin puertos usando un
+perfil real mediante wire_update/rack_element, conservando ID y ubicación.
+No hay método RPC nuevo ni cambios de IDs públicos o formato persistente.
+Se añade el perfil explícito 26 RJ45 + 2 SFP confirmado por el usuario.
+
+`.venv/bin/python -m pytest -q tests/test_existing_switch_profile.py
+ tests/test_switch_port_profiles.py tests/test_launcher_gui.py
+ tests/test_physical_placement.py --tb=short`: **94 passed, 3 skipped en 3.42 s**.
+Incluye ambas API, identidad lógica intacta, altura/ubicación conservadas,
+perfiles mixtos y heredados, revisión obsoleta y rechazo atómico de perfiles
+inválidos o de equipos ya configurados. La primera ejecución del catálogo
+exacto falló al incorporar 26+2; se amplía la expectativa de 26 a 27 perfiles
+con esa combinación explícita, manteniendo todas las anteriores.
+Sintaxis JS, Ruff/formato, catálogos, auditoría, referencias e higiene se revisan.
+No se ejecuta la suite completa; el nuevo botón no tiene recorrido nativo Qt
+ni Windows verificado en esta intervención. Requiere reabrir los launchers para
+cargar las fuentes nuevas; no se recompilan instaladores.
+
+Datos de MyHome1 corregidos con autorización del usuario: SW-01, IP terminada
+en .253, pasa de elemento genérico a switch con 26 RJ45 y 2 SFP; se conservan
+la ubicación elegida, datos lógicos y los demás registros físicos. Mismo número
+de elementos, sin duplicar IDF. Copia previa en el directorio de respaldos del
+usuario; guardado VLF forzado y verificado. Ningún dato personal se versiona.
+La sincronización automática de futuras altas sigue pendiente.
+
+## Skins de accesorios y deformación horizontal — 12/11/2026
+
+Integrados los frentes de peine, organizador y ventilación en rack-skins.js,
+catálogo, selector, validación compartida y alta de los tipos físicos existentes.
+Las formas proceden de la revisión anterior; no crean conectores ni cambian
+identidad o ubicación. El modo automático identifica el tipo; un frente explícito
+anterior se conserva hasta que el usuario lo cambie. El prefijo común P135
+sigue pendiente. No se migran proyectos del usuario.
+
+Se elimina `preserveAspectRatio=none`: todos los frentes escalan uniformemente.
+La elevación limita el ancho por la altura U disponible y se centra en ventanas
+anchas. El ajuste lee el ancho del canvas, evitando realimentación al limitar
+el propio armario. Se amplía la regresión opcional del navegador para comprobar
+escalas X/Y iguales. No se modifican dimensiones físicas ni puertos reales.
+
+`.venv/bin/python -m pytest -q tests/test_rack_accessory_skins.py
+ tests/test_rack_skins.py tests/test_physical_placement.py
+ tests/test_inventory_visibility.py --tb=short`: **34 passed, 5 skipped en 1.96 s**.
+Alta, catálogo, guardado/reapertura y elección explícita de un frente anterior
+comprobados con API reales en datos temporales. Node ejecuta rackFace/rackSkinOf
+reales y valida ocho SVG (1/2 U), ausencia de puertos ficticios y conservación
+de elecciones. Revisión visual en navegador de las formas; medida DOM de un
+puerto en áreas de 700 y 1232 px: 8.8636 × 7.1591 px en ambos casos.
+Es comprobación del renderizador, no recorrido Qt nativo/Windows completo.
+No se ejecuta la suite completa ni se reconstruyen instaladores o despliega RPi.
+
+Comprobación adicional del ajuste completo: elevación de 18 U generada por
+rackSkinElevation y dimensionada por rackFitElevation reales en el navegador.
+Con canvas ancho, altura de fila 30 px y ancho de armario 432 px, el cociente
+ancho/alto de un RJ45 es 1.238099 frente al 1.238095 definido en el SVG.
+No hay escalado horizontal independiente. Se conserva el desplazamiento vertical
+cuando la altura mínima del rack supera el espacio disponible.
+
+## P134 — rack demasiado pequeño: escala legible y scroll (12/11/2026)
+
+Causa reproducida en rackFitElevation: byHeight limitaba px/U para encajar el
+armario completo y --rack-max-width reducía también su ancho proporcionalmente.
+En un armario alto el resultado era un frontal demasiado pequeño. Con skins,
+se escala por ancho, mínimo 52 y máximo 84 px/U; el armario alto usa scroll
+vertical. La vista simple conserva su ajuste anterior. No se modifica geometría
+de inventario, número de U ni preserveAspectRatio de los SVG.
+
+Nueva prueba en test_rack_visual_review: rack real temporal de 52 U con switch,
+mantener el ancho al reducir altura de ventana 1000→650, comprobar escala mínima,
+scroll vertical, ancho >1000 en ventana 1440 y ajuste sin desbordamiento en 850.
+Comprueba igualdad de escala X/Y del SVG y archivo IDF idéntico tras redimensionar.
+El primer test intentó serializar DOMMatrix directamente y falló en su aserción;
+se capturan explícitamente a/d, sin modificar el producto para ese supuesto.
+
+Comando Chromium de revisión visual: **2 passed en 3.11 s**. Captura inspeccionada
+`p134-p135-review/rack-readable.png` en el directorio local de visualizaciones.
+Ruff, auditoría regenerada/comprobada, higiene y diff check correctos. Cambio
+visual JS sin nuevos textos, formatos, comandos o errores Python. Qt y entrega
+siguen pendientes; no se compilan instaladores ni se modifican datos personales.
+
+## P78/P134 — bandeja oscura y skins de equipos pequeños (12/11/2026)
+
+Solicitud: interior oscuro como el fondo para ver los dispositivos alojados.
+El chasis de bandeja usa #101719, conserva orejas/reborde y deja de dibujar
+ranuras de ventilación en su interior. rackTrayContents consulta relaciones
+location.tray del inventario existente y compone miniaturas vectoriales dentro
+del frontal, con nombre e IDF, tooltip completo e IP si existe. Distingue
+router, OTG y switch por tipo/perfil, muestra conectores de registros reales
+(hasta ocho por miniatura) y representa WLAN como símbolo sin socket RJ45.
+No introduce puertos, telemetría o estados de conexión ficticios.
+
+Distribución de hasta tres columnas y filas según altura de bandeja. Si el
+contenido excede el espacio legible se muestra +N equipos; los demás siguen en
+el inventario y las acciones de la bandeja. En vista simple conserva su resumen
+de nombres; en la vista con skins se retira ese resumen duplicado, que restaba
+ancho al SVG. No hay cambios en IDs, ubicación, persistencia o ocupación de U.
+
+Prueba nueva: rack temporal de 8 U, bandeja de 2 U, router/OTG/switch de cinco
+puertos alojados. Comprueba las tres miniaturas en el contenedor, cinco sockets
+del switch, fondo oscuro, ausencia de ranuras, siete filas totales (solo la
+bandeja consume dos U) y archivo IDF idéntico tras renderizar. Se inspeccionó
+la captura p134-p135-review/tray-small-devices.png en las visualizaciones locales.
+Dos intentos del test usaron inner_text sobre title SVG (solo válido en HTML);
+corregido a text_content, sin cambios de producto para esa expectativa.
+
+Comando Chromium de revisión visual: **3 passed en 4.03 s**. Una página cada vez,
+datos temporales. Nuevo recurso bilingüe para +N equipos; idiomas/fallback e
+instalador regenerados. Ruff y formato del test correctos; auditoría, catálogos,
+catálogo de errores e higiene comprobados. Sin errores Python nuevos, parsers,
+formatos, builds, commit, publicación o cambios de datos reales. Qt/instalables
+y matriz visual exhaustiva siguen pendientes.
+
+Regresión adicional de interacción tras el nuevo escalado: el primer recorrido
+P130/P133 detectó dos cierres prematuros del menú con skins. Un evento scroll
+pendiente de llevar la U a pantalla cerraba el menú recién abierto. La escucha
+ahora compara la posición de los ancestros capturada al abrirlo: descarta ese
+evento antiguo y sigue cerrando ante un desplazamiento posterior real.
+Repetición Chromium de tests/test_tray_selector_gui.py y test_rack_unit_menu.py:
+**3 passed en 12.66 s**. Se conservan pruebas de creación, alojamiento, traslado,
+colisión multi-U, teclado y cancelación en ambas vistas. Auditoría actualizada
+tras mover la escucha. Este arreglo también evita perder acceso al contenido
+de bandejas situadas fuera del tramo visible inicial del armario.
+
+
+### Entrada óptica de compañía — 2026-11-12
+
+Perfil aditivo `external.fiber-entry`, un puerto hembra FIBER, símbolo circular
+verde/naranja y creación en LANWIRE. Política común de visibilidad exclusiva de
+LANWIRE; el servicio LANRACK filtra tanto elementos como ocupantes sin filtrar
+la base usada por mutaciones. Ubicación permitida independiente o entorno;
+se rechaza montaje dentro del rack o bandeja. Se conserva `external.supply`.
+
+Pruebas: `tests/test_provider_fiber_entry.py` verifica perfil, visibilidad para
+cinco launchers incluso con IP, fibra compatible frente a cobre incompatible,
+puerto ocupado y rechazo atómico, persistencia VLF tras reapertura, ocultación
+LANRACK, creación gráfica ES/EN, símbolo de dos círculos con un solo puerto y
+cadena de fibra → OTG → gateway → RJ45 25 del switch. Capturas revisadas.
+
+Primera selección: 33 pruebas correctas en 9,15 s con pruebas de visibilidad y
+ubicación física. Selección ampliada: 62 correctas y 1 fallo de entorno en
+`test_launcher_gui.py::test_wire_browser_real_service_interactions`, que exige
+`channel="msedge"`; Microsoft Edge no está instalado en `/opt/microsoft/msedge`.
+Las pruebas nuevas usan el Chromium instalado y pasan en ES/EN. No se relajan
+ni cambian las pruebas antiguas. Sin validación Qt nativa/Windows ni instaladores.
+
+Ruff pasa en los archivos de este ajuste. La comprobación global detectó dos
+UP034 en `src/lanctl/apps/ip/interfaces/cli/commands/group.py`, modificado por
+otro trabajo concurrente; no se corrige dentro de este ajuste. Se regeneran
+idiomas, auditoría, errores y referencia web y se comprueban referencias e higiene.
+Los proyectos personales modificados se mantienen fuera de Git.
+
+## P127 urgente — asignación de grupos a elementos sin MAC (12/11/2026)
+
+Elegida por prioridad alta y reproducción concreta. Se localizan tres bloqueos:
+GroupDatabase.add/remove/edit_device_fields rechazaban elementos sin MAC;
+checkboxes GUI quedaban deshabilitados y Crear y añadir solo asignaba si había
+MAC. El alta manual permite elementos sin MAC, por lo que ese recorrido fallaba.
+
+Corrección: Group conserva members por MAC y admite member_ids como atributo
+aditivo (JSON memberIds + membershipSchemaVersion=1, solo si hay IDs). Los
+registros antiguos conservan su serialización. Se valida la versión y lista
+sin inventar códigos o reutilizar IDs públicos. Añadir, quitar, editar por CLI
+y eliminar dispositivo mantienen ambos lados de la transacción de grupos y
+la identidad estable; no se mezclan dispositivos por compartir MAC vacía.
+CLI cuenta y muestra miembros sin MAC. GUI habilita grupos editables también
+sin MAC y Crear y añadir aplica efectivamente la pertenencia.
+
+VLF mantiene group_members y añade group_member_ids_v1 opcional para conservar
+el tipo de pertenencia al reconstruir el workspace. La primera prueba completa
+GUI pasó la asignación, pero detectó verificación fallida al guardar: el lector
+anterior descartaba miembros sin MAC. Se corrigió lector/escritor y se repitió
+el recorrido completo correctamente. No se omite ni rebaja la verificación de
+integridad del guardado. Compatibilidad documentada en docs/VLF.md; versiones
+anteriores no garantizan roundtrip de la extensión nueva.
+
+`LANCTL_GUI_BROWSER_TESTS=1 LANCTL_CHROMIUM_EXECUTABLE=/home/victor/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_groups_without_mac.py`: **2 passed en 2.05 s**.
+Servicio: dos manuales sin MAC, agregar/quitar, CLI edit_device_fields, borrar,
+y compatibilidad MAC existente. Navegador: checkbox habilitado, marcar grupo,
+Crear y añadir, otro dispositivo intacto, guardar y reabrir VLF con pertenencia
+por ID conservada. Solo datos temporales.
+
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_vlf.py tests/test_file_transaction.py tests/test_desktop_gui.py
+ tests/test_project_sync.py`: **46 passed, 1 skipped en 2.72 s**.
+Tras optimizar la consulta de IDs del escritor y validar la versión incluso
+si memberIds está ausente: test_groups_without_mac + test_vlf, **6 passed,
+1 skipped en 0.25 s** (navegador ya ejecutado por separado).
+
+Ruff check/formato correctos; catálogo de errores regenerado/comprobado (1843
+puntos del árbol), auditoría regenerada/comprobada, referencias CLI/web, higiene
+y diff check correctos. Sin nuevos textos; validación utiliza la traducción
+existente de registro de grupo inválido. No cambian parsers/comandos ni IDs
+públicos; extensión persistente opcional y versionada documentada. Pendientes
+Qt/instalables y otros posibles casos de P127. Sin builds, commits, publicación
+o modificación de proyectos personales.
+
+## P137 — distribución por niveles de la pizarra LANWIRE (12/11/2026)
+
+El botón Reorganizar ya existía, pero physicalPack empleaba iteraciones de
+fuerzas con comparaciones cuadráticas por componente. Se sustituye por una
+heurística determinista: componentes conexos, BFS con prioridad a entrada
+externa/router, ocho barridos alternos de ordenación baricéntrica entre niveles,
+tarjetas con dimensiones reales y márgenes, empaquetado separado de componentes.
+Se mantiene el agrupado CPD/rack de wireLayout y las posiciones guardadas;
+solo se sustituyen por elección explícita con Reorganizar. Sin cambios de
+inventario ni nuevas dependencias/servicios. No se promete óptimo global.
+
+La memoria del algoritmo es proporcional a nodos/enlaces; los barridos son
+fijos, sin repulsión de todas las parejas ni simulación sin límite. Se ordenan
+vecinos antes de sumar rangos para que el orden de los enlaces no cambie el
+resultado por precisión de coma flotante: el primer test de 1.000 nodos detectó
+esa diferencia y se corrigió antes de aceptar la regresión.
+
+Nuevo tests/physical_layout.cjs ejecuta la función real en Node aislado: tamaños
+variables, componentes, autoenlace/enlace externo ignorados, ciclo, grafo vacío,
+1.000 nodos, orden de entradas invertido, ausencia de solapamientos e inputs
+intactos. Caso de ramas con etiquetas invertidas comprueba su orden coherente
+con sus padres. Presupuesto de fixture <5 s; proceso acotado a 15 s.
+
+Nuevo test de navegador: API real y router/switch/tres PCs/cables temporales.
+Posición manual sobrevive al render; pulsar Reorganizar la sustituye. Comprueba
+no solapamiento de tarjetas y bytes IDF intactos. Captura inspeccionada:
+`/home/victor/.codex/visualizations/2026/10/26/01a179f3-7a70-7b10-a0ff-144f36e2966d/p137-layout/diagram.png`.
+
+`LANCTL_GUI_BROWSER_TESTS=1 LANCTL_CHROMIUM_EXECUTABLE=/home/victor/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
+LANCTL_LAYOUT_REVIEW_DIR=<directorio de artefactos>
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 timeout --kill-after=5s 45s .venv/bin/python
+-m pytest -q tests/test_physical_layout.py`: **2 passed en 1.46 s**.
+Ruff/formato del test, auditoría regenerada/comprobada, catálogo vigente (sin
+cambios de errores Python), higiene y diff check correctos. Sin nuevos textos,
+parsers, IDs públicos o formatos persistentes. No se ejecuta suite completa.
+
+Límites: cruces en ciclos/aristas del mismo nivel y topologías con muchos enlaces
+pueden permanecer; no hay garantía de óptimo. Los 1.000 nodos son prueba de cálculo,
+no certificación de dibujar 1.000 tarjetas DOM ni de Qt. Pendientes topologías
+reales, Qt/instalables y entrega. Sin datos personales, builds o publicación.
+
+## P138 — persistencia JSON de pizarra por proyecto (12/11/2026)
+
+Antes, wireSavePositions solo escribía localStorage y no viajaba con el proyecto.
+Se añade diagramLayouts opcional/versionado al JSON físico existente (entrada
+VLF devices/physical.json), con posiciones y cámara por nivel/rack/CPD. Se
+reutilizan serialización, fingerprint, transacciones y política de guardado del
+inventario físico; no se añade un archivo externo ni rutas personales al VLF.
+El valor no modifica registros, puertos, enlaces o ubicación física.
+
+Servicio save_diagram y RPC wire_diagram validan estructura/tamaño/números,
+revisión por vista y contexto del envelope existente. Web exige system.configure;
+la GUI no intenta persistencia para clientes sin esa acción autorizada.
+Sin proyecto mantiene almacenamiento local. Las escrituras GUI se agrupan
+200 ms por vista y se serializan; guardar/cambiar/cerrar espera la cola. Se
+captura contexto original para rechazar trabajos del proyecto anterior. Fallos
+se muestran con ID/detalles de origen y no se consideran guardados. La carga
+prioriza JSON del proyecto y recupera cámara, incluso con localStorage vacío.
+
+La primera prueba completa detectó que el contenedor físico recortaba de nuevo
+las posiciones cargadas al área del layout automático. Se sustituye el recorte
+por expansión del contenedor visual alrededor de sus nodos, sin cambiar el
+rack real. Se evita también el auto-fit inicial que sobrescribía cámara guardada.
+
+Pruebas tests/test_project_diagram.py: guardar/restaurar dos vistas, conflicto
+sin modificación de archivo, NaN rechazado, guardado/reapertura VLF; navegador
+nuevo y localStorage vacío recupera coordenadas y zoom después de usar la acción
+GUI Guardar proyecto, que drena una actualización pendiente. Junto a algoritmo
+y diagrama real tests/test_physical_layout.py: **4 passed en 3.02 s**.
+
+Regresiones acotadas: test_launcher_gui, test_project_sync,
+ test_physical_project_persistence, test_lan_web_suite, test_project_diagram:
+**62 passed, 3 skipped en 6.79 s**. Anterior selección de persistencia/web/layout:
+**25 passed, 1 skipped en 3.92 s**. Los tests de navegador se ejecutan aparte
+con LANCTL_GUI_BROWSER_TESTS=1 y el Chromium ya instalado, sin descargar runtimes.
+
+Dos recursos bilingües nuevos. Idiomas/fallback e instalador regenerados;
+2616 claves por idioma. Ruff check/formato, catálogo de errores regenerado y
+--check (1852 puntos), auditoría regenerada/comprobada, referencias CLI/web,
+higiene y diff check correctos. Referencia web estaba obsoleta: regenerada.
+Sin cambios de parsers o IDs públicos; RPC y metadato son aditivos/versionados.
+
+Pendiente Qt/instalables, entrega y matriz exhaustiva de varias ventanas/permisos
+vistas. Conflicto obliga a recargar antes de sobrescribir; no se fusionan dos
+arrastres concurrentes del mismo nodo. Sin datos personales, builds, commit,
+push o publicación. No se declara distribuido por incorporar las fuentes.
+
+
+## P139 — áreas RACK/CPD redimensionables (12/11/2026)
+
+Se añaden cuatro tiradores a las áreas verdes de LANWIRE y un algoritmo puro
+que propaga colisiones en la dirección de ampliación con 40 unidades de margen.
+Se desplazan áreas vecinas y todos sus nodos conjuntamente; los propios quedan
+fijos y la reducción no recorta su contenido. No hay redistribución inversa al
+reducir. Fuera de la franja de colisión no se desplazan bloques. Flechas ajustan
+20 unidades y Mayús 80; Escape, pérdida de foco y cancelación restauran el estado
+anterior. Los listeners se liberan y las actualizaciones se limitan por frame.
+Los cambios de contexto interrumpen el arrastre sin aplicarlo al proyecto nuevo.
+
+Persistencia: regions opcional en cada vista de diagramLayouts (P138), máximos
+512 áreas, números finitos y dimensiones positivas. Comparte escritura atómica,
+control de revisión y contexto existentes. Reorganizar borra tamaños manuales.
+Sin IDs públicos nuevos ni cambios de comandos/permisos. Inventario y ubicación
+física permanecen intactos en la prueba del flujo GUI. Documentado en VLF.md.
+
+Comprobaciones Linux, Python .venv, un navegador secuencial y timeout 45 segundos:
+
+- LANCTL_GUI_BROWSER_TESTS=1, LANCTL_CHROMIUM_EXECUTABLE apuntando al Chromium
+  headless disponible, PYTEST_DISABLE_PLUGIN_AUTOLOAD=1; pytest -q
+  tests/test_project_diagram.py tests/test_physical_layout.py: **8 passed, 5.09s**.
+  Algoritmo: cuatro direcciones, cascada, contenido propio fijo, límites de
+  reducción, inmutabilidad y bloques ajenos a la franja sin cambios. Navegador:
+  arrastre real, Escape, teclado, Guardar real y reapertura en navegador sin
+  localStorage; recupera áreas/posiciones exactas. Tres casos de geometría
+  inválida se rechazan sin cambiar bytes del inventario. Persistencia VLF previa
+  sin regions sigue funcionando.
+- pytest -q tests/test_physical_project_persistence.py tests/test_lan_web_suite.py:
+  **24 passed, 3.82s**.
+- Captura inspeccionada: resize-regions.png en el directorio externo p137-layout;
+  ambos bloques visibles, tiradores accesibles y separación conservada.
+- Ruff check y format --check sobre diagram_layout.py, ui_messages_gui.py y
+  test_project_diagram.py: correctos. Catálogos bilingües: 2621 claves por idioma;
+  generación y comprobación de recursos de instalador, auditoría de idiomas,
+  catálogo de errores (1854 puntos), referencias CLI/web e higiene: correctos.
+  git diff --check correcto. Sin cambios de CLI/TUI que requieran completados.
+- Durante desarrollo: el primer test puro falló porque el contexto vm de Node
+  no exponía structuredClone; se corrigió la fixture y pasó. La primera auditoría
+  detectó la construcción dinámica de una clave de dirección; se sustituyó por
+  claves explícitas y se regeneró/comprobó la auditoría. No se ocultan fallos.
+
+Pendiente: recorrido Qt nativo, CPD real grande, plataformas e instalables.
+Comparte algoritmo rack/CPD pero el recorrido automatizado de resize fue con dos
+racks. No se han compilado ni publicado instaladores, hecho commit o push,
+modificado proyectos personales ni cerrado P139 como entrega certificada.

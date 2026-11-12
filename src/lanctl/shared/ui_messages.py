@@ -7,6 +7,7 @@ from lanctl.shared.ui_messages_details import DETAIL_MESSAGES
 from lanctl.shared.ui_messages_dynamic import DYNAMIC_MESSAGES
 from lanctl.shared.ui_messages_gui import GUI_MESSAGES
 from lanctl.shared.ui_messages_html import HTML_MESSAGES
+from lanctl.shared.ui_messages_lan_web import LAN_WEB_MESSAGES
 from lanctl.shared.ui_messages_plugins import PLUGIN_LOCATIONS, PLUGIN_MESSAGES
 from lanctl.shared.ui_messages_prompts import PROMPT_LOCATIONS, PROMPT_MESSAGES
 from lanctl.shared.ui_messages_status import STATUS_LOCATIONS, STATUS_MESSAGES
@@ -2599,5 +2600,32 @@ UI_MESSAGES.update(
             "Detención solicitada; esperando a que terminen las comprobaciones activas",
         ),
         "LANCTL.MONITOR.EXECUTION.STOPPING": ("Stopping", "Deteniéndose"),
+    }
+)
+
+UI_MESSAGES.update(LAN_WEB_MESSAGES)
+
+UI_MESSAGES.update(
+    {
+        "LANCTL.PHYSICAL.PROFILE.CONFIGURE": (
+            "Configure switch ports",
+            "Configurar puertos del switch",
+        ),
+        "LANCTL.PHYSICAL.PROFILE.HELP": (
+            "Complete this existing device without changing its IDF, IP or rack position. Select its actual port configuration.",
+            "Completa este equipo existente sin cambiar su IDF, IP ni posición en el rack. Selecciona su configuración real de puertos.",
+        ),
+        "LANCTL.PHYSICAL.PROFILE.INVALID": (
+            "Select a supported switch port profile.",
+            "Selecciona un perfil de puertos de switch compatible.",
+        ),
+        "LANCTL.PHYSICAL.PROFILE.ONLY_EMPTY": (
+            "Only an unconfigured element or a switch without ports can be completed this way.",
+            "Solo se puede completar así un elemento sin configurar o un switch sin puertos.",
+        ),
+        "LANCTL.PHYSICAL.PROFILE.CONNECTED": (
+            "Review existing cable endpoints before configuring this device.",
+            "Revisa los extremos de cable existentes antes de configurar este equipo.",
+        ),
     }
 )

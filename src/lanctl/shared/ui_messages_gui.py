@@ -1,6 +1,117 @@
 """Reviewed bilingual dynamic interface messages. Technical values are not localized."""
 
 GUI_MESSAGES = {
+    "LANCTL.DIAGRAM.RESIZE": (
+        "Resize {region}: {direction}",
+        "Redimensionar {region}: {direction}",
+    ),
+    "LANCTL.DIAGRAM.DIRECTION.E": ("right", "derecha"),
+    "LANCTL.DIAGRAM.DIRECTION.W": ("left", "izquierda"),
+    "LANCTL.DIAGRAM.DIRECTION.N": ("up", "arriba"),
+    "LANCTL.DIAGRAM.DIRECTION.S": ("down", "abajo"),
+    "LANCTL.DIAGRAM.INVALID": (
+        "Invalid or oversized diagram layout.",
+        "Distribución de pizarra inválida o demasiado grande.",
+    ),
+    "LANCTL.DIAGRAM.STALE": (
+        "This diagram changed in another window. Reload before saving its positions.",
+        "La pizarra cambió en otra ventana. Recarga antes de guardar sus posiciones.",
+    ),
+    "LANCTL.WIRE.FIBER_ENTRY.NAME": ("Provider fiber entry", "Entrada de fibra de compañía"),
+    "LANCTL.WIRE.FIBER_ENTRY.EXTERNAL_ONLY": (
+        "The provider fiber entry belongs outside the rack, not in a rack unit or tray.",
+        "La entrada de fibra de compañía pertenece al exterior del rack, no a una U ni a una bandeja.",
+    ),
+    "LANCTL.RACK.TRAY.MORE": ("+{count} devices", "+{count} equipos"),
+    "LANCTL.PHYSICAL.LOCATION.IN_LANRACK": (
+        "Manage this device's physical placement in LANRACK.",
+        "Gestiona la ubicación física de este equipo en LANRACK.",
+    ),
+    "LANCTL.PHYSICAL.MANAGEMENT": ("Switch management", "Gestión del switch"),
+    "LANCTL.PHYSICAL.MANAGED": ("Managed", "Gestionable"),
+    "LANCTL.PHYSICAL.UNMANAGED": ("Unmanaged", "No gestionable"),
+    "LANCTL.PHYSICAL.MANAGEMENT.INVALID": (
+        "Invalid management classification.",
+        "Clasificación de gestión inválida.",
+    ),
+    "LANCTL.PDU.TYPE": ("Outlet type", "Tipo de toma"),
+    "LANCTL.PDU.COUNT": ("Number of outlets", "Cantidad de tomas"),
+    "LANCTL.PDU.UNSPECIFIED": ("Not specified", "Sin especificar"),
+    "LANCTL.PDU.INVALID": (
+        "Select Schuko or IEC C13 and an outlet count from 1 to 24.",
+        "Selecciona Schuko o IEC C13 y una cantidad de tomas entre 1 y 24.",
+    ),
+    "LANCTL.RACK.TRAY.EMPTY": (
+        "No compatible existing devices fit this tray. Create a router, OTG or desktop switch here, or check device height and current location.",
+        "No hay equipos existentes compatibles que quepan en esta bandeja. Crea aquí un router, OTG o switch de sobremesa, o revisa su altura y ubicación actual.",
+    ),
+    "LANCTL.RACK.TRAY.EXISTING_HINT": (
+        "Select an existing device, or create a new router, OTG or desktop switch inside this tray.",
+        "Selecciona un equipo existente o crea un nuevo router, OTG o switch de sobremesa dentro de esta bandeja.",
+    ),
+    "LANCTL.RACK.TRAY.HEIGHT_EXCEEDED": (
+        "The device is taller than the tray's allocated rack space.",
+        "El equipo supera la altura reservada para la bandeja.",
+    ),
+    "LANCTL.RACK.TRAY.ADD_EXISTING": ("Add existing elements", "Añadir elementos existentes"),
+    "LANCTL.RACK.TRAY.CREATE_INSIDE": (
+        "Create element inside tray",
+        "Crear elemento dentro de la bandeja",
+    ),
+    "LANCTL.PHYSICAL.CREATE.SERVER": ("Server", "Servidor"),
+    "LANCTL.PHYSICAL.SERVER.PORTS": ("Network port count", "Cantidad de puertos de red"),
+    "LANCTL.RACK.POSITION.DECREASE": (
+        "Move down one rack unit",
+        "Desplazar una unidad hacia abajo",
+    ),
+    "LANCTL.RACK.POSITION.INCREASE": ("Move up one rack unit", "Desplazar una unidad hacia arriba"),
+    "LANCTL.RACK.POSITION.RANGE": ("Occupied units", "Unidades ocupadas"),
+    "LANCTL.PHYSICAL.CREATE.BLANK": ("Blanking panel", "Tapa ciega"),
+    "LANCTL.PHYSICAL.CREATE.VENTILATION": ("Ventilation panel", "Panel de ventilación"),
+    "LANCTL.PHYSICAL.CREATE.ORGANIZER": ("Cable organizer", "Organizador de cables"),
+    "LANCTL.PHYSICAL.CREATE.CABLE_COMB": ("Cable comb", "Peine de cables"),
+    "LANCTL.PHYSICAL.CREATE.PDU": ("Power distribution unit", "Regleta de enchufes"),
+    "LANCTL.PHYSICAL.CREATE.UPS": ("UPS", "SAI"),
+    "LANCTL.PHYSICAL.SWITCH.INVALID_PORT_COUNTS": (
+        "Select a supported combination of RJ45 and SFP ports.",
+        "Selecciona una combinación admitida de puertos RJ45 y SFP.",
+    ),
+    "LANCTL.PHYSICAL.SWITCH.PORT_FAMILY": ("Port type", "Tipo de puertos"),
+    "LANCTL.PHYSICAL.SWITCH.PORT_COUNT": ("Port count", "Cantidad de puertos"),
+    "LANCTL.PHYSICAL.SWITCH.DESKTOP_OPTION": (
+        "{ports} · desktop (tray)",
+        "{ports} · sobremesa (bandeja)",
+    ),
+    "LANCTL.PHYSICAL.MOUNT.TRAY_REQUIRED": (
+        "This device cannot be mounted directly in rack units. House it in a tray.",
+        "Este equipo no admite montaje directo en unidades del rack. Alójalo en una bandeja.",
+    ),
+    "LANCTL.PHYSICAL.SWITCH.PORT_LAYOUT": ("Port configuration", "Configuración de puertos"),
+    "LANCTL.PHYSICAL.SWITCH.RACK_PROFILE": (
+        "{rj45} RJ45 + {sfp} SFP · rackmount",
+        "{rj45} RJ45 + {sfp} SFP · rackmount",
+    ),
+    "LANCTL.PHYSICAL.SWITCH.DESKTOP_PROFILE": (
+        "{rj45} RJ45 · desktop (tray)",
+        "{rj45} RJ45 · sobremesa (bandeja)",
+    ),
+    "LANCTL.PHYSICAL.SWITCH.TRAY_NOTE": (
+        "Routers, OTG devices and desktop switches belong in a tray, not directly in a rack unit.",
+        "Los routers, OTG y switches de sobremesa se alojan en una bandeja, no directamente en una unidad del rack.",
+    ),
+    "LANCTL.RACK.UNIT.DETAILS": ("View details", "Ver detalles"),
+    "LANCTL.RACK.UNIT.EDIT": ("Edit element", "Editar elemento"),
+    "LANCTL.RACK.UNIT.CREATE": ("Create element", "Crear elemento"),
+    "LANCTL.RACK.UNIT.ASSIGN": ("Assign existing element", "Asignar elemento existente"),
+    "LANCTL.RACK.UNIT.OCCUPIED": ("This unit is occupied.", "Esta unidad está ocupada."),
+    "LANCTL.RACK.UNIT.CANCELLED": (
+        "Move cancelled; no changes applied.",
+        "Traslado cancelado; no se han aplicado cambios.",
+    ),
+    "LANCTL.RACK.UNIT.CONFIRM_MOVE": (
+        "Move {element} from {origin} to {destination}?",
+        "¿Trasladar {element} de {origin} a {destination}?",
+    ),
     "LANCTL.GUI.CLOSE.EXPIRED": (
         "The close request expired. Review the window and try closing again.",
         "La solicitud de cierre ha caducado. Revisa la ventana y vuelve a intentar cerrarla.",

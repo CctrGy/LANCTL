@@ -20,6 +20,7 @@ function physicalPlacementLabel(r) {
   return window.LanctlI18n.t("LANCTL.UI.WORD.STANDALONE");
 }
 function physicalLocationFields(r) {
+  if (state.launcher === "lanwire" && r.placement?.kind === "hosted") return [Object.assign(document.createElement("p"), {textContent: window.LanctlI18n.t("LANCTL.PHYSICAL.LOCATION.IN_LANRACK")})];
   if (["rack", "wire"].includes(r.data.type)) return [];
   const p = r.placement || {kind: "independent"}, location = r.data.location || {};
   const fields = [
@@ -46,11 +47,18 @@ function physicalLocationFields(r) {
     fields[3].hidden = mode === "hosted";
     fields[4].hidden = mode !== "hosted";
   };
+  if (r.directMount === false) {
+    const inside = fields[0].querySelector('option[value="inside"]');
+    inside.disabled = true;
+    inside.textContent += " · " + window.LanctlI18n.t("LANCTL.PHYSICAL.MOUNT.TRAY_REQUIRED");
+  }
+  if (state.launcher === "lanwire") fields[0].querySelector('option[value="hosted"]')?.remove();
   fields[0].querySelector("select").onchange = update;
   update();
   return fields;
 }
 function physicalLocationValues(v, r) {
+  if (state.launcher === "lanwire" && r.placement?.kind === "hosted") return {};
   if (["rack", "wire"].includes(r.data.type)) return {};
   if (v.placement === "review") {
     if (v.rack !== (r.data.location?.rack || "") || Number(v.unit) !== (r.data.location?.unit || 1) || Number(v.heightU) !== (r.data.rackAppearance?.units || 1))
@@ -106,6 +114,40 @@ async function physicalMove(r) {
   await load();
 }
 
+function physicalCreateInTray(r) {
+  const context = JSON.stringify(state.projectContext), revision = state.organizationRevision;
+  wireNew("router.gateway", {tray: r.id, rack: null, unit: 0, in_rack: false});
+  const submit = formSubmit;
+  formSubmit = values => {
+    if (context !== JSON.stringify(state.projectContext) || revision !== state.organizationRevision)
+      throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_PROJECT_CHANGED_RELOAD_THE_RECORD"));
+    return submit(values);
+  };
+}
+function physicalHostDevice(r) {
+  const context = JSON.stringify(state.projectContext), revision = state.organizationRevision;
+  const available = physicalInventory().filter(x => x.directMount === false && (x.data.rackAppearance?.units || 1) <= (r.data.rackAppearance?.units || 1) && x.data.location?.tray !== r.id);
+  const selector = field(window.LanctlI18n.t("LANCTL.UI.TEXT.DEVICE_1C555EB7"), "device", available[0]?.id || "", "text", available.map(x => [x.id, `${x.data.name || x.id} · ${physicalPlacementLabel(x)}`]));
+  const note = Object.assign(document.createElement("p"), {textContent: window.LanctlI18n.t(available.length ? "LANCTL.RACK.TRAY.EXISTING_HINT" : "LANCTL.RACK.TRAY.EMPTY")});
+  note.dataset.trayHint = "";
+  const create = wireAction(window.LanctlI18n.t("LANCTL.RACK.TRAY.CREATE_INSIDE"), () => wireOpenAfterSave(() => physicalCreateInTray(r)));
+  create.dataset.trayCreate = r.id;
+  function guard() {
+    if (context !== JSON.stringify(state.projectContext) || revision !== state.organizationRevision)
+      throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_PROJECT_CHANGED_RELOAD_THE_RECORD"));
+  }
+  showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.HOST_DEVICE_IN") + (r.data.name || r.id), [note, selector, create], async v => {
+    guard();
+    const child = available.find(x => x.id === v.device);
+    if (!child) throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.NO_DEVICES_AVAILABLE"));
+    if (child.placement?.kind !== "independent" && !await appDecision(window.LanctlI18n.t("LANCTL.RACK.UNIT.CONFIRM_MOVE", {element: child.id, origin: physicalPlacementLabel(child), destination: r.data.name || r.id})))
+      throw Error(window.LanctlI18n.t("LANCTL.RACK.UNIT.CANCELLED"));
+    guard();
+    return call("rack_element", revision, "update", child.id, {tray: r.id});
+  });
+  if (!available.length) { selector.querySelector("select").disabled = true; $("#submit").hidden = true; }
+}
+
 rackOccupantDetails = function(item) {
   const r = physicalInventory().find(x => x.id === item.id);
   if (!r) return;
@@ -115,12 +157,7 @@ rackOccupantDetails = function(item) {
     wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.CUSTOMIZE_FRONT"), () => wireOpenAfterSave(() => rackSkinEditor(r))));
   if (["tray", "device.tray"].includes(r.data.type) && r.placement?.kind === "inside") {
     actions.append(wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.HOUSE_DEVICE"), () => wireOpenAfterSave(() => {
-      const available = physicalInventory().filter(x => !["rack", "wire", "tray", "device.tray"].includes(x.data.type) && x.data.location?.tray !== r.id);
-      showForm(window.LanctlI18n.t("LANCTL.UI.FRAGMENT.HOST_DEVICE_IN") + (r.data.name || r.id), [field(window.LanctlI18n.t("LANCTL.UI.TEXT.DEVICE_1C555EB7"), "device", available[0]?.id || "", "text", available.map(x => [x.id, `${x.data.name || x.id} · ${physicalPlacementLabel(x)}`]))], v => {
-        const child = available.find(x => x.id === v.device);
-        if (!child) throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.NO_DEVICES_AVAILABLE"));
-        return call("wire_update", child.id, child.revision, {tray: r.id});
-      });
+      physicalHostDevice(r);
     })));
   }
   const children = physicalInventory().filter(x => x.data.location?.tray === r.id);
@@ -183,7 +220,7 @@ render = function() {
   for (const tray of items.filter(x => ["tray", "device.tray"].includes(x.data.type))) {
     const button = [...document.querySelectorAll("[data-rack-occupant]")].find(b => b.dataset.rackOccupant === tray.id);
     const children = items.filter(x => x.data.location?.tray === tray.id);
-    if (button && children.length) button.append(Object.assign(document.createElement("small"), {textContent: children.map(x => x.data.name || x.id).join(" · ")}));
+    if (button && children.length && !button.querySelector(".rack-face")) button.append(Object.assign(document.createElement("small"), {textContent: children.map(x => x.data.name || x.id).join(" · ")}));
   }
 };
 

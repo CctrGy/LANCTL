@@ -133,7 +133,7 @@ def run_group(args: argparse.Namespace) -> int:
                         f"{_paint('GROUP', Fore.CYAN, use_color, bright=True)}: {_paint(group.name, Fore.YELLOW, use_color)}"
                     )
                     print(
-                        f"{_paint('ELEMENTS', Fore.CYAN, use_color, bright=True)}: {_paint(str(len(group.members)), Fore.GREEN, use_color)}"
+                        f"{_paint('ELEMENTS', Fore.CYAN, use_color, bright=True)}: {_paint(str(len(group.members) + len(group.member_ids)), Fore.GREEN, use_color)}"
                     )
                     print(
                         f"{_paint('DESCRIPTION', Fore.CYAN, use_color, bright=True)}: {_paint(group.description, Fore.WHITE, use_color)}"
@@ -149,7 +149,7 @@ def run_group(args: argparse.Namespace) -> int:
             for group in stored:
                 print(
                     f"{_paint(fit_text(group.name, widths['group']).ljust(widths['group']), Fore.YELLOW, use_color)}  "
-                    f"{_paint(str(len(group.members)).rjust(widths['count']), Fore.GREEN, use_color)}  "
+                    f"{_paint(str(len(group.members) + len(group.member_ids)).rjust(widths['count']), Fore.GREEN, use_color)}  "
                     f"{_paint(fit_text(group.description, widths['description']), Fore.WHITE, use_color)}"
                 )
     return 0
@@ -170,6 +170,16 @@ def _print_group(group, database: DeviceDatabase) -> None:
         )
         for mac in group.members
     ]
+    by_id = {device.device_id: device for device in database.load()}
+    rows.extend(
+        (
+            by_id[identifier].alias or by_id[identifier].name or "-",
+            by_id[identifier].ip,
+            by_id[identifier].mac or "-",
+        )
+        for identifier in group.member_ids
+        if identifier in by_id
+    )
     fields = ("element", "ip", "mac")
     widths = {"element": max(16, *(len(row[0]) for row in rows)), "ip": 15, "mac": 17}
     widths, stacked = shrink_widths(

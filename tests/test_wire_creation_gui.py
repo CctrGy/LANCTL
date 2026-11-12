@@ -45,7 +45,12 @@ def test_wire_creation_cancel_connections_cpd_feedback_and_reopen(workspace, tmp
         ids = []
         for kind, name in (("switch.5ports", "Switch"), ("pc.1port", "PC")):
             page.get_by_role("button", name="Nuevo elemento", exact=True).click()
-            page.locator("[name=kind]").select_option(kind)
+            page.locator("[name=kind]").select_option(
+                "switch" if kind.startswith("switch.") else kind
+            )
+            if kind.startswith("switch."):
+                page.locator("[name=rj45Count]").select_option("5")
+                page.locator("[name=sfpCount]").select_option("0")
             page.locator("[name=name]").fill(name)
             save_form(page)
             ids.append(

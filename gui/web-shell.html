@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<base href="/lanctl/"><title>LANCTL</title>
+<link rel="icon" href="assets/launcher-icons/lanctl.svg">
+<link rel="stylesheet" href="resources/web-shell.css">
+<script src="resources/i18n-defaults.js" defer></script><script src="resources/i18n.js" defer></script>
+<script src="resources/web-shell.js" defer></script>
+</head>
+<body>
+<section id="web-login" class="login-screen">
+  <div class="login-brand"><span class="brand-symbol" aria-hidden="true">⌁</span><span>LAN<span class="accent">CTL</span></span></div>
+  <div class="login-card"><p class="eyebrow" data-i18n="LANCTL.WEB.TITLE"></p>
+    <h1 data-i18n="LANCTL.WEB.WELCOME"></h1><p class="muted" data-i18n="LANCTL.WEB.LOGIN_HELP"></p>
+    <form id="web-login-form"><label><span data-i18n="LANCTL.UI.TEXT.USERNAME"></span><input name="username" autocomplete="username" required autofocus></label>
+      <label><span data-i18n="LANCTL.UI.TEXT.PASSWORD"></span><input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit" data-i18n="LANCTL.UI.HTML.SIGN_IN"></button><p id="login-error" class="error" role="alert"></p>
+    </form>
+  </div><p class="login-foot"><span class="status-dot"></span><span data-i18n="LANCTL.WEB.CONNECTED"></span></p>
+</section>
+<div id="web-workspace" class="web-workspace" data-nav="open" hidden>
+  <aside id="web-sidebar" data-i18n-aria-label="LANCTL.WEB.NAVIGATION">
+    <a href="panel" class="sidebar-brand" data-route="panel"><span class="brand-symbol" aria-hidden="true">⌁</span><span>LAN<span class="accent">CTL</span><small data-i18n="LANCTL.WEB.TITLE"></small></span></a>
+    <p class="eyebrow" data-i18n="LANCTL.WEB.APPLICATIONS"></p>
+    <nav id="web-navigation" data-i18n-aria-label="LANCTL.WEB.NAVIGATION">
+      <a href="panel" data-route="panel"><span class="nav-icon" aria-hidden="true">⌂</span><span><b>LANCTL</b><small data-i18n="LANCTL.WEB.PANEL"></small></span></a>
+      <a href="ip" data-route="ip"><span class="nav-icon" aria-hidden="true">◎</span><span><b>LANIP</b><small data-i18n="LANCTL.WEB.IP"></small></span></a>
+      <a href="wire" data-route="wire"><span class="nav-icon" aria-hidden="true">⌘</span><span><b>LANWIRE</b><small data-i18n="LANCTL.WEB.WIRE"></small></span></a>
+      <a href="access" data-route="access"><span class="nav-icon" aria-hidden="true">◇</span><span><b>LANACCESS</b><small data-i18n="LANCTL.WEB.ACCESS"></small></span></a>
+      <a href="rack" data-route="rack"><span class="nav-icon" aria-hidden="true">▤</span><span><b>LANRACK</b><small data-i18n="LANCTL.WEB.RACK"></small></span></a>
+      <a href="mon" data-route="mon"><span class="nav-icon" aria-hidden="true">∿</span><span><b>LANMON</b><small data-i18n="LANCTL.WEB.MON"></small></span></a>
+    </nav>
+    <button id="web-settings" class="sidebar-settings"><span class="nav-icon" aria-hidden="true">⚙</span><span data-i18n="LANCTL.UI.VIEW.GENERAL_SETTINGS"></span></button>
+    <div class="sidebar-project"><label for="web-project" data-i18n="LANCTL.UI.TEXT.ACTIVE_PROJECT"></label><select id="web-project" data-i18n-aria-label="LANCTL.UI.TEXT.ACTIVE_PROJECT"></select><small id="web-project-id" class="muted"></small></div>
+    <section class="sidebar-services" aria-labelledby="web-services-title">
+      <p id="web-services-title" class="eyebrow" data-i18n="LANCTL.WEB.SERVICES"></p>
+      <nav id="web-services" data-i18n-aria-label="LANCTL.WEB.SERVICES"></nav>
+    </section>
+  </aside>
+  <button id="web-backdrop" class="backdrop" tabindex="-1" data-i18n-aria-label="LANCTL.UI.TEXT.CLOSE" hidden></button>
+  <section class="web-main">
+    <header class="web-topbar"><button id="web-toggle" class="icon-button" aria-controls="web-sidebar" aria-expanded="true" data-i18n-aria-label="LANCTL.WEB.TOGGLE_NAV">☰</button>
+      <div class="breadcrumb"><span>LANCTL</span><span aria-hidden="true">/</span><strong id="web-page-name"></strong></div>
+      <div class="web-account"><span id="web-user"></span><button id="web-logout" data-i18n="LANCTL.WEB.SIGN_OUT"></button></div>
+    </header>
+    <div id="web-notice" class="web-notice" role="alert" hidden></div>
+    <div class="frame-host"><p id="web-loading" class="frame-loading" role="status" data-i18n="LANCTL.WEB.LOADING" hidden></p><iframe id="web-frame" data-i18n-title="LANCTL.WEB.FRAME_TITLE"></iframe></div>
+    <footer class="web-footer"><span><span class="status-dot"></span><span data-i18n="LANCTL.WEB.REMOTE_SESSION"></span></span><span id="web-version"></span></footer>
+  </section>
+</div>
+</body>
+</html>

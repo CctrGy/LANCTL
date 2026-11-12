@@ -14,7 +14,12 @@ from lanctl.apps.wire.topology import (
     groups_for,
 )
 from lanctl.core.file_transaction import locked_file
-from lanctl.core.physical_placement import apply_placement, location_status, with_location
+from lanctl.core.physical_placement import (
+    apply_placement,
+    direct_mount_allowed,
+    location_status,
+    with_location,
+)
 from lanctl.core.projects.physical_mutations import physical_edit
 
 
@@ -31,6 +36,11 @@ class WireGuiService:
 
         with locked_file(self.database.path):
             records = self.database.all()
+            from lanctl.apps.wire.xfile import read
+            from lanctl.core.diagram_layout import layouts
+            from lanctl.core.diagram_layout import revision as layout_revision
+
+            diagram = layouts(read(self.database.path))
             index = {r["id"]: r for r in records}
             return {
                 "records": [
@@ -39,12 +49,46 @@ class WireGuiService:
                         "revision": revision(r),
                         "filterGroups": sorted(groups_for(r)),
                         "placement": location_status(r["data"], index),
+                        "directMount": direct_mount_allowed(r["data"]),
                     }
                     for r in records
                 ],
+                "diagramLayouts": diagram,
+                "diagramRevisions": {
+                    key: layout_revision(view) for key, view in diagram["views"].items()
+                },
                 "storage": str(self.database.path),
                 **snapshot(self.database),
             }
+
+    @physical_edit
+    def save_diagram(self, view, expected, value):
+        from lanctl.apps.rack.organization import token
+        from lanctl.apps.wire.xfile import update_json
+        from lanctl.core.diagram_layout import layouts, validate_view
+        from lanctl.core.diagram_layout import revision as layout_revision
+        from lanctl.shared.i18n import t
+
+        value = validate_view(view, value)
+        result = {}
+
+        def change(document):
+            self.database._validate_database(document)
+            diagram = layouts(document)
+            if layout_revision(diagram["views"].get(view)) != expected:
+                raise ValueError(t("LANCTL.DIAGRAM.STALE"))
+            diagram["views"][view] = value
+            document["diagramLayouts"] = layouts({"diagramLayouts": diagram})
+            result.update(
+                diagramLayouts=diagram,
+                diagramRevisions={
+                    key: layout_revision(item) for key, item in diagram["views"].items()
+                },
+                organizationRevision=token(document),
+            )
+
+        update_json(self.database.path, dict, change)
+        return result
 
     def _record(self, identifier, expected):
         record = self.database.get(identifier)
@@ -63,6 +107,21 @@ class WireGuiService:
                     raise ValueError(f"{key} debe ser texto")
                 result[key] = values[key].strip()
         result = apply_placement(result, values)
+        if "management" in values:
+            from lanctl.core.inventory_visibility import validate_management
+
+            if values["management"] is None:
+                result.pop("management", None)
+            else:
+                result["management"] = validate_management(values["management"])
+        if "powerOutlets" in values:
+            from lanctl.core.power_outlets import validate_outlets
+
+            if result.get("type") not in {"rack.pdu", "device.pdu"}:
+                from lanctl.shared.i18n import t
+
+                raise ValueError(t("LANCTL.PDU.INVALID"))
+            result["powerOutlets"] = validate_outlets(values["powerOutlets"])
         if "connectionMode" in values:
             if values["connectionMode"] not in {"wired", "wifi", "mixed"}:
                 raise ValueError("Selecciona cable, Wi-Fi o ambas conexiones")
@@ -108,6 +167,21 @@ class WireGuiService:
             data = {"type": "rack", "units": units}
         elif kind == "tray":
             data = {"type": "tray", "ports": {}}
+        elif kind in {"blank", "ventilation", "organizer", "cable-comb", "pdu", "ups"}:
+            data = {
+                "type": f"rack.{kind}",
+                "ports": {},
+                "rackAppearance": {
+                    "schemaVersion": 1,
+                    "kind": kind
+                    if kind in {"ups", "blank", "cable-comb", "organizer", "ventilation"}
+                    else "blank",
+                    "rj45": 0,
+                    "sfp": 0,
+                    "units": 1,
+                    "rackmount": True,
+                },
+            }
         elif kind in {"panel", "outlet"}:
             data = {
                 "type": f"device.{kind}",
@@ -133,7 +207,38 @@ class WireGuiService:
     def update(self, identifier, expected, values):
         with locked_file(self.database.path):
             record = self._record(identifier, expected)
-            data = self._fields(record["data"], values)
+            original = record["data"]
+            if "switchProfile" in values:
+                from lanctl.apps.wire.topology import SWITCH_PORT_PROFILES
+                from lanctl.shared.i18n import t
+
+                profile = values["switchProfile"]
+                if not isinstance(profile, str) or profile not in SWITCH_PORT_PROFILES:
+                    raise ValueError(t("LANCTL.PHYSICAL.PROFILE.INVALID"))
+                if original.get("type", "element") not in {
+                    "element",
+                    "device.switch",
+                } or original.get("ports"):
+                    raise ValueError(t("LANCTL.PHYSICAL.PROFILE.ONLY_EMPTY"))
+                if any(
+                    endpoint.get("device") == identifier
+                    for wire in self.database.all()
+                    if wire["data"].get("type") == "wire"
+                    for endpoint in wire["data"].get("endpoints", [])
+                ):
+                    raise ValueError(t("LANCTL.PHYSICAL.PROFILE.CONNECTED"))
+                equipment = build_new_idf_data(profile)
+                copper, fiber, rackmount = SWITCH_PORT_PROFILES[profile]
+                equipment["rackAppearance"] = {
+                    "schemaVersion": 1,
+                    "kind": "switch",
+                    "rj45": copper,
+                    "sfp": fiber,
+                    "rackmount": rackmount,
+                    "units": (original.get("rackAppearance") or {}).get("units", 1),
+                }
+                original = {**original, **equipment}
+            data = self._fields(original, values)
             if "portChanges" in values:
                 for name, changes in values["portChanges"].items():
                     if name not in data.get("ports", {}):

@@ -97,8 +97,27 @@ class LauncherApi(GuiSupportMixin):
         def operation():
             config = load_config()
             payload = self._service.snapshot()
+            if self._launcher == "lanwire":
+                from lanctl.core.database import DeviceDatabase
+                from lanctl.core.inventory_visibility import visible_in
+
+                logical_ips = {
+                    device.idf.casefold(): device.ip
+                    for device in DeviceDatabase(config["database"]).load()
+                    if device.idf
+                }
+                payload["records"] = [
+                    row
+                    for row in payload["records"]
+                    if visible_in(
+                        row["data"], "lanwire", logical_ip=logical_ips.get(row["id"].casefold())
+                    )
+                ]
+            from lanctl.apps.wire.topology import switch_creation_profiles
+
             return {
                 **payload,
+                "switchProfiles": switch_creation_profiles(),
                 "launcher": self._launcher,
                 "languageCatalog": initialize_language().presentation_payload(),
                 "version": __version__,
@@ -111,6 +130,13 @@ class LauncherApi(GuiSupportMixin):
             }
 
         return self._respond(operation, "Read")
+
+    def wire_diagram(self, view, expected, values):
+        def apply():
+            self._require("lanwire")
+            return self._service.save_diagram(view, expected, values)
+
+        return self._respond(apply, "Diagram")
 
     def rack_appearance(self, expected, identifier, values):
         def apply():

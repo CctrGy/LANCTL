@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from lanctl.apps.wire.idf.database import IDFDatabaseManager
 from lanctl.apps.wire.xfile import locked_file
-from lanctl.core.physical_placement import location_status, span, validate_location, with_location
+from lanctl.core.physical_placement import (
+    direct_mount_allowed,
+    location_status,
+    span,
+    validate_location,
+    with_location,
+)
 from lanctl.core.projects.physical_mutations import physical_edit
 
 
@@ -31,12 +37,19 @@ class RackService:
 
     def elements(self):
         from lanctl.apps.wire.gui_service import revision
+        from lanctl.core.inventory_visibility import visible_in
 
         records = self.database.all()
         index = {r["id"]: r for r in records}
         return [
-            {**r, "revision": revision(r), "placement": location_status(r["data"], index)}
+            {
+                **r,
+                "revision": revision(r),
+                "placement": location_status(r["data"], index),
+                "directMount": direct_mount_allowed(r["data"]),
+            }
             for r in records
+            if visible_in(r["data"], "lanrack")
         ]
 
     @physical_edit
@@ -203,6 +216,7 @@ class RackService:
 
     @staticmethod
     def describe(rack: dict, records: list[dict]) -> dict:
+        from lanctl.core.inventory_visibility import visible_in
         from lanctl.core.rack_dimensions import dimension_status
 
         data = rack.get("data") or {}
@@ -210,6 +224,8 @@ class RackService:
         index = {r["id"]: r for r in records}
         for record in records:
             item = record.get("data") or {}
+            if not visible_in(item, "lanrack"):
+                continue
             location = location_status(item, index)
             if str(location.get("rack", "")).casefold() != rack["id"].casefold():
                 continue

@@ -10,6 +10,7 @@ const wireNames = ()=>({
   panel: window.LanctlI18n.t("LANCTL.UI.VIEW.PATCH_PANEL"),
   wire: window.LanctlI18n.t("LANCTL.UI.WORD.CABLE"),
   rack: window.LanctlI18n.t("LANCTL.UI.WORD.RACK"),
+  "external.fiber-entry": window.LanctlI18n.t("LANCTL.WIRE.FIBER_ENTRY.NAME"),
   "external.supply": window.LanctlI18n.t("LANCTL.UI.VIEW.PROVIDER_SUPPLY"),
   "wire.copper": window.LanctlI18n.t("LANCTL.UI.TEXT.COPPER_CABLE"),
   "wire.fiber": window.LanctlI18n.t("LANCTL.UI.TEXT.FIBER_CABLE"),
@@ -78,6 +79,7 @@ let wireFilter = {
   wireSort = { key: "name", direction: 1 };
 let camera = { x: 40, y: 40, z: 1 },
   wirePositions = {},
+  wireRegionFrames = {},
   wireFocus = null,
   wireHidden = new Set(),
   wireHistory = [],
@@ -91,19 +93,58 @@ function wireStore() {
 function wirePositionKey() {
   return "lanwire.layout." + state.storage;
 }
+let wireDiagramScope = "", wireDiagramContext = "", wireDiagramTimer = null;
+let wireDiagramPending = Promise.resolve();
+const wireDiagramQueue = new Map(), wireDiagramUnsaved = new Map(), wireDiagramRevisions = new Map();
+function wireDiagramView() { return JSON.stringify([physicalLevel,physicalRack,physicalCpd]); }
+function wireDiagramKey() { return JSON.stringify(state.projectContext)+wireDiagramView(); }
 function wireLoadPositions() {
+  const context = JSON.stringify(state.projectContext), scope = wireDiagramKey(), key = wireDiagramView();
+  if (wireDiagramContext && context !== wireDiagramContext) physicalViews.clear();
+  wireDiagramContext = context; wireDiagramScope = scope;
+  const unsaved = wireDiagramUnsaved.get(scope);
+  const stored = unsaved?.value || state.diagramLayouts?.views?.[key];
+  if (!unsaved) wireDiagramRevisions.set(scope,state.diagramRevisions?.[key] || null);
+  if (state.project && stored) {
+    wirePositions = structuredClone(stored.positions); wireRegionFrames = structuredClone(stored.regions || {}); camera = {...stored.camera}; return;
+  }
   try {
     const saved = JSON.parse(localStorage.getItem(wirePositionKey()) || "{}");
     wirePositions = saved.schemaVersion === 1 ? saved.positions || {} : {};
-  } catch {
-    wirePositions = {};
-  }
+    wireRegionFrames = saved.regions || {};
+    camera = saved.camera || {x:40,y:40,z:1};
+  } catch { wirePositions={}; wireRegionFrames={}; camera={x:40,y:40,z:1}; }
 }
 function wireSavePositions() {
-  localStorage.setItem(
-    wirePositionKey(),
-    JSON.stringify({ schemaVersion: 1, positions: wirePositions }),
-  );
+  const value={schemaVersion:1,positions:structuredClone(wirePositions),regions:structuredClone(wireRegionFrames),camera:{...camera}};
+  localStorage.setItem(wirePositionKey(),JSON.stringify(value));
+  if (state.launcher !== "lanwire" || !state.project || !state.projectActions?.includes("wire_diagram")) return;
+  const key=wireDiagramKey(), packet={key,view:wireDiagramView(),context:structuredClone(state.projectContext),value};
+  if (!wireDiagramRevisions.has(key)) wireDiagramRevisions.set(key,state.diagramRevisions?.[packet.view] || null);
+  wireDiagramQueue.set(key,packet); wireDiagramUnsaved.set(key,packet);
+  clearTimeout(wireDiagramTimer);
+  wireDiagramTimer=setTimeout(()=>{wireFlushDiagram().catch(()=>{});},200);
+}
+function wireFlushDiagram() {
+  clearTimeout(wireDiagramTimer); wireDiagramTimer=null;
+  for (const packet of wireDiagramQueue.values()) {
+    wireDiagramPending=wireDiagramPending.catch(()=>{}).then(async()=>{
+      if (JSON.stringify(packet.context)!==JSON.stringify(state.projectContext)) throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_PROJECT_CHANGED_RELOAD_THE_RECORD"));
+      const response=await window.pywebview.api.project_call(packet.context,"wire_diagram",[packet.view,wireDiagramRevisions.get(packet.key),packet.value]);
+      if (!response.ok) throw Object.assign(new Error(response.error+(response.errorId ? " ("+response.errorId+")" : "")),{errorDetails:response.errorDetails});
+      wireDiagramRevisions.set(packet.key,response.diagramRevisions[packet.view]);
+      if (JSON.stringify(packet.context)===JSON.stringify(state.projectContext)) {
+        state.diagramRevisions={...state.diagramRevisions,...response.diagramRevisions};
+        state.diagramLayouts ||= {schemaVersion:1,views:{}};
+        state.diagramLayouts.views[packet.view]=packet.value;
+        state.organizationRevision=response.organizationRevision;
+      }
+      if (wireDiagramUnsaved.get(packet.key)===packet) wireDiagramUnsaved.delete(packet.key);
+    }).catch(error=>{message(error.message,true);throw error;});
+    wireDiagramPending.catch(()=>{});
+  }
+  wireDiagramQueue.clear();
+  return wireDiagramPending;
 }
 function wireConnections(r) {
   return physicalInventory().filter(
@@ -435,6 +476,10 @@ function wireLayout(nodes) {
   }
   return levels;
 }
+function wireFiberEntryNode(n) {
+  const port = wireOrderedPorts(n)[0];
+  return `<button class="wire-node wire-fiber-entry ${n.id === selected ? "selected" : ""}" data-node="${esc(n.id)}" title="${esc(labelOf(n))}"><svg class="wire-fiber-symbol" viewBox="0 0 100 100" aria-hidden="true"><circle class="wire-fiber-outer" cx="50" cy="50" r="45"/><circle class="wire-fiber-port" data-port="${esc(port)}" cx="50" cy="50" r="16"/></svg><strong>${esc(labelOf(n))}</strong><small>${esc(n.id)} · ${esc(port)}</small></button>`;
+}
 function wireRenderTopology(rows) {
   let allowed = new Set(rows.map((r) => r.id));
   // A matching cable needs its endpoint equipment as visual context, even
@@ -472,7 +517,7 @@ function wireRenderTopology(rows) {
     "<section class=\"wire-topology\"><div class=\"wire-navigation\"><button data-nav=\"back\" title=\"Vista anterior\" data-i18n-title=\"LANCTL.UI.HTML.PREVIOUS_VIEW\">←</button><button data-nav=\"forward\" title=\"Vista siguiente\" data-i18n-title=\"LANCTL.UI.HTML.NEXT_VIEW\">→</button><button data-nav=\"out\" aria-label=\"Alejar\" data-i18n-aria-label=\"LANCTL.UI.HTML.ZOOM_OUT\">−</button><button id=\"wire-zoom\" data-nav=\"reset\">100 %</button><button data-nav=\"in\" aria-label=\"Acercar\" data-i18n-aria-label=\"LANCTL.UI.HTML.ZOOM_IN\">+</button><button data-nav=\"fit\"><span data-i18n=\"LANCTL.UI.HTML.VIEW_ALL\">Ver todo</span></button><button data-nav=\"center\"><span data-i18n=\"LANCTL.UI.HTML.CENTER_SELECTION\">Centrar selección</span></button><button data-nav=\"focus\"><span data-i18n=\"LANCTL.UI.VIEW.VIEW_CONNECTIONS\">Ver conexiones</span></button><label><span data-i18n=\"LANCTL.UI.HTML.LEVELS\">Niveles</span> <select id=\"wire-depth\"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></label><button data-nav=\"all\"><span data-i18n=\"LANCTL.UI.HTML.COMPLETE_TOPOLOGY\">Topología completa</span></button><button data-nav=\"layout\"><span data-i18n=\"LANCTL.UI.HTML.REORGANIZE\">Reorganizar</span></button><button data-nav=\"mini\"><span data-i18n=\"LANCTL.UI.HTML.MINIMAP\">Minimapa</span></button></div><div id=\"wire-board\" tabindex=\"0\" aria-label=\"Lienzo de topología. Arrastra el fondo para desplazarte; usa la rueda para ampliar.\" data-i18n-aria-label=\"LANCTL.UI.HTML.TOPOLOGY_CANVAS_DRAG_THE_BACKGROUND_TO_PAN_USE_THE_WHEEL_TO_ZOOM\"><div id=\"wire-world\"><svg id=\"wire-lines\"></svg>" +
     nodes
       .map(
-        (n) =>
+        (n) => n.data.type === "external.fiber-entry" ? wireFiberEntryNode(n) :
           `<button class="wire-node ${n.id === selected ? "selected" : ""}" data-node="${esc(n.id)}"><strong>${esc(labelOf(n))}</strong><small>${esc(n.id)} · ${esc(wireName(n.data.type))}</small><span class="wire-ports" ${wirePrefs.showPorts === false ? "hidden" : ""}>${wireOrderedPorts(
             n,
           )
@@ -539,6 +584,7 @@ function wireRenderTopology(rows) {
       camera.x += e.key === "ArrowLeft" ? 40 : e.key === "ArrowRight" ? -40 : 0;
       camera.y += e.key === "ArrowUp" ? 40 : e.key === "ArrowDown" ? -40 : 0;
       wirePaint();
+      if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)) wireSavePositions();
     }
   };
   wirePaint();
@@ -615,6 +661,7 @@ function wireZoom(factor, x, y) {
   camera.y = y - ((y - camera.y) * z) / camera.z;
   camera.z = z;
   wirePaint();
+  wireSavePositions();
 }
 function wireBounds() {
   const ps = wireGraph.nodes.map((n) => wirePositions[n.id]);
@@ -665,6 +712,7 @@ function wireCenter() {
   wirePaint();
 }
 function wireRemember() {
+  wireSavePositions();
   wireHistory = wireHistory.slice(0, wireHistoryIndex + 1);
   wireHistory.push({ camera: { ...camera }, focus: wireFocus, selected });
   wireHistoryIndex = wireHistory.length - 1;
@@ -703,7 +751,7 @@ function wireNavigate(action) {
     wireFit();
   }
   if (action === "layout") {
-    wirePositions = {};
+    wirePositions = {}; wireRegionFrames = {};
     render();
     wireFit();
     wireSavePositions();
@@ -929,6 +977,8 @@ fullDetails = function (r) {
       wireModes(),
     ),
   ];
+  if (["rack.pdu", "device.pdu"].includes(d.type)) general.push(...pduFields(d.powerOutlets));
+  if (d.type === "device.switch") general.push(managementField(d.management));
   const location = physicalLocationFields(r);
   const ports = document.createElement("div");
   for (const [p, value] of Object.entries(d.ports || {})) {
@@ -1072,6 +1122,8 @@ fullDetails = function (r) {
     ],
     (v) =>
       call("wire_update", r.id, r.revision, {
+        ...(v.outletType ? {powerOutlets: {schemaVersion:1, type:v.outletType, count:Number(v.outletCount)}} : {}),
+        ...(v.managed !== undefined ? {management:v.managed ? {schemaVersion:1, managed:v.managed === "yes"} : null} : {}),
         name: v.name,
         alias: v.alias,
         description: v.description,
@@ -1454,23 +1506,37 @@ new ResizeObserver(() => {
       $("#wire-board").clientWidth + ":" + $("#wire-board").clientHeight;
     if (size !== wireLastSize) {
       wireLastSize = size;
-      wireFit();
+      if (state.project && (state.diagramLayouts?.views?.[wireDiagramView()] || wireDiagramUnsaved.has(wireDiagramKey()))) wirePaint();
+      else wireFit();
     } else wirePaint();
   }
 }).observe($("#canvas"));
-wireNew = function (initialKind = "switch.24ports") {
+wireNew = function (initialKind = "switch.24ports", placement = null) {
+  const direct = placement?.in_rack === true;
+  const hosted = Boolean(placement?.tray);
+  const profiles = (state.switchProfiles || [
+    {kind:"switch.5ports",rj45:5,sfp:0,rackmount:false},
+    {kind:"switch.12ports",rj45:12,sfp:0,rackmount:true},
+    {kind:"switch.24ports",rj45:24,sfp:0,rackmount:true},
+    {kind:"switch.48ports",rj45:48,sfp:0,rackmount:true},
+  ]).filter(p => (!direct || p.rackmount) && (!hosted || !p.rackmount));
   const choices = [
-    ["switch.5ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SWITCH_5_PORTS"), "SW"],
-    ["switch.12ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SWITCH_12_PORTS"), "SW"],
-    ["switch.24ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SWITCH_24_PORTS"), "SW"],
-    ["switch.48ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SWITCH_48_PORTS"), "SW"],
+    ["switch", window.LanctlI18n.t("LANCTL.UI.WORD.SWITCH"), "SW"],
     ["router.gateway", window.LanctlI18n.t("LANCTL.UI.WORD.ROUTER"), "RT"],
     ["pc.1port", window.LanctlI18n.t("LANCTL.UI.VIEW.COMPUTER_1_PORT"), "PC"],
     ["pc.2ports", window.LanctlI18n.t("LANCTL.UI.VIEW.COMPUTER_2_PORTS"), "PC"],
-    ["server.2ports", window.LanctlI18n.t("LANCTL.UI.VIEW.SERVER_2_PORTS"), "SR"],
+    ["server.2ports", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.SERVER"), "SR"],
     ["tray", window.LanctlI18n.t("LANCTL.UI.VIEW.DEVICE_TRAY"), "TR"],
     ["router.otg", "OTG", "OT"],
-    ["panel", window.LanctlI18n.t("LANCTL.UI.VIEW.PATCH_PANEL_24_PORTS"), "PN"],
+    ["external.fiber-entry", window.LanctlI18n.t("LANCTL.WIRE.FIBER_ENTRY.NAME"), "FE"],
+    ["blank", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.BLANK"), "BL"],
+    ["ventilation", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.VENTILATION"), "VN"],
+    ["organizer", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.ORGANIZER"), "OR"],
+    ["cable-comb", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.CABLE_COMB"), "CM"],
+    ["pdu", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.PDU"), "PD"],
+    ["ups", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.UPS"), "UP"],
+
+    ["panel", window.LanctlI18n.t("LANCTL.UI.VIEW.PATCH_PANEL"), "PN"],
     ["outlet", window.LanctlI18n.t("LANCTL.UI.VIEW.NETWORK_OUTLET_WALL_AND_ROOM"), "PX"],
     ["wire.copper", window.LanctlI18n.t("LANCTL.UI.TEXT.COPPER_CABLE"), "WL"],
     ["wire.fiber", window.LanctlI18n.t("LANCTL.UI.TEXT.FIBER_CABLE"), "FB"],
@@ -1481,9 +1547,9 @@ wireNew = function (initialKind = "switch.24ports") {
     field(
       window.LanctlI18n.t("LANCTL.UI.TEXT.TYPE"),
       "kind",
-      initialKind,
+      initialKind.startsWith("switch.") ? "switch" : initialKind,
       "text",
-      choices.map(([v, l]) => [v, l]),
+      choices.filter(([v]) => v !== "external.fiber-entry" || (state.launcher === "lanwire" && !placement)).filter(([v]) => state.launcher !== "lanwire" || !["tray","cable-comb","organizer","ventilation","pdu","ups"].includes(v)).filter(([v]) => (!hosted || ["switch", "router.gateway", "router.otg"].includes(v)) && (!placement || (v !== "rack" && !v.startsWith("wire."))) && (!direct || !["router.gateway", "router.otg", "pc.1port", "pc.2ports", "outlet"].includes(v))).map(([v, l]) => [v, l]),
     ),
     field(window.LanctlI18n.t("LANCTL.UI.VIEW.IDENTIFIER_PREFIX"), "prefix", "SW"),
     field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.NAME"), "name"),
@@ -1504,6 +1570,30 @@ wireNew = function (initialKind = "switch.24ports") {
       [23, "23″"],
     ]),
   ];
+  const prefixOptions = document.createElement("datalist");
+  prefixOptions.id = "physical-creation-prefixes";
+  prefixOptions.replaceChildren(...[...new Set([...choices.map(c => c[2]), ...physicalInventory().map(r => r.prefix)])].filter(Boolean).sort().map(p => new Option(p, p)));
+  fields[1].querySelector("input").setAttribute("list", prefixOptions.id);
+  fields[1].append(prefixOptions);
+  const initialProfile = profiles.find(p => p.kind === initialKind) || profiles.find(p => p.kind === "switch.24ports") || profiles[0];
+  const rj45Field = field("RJ45", "rj45Count", initialProfile.rj45, "text",
+    [...new Set(profiles.map(p => p.rj45))].sort((a,b) => a-b).map(n => [n, String(n)]));
+  const sfpField = field("SFP", "sfpCount", "", "text", []);
+  const portCounts = document.createElement("div");
+  portCounts.className = "switch-port-counts";
+  portCounts.append(rj45Field, sfpField);
+  function fillSfpCounts(preferred = Number(sfpField.querySelector("select").value)) {
+    const copper = Number(rj45Field.querySelector("select").value);
+    const counts = [...new Set(profiles.filter(p => p.rj45 === copper).map(p => p.sfp))].sort((a,b) => a-b);
+    const select = sfpField.querySelector("select");
+    select.replaceChildren(...counts.map(n => new Option(String(n), String(n))));
+    if (counts.includes(preferred)) select.value = String(preferred);
+  }
+  rj45Field.querySelector("select").onchange = () => fillSfpCounts();
+  fillSfpCounts(initialProfile.sfp);
+  const trayNote = Object.assign(document.createElement("p"), {
+    textContent: window.LanctlI18n.t("LANCTL.PHYSICAL.SWITCH.TRAY_NOTE"), className:"muted",
+  });
   const heightField = fields.at(-2), widthField = fields.at(-1);
   const height = heightField.querySelector("input");
   const endpoints = [["", window.LanctlI18n.t("LANCTL.UI.TEXT.NOT_CONNECTED")], ...physicalInventory().flatMap(r => Object.keys(r.data.ports || {}).map(port => [JSON.stringify({device: r.id, port}), `${r.data.name || r.id} · ${port}`]))];
@@ -1512,8 +1602,25 @@ wireNew = function (initialKind = "switch.24ports") {
   height.min = 4;
   height.max = 52;
   height.step = 1;
+  const management = managementField();
+  fields.push(management);
+  const pduControls = pduFields({type:"schuko", count:8});
+  fields.push(...pduControls);
+  const variableHeightKinds = new Set(["tray", "server.2ports", "blank", "ventilation", "organizer", "cable-comb", "pdu", "ups"]);
+  const occupiedHeight = field(window.LanctlI18n.t("LANCTL.UI.VIEW.OCCUPIED_HEIGHT_U"), "heightU", 1, "number");
+  const occupiedInput = occupiedHeight.querySelector("input");
+  occupiedInput.min = 1; occupiedInput.max = 52; occupiedInput.step = 1;
+  const serverPorts = field(window.LanctlI18n.t("LANCTL.PHYSICAL.SERVER.PORTS"), "serverPorts", 2, "text", [1,2,3,4,5,6].map(n => [n, String(n)]));
+  const serverHeight = field(window.LanctlI18n.t("LANCTL.UI.VIEW.OCCUPIED_HEIGHT_U"), "serverHeight", 1, "text", [1,2,3,4].map(n => [n, String(n)]));
+  const serverHeightInput = serverHeight.querySelector("select");
   const change = () => {
     const kind = fields[0].querySelector("select").value;
+    pduControls.forEach(f => { f.hidden = kind !== "pdu"; f.querySelector("input,select").disabled = kind !== "pdu"; });
+    management.hidden = kind !== "switch"; management.querySelector("select").disabled = kind !== "switch";
+    portCounts.hidden = kind !== "switch";
+    for (const control of [rj45Field, sfpField]) {
+      control.querySelector("select").disabled = kind !== "switch";
+    }
     fields[1].querySelector("input").value = choices.find(
       (x) => x[0] === kind,
     )[2];
@@ -1521,15 +1628,90 @@ wireNew = function (initialKind = "switch.24ports") {
     height.disabled = widthField.querySelector("select").disabled = kind !== "rack";
     const cable = kind.startsWith("wire.");
     endFields.forEach(f => { f.hidden = !cable; f.querySelector("select").disabled = !cable; });
-    fields[5].hidden = cable || kind === "rack";
+    const network = !direct && ["router.gateway", "router.otg", "pc.1port", "pc.2ports", "server.2ports"].includes(kind);
+    fields[5].hidden = !network;
+    fields[5].querySelector("select").disabled = !network;
+    const server = kind === "server.2ports";
+    serverPorts.hidden = serverHeight.hidden = !server;
+    serverPorts.querySelector("select").disabled = serverHeightInput.disabled = !server;
+    occupiedHeight.hidden = server || !variableHeightKinds.has(kind);
+    occupiedInput.disabled = occupiedHeight.hidden;
+    occupiedInput.required = !occupiedHeight.hidden;
+    trayNote.hidden = !["tray", "router.gateway", "router.otg", "switch"].includes(kind);
     height.required = kind === "rack";
   };
   fields[0].querySelector("select").onchange = change;
   change();
-  showForm(initialKind.startsWith("wire.") ? window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_CABLE") : initialKind === "rack" ? window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_RACK") : window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_PHYSICAL_ELEMENT"), fields, async (values) => {
-    const { units, widthInches, endpointA, endpointB, ...data } = values;
+  fields.push(serverPorts, serverHeight, occupiedHeight);
+  let updateMountPosition = () => {};
+  if (direct) {
+    const locationField = field(window.LanctlI18n.t("LANCTL.UI.VIEW.CLASSIFICATION"), "mountLocation", "inside", "text", [
+      ["inside", window.LanctlI18n.t("LANCTL.UI.VIEW.RACK_INTERIOR")],
+      ["environment", window.LanctlI18n.t("LANCTL.UI.VIEW.RACK_ENVIRONMENT")],
+    ]);
+    const position = field(window.LanctlI18n.t("LANCTL.UI.VIEW.STARTING_UNIT"), "mountUnit", placement.unit, "hidden");
+    const input = position.querySelector("input");
+    const cabinet = state.records.find(r => idOf(r) === placement.rack);
+    const capacity = Number(cabinet?.units || cabinet?.data?.units || 52);
+    input.min = 1; input.max = capacity; input.step = 1;
+    const controls = document.createElement("div");
+    controls.className = "rack-position-controls";
+    const minus = document.createElement("button"), plus = document.createElement("button");
+    for (const [button, delta, key] of [[minus, -1, "LANCTL.RACK.POSITION.DECREASE"], [plus, 1, "LANCTL.RACK.POSITION.INCREASE"]]) {
+      button.type = "button"; button.textContent = delta < 0 ? "−" : "+";
+      button.setAttribute("aria-label", window.LanctlI18n.t(key));
+      button.onclick = () => {input.value = Number(input.value) + delta; updateMountPosition();};
+    }
+    const interval = field(window.LanctlI18n.t("LANCTL.RACK.POSITION.RANGE"), "mountRange", "");
+    const rangeInput = interval.querySelector("input");
+    rangeInput.readOnly = true;
+    rangeInput.setAttribute("aria-label", window.LanctlI18n.t("LANCTL.RACK.POSITION.RANGE"));
+    controls.append(plus, rangeInput, minus);
+    const sizeRow = document.createElement("div");
+    sizeRow.className = "rack-size-position";
+    const fixedHeight = field(window.LanctlI18n.t("LANCTL.UI.VIEW.OCCUPIED_HEIGHT_U"), "fixedHeight", 1);
+    fixedHeight.querySelector("input").readOnly = true;
+    sizeRow.append(serverHeight, occupiedHeight, fixedHeight, controls, input);
+    fields.splice(fields.indexOf(serverHeight), 1);
+    fields.splice(fields.indexOf(occupiedHeight), 1);
+
+    updateMountPosition = () => {
+      const inside = locationField.querySelector("select").value === "inside";
+      const start = Number(input.value), span = !serverHeightInput.disabled ? Number(serverHeightInput.value) : occupiedInput.disabled ? 1 : Number(occupiedInput.value);
+      const end = start + span - 1;
+      controls.hidden = !inside;
+      fixedHeight.hidden = !serverHeightInput.disabled || !occupiedInput.disabled;
+
+      input.disabled = !inside;
+      rangeInput.disabled = !inside;
+      rangeInput.value = Number.isInteger(start) && start > 0 && Number.isInteger(span) && span > 0 ? (span === 1 ? `U${start}` : `U${start}–U${end}`) : "";
+      minus.disabled = !inside || !Number.isInteger(start) || start <= 1;
+      plus.disabled = !inside || !Number.isInteger(start) || !Number.isInteger(span) || end >= capacity;
+    };
+    input.oninput = occupiedInput.oninput = updateMountPosition;
+    serverHeightInput.onchange = updateMountPosition;
+    locationField.querySelector("select").onchange = updateMountPosition;
+    const typeChange = fields[0].querySelector("select").onchange;
+    fields[0].querySelector("select").onchange = () => {typeChange(); updateMountPosition();};
+    fields.push(sizeRow, locationField);
+    updateMountPosition();
+  }
+  showForm(initialKind.startsWith("wire.") ? window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_CABLE") : initialKind === "rack" ? window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_RACK") : window.LanctlI18n.t("LANCTL.UI.TEXT.NEW_PHYSICAL_ELEMENT"), [fields[0], portCounts, ...fields.slice(1), trayNote], async (values) => {
+    const { units, widthInches, endpointA, endpointB, rj45Count, sfpCount, heightU, mountLocation, mountUnit, mountRange, serverPorts, serverHeight, fixedHeight, ...data } = values;
+    if (values.kind === "pdu") data.powerOutlets = {schemaVersion:1, type:values.outletType, count:Number(values.outletCount)};
+    delete data.outletType; delete data.outletCount;
+    if (values.kind === "switch" && values.managed) data.management = {schemaVersion:1, managed:values.managed === "yes"};
+    delete data.managed;
+    if (values.kind === "switch") {
+      const profile = profiles.find(p => p.rj45 === Number(rj45Count) && p.sfp === Number(sfpCount));
+      if (!profile) throw Error(window.LanctlI18n.t("LANCTL.PHYSICAL.SWITCH.INVALID_PORT_COUNTS"));
+      data.kind = profile.kind;
+    }
+    if (values.kind === "server.2ports") data.kind = `server.${serverPorts}ports`;
     const result = await call("wire_create", {
       ...data,
+      ...(placement ? {...placement, ...(direct ? {in_rack:mountLocation === "inside", unit:mountLocation === "inside" ? Number(mountUnit) : 0} : {})} : {}),
+      ...(variableHeightKinds.has(values.kind) ? {heightU: Number(values.kind === "server.2ports" ? serverHeight : heightU)} : {}),
       ...(values.kind.startsWith("wire.") ? {connectionMode: "wired", endpoints: [endpointA, endpointB].filter(Boolean).map(v => JSON.parse(v))} : {}),
       ...(values.kind === "rack"
         ? { units: Number(units), widthInches: Number(widthInches) }
@@ -1574,3 +1756,39 @@ function wireResizeColumns() {
     };
   });
 }
+
+function pduFields(outlets) {
+  const t = key => window.LanctlI18n.t(key);
+  const type = field(t("LANCTL.PDU.TYPE"), "outletType", outlets?.type || "", "text", [
+    ...(!outlets ? [["",t("LANCTL.PDU.UNSPECIFIED")]] : []),
+    ["schuko","Schuko"], ["iec-c13","IEC C13"],
+  ]);
+  const count = field(t("LANCTL.PDU.COUNT"), "outletCount", outlets?.count || 8, "number");
+  const input = count.querySelector("input"); input.min=1; input.max=24; input.step=1; input.required=true;
+  return [type,count];
+}
+
+function managementField(value) {
+  return field(window.LanctlI18n.t("LANCTL.PHYSICAL.MANAGEMENT"), "managed", value ? (value.managed ? "yes" : "no") : "", "text", [
+    ["", window.LanctlI18n.t("LANCTL.PDU.UNSPECIFIED")],
+    ["yes", window.LanctlI18n.t("LANCTL.PHYSICAL.MANAGED")],
+    ["no", window.LanctlI18n.t("LANCTL.PHYSICAL.UNMANAGED")],
+  ]);
+}
+
+// Complete imported identities in place; never reserve a second IDF.
+const physicalDetailsBeforeSwitchProfile = fullDetails;
+fullDetails = function(r) {
+  physicalDetailsBeforeSwitchProfile(r);
+  if (!["lanwire", "lanrack"].includes(state.launcher) || !["element", "device.switch"].includes(r.data.type || "element") || Object.keys(r.data.ports || {}).length) return;
+  const profiles = state.switchProfiles || [];
+  if (!profiles.length) return;
+  const configure = wireAction(window.LanctlI18n.t("LANCTL.PHYSICAL.PROFILE.CONFIGURE"), () => wireOpenAfterSave(() => {
+    const note = Object.assign(document.createElement("p"), {textContent: window.LanctlI18n.t("LANCTL.PHYSICAL.PROFILE.HELP")});
+    const profile = field(window.LanctlI18n.t("LANCTL.UI.TEXT.TYPE"), "switchProfile", "", "text", [["", window.LanctlI18n.t("LANCTL.UI.TEXT.SELECT")], ...profiles.map(p => [p.kind, `${p.rj45} RJ45 · ${p.sfp} SFP`])]);
+    profile.querySelector("select").required = true;
+    showForm(window.LanctlI18n.t("LANCTL.PHYSICAL.PROFILE.CONFIGURE") + " · " + r.id, [note, profile], values => call("wire_update", r.id, r.revision, {switchProfile: values.switchProfile}));
+  }));
+  configure.dataset.configureSwitchProfile = r.id;
+  $("#detail-fields").append(configure);
+};

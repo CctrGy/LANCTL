@@ -13,10 +13,22 @@ def appearance(values):
     if not isinstance(values, dict):
         raise ValueError("Apariencia de equipo inválida")
     kind = values.get("kind")
-    if kind not in {"auto", "switch", "panel", "server", "ups", "router", "shelf", "blank"}:
+    if kind not in {
+        "auto",
+        "switch",
+        "panel",
+        "server",
+        "ups",
+        "router",
+        "shelf",
+        "blank",
+        "cable-comb",
+        "organizer",
+        "ventilation",
+    }:
         raise ValueError("Selecciona un tipo de frente válido")
     result = {"schemaVersion": 1, "kind": kind}
-    for key, minimum, maximum in [("rj45", 0, 96), ("sfp", 0, 32), ("units", 1, 52)]:
+    for key, minimum, maximum in [("rj45", 0, 96), ("sfp", 0, 48), ("units", 1, 52)]:
         value = values.get(key)
         if type(value) is not int or not minimum <= value <= maximum:
             raise ValueError(f"{key} debe estar entre {minimum} y {maximum}")
@@ -46,6 +58,29 @@ def is_rack(record):
 
 def is_tray(data):
     return data.get("type") in {"tray", "device.tray"}
+
+
+def direct_mount_allowed(data):
+    """Generic home routers/OTG and desktop switches are hosted, not U-mounted."""
+    kind = str(data.get("type", "")).casefold()
+    if kind == "device.router" or kind.startswith("router."):
+        return False
+    visual = data.get("rackAppearance") or {}
+    if isinstance(visual, dict) and visual.get("rackmount") is False:
+        return False
+    if kind == "device.switch":
+        subtype = str(data.get("subtype", "")).casefold()
+        if subtype in {
+            "switch.5ports",
+            "switch.6ports",
+            "switch.8ports",
+            "switch.4sfp",
+            "switch.8sfp",
+        } or subtype.startswith(("switch.5rj45.", "switch.8rj45.")):
+            return False
+        if not subtype and 0 < len(data.get("ports") or {}) <= 8:
+            return False
+    return True
 
 
 def location_status(data, records=(), seen=()):
@@ -172,15 +207,27 @@ def validate_location(records, identifier, data):
             raise ValueError("La ubicación requiere in_rack booleano y unidad entera")
         if status["kind"] != "inside" and loc["unit"] != 0:
             raise ValueError("Los elementos sin montaje directo deben usar unidad 0")
+    if data.get("type") == "external.fiber-entry" and status["kind"] in {"inside", "hosted"}:
+        from lanctl.shared.i18n import t
+
+        raise ValueError(t("LANCTL.WIRE.FIBER_ENTRY.EXTERNAL_ONLY"))
     if status["kind"] == "hosted":
         if is_tray(data):
             raise ValueError("Una bandeja no puede alojarse dentro de otra bandeja")
         parent = index[status["tray"]]
         if location_status(parent["data"], index)["kind"] != "inside":
             raise ValueError("La bandeja debe estar montada en un rack")
+        if span(data) > span(parent["data"]):
+            from lanctl.shared.i18n import t
+
+            raise ValueError(t("LANCTL.RACK.TRAY.HEIGHT_EXCEEDED"))
         return
     if status["kind"] != "inside":
         return
+    if not direct_mount_allowed(data):
+        from lanctl.shared.i18n import t
+
+        raise ValueError(t("LANCTL.PHYSICAL.MOUNT.TRAY_REQUIRED"))
     rack = index.get(status["rack"])
     if rack is None or not is_rack(rack):
         raise ValueError("El rack asignado ya no existe")
@@ -238,3 +285,8 @@ def validate_change(records, identifier, data, previous=None):
     children = [r for r in records if (r["data"].get("location") or {}).get("tray") == identifier]
     if children and (not is_tray(data) or location_status(data, records)["kind"] != "inside"):
         raise ValueError("Reubica explícitamente los dispositivos antes de retirar la bandeja")
+    if children:
+        index = {r["id"]: r for r in records}
+        index[identifier] = {**index[identifier], "data": data}
+        for child in children:
+            validate_location(index, child["id"], child["data"])

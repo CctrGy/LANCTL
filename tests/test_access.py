@@ -15,6 +15,7 @@ from lanctl.apps.access.auth import (
 from lanctl.apps.access.firewall import FirewallManager
 from lanctl.apps.access.https_server import (
     COOKIE_ATTRIBUTES,
+    GUI_STATIC_FILES,
     SECURITY_HEADERS,
     HttpsAccessServer,
     HttpsCapability,
@@ -368,6 +369,8 @@ class AccessTests(unittest.TestCase):
 
     def test_https_serves_gui_and_authenticated_rpc(self):
         import http.client
+        import posixpath
+        import re
         import ssl
         import threading
 
@@ -378,7 +381,7 @@ class AccessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "index.html").write_text("<h1>LANCTL</h1>", encoding="utf-8")
-            for filename in ("i18n.js", "i18n-defaults.js"):
+            for filename in GUI_STATIC_FILES - {"index.html"}:
                 (root / filename).write_text("window.catalogReady = true;", encoding="utf-8")
             certificate, key = generate_certificate(root / "tls.crt", root / "tls.key", "127.0.0.1")
             store = AccessStore(root / "users.json")
@@ -413,6 +416,19 @@ class AccessTests(unittest.TestCase):
                     self.assertEqual(response.status, 200)
                     self.assertIn("application/javascript", response.getheader("Content-Type"))
                     self.assertIn(b"catalogReady", response.read())
+                html = (Path(__file__).resolve().parents[1] / "gui/index.html").read_text()
+                assets = re.findall(r'<(?:script|link)[^>]+(?:src|href)="([^"]+)"', html)
+                self.assertTrue(assets)
+                for asset in assets:
+                    connection.request("GET", posixpath.normpath("/" + asset))
+                    response = connection.getresponse()
+                    self.assertEqual(response.status, 200, asset)
+                    self.assertTrue(response.read(), asset)
+                for private_path in ("/tls.key", "/users.json", "/../tls.key"):
+                    connection.request("GET", private_path)
+                    response = connection.getresponse()
+                    self.assertEqual(response.status, 404, private_path)
+                    response.read()
                 body = json.dumps({"username": "viewer", "password": "another-strong-password"})
                 connection.request("POST", "/api/login", body, {"Content-Type": "application/json"})
                 response = connection.getresponse()
@@ -588,7 +604,7 @@ class AccessTests(unittest.TestCase):
                     "127.0.0.1", port, context=ssl._create_unverified_context(), timeout=5
                 )
                 try:
-                    connection.request("GET", "/")
+                    connection.request("GET", "/index.html")
                     response = connection.getresponse()
                     return response.status, response.read()
                 finally:

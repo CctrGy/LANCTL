@@ -77,6 +77,9 @@ def profiles():
         ("router", "Router / cortafuegos", (1,)),
         ("shelf", "Bandeja", (1, 2)),
         ("blank", "Panel ciego", (1, 2)),
+        ("cable-comb", t("LANCTL.PHYSICAL.CREATE.CABLE_COMB"), (1, 2)),
+        ("organizer", t("LANCTL.PHYSICAL.CREATE.ORGANIZER"), (1, 2)),
+        ("ventilation", t("LANCTL.PHYSICAL.CREATE.VENTILATION"), (1, 2)),
     ]:
         for height in heights:
             result.append(

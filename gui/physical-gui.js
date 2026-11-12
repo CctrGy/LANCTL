@@ -61,7 +61,7 @@ function physicalRackOf(r) {
 function physicalRegionOf(r) {
   const rack = physicalRackOf(r);
   if (r.placement?.kind === "environment") return rack + "::environment";
-  if (r.placement?.kind === "hosted") return rack + "::tray:" + r.placement.tray;
+  if (r.placement?.kind === "hosted") return state.launcher === "lanwire" ? rack : rack + "::tray:" + r.placement.tray;
   if (r.placement?.needsReview) return "::review";
   return rack;
 }
@@ -73,6 +73,7 @@ function physicalRoomName(id) {
 }
 function physicalSize(n) {
   if (n.physicalSize) return n.physicalSize;
+  if (n.data.type === "external.fiber-entry") return {w:160, h:150};
   const count = Object.keys(n.data.ports || {}).length;
   if (["device.outlet", "outlet"].includes(n.data.type) && count <= 2)
     return { w: 120, h: 64 };
@@ -82,149 +83,111 @@ function physicalSize(n) {
     h: 90 + Math.ceil(count / cols) * 29,
   };
 }
-// Fuerzas deterministas por componente: atracción de cables y separación de tarjetas.
+// Deterministic layered layout: bounded sweeps, real card sizes, no storage edits.
 function physicalPack(nodes, edges) {
-  const sizes = new Map(nodes.map((n) => [n.id, physicalSize(n)]));
-  const adjacency = new Map(nodes.map((n) => [n.id, new Set()]));
-  for (const e of edges)
-    if (
-      adjacency.has(e.a?.device) &&
-      adjacency.has(e.b?.device) &&
-      e.a.device !== e.b.device
-    ) {
-      adjacency.get(e.a.device).add(e.b.device);
-      adjacency.get(e.b.device).add(e.a.device);
+  const byId = new Map(nodes.map(n => [n.id,n]));
+  const sizes = new Map(nodes.map(n => [n.id,physicalSize(n)]));
+  const adjacency = new Map(nodes.map(n => [n.id,new Set()]));
+  for (const edge of edges) {
+    const a=edge.a?.device,b=edge.b?.device;
+    if (a!==b && adjacency.has(a) && adjacency.has(b)) {
+      adjacency.get(a).add(b); adjacency.get(b).add(a);
     }
-  const result = new Map(),
-    seen = new Set();
-  let offsetX = 0,
-    offsetY = 0,
-    rowH = 0;
-  const connected = nodes
-    .filter((n) => adjacency.get(n.id).size)
-    .sort(
-      (a, b) =>
-        adjacency.get(b.id).size - adjacency.get(a.id).size ||
-        a.id.localeCompare(b.id),
-    );
-  for (const root of connected) {
-    if (seen.has(root.id)) continue;
-    const ids = [],
-      queue = [root.id];
-    seen.add(root.id);
-    while (queue.length) {
-      const id = queue.shift();
-      ids.push(id);
-      for (const next of adjacency.get(id))
-        if (!seen.has(next)) {
-          seen.add(next);
-          queue.push(next);
-        }
-    }
-    const positions = ids.map((id, i) => ({
-      id,
-      x: i ? Math.cos(i * 2.39996) * Math.sqrt(i) * 220 : 0,
-      y: i ? Math.sin(i * 2.39996) * Math.sqrt(i) * 220 : 0,
-    }));
-    const index = new Map(positions.map((p) => [p.id, p]));
-    // El límite mantiene la interacción acotada incluso en instalaciones grandes.
-    const iterations = ids.length > 200 ? 45 : 110;
-    for (let step = 0; step < iterations; step++) {
-      const forces = new Map(ids.map((id) => [id, { x: 0, y: 0 }]));
-      for (let i = 0; i < positions.length; i++)
-        for (let j = i + 1; j < positions.length; j++) {
-          const a = positions[i],
-            b = positions[j],
-            sa = sizes.get(a.id),
-            sb = sizes.get(b.id);
-          let dx = b.x - a.x,
-            dy = b.y - a.y;
-          if (!dx && !dy) dx = 1;
-          const overlapX = (sa.w + sb.w) / 2 + 80 - Math.abs(dx),
-            overlapY = (sa.h + sb.h) / 2 + 85 - Math.abs(dy);
-          if (overlapX > 0 && overlapY > 0) {
-            const axis = overlapX < overlapY ? "x" : "y",
-              delta = axis === "x" ? dx : dy;
-            const f =
-              (axis === "x" ? overlapX : overlapY) *
-              0.32 *
-              Math.sign(delta || 1);
-            forces.get(a.id)[axis] -= f;
-            forces.get(b.id)[axis] += f;
-          }
-        }
-      for (const a of positions)
-        for (const id of adjacency.get(a.id)) {
-          const b = index.get(id),
-            dx = b.x - a.x,
-            dy = b.y - a.y,
-            d = Math.hypot(dx, dy) || 1;
-          const desired = (sizes.get(a.id).w + sizes.get(id).w) / 2 + 140;
-          const f = (d - desired) * 0.025;
-          forces.get(a.id).x += (dx / d) * f;
-          forces.get(a.id).y += (dy / d) * f;
-        }
-      for (const p of positions) {
-        const f = forces.get(p.id);
-        p.x += Math.max(-32, Math.min(32, f.x));
-        p.y += Math.max(-32, Math.min(32, f.y));
+  }
+  const priority = id => {
+    const type=byId.get(id).data?.type || "";
+    return type === "external.fiber-entry" ? 0 : /router|gateway/.test(type) ? 1 : 2;
+  };
+  const roots=[...byId.keys()].sort((a,b)=>priority(a)-priority(b) || adjacency.get(b).size-adjacency.get(a).size || a.localeCompare(b));
+  const seen=new Set(), result=new Map();
+  let offsetX=0,offsetY=0,rowHeight=0;
+  for (const root of roots) {
+    if (seen.has(root)) continue;
+    const queue=[root], depth=new Map([[root,0]]), layers=[];
+    seen.add(root);
+    for (let cursor=0;cursor<queue.length;cursor++) {
+      const id=queue[cursor], level=depth.get(id);
+      (layers[level] ||= []).push(id);
+      for (const next of [...adjacency.get(id)].sort()) if (!seen.has(next)) {
+        seen.add(next); depth.set(next,level+1); queue.push(next);
       }
     }
-    // Separación final sin fuerzas de atracción para garantizar tarjetas no solapadas.
-    for (let step = 0; step < Math.min(80, ids.length * 3); step++) {
-      let changed = false;
-      for (let i = 0; i < positions.length; i++)
-        for (let j = i + 1; j < positions.length; j++) {
-          const a = positions[i],
-            b = positions[j],
-            sa = sizes.get(a.id),
-            sb = sizes.get(b.id),
-            dx = b.x - a.x,
-            dy = b.y - a.y;
-          const ox = (sa.w + sb.w) / 2 + 55 - Math.abs(dx),
-            oy = (sa.h + sb.h) / 2 + 70 - Math.abs(dy);
-          if (ox > 0 && oy > 0) {
-            changed = true;
-            if (ox < oy) {
-              const v = (ox / 2 + 0.1) * Math.sign(dx || 1);
-              a.x -= v;
-              b.x += v;
-            } else {
-              const v = (oy / 2 + 0.1) * Math.sign(dy || 1);
-              a.y -= v;
-              b.y += v;
-            }
+    layers.forEach(layer=>layer.sort());
+    // Barycentric ordering reduces crossings between adjacent levels, including cycles.
+    const rank=new Map();
+    const updateRank=layer=>layer.forEach((id,index)=>rank.set(id,(index+.5)/layer.length));
+    layers.forEach(updateRank);
+    for (let sweep=0;sweep<8;sweep++) {
+      const indexes=Array.from({length:layers.length},(_,i)=>i);
+      if (sweep%2) indexes.reverse();
+      for (const level of indexes) {
+        const layer=layers[level], centers=new Map();
+        for (const id of layer) {
+          let sum=0,count=0;
+          for (const next of [...adjacency.get(id)].sort()) {
+            if (depth.get(next) === level + (sweep%2 ? 1 : -1)) {sum+=rank.get(next);count++;}
           }
+          centers.set(id,count ? sum/count : rank.get(id));
         }
-      if (!changed) break;
+        layer.sort((a,b)=>centers.get(a)-centers.get(b) || a.localeCompare(b));
+        updateRank(layer);
+      }
     }
-    const minX = Math.min(...positions.map((p) => p.x - sizes.get(p.id).w / 2)),
-      minY = Math.min(...positions.map((p) => p.y - sizes.get(p.id).h / 2));
-    const width =
-        Math.max(...positions.map((p) => p.x + sizes.get(p.id).w / 2)) - minX,
-      height =
-        Math.max(...positions.map((p) => p.y + sizes.get(p.id).h / 2)) - minY;
-    if (offsetX && offsetX + width > 1800) {
-      offsetX = 0;
-      offsetY += rowH + 140;
-      rowH = 0;
+    const widths=layers.map(layer=>layer.reduce((sum,id)=>sum+sizes.get(id).w,0)+Math.max(0,layer.length-1)*90);
+    const width=Math.max(...widths), local=new Map();
+    let height=0;
+    for (const [level,layer] of layers.entries()) {
+      let x=(width-widths[level])/2;
+      const rowHeight=Math.max(...layer.map(id=>sizes.get(id).h));
+      for (const id of layer) {
+        local.set(id,{x,y:height}); x+=sizes.get(id).w+90;
+      }
+      height+=rowHeight+120;
     }
-    for (const p of positions)
-      result.set(p.id, {
-        x: offsetX + p.x - minX - sizes.get(p.id).w / 2,
-        y: offsetY + p.y - minY - sizes.get(p.id).h / 2,
-      });
-    offsetX += width + 150;
-    rowH = Math.max(rowH, height);
+    height-=120;
+    if (offsetX && offsetX+width>1800) {offsetX=0;offsetY+=rowHeight+150;rowHeight=0;}
+    for (const [id,point] of local) result.set(id,{x:offsetX+point.x,y:offsetY+point.y});
+    offsetX+=width+150;rowHeight=Math.max(rowHeight,height);
   }
-  const empty = nodes.filter((n) => !seen.has(n.id));
-  const top = offsetY + rowH + (connected.length ? 160 : 0);
-  const maxW = Math.max(260, ...empty.map((n) => sizes.get(n.id).w + 50)),
-    maxH = Math.max(150, ...empty.map((n) => sizes.get(n.id).h + 60));
-  empty.forEach((n, i) =>
-    result.set(n.id, { x: (i % 4) * maxW, y: top + Math.floor(i / 4) * maxH }),
-  );
   return result;
+}
+// Pure directional collision propagation; the selected region never moves its own nodes.
+function physicalResizeRegions(regions, positions, members, selected, side, delta, sizes) {
+  const boxes = structuredClone(regions), points = structuredClone(positions);
+  const target = boxes.find(r=>r.id===selected), original = regions.find(r=>r.id===selected);
+  if (!target || !["e","w","n","s"].includes(side) || !Number.isFinite(delta)) return {regions:boxes,positions:points};
+  const inside = Object.keys(members).filter(id=>members[id]===selected && points[id]);
+  const left = Math.min(original.x+original.w-160,...inside.map(id=>points[id].x-25));
+  const top = Math.min(original.y+original.h-110,...inside.map(id=>points[id].y-60));
+  const right = Math.max(original.x+160,...inside.map(id=>points[id].x+sizes[id].w+25));
+  const bottom = Math.max(original.y+110,...inside.map(id=>points[id].y+sizes[id].h+25));
+  if(side==="e") target.w=Math.max(right-target.x,original.w+delta);
+  if(side==="s") target.h=Math.max(bottom-target.y,original.h+delta);
+  if(side==="w") {target.x=Math.min(left,original.x+delta);target.w=original.x+original.w-target.x;}
+  if(side==="n") {target.y=Math.min(top,original.y+delta);target.h=original.y+original.h-target.y;}
+  const axis=side==="e"||side==="w" ? "x" : "y", extent=axis==="x" ? "w" : "h", other=axis==="x" ? "y" : "x", otherExtent=axis==="x" ? "h" : "w", direction=side==="e"||side==="s" ? 1 : -1;
+  const growing=direction>0 ? target[extent]>original[extent] : target[axis]<original[axis];
+  if(!growing) return {regions:boxes,positions:points};
+  const initial=new Map(regions.map(r=>[r.id,r]));
+  const ordered=boxes.slice().sort((a,b)=>direction*(initial.get(a.id)[axis]-initial.get(b.id)[axis]) || a.id.localeCompare(b.id));
+  const moved=new Set([selected]), gap=40;
+  for(let i=0;i<ordered.length;i++) {
+    const source=ordered[i]; if(!moved.has(source.id)) continue;
+    for(let j=i+1;j<ordered.length;j++) {
+      const next=ordered[j]; if(next.id===selected) continue;
+      const overlapsBand=source[other]<next[other]+next[otherExtent] && next[other]<source[other]+source[otherExtent];
+      if(!overlapsBand) continue;
+      const shift=direction>0 ? source[axis]+source[extent]+gap-next[axis] : source[axis]-gap-next[axis]-next[extent];
+      if(direction*shift<=0) continue;
+      next[axis]+=shift; moved.add(next.id);
+    }
+  }
+  const boxIndex=new Map(boxes.map(r=>[r.id,r]));
+  for(const [id,point] of Object.entries(points)) {
+    const region=boxIndex.get(members[id]), start=initial.get(members[id]);
+    if(region && start && region.id!==selected) {point.x+=region.x-start.x;point.y+=region.y-start.y;}
+  }
+  return {regions:boxes,positions:points};
 }
 wireLayout = function (nodes) {
   const edges = wireEdges();
@@ -292,13 +255,14 @@ wireLayout = function (nodes) {
   const places = physicalPack(regions, links),
     result = new Map();
   for (const region of regions) {
-    const p = places.get(region.id);
+    const automatic = places.get(region.id), frame=wireRegionFrames[region.id];
+    const p = frame || automatic;
     physicalRegions.push({
       id: region.id,
       x: p.x,
       y: p.y,
-      w: region.physicalSize.w,
-      h: region.physicalSize.h,
+      w: frame?.w || region.physicalSize.w,
+      h: frame?.h || region.physicalSize.h,
       label: region.label,
     });
     for (const n of region.items) {
@@ -313,6 +277,7 @@ function physicalSwitchLevel(level, rack = "", cpd = physicalCpd) {
   physicalViews.set(key, {
     positions: structuredClone(wirePositions),
     camera: { ...camera },
+    regions: structuredClone(wireRegionFrames),
     focus: wireFocus,
   });
   wireSavePositions();
@@ -324,12 +289,14 @@ function physicalSwitchLevel(level, rack = "", cpd = physicalCpd) {
   const saved = physicalViews.get(level + ":" + rack + ":" + physicalCpd);
   if (!saved) wireLoadPositions();
   wirePositions = saved?.positions || wirePositions;
-  camera = saved?.camera || { x: 40, y: 40, z: 1 };
+  wireRegionFrames = saved?.regions || wireRegionFrames;
+  camera = saved?.camera || camera;
   wireFocus = saved?.focus || null;
   render();
-  if (!saved) wireFit();
+  if (!saved && !state.diagramLayouts?.views?.[wireDiagramView()] && !wireDiagramUnsaved.has(wireDiagramKey())) wireFit();
 }
 wireRenderTopology = function (rows) {
+  if (wireDiagramScope !== wireDiagramKey()) wireLoadPositions();
   physicalLabelBounds = [];
   physicalOriginalEdges = wireEdges();
   const scope = physicalLevel + ":" + physicalRack + ":" + physicalCpd;
@@ -346,7 +313,7 @@ wireRenderTopology = function (rows) {
     physicalSignatures.has(scope) &&
     physicalSignatures.get(scope) !== signature
   )
-    wirePositions = {};
+    wireLoadPositions();
   physicalSignatures.set(scope, signature);
   const original = state.records;
   const effectiveRack = physicalRack || wireFilter.rack;
@@ -618,26 +585,14 @@ wireAnchor = function (endpoint, toward) {
 };
 wirePaint = function () {
   if (!wireGraph || !$("#wire-world")) return;
-  // Las posiciones manuales permanecen dentro del contenedor de su rack.
+  // Expand visual containers around saved/manual coordinates; never clamp them away.
   for (const n of wireGraph.nodes) {
-    const region = physicalRegions.find(
-      (r) =>
-        r.id ===
-        (physicalLevel === "outside"
-          ? n.data.location?.cpd || ""
-          : physicalRegionOf(n)),
-    );
-    if (region && wirePositions[n.id]) {
-      const p = wirePositions[n.id],
-        s = physicalSize(n);
-      p.x = Math.max(
-        region.x + 25,
-        Math.min(region.x + region.w - s.w - 25, p.x),
-      );
-      p.y = Math.max(
-        region.y + 60,
-        Math.min(region.y + region.h - s.h - 25, p.y),
-      );
+    const region = physicalRegions.find(r => r.id === (physicalLevel === "outside" ? n.data.location?.cpd || "" : physicalRegionOf(n)));
+    const point = wirePositions[n.id];
+    if (region && point) {
+      const size = physicalSize(n), right = Math.max(region.x+region.w,point.x+size.w+25), bottom = Math.max(region.y+region.h,point.y+size.h+25);
+      region.x=Math.min(region.x,point.x-25);region.y=Math.min(region.y,point.y-60);
+      region.w=right-region.x;region.h=bottom-region.y;
     }
   }
   physicalBase.paint();
@@ -656,6 +611,18 @@ wirePaint = function () {
       (physicalLevel === "inside"
         ? " · " + physicalRoomName(physicalCpdOf(region.id.split("::")[0]))
         : "");
+    for (const side of ["e","s","w","n"]) {
+      const grip=document.createElement("button");grip.type="button";
+      grip.className="physical-region-handle side-"+side;
+      grip.dataset.regionId=region.id;grip.dataset.resizeSide=side;
+      const directionKey={e:"LANCTL.DIAGRAM.DIRECTION.E",w:"LANCTL.DIAGRAM.DIRECTION.W",n:"LANCTL.DIAGRAM.DIRECTION.N",s:"LANCTL.DIAGRAM.DIRECTION.S"}[side];
+      grip.setAttribute("aria-label",window.LanctlI18n.t("LANCTL.DIAGRAM.RESIZE",{region:region.label,direction:window.LanctlI18n.t(directionKey)}));
+      grip.title=grip.getAttribute("aria-label");
+      grip.style.setProperty("--grip",14/camera.z+"px");
+      grip.onpointerdown=event=>physicalStartRegionResize(event,region.id,side);
+      grip.onkeydown=event=>physicalKeyboardRegionResize(event,region.id,side);
+      el.append(grip);
+    }
     $("#wire-world").prepend(el);
   }
   const labels = [];
@@ -970,7 +937,7 @@ render = function () {
       )
         .map((u) => {
           const o = occupancy.get(u);
-          return `<button ${o ? `data-rack-occupant="${esc(o.id)}"` : "disabled"} class="${o ? "occupied" : ""}"><span>${u} U</span> ${esc(o?.name || o?.id || window.LanctlI18n.t("LANCTL.UI.HTML.FREE"))}</button>`;
+          return `<button data-rack-unit="${u}" data-rack-id="${esc(chosen.id)}" ${o ? `data-rack-occupant="${esc(o.id)}"` : ""} class="${o ? "occupied" : ""}"><span>${u} U</span> ${esc(o?.name || o?.id || window.LanctlI18n.t("LANCTL.UI.HTML.FREE"))}</button>`;
         })
         .join("")}</section></div>`;
     $("#rack-back").onclick = () => {
@@ -1133,4 +1100,50 @@ function physicalNodeAt(event) {
       );
     }) || null
   );
+}
+
+let physicalRegionResizing=false;
+function physicalResizeSnapshot() {
+  return {regions:structuredClone(physicalRegions), positions:structuredClone(wirePositions), frames:structuredClone(wireRegionFrames),
+    members:Object.fromEntries(wireGraph.nodes.map(n=>[n.id,physicalLevel==="outside" ? n.data.location?.cpd || "" : physicalRegionOf(n)])),
+    sizes:Object.fromEntries(wireGraph.nodes.map(n=>[n.id,physicalSize(n)]))};
+}
+function physicalApplyRegionResize(snapshot,id,side,delta) {
+  const next=physicalResizeRegions(snapshot.regions,snapshot.positions,snapshot.members,id,side,delta,snapshot.sizes);
+  physicalRegions=next.regions;wirePositions=next.positions;
+  wireRegionFrames=Object.fromEntries(physicalRegions.map(r=>[r.id,{x:r.x,y:r.y,w:r.w,h:r.h}]));
+  wirePaint();
+}
+function physicalKeyboardRegionResize(event,id,side) {
+  const horizontal=side==="e"||side==="w";
+  const direction=horizontal ? {ArrowLeft:-1,ArrowRight:1}[event.key] : {ArrowUp:-1,ArrowDown:1}[event.key];
+  if(!direction) return;
+  event.preventDefault();event.stopPropagation();
+  physicalApplyRegionResize(physicalResizeSnapshot(),id,side,direction*(event.shiftKey?80:20));
+  wireSavePositions();
+  [...document.querySelectorAll('.physical-region-handle')].find(b=>b.dataset.regionId===id&&b.dataset.resizeSide===side)?.focus({preventScroll:true});
+}
+function physicalStartRegionResize(event,id,side) {
+  if(event.button!==0||physicalRegionResizing) return;
+  event.preventDefault();event.stopPropagation();physicalRegionResizing=true;
+  const snapshot=physicalResizeSnapshot(), scope=wireDiagramKey(), zoom=camera.z;
+  const origin=side==="e"||side==="w" ? event.clientX : event.clientY;
+  const controller=new AbortController();let frame=null,latest=0;
+  const valid=()=>wireDiagramKey()===scope;
+  const finish=cancel=>{
+    controller.abort();if(frame!==null) cancelAnimationFrame(frame);physicalRegionResizing=false;
+    if(!valid()) return;
+    if(cancel){physicalRegions=snapshot.regions;wirePositions=snapshot.positions;wireRegionFrames=snapshot.frames;wirePaint();}
+    else {physicalApplyRegionResize(snapshot,id,side,latest);wireSavePositions();}
+  };
+  window.addEventListener('pointermove',move=>{
+    if(move.pointerId!==event.pointerId) return;
+    if(!valid()){finish(true);return;}
+    latest=((side==="e"||side==="w" ? move.clientX : move.clientY)-origin)/zoom;
+    if(frame===null) frame=requestAnimationFrame(()=>{frame=null;if(valid()) physicalApplyRegionResize(snapshot,id,side,latest);});
+  },{signal:controller.signal});
+  window.addEventListener('pointerup',up=>{if(up.pointerId===event.pointerId) finish(false);},{signal:controller.signal});
+  window.addEventListener('pointercancel',()=>finish(true),{signal:controller.signal});
+  window.addEventListener('blur',()=>finish(true),{signal:controller.signal});
+  window.addEventListener('keydown',key=>{if(key.key==='Escape'){key.preventDefault();finish(true);}},{signal:controller.signal});
 }

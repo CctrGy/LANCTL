@@ -23,9 +23,19 @@ class AccessGuiService:
 
     def snapshot(self):
         with locked_files((self.manager.store.path, self.manager.database.path)):
+            from lanctl.core.config import load_config
+            from lanctl.core.inventory_visibility import logical_devices
+
+            all_devices = self.manager.database.load()
+            visible_devices = logical_devices(all_devices, load_config(), "lanaccess")
+            hidden_ids = {d.device_id for d in all_devices} - {d.device_id for d in visible_devices}
             portable = self._portable()
             locked = portable and not self._unlocked
-            rows = [] if locked else self.manager.list()
+            rows = (
+                []
+                if locked
+                else [row for row in self.manager.list() if row["deviceId"] not in hidden_ids]
+            )
             if rows:
                 revision = self.manager.revision()
                 rows = [{**row, "revision": revision} for row in rows]
@@ -40,7 +50,7 @@ class AccessGuiService:
                         "name": d.alias or d.name or d.ip,
                         "protocols": list(d.protocols),
                     }
-                    for d in self.manager.database.load()
+                    for d in visible_devices
                 ],
                 "storage": str(self.manager.store.path),
             }

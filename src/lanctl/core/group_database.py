@@ -189,10 +189,7 @@ class GroupDatabase:
                 group = self._find(groups, value)
                 self._require_editable(group)
                 _, target = self.devices._find(stable_selector, devices=devices)
-                if not target.mac:
-                    raise ValueError("el elemento debe tener MAC para pertenecer a un grupo")
-                if target.mac not in group.members:
-                    group.members.append(target.mac)
+                self._add_member(group, target)
                 if group.name not in target.groups:
                     target.groups.append(group.name)
             elif field == "protocol":
@@ -218,6 +215,16 @@ class GroupDatabase:
             write_groups=any(field == "group" for field, _value in edits),
         )
         return target.copy()
+
+    @staticmethod
+    def _add_member(group, device):
+        if device.device_id in group.member_ids:
+            return
+        if device.mac:
+            if device.mac not in group.members:
+                group.members.append(device.mac)
+        elif device.device_id not in group.member_ids:
+            group.member_ids.append(device.device_id)
 
     @staticmethod
     def _find(groups: list[Group], name: str) -> Group:
@@ -322,11 +329,8 @@ class GroupDatabase:
         devices = self.devices.load()
         previous_devices = [device.copy() for device in devices]
         _, device = self.devices._find(selector, devices=devices)
-        if not device.mac:
-            raise ValueError("el elemento debe tener MAC para pertenecer a un grupo")
-        target = next(item for item in devices if item.mac == device.mac)
-        if target.mac not in group.members:
-            group.members.append(target.mac)
+        target = device
+        self._add_member(group, target)
         if group.name not in target.groups:
             target.groups.append(group.name)
         self._commit_pair(devices, groups, previous_devices=previous_devices)
@@ -340,10 +344,11 @@ class GroupDatabase:
         devices = self.devices.load()
         previous_devices = [device.copy() for device in devices]
         _, device = self.devices._find(selector, devices=devices)
-        if not device.mac:
-            raise ValueError("el elemento debe tener MAC para pertenecer a un grupo")
-        target = next(item for item in devices if item.mac == device.mac)
+        target = device
         group.members = [mac for mac in group.members if mac != target.mac]
+        group.member_ids = [
+            identifier for identifier in group.member_ids if identifier != target.device_id
+        ]
         target.groups = [name for name in target.groups if name != group.name]
         self._commit_pair(devices, groups, previous_devices=previous_devices)
         return group, target
@@ -363,6 +368,9 @@ class GroupDatabase:
         groups = self.load()
         for group in groups:
             group.members = [mac for mac in group.members if mac != target.mac]
+            group.member_ids = [
+                identifier for identifier in group.member_ids if identifier != target.device_id
+            ]
 
         self._commit_pair(remaining, groups, previous_devices=devices)
         return target

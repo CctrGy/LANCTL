@@ -97,7 +97,11 @@ class MonitorGuiService:
                 )
             }
             rows = []
-            for device in DeviceDatabase(config["database"]).load():
+            from lanctl.core.inventory_visibility import logical_devices
+
+            for device in logical_devices(
+                DeviceDatabase(config["database"]).load(), config, "lanmon"
+            ):
                 last = latest.get(device.device_id, {})
                 state = states.get(device.device_id) or {
                     "presence": "online"
