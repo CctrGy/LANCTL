@@ -34,11 +34,12 @@ function physicalLocationFields(r) {
     field(window.LanctlI18n.t("LANCTL.UI.VIEW.STARTING_UNIT"), "unit", location.unit || 1, "number"),
     field(window.LanctlI18n.t("LANCTL.UI.VIEW.OCCUPIED_HEIGHT_U"), "heightU", r.data.rackAppearance?.units || 1, "number"),
     field(window.LanctlI18n.t("LANCTL.UI.WORD.TRAY"), "tray", location.tray || "", "text", [["", window.LanctlI18n.t("LANCTL.UI.VIEW.SELECT_TRAY")],
-      ...physicalInventory().filter(x => ["tray", "device.tray"].includes(x.data.type) && x.id !== r.id && x.placement?.kind === "inside").map(x => [x.id, `${x.data.name || x.id} · ${physicalPlacementLabel(x)}`])]),
+      ...physicalInventory().filter(x => ["tray", "device.tray", "rack.raspberry-pi-panel"].includes(x.data.type) && x.id !== r.id && x.placement?.kind === "inside").map(x => [x.id, `${x.data.name || x.id} · ${physicalPlacementLabel(x)}`])]),
   ];
   for (const name of ["unit", "heightU"]) {
     const input = fields.find(f => f.querySelector(`[name=${name}]`)).querySelector("input");
     input.min = 1; input.max = 52; input.step = 1;
+    if (name === "heightU" && r.data.type === "rack.raspberry-pi-panel") {input.value = 1;input.max = 1;input.readOnly = true;}
   }
   const update = () => {
     const mode = fields[0].querySelector("select").value;
@@ -90,6 +91,7 @@ async function physicalMove(r) {
   const destination = field(window.LanctlI18n.t("LANCTL.UI.VIEW.AVAILABLE_DESTINATIONS"), "destination", "", "text", []);
   const input = height.querySelector("input"), select = destination.querySelector("select");
   input.min = 1; input.max = 52; input.step = 1; select.required = true;
+  if (r.data.type === "rack.raspberry-pi-panel") {input.max = 1;input.readOnly = true;}
   let sequence = 0;
   async function load() {
     const current = ++sequence;
@@ -116,7 +118,9 @@ async function physicalMove(r) {
 
 function physicalCreateInTray(r) {
   const context = JSON.stringify(state.projectContext), revision = state.organizationRevision;
-  wireNew("router.gateway", {tray: r.id, rack: null, unit: 0, in_rack: false});
+  if (r.data.type === "rack.raspberry-pi-panel" && physicalInventory().filter(x => x.data.location?.tray === r.id).length >= 5)
+    throw Error(window.LanctlI18n.t("LANCTL.RACK.PI_PANEL.FULL"));
+  wireNew(r.data.type === "rack.raspberry-pi-panel" ? "raspberry-pi" : "router.gateway", {tray: r.id, rack: null, unit: 0, in_rack: false}, r.data.type);
   const submit = formSubmit;
   formSubmit = values => {
     if (context !== JSON.stringify(state.projectContext) || revision !== state.organizationRevision)
@@ -126,12 +130,21 @@ function physicalCreateInTray(r) {
 }
 function physicalHostDevice(r) {
   const context = JSON.stringify(state.projectContext), revision = state.organizationRevision;
-  const available = physicalInventory().filter(x => x.directMount === false && (x.data.rackAppearance?.units || 1) <= (r.data.rackAppearance?.units || 1) && x.data.location?.tray !== r.id);
+  const piPanel = r.data.type === "rack.raspberry-pi-panel";
+  const count = physicalInventory().filter(x => x.data.location?.tray === r.id).length;
+  const full = piPanel && count >= 5;
+  const compatiblePi = x => {
+    const ports = Object.values(x.data.ports || {});
+    return ports.length === 1 && ["connection.rj45", "wire.copper"].includes(ports[0].kind) || !ports.length && ["element", "device.raspberry-pi"].includes(x.data.type || "element");
+  };
+  const available = physicalInventory().filter(x => !full && x.id !== r.id && !["rack", "wire", "tray", "device.tray", "rack.raspberry-pi-panel"].includes(x.data.type) && (piPanel ? compatiblePi(x) : x.directMount === false) && (x.data.rackAppearance?.units || 1) <= (r.data.rackAppearance?.units || 1) && x.data.location?.tray !== r.id);
   const selector = field(window.LanctlI18n.t("LANCTL.UI.TEXT.DEVICE_1C555EB7"), "device", available[0]?.id || "", "text", available.map(x => [x.id, `${x.data.name || x.id} · ${physicalPlacementLabel(x)}`]));
   const note = Object.assign(document.createElement("p"), {textContent: window.LanctlI18n.t(available.length ? "LANCTL.RACK.TRAY.EXISTING_HINT" : "LANCTL.RACK.TRAY.EMPTY")});
+  if (piPanel) note.textContent = window.LanctlI18n.t("LANCTL.RACK.PI_PANEL.CAPACITY", {used:count}) + (full ? " · " + window.LanctlI18n.t("LANCTL.RACK.PI_PANEL.FULL") : "");
   note.dataset.trayHint = "";
   const create = wireAction(window.LanctlI18n.t("LANCTL.RACK.TRAY.CREATE_INSIDE"), () => wireOpenAfterSave(() => physicalCreateInTray(r)));
   create.dataset.trayCreate = r.id;
+  create.disabled = full;
   function guard() {
     if (context !== JSON.stringify(state.projectContext) || revision !== state.organizationRevision)
       throw Error(window.LanctlI18n.t("LANCTL.UI.VIEW.THE_PROJECT_CHANGED_RELOAD_THE_RECORD"));
@@ -152,10 +165,11 @@ rackOccupantDetails = function(item) {
   const r = physicalInventory().find(x => x.id === item.id);
   if (!r) return;
   fullDetails(r);
+  if (r.data.type === "rack.raspberry-pi-panel") $("#detail-fields").append(Object.assign(document.createElement("p"), {textContent:window.LanctlI18n.t("LANCTL.RACK.PI_PANEL.CAPACITY",{used:physicalInventory().filter(x => x.data.location?.tray === r.id).length})}));
   const actions = document.createElement("div"); actions.className = "row";
   actions.append(wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.MOVE_ELEMENT"), () => wireOpenAfterSave(() => physicalMove(r))),
     wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.CUSTOMIZE_FRONT"), () => wireOpenAfterSave(() => rackSkinEditor(r))));
-  if (["tray", "device.tray"].includes(r.data.type) && r.placement?.kind === "inside") {
+  if (["tray", "device.tray", "rack.raspberry-pi-panel"].includes(r.data.type) && r.placement?.kind === "inside") {
     actions.append(wireAction(window.LanctlI18n.t("LANCTL.UI.VIEW.HOUSE_DEVICE"), () => wireOpenAfterSave(() => {
       physicalHostDevice(r);
     })));
@@ -217,7 +231,7 @@ render = function() {
     }
     $("#canvas").append(section);
   }
-  for (const tray of items.filter(x => ["tray", "device.tray"].includes(x.data.type))) {
+  for (const tray of items.filter(x => ["tray", "device.tray", "rack.raspberry-pi-panel"].includes(x.data.type))) {
     const button = [...document.querySelectorAll("[data-rack-occupant]")].find(b => b.dataset.rackOccupant === tray.id);
     const children = items.filter(x => x.data.location?.tray === tray.id);
     if (button && children.length && !button.querySelector(".rack-face")) button.append(Object.assign(document.createElement("small"), {textContent: children.map(x => x.data.name || x.id).join(" · ")}));

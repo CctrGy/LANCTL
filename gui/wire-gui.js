@@ -3,6 +3,7 @@ const wireBase = { render, refresh, records, fullDetails, settings, wireEdit };
 const wireNames = ()=>({
   "device.switch": window.LanctlI18n.t("LANCTL.UI.VIEW.NETWORK_SWITCH"),
   "device.router": window.LanctlI18n.t("LANCTL.UI.WORD.ROUTER"),
+  "device.raspberry-pi": window.LanctlI18n.t("LANCTL.RACK.PI_PANEL.DEVICE"),
   "device.pc": window.LanctlI18n.t("LANCTL.UI.WORD.COMPUTER"),
   "device.server": window.LanctlI18n.t("LANCTL.UI.EXTENSION.SERVER"),
   "device.outlet": window.LanctlI18n.t("LANCTL.UI.VIEW.NETWORK_OUTLET"),
@@ -478,7 +479,7 @@ function wireLayout(nodes) {
 }
 function wireFiberEntryNode(n) {
   const port = wireOrderedPorts(n)[0];
-  return `<button class="wire-node wire-fiber-entry ${n.id === selected ? "selected" : ""}" data-node="${esc(n.id)}" title="${esc(labelOf(n))}"><svg class="wire-fiber-symbol" viewBox="0 0 100 100" aria-hidden="true"><circle class="wire-fiber-outer" cx="50" cy="50" r="45"/><circle class="wire-fiber-port" data-port="${esc(port)}" cx="50" cy="50" r="16"/></svg><strong>${esc(labelOf(n))}</strong><small>${esc(n.id)} · ${esc(port)}</small></button>`;
+  return `<button class="wire-node wire-fiber-entry ${n.id === selected ? "selected" : ""}" data-node="${esc(n.id)}" title="${esc(labelOf(n))}"><svg class="wire-fiber-symbol" viewBox="0 0 100 100" aria-hidden="true"><circle class="wire-fiber-outer" cx="50" cy="50" r="45"/><path class="wire-fiber-route" d="M4 37H24L35 50M4 63H24L35 50"/><circle class="wire-fiber-port" data-port="${esc(port)}" cx="50" cy="50" r="16"/></svg><strong>${esc(labelOf(n))}</strong><small>${esc(n.id)} · ${esc(port)}</small></button>`;
 }
 function wireRenderTopology(rows) {
   let allowed = new Set(rows.map((r) => r.id));
@@ -1511,7 +1512,8 @@ new ResizeObserver(() => {
     } else wirePaint();
   }
 }).observe($("#canvas"));
-wireNew = function (initialKind = "switch.24ports", placement = null) {
+wireNew = function (initialKind = "switch.24ports", placement = null, hostType = null) {
+  const piHost = hostType === "rack.raspberry-pi-panel";
   const direct = placement?.in_rack === true;
   const hosted = Boolean(placement?.tray);
   const profiles = (state.switchProfiles || [
@@ -1524,9 +1526,11 @@ wireNew = function (initialKind = "switch.24ports", placement = null) {
     ["switch", window.LanctlI18n.t("LANCTL.UI.WORD.SWITCH"), "SW"],
     ["router.gateway", window.LanctlI18n.t("LANCTL.UI.WORD.ROUTER"), "RT"],
     ["pc.1port", window.LanctlI18n.t("LANCTL.UI.VIEW.COMPUTER_1_PORT"), "PC"],
+    ["raspberry-pi", window.LanctlI18n.t("LANCTL.RACK.PI_PANEL.DEVICE"), "PI"],
     ["pc.2ports", window.LanctlI18n.t("LANCTL.UI.VIEW.COMPUTER_2_PORTS"), "PC"],
     ["server.2ports", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.SERVER"), "SR"],
     ["tray", window.LanctlI18n.t("LANCTL.UI.VIEW.DEVICE_TRAY"), "TR"],
+    ["raspberry-pi-panel", window.LanctlI18n.t("LANCTL.RACK.PI_PANEL.NAME"), "RP"],
     ["router.otg", "OTG", "OT"],
     ["external.fiber-entry", window.LanctlI18n.t("LANCTL.WIRE.FIBER_ENTRY.NAME"), "FE"],
     ["blank", window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.BLANK"), "BL"],
@@ -1549,7 +1553,7 @@ wireNew = function (initialKind = "switch.24ports", placement = null) {
       "kind",
       initialKind.startsWith("switch.") ? "switch" : initialKind,
       "text",
-      choices.filter(([v]) => v !== "external.fiber-entry" || (state.launcher === "lanwire" && !placement)).filter(([v]) => state.launcher !== "lanwire" || !["tray","cable-comb","organizer","ventilation","pdu","ups"].includes(v)).filter(([v]) => (!hosted || ["switch", "router.gateway", "router.otg"].includes(v)) && (!placement || (v !== "rack" && !v.startsWith("wire."))) && (!direct || !["router.gateway", "router.otg", "pc.1port", "pc.2ports", "outlet"].includes(v))).map(([v, l]) => [v, l]),
+      choices.filter(([v]) => v !== "external.fiber-entry" || (state.launcher === "lanwire" && !placement)).filter(([v]) => state.launcher !== "lanwire" || !["tray","raspberry-pi-panel","cable-comb","organizer","ventilation","pdu","ups"].includes(v)).filter(([v]) => (!hosted || ["switch", "router.gateway", "router.otg", "pc.1port", "pc.2ports", "raspberry-pi"].includes(v)) && (!piHost || v === "raspberry-pi") && (!placement || (v !== "rack" && !v.startsWith("wire."))) && (!direct || !["router.gateway", "router.otg", "pc.1port", "pc.2ports", "raspberry-pi", "outlet"].includes(v))).map(([v, l]) => [v, l]),
     ),
     field(window.LanctlI18n.t("LANCTL.UI.VIEW.IDENTIFIER_PREFIX"), "prefix", "SW"),
     field(window.LanctlI18n.t("LANCTL.INVENTORY.MANUAL.NAME"), "name"),

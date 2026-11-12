@@ -165,8 +165,22 @@ class WireGuiService:
 
             units = validate_height(values.get("units", 42))
             data = {"type": "rack", "units": units}
-        elif kind == "tray":
-            data = {"type": "tray", "ports": {}}
+        elif kind == "raspberry-pi":
+            data = {
+                "type": "device.raspberry-pi",
+                "ports": build_ports(1, "LAN{n}", kind="connection.rj45"),
+            }
+        elif kind in {"tray", "raspberry-pi-panel"}:
+            data = {"type": "tray" if kind == "tray" else "rack.raspberry-pi-panel", "ports": {}}
+            if kind == "raspberry-pi-panel":
+                data["rackAppearance"] = {
+                    "schemaVersion": 1,
+                    "kind": "shelf",
+                    "rj45": 0,
+                    "sfp": 0,
+                    "units": 1,
+                    "rackmount": True,
+                }
         elif kind in {"blank", "ventilation", "organizer", "cable-comb", "pdu", "ups"}:
             data = {
                 "type": f"rack.{kind}",

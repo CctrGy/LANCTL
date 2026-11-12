@@ -5,13 +5,13 @@
       "code": "en",
       "nativeName": "English",
       "file": "english.lang",
-      "sha256": "89617d8519adddb50739a2943258dca37287e7a550acd74377692a4eaf6ce3e5"
+      "sha256": "f83ad84f492c624b916f85d230987fa4604e164d9bd49529d77a87c1d539b2f9"
     },
     {
       "code": "es",
       "nativeName": "Español",
       "file": "spanish.lang",
-      "sha256": "b85ae5fb0bc1082a515865af6a196f57e83e9c61e8d5af18b1b20c29ceb8eece"
+      "sha256": "7f720b0f67089b71c509fb58148989c206992ba0044b5b69aa980523966494e4"
     }
   ]
 }

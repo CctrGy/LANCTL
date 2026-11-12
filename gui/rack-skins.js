@@ -107,7 +107,7 @@ function rackFace(r, override) {
     copper = ports.filter((e) => !fiber.includes(e));
   const used = new Set(r.connectedPorts || []),
     name = r.name || r.data?.name || r.id;
-  const kindLabel = ["rack.pdu", "device.pdu"].includes(r.data?.type) ? window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.PDU") : (rackSkinKinds().find(k => k[0] === p.kind)?.[1] || p.kind);
+  const kindLabel = r.data?.type === "rack.raspberry-pi-panel" ? window.LanctlI18n.t("LANCTL.RACK.PI_PANEL.NAME") : ["rack.pdu", "device.pdu"].includes(r.data?.type) ? window.LanctlI18n.t("LANCTL.PHYSICAL.CREATE.PDU") : (rackSkinKinds().find(k => k[0] === p.kind)?.[1] || p.kind);
   const title = window.LanctlI18n.t("LANCTL.UI.WEB.VALUE0_VALUE1_VALUE2_U_GENERIC_FRONT_VALUE3_VALUE4_RJ45_VALUE5_SFP",{value0:(name),value1:(r.id),value2:(units),value3:(kindLabel),value4:(p.rj45),value5:(p.sfp)});
   const isTray = ["tray", "device.tray"].includes(r.data?.type);
   const label = name.length > 33 ? name.slice(0, 30) + "…" : name;
@@ -119,7 +119,19 @@ function rackFace(r, override) {
     body += `<path class="skin-tray" d="M5 ${h - 8} H1195 M12 ${h - 18} V${h - 4} M1188 ${h - 18} V${h - 4}"/>`;
   const textX = p.rackmount ? 38 : 220;
   body += `<text class="skin-device-name" x="${textX}" y="25">${esc(label)}</text><text class="skin-device-id" x="${textX}" y="42">${esc(r.id)} · ${esc(kindLabel)}</text>`;
-  if (["rack.pdu", "device.pdu"].includes(r.data?.type)) {
+  if (r.data?.type === "rack.raspberry-pi-panel") {
+    const children = typeof physicalInventory === "function" ? physicalInventory().filter(x => x.data.location?.tray === r.id).sort((a,b) => a.id.localeCompare(b.id)) : [];
+    for (let i = 0; i < 5; i++) {
+      const x = 440 + i * 144, child = children[i];
+      body += `<g class="skin-pi-bay ${child ? "occupied" : ""}" data-pi-bay="${i+1}"><title>${esc(child ? (child.data.name || child.id) : String(i+1))}</title><rect class="skin-pi-slot" x="${x}" y="13" width="132" height="61" rx="4"/>`;
+      if (child) {
+        body += `<rect class="skin-pi-board" x="${x+9}" y="21" width="114" height="44" rx="3"/><rect class="skin-pi-chip" x="${x+24}" y="31" width="35" height="25" rx="2"/>`;
+        const ports = Object.entries(child.data.ports || {});
+        if (ports.length === 1 && ["connection.rj45", "wire.copper"].includes(ports[0][1].kind)) body += `<g class="skin-port skin-pi-rj45" data-pi-device="${esc(child.id)}" data-skin-port="${esc(ports[0][0])}" data-connector="rj45"><title>${esc(child.id + " · " + ports[0][0] + " · RJ45")}</title><rect x="${x+83}" y="31" width="29" height="24" rx="2"/><path d="M${x+89} 36 h17 M${x+92} 40 h11"/></g>`;
+      }
+      body += `<text class="skin-pi-slot-label" x="${x+66}" y="85">${i+1}</text></g>`;
+    }
+  } else if (["rack.pdu", "device.pdu"].includes(r.data?.type)) {
     const outlets = r.data.powerOutlets;
     if (outlets && outlets.schemaVersion === 1 && ["schuko","iec-c13"].includes(outlets.type) && Number.isInteger(outlets.count) && outlets.count >= 1 && outlets.count <= 24) {
       const columns = Math.min(12, outlets.count), rows = Math.ceil(outlets.count / columns), cell = 720 / columns;
@@ -253,13 +265,13 @@ function rackSkinEditor(r) {
   const note = document.createElement("p");
   note.className = "muted";
   window.LanctlI18n.bindText(note,"LANCTL.UI.VIEW.GENERIC_FRONTS_APPEARANCE_DOES_NOT_CREATE_PORTS_OR_CHANGE_CONNECTIONS_HEIGHT_OCCUPIES_UNITS_UPW");
-  const profiles = state.skinProfiles || [];
+  const profiles = (state.skinProfiles || []).filter(p => r.data?.type !== "rack.raspberry-pi-panel" || (p.units === 1 && p.rackmount && ["auto", "shelf"].includes(p.kind)));
   const fields = [
     field(window.LanctlI18n.t("LANCTL.UI.WORD.TEMPLATE"), "preset", "custom", "text", [
       ["custom", window.LanctlI18n.t("LANCTL.UI.WORD.CUSTOM")],
       ...profiles.map((p) => [p.id, p.name]),
     ]),
-    field(window.LanctlI18n.t("LANCTL.UI.VIEW.FRONT_TYPE"), "kind", values.kind, "text", rackSkinKinds()),
+    field(window.LanctlI18n.t("LANCTL.UI.VIEW.FRONT_TYPE"), "kind", values.kind, "text", rackSkinKinds().filter(([kind]) => r.data?.type !== "rack.raspberry-pi-panel" || ["auto", "shelf"].includes(kind))),
     field(window.LanctlI18n.t("LANCTL.UI.VIEW.RJ45_PORTS_REPRESENTATION"), "rj45", values.rj45, "number"),
     field(window.LanctlI18n.t("LANCTL.UI.VIEW.SFP_SFP_PORTS_REPRESENTATION"), "sfp", values.sfp, "number"),
     field(window.LanctlI18n.t("LANCTL.UI.VIEW.OCCUPIED_HEIGHT_U"), "units", values.units, "number"),
@@ -292,7 +304,7 @@ function rackSkinEditor(r) {
       for (const key of ["rj45", "sfp", "rackmount"])
         controls.querySelector(`[name=${key}]`).value = String(auto[key]);
     }
-    controls.querySelector("[name=rackmount]").disabled = v.kind === "auto";
+    controls.querySelector("[name=rackmount]").disabled = v.kind === "auto" || r.data?.type === "rack.raspberry-pi-panel";
     preview.innerHTML = rackFace(r, {
       ...v,
       rj45: Math.max(0, Math.min(96, v.rj45 || 0)),
@@ -300,7 +312,7 @@ function rackSkinEditor(r) {
       units: Math.max(1, Math.min(52, v.units || 1)),
     });
     for (const k of ["rj45", "sfp"])
-      controls.querySelector(`[name=${k}]`).disabled = v.kind === "auto";
+      controls.querySelector(`[name=${k}]`).disabled = v.kind === "auto" || r.data?.type === "rack.raspberry-pi-panel";
   }
   controls.querySelector("[name=preset]").onchange = (e) => {
     const p = profiles.find((p) => p.id === e.target.value);
@@ -314,6 +326,12 @@ function rackSkinEditor(r) {
     input.min = key === "units" ? 1 : 0;
     input.max = key === "rj45" ? 96 : key === "sfp" ? 48 : 52;
     input.step = 1;
+    if (key === "units" && r.data?.type === "rack.raspberry-pi-panel") {input.value = 1;input.max = 1;input.readOnly = true;}
+  }
+  if (r.data?.type === "rack.raspberry-pi-panel") {
+    const mount = controls.querySelector("[name=rackmount]");
+    mount.value = "true";
+    mount.disabled = true;
   }
   controls.addEventListener("input", paint);
   controls.addEventListener("change", paint);

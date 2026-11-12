@@ -6110,3 +6110,90 @@ Pendiente: recorrido Qt nativo, CPD real grande, plataformas e instalables.
 Comparte algoritmo rack/CPD pero el recorrido automatizado de resize fue con dos
 racks. No se han compilado ni publicado instaladores, hecho commit o push,
 modificado proyectos personales ni cerrado P139 como entrega certificada.
+
+
+## Entrada de compañía independiente de espacios — 12/11/2026
+
+Revisión solicitada sobre external.fiber-entry: el agrupador visual usa una
+identidad externa independiente y no dibuja un recuadro de rack/CPD ni de
+«sin rack». Ignora referencias de rack heredadas para representación y conserva
+el puerto FIBER también al representar el contexto de la vista general. Los
+bloques externos participan en el empuje de P139 sin convertirse en espacios
+asignables. Si una posición guardada queda dentro de un área, se presenta fuera
+de todas ellas; no se migra ni reescribe ubicación física de proyectos reales.
+La validación compartida prohíbe rack, bandeja o CPD, incluido entorno exterior
+de rack. El error existente conserva su origen y tiene texto ES/EN actualizado.
+Símbolo circular con contorno discontinuo, trazos de fibra convergentes y puerto
+central real; nombre e identificador debajo, sin imágenes raster nuevas.
+
+Pruebas Linux secuenciales con un Chromium headless y proyectos temporales:
+LANCTL_GUI_BROWSER_TESTS=1, LANCTL_CHROMIUM_EXECUTABLE disponible,
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1, timeout 45s, pytest -q
+ tests/test_provider_fiber_entry.py tests/test_project_diagram.py
+ tests/test_physical_layout.py: **13 passed en 9.65s**. Recorridos ES/EN comprueban
+creación/conexión, ausencia de solape inicial, vista general con puerto visible,
+rechazo atómico de asignación al rack/interior y exterior y reapertura VLF.
+Tras añadir caso explícito de posición heredada solapada, pytest -q
+ tests/test_provider_fiber_entry.py: **5 passed en 4.59s**. Capturas ES/EN en
+provider-review (directorio externo de visualizaciones), inspeccionada ES.
+Ruff check y format --check de Python afectado correctos. Recursos bilingües e
+instalador regenerados/comprobados, auditoría regenerada/comprobada, catálogo
+regenerado/comprobado (1854 puntos), referencias CLI/web e higiene correctos;
+git diff --check correcto. Sin comandos nuevos ni cambio de IDs públicos.
+Pendiente Qt/instalables; no se compila, publica ni cambia ningún proyecto real.
+
+## P140 — panel Raspberry Pi 1U, capacidad cinco — 12/11/2026
+
+Nuevo tipo físico aditivo `rack.raspberry-pi-panel` con alojamiento compatible
+`location.tray`, capacidad fija en Core y altura 1U. Sin nuevos IDs públicos
+ni renumeración o migración de datos. Validación al añadir, editar ubicación,
+guardar apariencia y modificar un contenedor poblado. La GUI lo ofrece en
+LANRACK, fija la altura, muestra capacidad y reutiliza crear/alojar/retirar.
+Frente con cinco huecos y ocupación; no crea puertos de red en el soporte.
+
+`.venv/bin/python -m pytest -q tests/test_raspberry_pi_panel.py
+ tests/test_physical_placement.py tests/test_rack_skins.py
+ tests/test_inventory_visibility.py --tb=short`: **34 passed, 5 skipped en 2.19 s**.
+Capacidad cinco, rechazo atómico del sexto por API y base directa, idempotencia
+del hijo ya alojado, movimiento, retirada/reutilización de plaza, guardar y
+reabrir VLF, rechazo de 2U incluso sin rack, no anidación y bloqueo de borrado
+poblado. Las bandejas normales siguen admitiendo seis o más equipos.
+Los fallos iniciales fueron en el helper de prueba (argumento rack duplicado y
+renombrado incompleto); se corrigió sin cambiar las validaciones del producto.
+
+Generados bilingües, catálogo de errores, auditoría, sintaxis JS, Ruff/formato,
+referencias CLI/web e higiene comprobados. Node ejecuta el renderizador real y
+comprueba cinco alojamientos, ocupación 0/3/5 y ausencia de conectores ficticios.
+Revisión visual del SVG en navegador; no sustituye a un recorrido Qt nativo ni
+a Windows/instaladores. No se ejecuta la suite completa ni se despliega en RPi,
+crea un panel en MyHome1 o altera proyectos personales.
+
+P140: también se rechaza convertir el panel a formato de sobremesa; el editor
+fija rackmount y 1U, y ofrece únicamente frentes compatibles con el soporte.
+
+### P140 — un RJ45 real por Raspberry Pi
+
+Por indicación del usuario, el nuevo tipo `device.raspberry-pi` se crea con
+un único RJ45 LAN1. Al alojar un registro genérico sin puertos, el adaptador
+IDF lo completa dentro del mismo bloqueo/escritura; el Core exige exactamente
+un RJ45 tanto a este tipo como a cualquier equipo del panel. No se puede borrar,
+multiplicar o convertir a fibra su interfaz por una llamada directa. Los
+puertos existentes de nombre distinto y sus cables se conservan; equipos
+incompatibles se rechazan sin cambios. El alta dentro del panel queda limitada
+al tipo Raspberry Pi. La skin dibuja el RJ45 de cada hijo desde sus datos reales;
+no se crean puertos en el soporte.
+
+Pruebas seleccionadas de panel, ubicación, visibilidad y launchers: **54 passed,
+2 skipped en 3.31 s**. Verifican creación, normalización, conservación de IDF,
+capacidad, persistencia/reapertura del puerto, cable a un switch en LANWIRE,
+conservación de ETH0 y su enlace, y rechazo atómico de varios puertos o fibra.
+Node verifica 0/3/5 conectores para 0/3/5 ocupantes usando el renderizador real.
+No había paneles Raspberry Pi en MyHome1 al revisar; no se migran datos reales.
+No se han probado Qt nativo, Windows ni nuevos instaladores.
+
+Selección ampliada final, incluyendo el almacenamiento IDF:
+`tests/test_raspberry_pi_panel.py tests/test_physical_placement.py
+ tests/test_inventory_visibility.py tests/test_launcher_gui.py
+ tests/test_physical_idf_database.py`: **80 passed, 2 skipped,
+5 subtests passed en 5.15 s**. Formato, idiomas, errores, referencias e higiene
+correctos. No se ejecuta la suite completa.

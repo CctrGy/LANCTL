@@ -19,8 +19,8 @@ GUI_MESSAGES = {
     ),
     "LANCTL.WIRE.FIBER_ENTRY.NAME": ("Provider fiber entry", "Entrada de fibra de compañía"),
     "LANCTL.WIRE.FIBER_ENTRY.EXTERNAL_ONLY": (
-        "The provider fiber entry belongs outside the rack, not in a rack unit or tray.",
-        "La entrada de fibra de compañía pertenece al exterior del rack, no a una U ni a una bandeja.",
+        "The provider fiber entry is external and cannot belong to a rack, tray or data center.",
+        "La entrada de fibra de compañía es externa y no puede pertenecer a un rack, bandeja ni CPD.",
     ),
     "LANCTL.RACK.TRAY.MORE": ("+{count} devices", "+{count} equipos"),
     "LANCTL.PHYSICAL.LOCATION.IN_LANRACK": (
@@ -853,3 +853,34 @@ GUI_MESSAGES = {
         "Arrastrar para cambiar la anchura",
     ),
 }
+
+GUI_MESSAGES.update(
+    {
+        "LANCTL.RACK.PI_PANEL.NAME": (
+            "Raspberry Pi panel · 1U · 5 bays",
+            "Panel Raspberry Pi · 1U · 5 alojamientos",
+        ),
+        "LANCTL.RACK.PI_PANEL.ONE_U": (
+            "The Raspberry Pi panel has a fixed 1U rackmount format.",
+            "El panel Raspberry Pi tiene un formato rackmount fijo de 1U.",
+        ),
+        "LANCTL.RACK.PI_PANEL.FULL": (
+            "The panel already contains five devices. Remove or relocate one before adding another.",
+            "El panel ya contiene cinco equipos. Retira o reubica uno antes de añadir otro.",
+        ),
+        "LANCTL.RACK.PI_PANEL.CAPACITY": (
+            "{used}/5 bays occupied · fixed height 1U",
+            "{used}/5 alojamientos ocupados · altura fija de 1U",
+        ),
+    }
+)
+
+GUI_MESSAGES.update(
+    {
+        "LANCTL.RACK.PI_PANEL.DEVICE": ("Raspberry Pi · 1 RJ45", "Raspberry Pi · 1 RJ45"),
+        "LANCTL.RACK.PI_PANEL.SINGLE_RJ45": (
+            "Each device in this panel must have exactly one RJ45 port. Existing ports and connections are preserved; review incompatible devices first.",
+            "Cada equipo de este panel debe tener exactamente un puerto RJ45. Se conservan los puertos y conexiones existentes; revisa primero los equipos incompatibles.",
+        ),
+    }
+)

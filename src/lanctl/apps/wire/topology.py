@@ -338,3 +338,23 @@ def groups_for(record: dict[str, Any]) -> set[str]:
     if element_type in {"device.pc", "device.workstation", "device.server"}:
         groups.add("PC")
     return groups
+
+
+def normalize_pi_ports(data, records, previous=None):
+    """Complete an unconfigured hosted Pi; never remove or rename existing ports."""
+    from lanctl.core.physical_placement import PI_DEVICE_TYPE, PI_PANEL_TYPE
+
+    result = deepcopy(data)
+    location = result.get("location")
+    tray = location.get("tray") if isinstance(location, dict) else None
+    parent = records.get(tray) if isinstance(tray, str) else None
+    if (
+        parent
+        and parent["data"].get("type") == PI_PANEL_TYPE
+        and not result.get("ports")
+        and not (previous or {}).get("ports")
+        and result.get("type", "element") in {"element", PI_DEVICE_TYPE}
+    ):
+        result["type"] = PI_DEVICE_TYPE
+        result["ports"] = build_ports(1, "LAN{n}", kind=RJ45)
+    return result

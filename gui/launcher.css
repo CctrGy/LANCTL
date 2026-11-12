@@ -127,3 +127,14 @@
 .physical-region-handle.side-n{top:calc(var(--grip)/-2)}.physical-region-handle.side-s{bottom:calc(var(--grip)/-2)}
 .physical-region:focus-within,.physical-region:has(.physical-region-handle:hover){z-index:4}
 .physical-region-handle:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+
+/* External provider boundary: incoming fibers converge on the real connector. */
+.wire-fiber-entry .wire-fiber-outer{stroke-dasharray:5 4;stroke-width:2;fill:var(--panel,#20282d)}
+.wire-fiber-entry .wire-fiber-route{fill:none;stroke:var(--lime);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.wire-fiber-entry .wire-fiber-port{stroke-width:4}
+.wire-fiber-entry small{display:block;opacity:.7;font-size:10px;margin-top:4px}
+
+.rack-face .skin-pi-slot{fill:#11191d;stroke:#7c8e83;stroke-width:2}
+.rack-face .skin-pi-board{fill:#315c3e;stroke:#89b18c;stroke-width:1.5}
+.rack-face .skin-pi-chip{fill:#19241e;stroke:#72947a;stroke-width:1}
+.rack-face .skin-pi-slot-label{fill:#b9c8bd;font:8px monospace;text-anchor:middle}

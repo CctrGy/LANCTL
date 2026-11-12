@@ -95,7 +95,7 @@ No necesita Python instalado. Descárgalo para tu arquitectura (`amd64` o
 `arm64`) y ábrelo desde tu sesión gráfica, **sin sudo**:
 
 ```bash
-bash ./LANCTL-0.3.4-alpha.7-linux-amd64-setup.run
+bash ./LANCTL-0.3.4-alpha.8-linux-amd64-setup.run
 ```
 
 También puedes darle permiso de ejecución y abrirlo desde el gestor de archivos.

@@ -1,4 +1,4 @@
-LANCTL GUI EXPERIMENTAL - NOT STABLE - 0.3.4-alpha.7
+LANCTL GUI EXPERIMENTAL - NOT STABLE - 0.3.4-alpha.8
 =================================================
 
 Run LANCTL.exe, lanip.exe, lanwire.exe, lanrack.exe, lanaccess.exe or lanmon.exe

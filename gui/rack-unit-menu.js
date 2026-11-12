@@ -21,7 +21,7 @@ function rackUnitMenu(button, point = null) {
       const pre = Object.assign(document.createElement("pre"), {textContent: JSON.stringify(occupant, null, 2)});
       showForm(occupant.data.name || occupant.id, [pre]);
     }), action(t("LANCTL.RACK.UNIT.EDIT"), () => fullDetails(occupant)));
-    if (["tray", "device.tray"].includes(occupant.data.type)) {
+    if (["tray", "device.tray", "rack.raspberry-pi-panel"].includes(occupant.data.type)) {
       const house = action(t("LANCTL.RACK.TRAY.ADD_EXISTING"), () => physicalHostDevice(occupant));
       house.dataset.rackHouse = occupant.id;
       const create = action(t("LANCTL.RACK.TRAY.CREATE_INSIDE"), () => physicalCreateInTray(occupant));

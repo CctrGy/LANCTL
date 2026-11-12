@@ -6,6 +6,7 @@ RACK_ONLY = frozenset(
     {
         "tray",
         "device.tray",
+        "rack.raspberry-pi-panel",
         "rack.cable-comb",
         "rack.organizer",
         "rack.ventilation",

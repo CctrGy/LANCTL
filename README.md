@@ -1,8 +1,8 @@
 # LANCTL — GUI experimental
 
 > **PROTOTIPO EXPERIMENTAL — NO ES UNA VERSIÓN ESTABLE.**
-> Rama `experimental-gui`, versión **0.3.4-alpha.7**. Para pruebas de la GUI en
-> Windows x64: [descargas e instrucciones](docs/RELEASE-0.3.4-alpha.7.md).
+> Rama `experimental-gui`, versión **0.3.4-alpha.8**. Para pruebas de la GUI en
+> Windows x64: [descargas e instrucciones](docs/RELEASE-0.3.4-alpha.8.md).
 > La versión estable sigue disponible en [Releases](https://github.com/CctrGy/LANCTL/releases/latest).
 
 Interfaces de los seis launchers: [CLI y TUI](docs/LAUNCHER-INTERFACES.md).
@@ -24,8 +24,8 @@ La [LANCTL Reference](reference/index.html) ofrece un índice web con búsqueda,
 sintaxis, opciones y ejemplos de todos los launchers y comandos, además de
 proyectos VLF, plugins LCP y el catálogo de documentación.
 
-> Versión de esta rama: **0.3.4-alpha.7**, GUI experimental, no estable.
-> Consulta las [notas de prueba](docs/RELEASE-0.3.4-alpha.7.md).
+> Versión de esta rama: **0.3.4-alpha.8**, GUI experimental, no estable.
+> Consulta las [notas de prueba](docs/RELEASE-0.3.4-alpha.8.md).
 > Conserva copias de seguridad; no utilices el programa como única fuente de inventario.
 
 ### Cambios de 0.3.3
@@ -424,11 +424,11 @@ plan sin ejecutar). Consulta [repositoryTerminal](repositoryTerminal/README.md)
 para requisitos y ejemplos. No cambia la versión ni realiza Git/push.
 
 ```powershell
-.\scripts\build-windows.ps1 -Version 0.3.4-alpha.7
+.\scripts\build-windows.ps1 -Version 0.3.4-alpha.8
 ```
 
 ```sh
-./scripts/build-linux.sh 0.3.4-alpha.7
+./scripts/build-linux.sh 0.3.4-alpha.8
 ```
 
 Los builds generan metadatos, `SHA256SUMS.txt` y verifican el conjunto final.

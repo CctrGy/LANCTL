@@ -510,3 +510,28 @@ para heredar su CPD, pero no montarse en una U ni dentro de una bandeja.
 El tipo histórico `external.supply` conserva su significado y compatibilidad.
 La figura es una convención visual de LANCTL, sin atribuir un conector físico,
 operador o tecnología óptica específicos.
+
+## Panel Raspberry Pi 1U
+
+En LANRACK → Nuevo elemento → Panel Raspberry Pi · 1U · 5 alojamientos se
+crea un soporte rackmount personalizado. Se propone el prefijo RP; cada panel
+recibe su propio IDF. La altura es fija en 1U y el panel no crea puertos de red.
+Una vez montado, Alojar dispositivo permite añadir equipos existentes; también
+se puede crear un equipo dentro usando el editor común. Los alojados conservan
+su identidad y sus propios puertos. Se muestra ocupación 0/5…5/5 y un frente
+con cinco huecos; las placas dibujadas indican ocupación, no son conectores.
+
+El tipo `rack.raspberry-pi-panel` usa `location.tray` por compatibilidad con
+el alojamiento existente; el rack y la U efectivos se derivan del padre.
+La capacidad fija se valida en Core, no solo en la GUI. Reubicar o retirar un
+hijo libera una plaza; mover el panel mueve la ubicación efectiva de sus hijos.
+Un panel poblado no se elimina ni se aloja dentro de otra bandeja. Los tipos
+bandeja anteriores conservan su capacidad sin límite de cinco.
+Cada Raspberry Pi de este panel utiliza exactamente un puerto RJ45 real.
+El tipo de alta Raspberry Pi crea `device.raspberry-pi` con `LAN1`; se puede
+conectar desde LANWIRE como cualquier otro puerto del equipo. El soporte
+continúa sin puertos propios. Al alojar un registro genérico sin configurar se
+crea su único RJ45 conservando IDF, IP y nombre. Un puerto existente compatible
+conserva su nombre y sus cables. Equipos con varios puertos o solo fibra se
+rechazan; no se recortan ni se eliminan enlaces para hacerlos encajar.
+Esta es la política del panel solicitado, no una detección del modelo físico.

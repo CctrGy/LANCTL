@@ -2,12 +2,12 @@
 
 ## Revisión de estado — 12/11/2026
 
-**56 entradas abiertas:** 52 P, tres REF y una revisión visual sin ID. Incluyen
+**57 entradas abiertas:** 53 P, tres REF y una revisión visual sin ID. Incluyen
 P40/P42 como dos seguimientos de una misma incidencia; los contadores son de
 entradas de la lista, no de funcionalidades independientes. No se cierra ninguna
 casilla solo por esta revisión.
 
-- **Fuentes implementadas; validación/entrega pendiente (20):** P139, P138, P137, P127, P132, P130, P128, P124, P123, P122, P106,
+- **Fuentes implementadas; validación/entrega pendiente (21):** P140, P139, P138, P137, P127, P132, P130, P128, P124, P123, P122, P106,
   P105, P104, P102, P88, P85, P75, P73, P70 y P48.
 - **Implementación parcial o integración/alcance pendiente (14):** P136, P133, P134, P119, P118,
   P100, P98, P99, P94, P90, P34, P47, P71 y P72.
@@ -17,6 +17,26 @@ casilla solo por esta revisión.
 - **Validación transversal (3):** P115, P32 y revisión visual nativa sin ID.
 - **Decisión pendiente (2):** P95 y P92.
 - **Validación especial de firma autorizada (2):** P40/P42.
+
+## Panel Raspberry Pi rackmount de cinco equipos — 12/11/2026
+
+- [ ] **P140 · Media · Implementado en fuentes; recorrido nativo y entrega pendientes.**
+  Nuevo tipo físico `rack.raspberry-pi-panel`, visible en LANRACK: altura fija
+  de 1U y máximo cinco equipos alojados, reutilizando las referencias de
+  alojamiento de bandejas. El sexto se rechaza en el límite de almacenamiento,
+  también ante llamadas directas. No se anidan bandejas o paneles dentro de él.
+  Se pueden añadir equipos existentes o crear dentro, liberar plazas y mover
+  el panel conservando los IDF y la ubicación efectiva de sus hijos. No puede
+  eliminarse poblado ni reducirse/ampliarse su altura desde otra interfaz.
+  Frente de cinco alojamientos, con ocupación visual, contador y selección del
+  tipo en el alta. Prefijo sugerido RP, sin renumerar elementos existentes.
+  Cada equipo alojado dispone de exactamente un RJ45 real; el alta Raspberry
+  Pi crea LAN1 y el almacenamiento completa registros genéricos sin puertos.
+  Se conservan nombres de puertos y enlaces existentes compatibles; se rechazan
+  equipos con varios puertos/fibra, sin recortarlos. El soporte no tiene RJ45
+  propios y la skin dibuja un conector por placa realmente configurada.
+  Pruebas de capacidad, persistencia VLF, invariantes y bandejas ordinarias
+  registradas en `BACKLOG-VERIFICATION.md`. No se crean instancias en MyHome1.
 
 ## Redimensionado de áreas RACK/CPD en LANWIRE — 12/11/2026
 
@@ -3858,3 +3878,9 @@ No se ha definido capacidad por anchura/profundidad o número de dispositivos.
 Entrada óptica de compañía (2026-11-12): perfil `external.fiber-entry` con un
 puerto FIBER real, símbolo circular exclusivo de LANWIRE y conexiones mediante
 cables de fibra. Sin modificar el tipo heredado `external.supply`.
+Revisión 12/11: punto externo sin recuadro ni pertenencia visual a rack/CPD,
+incluso con una ubicación heredada. Prohibida también la asignación al entorno
+exterior del rack. Se conserva el puerto real en la vista general, símbolo con
+fibras convergentes y contorno discontinuo. Una posición antigua dentro de un
+área se coloca fuera de ella al dibujar, sin reescribir el inventario. Pendiente
+validación Qt/instalables; pruebas Chromium ES/EN y persistencia documentadas.

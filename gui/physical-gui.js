@@ -54,9 +54,14 @@ function wireOrderedPorts(n) {
   });
 }
 function physicalRackOf(r) {
+  if (r.data?.type === "external.fiber-entry") return "";
   return ["rack", "rack.summary"].includes(r.data?.type)
     ? r.id
     : r.placement?.rack || r.data?.location?.rack || "";
+}
+function physicalGroupOf(r) {
+  if (r.data.type === "external.fiber-entry") return "@external:" + r.id;
+  return physicalLevel === "outside" ? r.data.location?.cpd || "" : physicalRegionOf(r);
 }
 function physicalRegionOf(r) {
   const rack = physicalRackOf(r);
@@ -192,10 +197,7 @@ function physicalResizeRegions(regions, positions, members, selected, side, delt
 wireLayout = function (nodes) {
   const edges = wireEdges();
   physicalRegions = [];
-  const groupOfNode = (n) =>
-    physicalLevel === "outside"
-      ? n.data.location?.cpd || ""
-      : physicalRegionOf(n);
+  const groupOfNode = physicalGroupOf;
   const groups = new Map();
   for (const n of nodes) {
     const id = groupOfNode(n);
@@ -264,6 +266,7 @@ wireLayout = function (nodes) {
       w: frame?.w || region.physicalSize.w,
       h: frame?.h || region.physicalSize.h,
       label: region.label,
+      external: region.id.startsWith("@external:"),
     });
     for (const n of region.items) {
       const point = region.local.get(n.id);
@@ -387,7 +390,7 @@ wireRenderTopology = function (rows) {
               ...r,
               data: {
                 ...r.data,
-                ports: {},
+                ports: r.data.type === "external.fiber-entry" ? r.data.ports : {},
                 type: r.data.type === "rack" ? "rack.summary" : r.data.type,
               },
             });
@@ -587,17 +590,30 @@ wirePaint = function () {
   if (!wireGraph || !$("#wire-world")) return;
   // Expand visual containers around saved/manual coordinates; never clamp them away.
   for (const n of wireGraph.nodes) {
-    const region = physicalRegions.find(r => r.id === (physicalLevel === "outside" ? n.data.location?.cpd || "" : physicalRegionOf(n)));
+    const region = physicalRegions.find(r => r.id === physicalGroupOf(n));
     const point = wirePositions[n.id];
-    if (region && point) {
+    if (region?.external && point) {
+      Object.assign(region,{...point,...physicalSize(n)});
+    } else if (region && point) {
       const size = physicalSize(n), right = Math.max(region.x+region.w,point.x+size.w+25), bottom = Math.max(region.y+region.h,point.y+size.h+25);
       region.x=Math.min(region.x,point.x-25);region.y=Math.min(region.y,point.y-60);
       region.w=right-region.x;region.h=bottom-region.y;
     }
   }
+  // Older saved layouts may place the provider within a rack's environment.
+  // Keep that boundary visibly external without changing inventory location data.
+  const spaces=physicalRegions.filter(r=>!r.external);
+  for (const region of physicalRegions.filter(r=>r.external)) {
+    if (spaces.some(r=>region.x<r.x+r.w && r.x<region.x+region.w && region.y<r.y+r.h && r.y<region.y+region.h)) {
+      region.x=Math.min(...spaces.map(r=>r.x))-region.w-60;
+      const node=wireGraph.nodes.find(n=>physicalGroupOf(n)===region.id);
+      if(node) wirePositions[node.id]={x:region.x,y:region.y};
+    }
+  }
   physicalBase.paint();
   document.querySelectorAll(".physical-region").forEach((e) => e.remove());
   for (const region of physicalRegions) {
+    if (region.external) continue;
     const el = document.createElement("div");
     el.className = "physical-region";
     Object.assign(el.style, {
@@ -1105,7 +1121,7 @@ function physicalNodeAt(event) {
 let physicalRegionResizing=false;
 function physicalResizeSnapshot() {
   return {regions:structuredClone(physicalRegions), positions:structuredClone(wirePositions), frames:structuredClone(wireRegionFrames),
-    members:Object.fromEntries(wireGraph.nodes.map(n=>[n.id,physicalLevel==="outside" ? n.data.location?.cpd || "" : physicalRegionOf(n)])),
+    members:Object.fromEntries(wireGraph.nodes.map(n=>[n.id,physicalGroupOf(n)])),
     sizes:Object.fromEntries(wireGraph.nodes.map(n=>[n.id,physicalSize(n)]))};
 }
 function physicalApplyRegionResize(snapshot,id,side,delta) {

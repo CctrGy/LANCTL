@@ -10,7 +10,7 @@ from typing import Any
 
 from lanctl.apps.wire.idf import IDF, IDFSize
 from lanctl.apps.wire.path import application_directory, application_path
-from lanctl.apps.wire.topology import apply_prefix_defaults
+from lanctl.apps.wire.topology import apply_prefix_defaults, normalize_pi_ports
 from lanctl.apps.wire.xfile import atomic_write_bytes, locked_file, read, update_json, write_json
 from lanctl.core.physical_placement import (
     legacy_layout_spans,
@@ -108,6 +108,7 @@ class IDFDatabaseManager:
                 )
                 if candidate.value not in records:
                     created = self._new_record(candidate, data)
+                    created["data"] = normalize_pi_ports(created["data"], records)
                     validate_change(list(records.values()), candidate.value, created["data"])
                     records[candidate.value] = created
                     return
@@ -125,6 +126,7 @@ class IDFDatabaseManager:
             self._validate_database(database)
             if identifier.value in database["records"]:
                 raise ValueError(f"el IDF ya existe: {identifier.value}")
+            created["data"] = normalize_pi_ports(created["data"], database["records"])
             validate_change(list(database["records"].values()), identifier.value, created["data"])
             database["records"][identifier.value] = created
 
@@ -235,11 +237,12 @@ class IDFDatabaseManager:
         updated: dict[str, Any] = {}
 
         def replace(database: dict[str, Any]) -> None:
-            nonlocal updated
+            nonlocal updated, data
             self._validate_database(database)
             if identifier.value not in database["records"]:
                 raise KeyError(identifier.value)
             record = database["records"][identifier.value]
+            data = normalize_pi_ports(data, database["records"], previous=record["data"])
             validate_change(
                 list(database["records"].values()), identifier.value, data, record["data"]
             )

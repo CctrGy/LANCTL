@@ -33,9 +33,6 @@ def test_provider_connection_visibility_atomic_errors_and_reopen(workspace, tmp_
             "kind": "external.fiber-entry",
             "prefix": "FE",
             "name": "Entrada de fibra",
-            "rack": cabinet,
-            "in_rack": False,
-            "unit": 0,
         }
     )["id"]
     otg = wire.wire_create({"kind": "router.otg", "prefix": "OT", "name": "OTG"})["id"]
@@ -44,7 +41,10 @@ def test_provider_connection_visibility_atomic_errors_and_reopen(workspace, tmp_
         {"kind": "wire.copper", "prefix": "WL", "endpoints": [{"device": entry, "port": "FIBER"}]}
     )["ok"]
     assert wire._service.database.path.read_bytes() == before
-    for position in ({"rack": cabinet, "in_rack": True, "unit": 1},):
+    for position in (
+        {"rack": cabinet, "in_rack": True, "unit": 1},
+        {"rack": cabinet, "in_rack": False, "unit": 0},
+    ):
         assert not wire.wire_create({"kind": "external.fiber-entry", "prefix": "FE", **position})[
             "ok"
         ]
@@ -126,11 +126,34 @@ def test_provider_creation_circle_and_fiber_connection_gui(
             "view='topology';physicalLevel='inside';physicalRack='';physicalCpd='';render();wireFit()"
         )
         node = page.locator(f'[data-node="{entry}"]')
+        assert page.evaluate(
+            """id => {
+            const p=wirePositions[id], size=physicalSize(wireGraph.nodes.find(n=>n.id===id));
+            return physicalRegions.filter(r=>!r.external).every(r=>
+              p.x+size.w<=r.x || r.x+r.w<=p.x || p.y+size.h<=r.y || r.y+r.h<=p.y);
+        }""",
+            entry,
+        )
         assert node.locator("svg circle").count() == 2
         assert node.locator("[data-port]").count() == 1
         assert node.locator('circle[data-port="FIBER"]').is_visible()
         assert page.locator(f'[data-cable="{cable["id"]}"]').count() > 0
-        page.screenshot(path=str(tmp_path / f"provider-fiber-{language}.png"))
+        # An old saved position inside a green area is moved back outside it.
+        assert page.evaluate(
+            """({entry,otg})=>{
+            wirePositions[entry]={...wirePositions[otg]};wirePaint();
+            const p=wirePositions[entry];
+            return physicalRegions.filter(r=>!r.external).every(r=>p.x+160<=r.x);
+        }""",
+            {"entry": entry, "otg": otg},
+        )
+        output = Path(os.environ.get("LANCTL_PROVIDER_REVIEW_DIR", str(tmp_path)))
+        output.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(output / f"provider-fiber-{language}.png"))
+        page.evaluate("physicalSwitchLevel('outside')")
+        assert page.locator(f'[data-node="{entry}"]').is_visible()
+        assert page.evaluate("id=>physicalRegions.find(r=>r.id==='@external:'+id)?.external", entry)
+        assert page.locator(f'[data-node="{entry}"] [data-port="FIBER"]').is_visible()
         rack_page = open_page(browser, rack)
         rack_page.evaluate("wireNew()")
         assert rack_page.locator('[name="kind"] option[value="external.fiber-entry"]').count() == 0

@@ -39,6 +39,29 @@ def appearance(values):
     return result
 
 
+PI_PANEL_TYPE = "rack.raspberry-pi-panel"
+PI_DEVICE_TYPE = "device.raspberry-pi"
+
+
+def require_pi_port(data):
+    ports = data.get("ports")
+    if (
+        not isinstance(ports, dict)
+        or len(ports) != 1
+        or any(
+            not isinstance(port, dict) or port.get("kind") not in {"connection.rj45", "wire.copper"}
+            for port in ports.values()
+        )
+    ):
+        from lanctl.shared.i18n import t
+
+        raise ValueError(t("LANCTL.RACK.PI_PANEL.SINGLE_RJ45"))
+
+
+def hosting_capacity(data):
+    return 5 if data.get("type") == PI_PANEL_TYPE else None
+
+
 def span(data):
     value = data.get("rackAppearance")
     if value is None:
@@ -49,7 +72,13 @@ def span(data):
         or value["schemaVersion"] != 1
     ):
         raise ValueError("Esquema de apariencia no compatible")
-    return appearance(value)["units"]
+    visual = appearance(value)
+    units = visual["units"]
+    if data.get("type") == PI_PANEL_TYPE and (units != 1 or not visual["rackmount"]):
+        from lanctl.shared.i18n import t
+
+        raise ValueError(t("LANCTL.RACK.PI_PANEL.ONE_U"))
+    return units
 
 
 def is_rack(record):
@@ -57,13 +86,13 @@ def is_rack(record):
 
 
 def is_tray(data):
-    return data.get("type") in {"tray", "device.tray"}
+    return data.get("type") in {"tray", "device.tray", PI_PANEL_TYPE}
 
 
 def direct_mount_allowed(data):
     """Generic home routers/OTG and desktop switches are hosted, not U-mounted."""
     kind = str(data.get("type", "")).casefold()
-    if kind == "device.router" or kind.startswith("router."):
+    if kind in {"device.router", PI_DEVICE_TYPE} or kind.startswith("router."):
         return False
     visual = data.get("rackAppearance") or {}
     if isinstance(visual, dict) and visual.get("rackmount") is False:
@@ -185,6 +214,10 @@ def apply_placement(data, values):
 
 
 def validate_location(records, identifier, data):
+    if data.get("type") == PI_DEVICE_TYPE:
+        require_pi_port(data)
+    if data.get("type") == PI_PANEL_TYPE:
+        span(data)
     if data.get("type") in {"rack", "wire"}:
         if (data.get("location") or {}).get("tray"):
             raise ValueError("Un rack o cable no puede alojarse en una bandeja")
@@ -207,7 +240,10 @@ def validate_location(records, identifier, data):
             raise ValueError("La ubicación requiere in_rack booleano y unidad entera")
         if status["kind"] != "inside" and loc["unit"] != 0:
             raise ValueError("Los elementos sin montaje directo deben usar unidad 0")
-    if data.get("type") == "external.fiber-entry" and status["kind"] in {"inside", "hosted"}:
+    if data.get("type") == "external.fiber-entry" and (
+        any(loc.get(key) for key in ("rack", "tray", "cpd"))
+        or status["kind"] in {"inside", "hosted", "environment"}
+    ):
         from lanctl.shared.i18n import t
 
         raise ValueError(t("LANCTL.WIRE.FIBER_ENTRY.EXTERNAL_ONLY"))
@@ -217,6 +253,21 @@ def validate_location(records, identifier, data):
         parent = index[status["tray"]]
         if location_status(parent["data"], index)["kind"] != "inside":
             raise ValueError("La bandeja debe estar montada en un rack")
+        capacity = hosting_capacity(parent["data"])
+        if capacity is not None:
+            require_pi_port(data)
+        if (
+            capacity is not None
+            and sum(
+                other["id"] != identifier
+                and (other["data"].get("location") or {}).get("tray") == parent["id"]
+                for other in index.values()
+            )
+            >= capacity
+        ):
+            from lanctl.shared.i18n import t
+
+            raise ValueError(t("LANCTL.RACK.PI_PANEL.FULL"))
         if span(data) > span(parent["data"]):
             from lanctl.shared.i18n import t
 
@@ -264,6 +315,14 @@ def legacy_layout_spans(data):
 
 def validate_change(records, identifier, data, previous=None):
     """Validate changed physical state at the storage boundary, for every UI."""
+    index = records if isinstance(records, dict) else {record["id"]: record for record in records}
+    location = data.get("location")
+    tray = location.get("tray") if isinstance(location, dict) else None
+    parent = index.get(tray) if isinstance(tray, str) else None
+    if data.get("type") == PI_DEVICE_TYPE or (
+        parent and hosting_capacity(parent["data"]) is not None
+    ):
+        require_pi_port(data)
     if previous is not None and all(
         previous.get(k) == data.get(k) for k in ("location", "rackAppearance", "type")
     ):
