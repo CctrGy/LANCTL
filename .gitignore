@@ -125,3 +125,6 @@ Desktop.ini
 
 # Recursos locales para grabar vídeos promocionales
 /.record/
+
+# Lanzador local Linux
+/run.sh
